@@ -9,8 +9,11 @@
     environment:
       - LOCALAI_URL=http://localai:8080
       - MODEL_NAME=${MODEL_NAME}
+      - SECURITY_MODEL_NAME=${SECURITY_MODEL_NAME:-${MODEL_NAME}}
       - MAX_TOKENS=-1
       - LOG_LEVEL=INFO
+      - ISO_DOCS_PATH=/data/iso_documents
+      - VECTOR_STORE_PATH=/data/vector_store
     networks:
       - phobert-network
     volumes:
@@ -54,6 +57,7 @@
       - DEBUG=true
       - THREADS=8
       - CONTEXT_SIZE=8192
+      - PARALLEL_REQUESTS=true
     volumes:
       - ./models:/build/models
     networks:

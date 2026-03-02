@@ -6,3 +6,4 @@ python-multipart==0.0.6
 requests==2.31.0
 python-dotenv==1.0.0
 numpy==1.26.0
+chromadb==0.4.22
