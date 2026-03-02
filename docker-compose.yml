@@ -25,13 +25,18 @@
   frontend:
     build:
       context: ./frontend-next
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: phobert-frontend
     ports:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://backend:8000
       - API_URL=http://backend:8000
+      - WATCHPACK_POLLING=true
+    volumes:
+      - ./frontend-next/src:/app/src
+      - ./frontend-next/public:/app/public
+      - ./frontend-next/next.config.js:/app/next.config.js
     networks:
       - phobert-network
     depends_on:
@@ -54,7 +59,7 @@
       - phobert-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/readyz"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/readyz" ]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -93,10 +93,14 @@ export default function ChatbotPage() {
             setMsgs(pending.currentMessages || [])
             setSending(true)
 
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 300000)
+
             fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: pending.userMessage, session_id: pending.sessionId })
+                body: JSON.stringify({ message: pending.userMessage, session_id: pending.sessionId }),
+                signal: controller.signal
             })
                 .then(r => r.json())
                 .then(data => {
@@ -113,10 +117,22 @@ export default function ChatbotPage() {
                         setSending(false)
                     }
                 })
-                .catch(() => {
+                .catch((err) => {
+                    const isTimeout = err?.name === 'AbortError'
+                    const errContent = isTimeout
+                        ? 'Request timeout (5 phút). Model đang quá tải, thử lại sau.'
+                        : 'Đang chờ model phản hồi... Quay lại sau để xem kết quả.'
+                    const botMsg = { role: 'assistant', content: errContent, time: now() }
+                    const final = [...(pending.currentMessages || []), botMsg]
+                    directSaveSession(pending.sessionId, final)
                     lsDel(PENDING_KEY)
-                    if (mountedRef.current) setSending(false)
+                    if (mountedRef.current) {
+                        setMsgs(final)
+                        setSessions(lsGet(SESSIONS_KEY, []))
+                        setSending(false)
+                    }
                 })
+                .finally(() => clearTimeout(timeoutId))
         } else {
             setSessions(saved)
             if (id) {
@@ -167,12 +183,17 @@ export default function ChatbotPage() {
             done: false
         })
 
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 300000)
+
         try {
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text.trim(), session_id: id })
+                body: JSON.stringify({ message: text.trim(), session_id: id }),
+                signal: controller.signal
             })
+            clearTimeout(timeoutId)
             const data = await res.json()
             const botMsg = {
                 role: 'assistant',
@@ -190,8 +211,12 @@ export default function ChatbotPage() {
             } else {
                 lsSet(PENDING_KEY, { sessionId: id, finalMessages: final, done: true })
             }
-        } catch {
-            const errMsg = { role: 'assistant', content: 'Không kết nối được server.', time: now() }
+        } catch (err) {
+            const isAbort = err?.name === 'AbortError'
+            const errContent = isAbort
+                ? 'Request timeout (5 phút). Model đang quá tải.'
+                : 'Model đang xử lý. Quay lại sau để xem kết quả.'
+            const errMsg = { role: 'assistant', content: errContent, time: now() }
             const final = [...next, errMsg]
 
             directSaveSession(id, final)
