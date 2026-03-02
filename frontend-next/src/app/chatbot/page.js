@@ -14,22 +14,40 @@ const SUGGESTIONS = [
 
 const SESSIONS_KEY = 'phobert_chat_sessions'
 const ACTIVE_KEY = 'phobert_active_session'
+const PENDING_KEY = 'phobert_pending_chat'
 
-function uid() {
-    return `s_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
-}
+function uid() { return `s_${Date.now()}_${Math.random().toString(36).slice(2, 6)}` }
+function now() { return new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false }) }
 
-function now() {
-    return new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
-}
-
-function loadStore(key, fallback) {
+function lsGet(key, fallback) {
     if (typeof window === 'undefined') return fallback
     try { return JSON.parse(localStorage.getItem(key)) || fallback } catch { return fallback }
 }
 
-function saveStore(key, val) {
+function lsSet(key, val) {
     try { localStorage.setItem(key, JSON.stringify(val)) } catch { }
+}
+
+function lsDel(key) {
+    try { localStorage.removeItem(key) } catch { }
+}
+
+function directSaveSession(sessionId, messages) {
+    try {
+        const sessions = JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]')
+        const title = messages[0]?.content?.slice(0, 50) || 'Chat mới'
+        const entry = {
+            id: sessionId,
+            title,
+            time: new Date().toLocaleString('vi-VN'),
+            messages,
+            count: messages.length
+        }
+        const idx = sessions.findIndex(x => x.id === sessionId)
+        if (idx >= 0) sessions[idx] = entry
+        else sessions.unshift(entry)
+        localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions))
+    } catch { }
 }
 
 export default function ChatbotPage() {
@@ -40,25 +58,82 @@ export default function ChatbotPage() {
     const [sending, setSending] = useState(false)
     const [sidebar, setSidebar] = useState(false)
     const [ready, setReady] = useState(false)
+    const mountedRef = useRef(true)
     const endRef = useRef(null)
     const inputRef = useRef(null)
 
     useEffect(() => {
-        const saved = loadStore(SESSIONS_KEY, [])
-        const id = loadStore(ACTIVE_KEY, null)
-        setSessions(saved)
-        if (id) {
-            const s = saved.find(x => x.id === id)
-            if (s) { setActiveId(id); setMsgs(s.messages || []) }
+        mountedRef.current = true
+
+        const saved = lsGet(SESSIONS_KEY, [])
+        const id = lsGet(ACTIVE_KEY, null)
+
+        const pending = lsGet(PENDING_KEY, null)
+        if (pending && pending.done) {
+            directSaveSession(pending.sessionId, pending.finalMessages)
+            lsDel(PENDING_KEY)
+
+            const refreshed = lsGet(SESSIONS_KEY, [])
+            setSessions(refreshed)
+
+            if (id === pending.sessionId || !id) {
+                setActiveId(pending.sessionId)
+                setMsgs(pending.finalMessages)
+                lsSet(ACTIVE_KEY, pending.sessionId)
+            } else {
+                setSessions(refreshed)
+                if (id) {
+                    const s = refreshed.find(x => x.id === id)
+                    if (s) { setActiveId(id); setMsgs(s.messages || []) }
+                }
+            }
+        } else if (pending && !pending.done) {
+            setSessions(saved)
+            setActiveId(pending.sessionId)
+            setMsgs(pending.currentMessages || [])
+            setSending(true)
+
+            fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: pending.userMessage, session_id: pending.sessionId })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    const content = data.error ? `Lỗi: ${data.error}` : (data.response || 'Không có phản hồi.')
+                    const botMsg = { role: 'assistant', content, time: now() }
+                    const final = [...(pending.currentMessages || []), botMsg]
+
+                    directSaveSession(pending.sessionId, final)
+                    lsDel(PENDING_KEY)
+
+                    if (mountedRef.current) {
+                        setMsgs(final)
+                        setSessions(lsGet(SESSIONS_KEY, []))
+                        setSending(false)
+                    }
+                })
+                .catch(() => {
+                    lsDel(PENDING_KEY)
+                    if (mountedRef.current) setSending(false)
+                })
+        } else {
+            setSessions(saved)
+            if (id) {
+                const s = saved.find(x => x.id === id)
+                if (s) { setActiveId(id); setMsgs(s.messages || []) }
+            }
         }
+
         setReady(true)
+        return () => { mountedRef.current = false }
     }, [])
 
-    useEffect(() => { if (ready) saveStore(SESSIONS_KEY, sessions) }, [sessions, ready])
-    useEffect(() => { if (ready) saveStore(ACTIVE_KEY, activeId) }, [activeId, ready])
+    useEffect(() => { if (ready) lsSet(SESSIONS_KEY, sessions) }, [sessions, ready])
+    useEffect(() => { if (ready) lsSet(ACTIVE_KEY, activeId) }, [activeId, ready])
     useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs])
 
-    const save = useCallback((messages, id) => {
+    const updateSessions = useCallback((messages, id) => {
         setSessions(prev => {
             const entry = {
                 id,
@@ -83,7 +158,14 @@ export default function ChatbotPage() {
         setMsgs(next)
         setInput('')
         setSending(true)
-        save(next, id)
+        updateSessions(next, id)
+
+        lsSet(PENDING_KEY, {
+            sessionId: id,
+            userMessage: text.trim(),
+            currentMessages: next,
+            done: false
+        })
 
         try {
             const res = await fetch('/api/chat', {
@@ -98,15 +180,31 @@ export default function ChatbotPage() {
                 time: now()
             }
             const final = [...next, botMsg]
-            setMsgs(final)
-            save(final, id)
+
+            directSaveSession(id, final)
+
+            if (mountedRef.current) {
+                setMsgs(final)
+                updateSessions(final, id)
+                lsDel(PENDING_KEY)
+            } else {
+                lsSet(PENDING_KEY, { sessionId: id, finalMessages: final, done: true })
+            }
         } catch {
             const errMsg = { role: 'assistant', content: 'Không kết nối được server.', time: now() }
             const final = [...next, errMsg]
-            setMsgs(final)
-            save(final, id)
+
+            directSaveSession(id, final)
+
+            if (mountedRef.current) {
+                setMsgs(final)
+                updateSessions(final, id)
+            } else {
+                lsSet(PENDING_KEY, { sessionId: id, finalMessages: final, done: true })
+            }
+            lsDel(PENDING_KEY)
         } finally {
-            setSending(false)
+            if (mountedRef.current) setSending(false)
         }
     }
 
@@ -131,9 +229,7 @@ export default function ChatbotPage() {
 
     return (
         <div className={styles.layout}>
-            {sidebar && (
-                <div className={styles.overlay} onClick={() => setSidebar(false)} />
-            )}
+            {sidebar && <div className={styles.overlay} onClick={() => setSidebar(false)} />}
 
             <aside className={`${styles.sidebar} ${sidebar ? styles.sidebarOpen : ''}`}>
                 <div className={styles.sidebarHeader}>
@@ -144,11 +240,7 @@ export default function ChatbotPage() {
                 <div className={styles.sessionList}>
                     {sessions.length === 0 && <p className={styles.empty}>Chưa có cuộc hội thoại nào</p>}
                     {sessions.map(s => (
-                        <div
-                            key={s.id}
-                            className={`${styles.sessionItem} ${s.id === activeId ? styles.sessionActive : ''}`}
-                            onClick={() => openSession(s)}
-                        >
+                        <div key={s.id} className={`${styles.sessionItem} ${s.id === activeId ? styles.sessionActive : ''}`} onClick={() => openSession(s)}>
                             <div className={styles.sessionInfo}>
                                 <div className={styles.sessionTitle}>{s.title}</div>
                                 <div className={styles.sessionMeta}>{s.count} tin · {s.time}</div>
