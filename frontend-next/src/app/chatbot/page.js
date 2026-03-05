@@ -9,7 +9,9 @@ const SUGGESTIONS = [
     { icon: '📋', text: 'ISO 27001 là gì?' },
     { icon: '🔍', text: 'TCVN 14423 quy định gì?' },
     { icon: '💡', text: 'Làm sao triển khai ISMS?' },
-    { icon: '✅', text: 'Cách đánh giá rủi ro ATTT' }
+    { icon: '✅', text: 'Cách đánh giá rủi ro ATTT' },
+    { icon: '🌐', text: 'Tin tức bảo mật mới nhất' },
+    { icon: '🛡️', text: 'Xu hướng an ninh mạng 2026' }
 ]
 
 const SESSIONS_KEY = 'phobert_chat_sessions'
@@ -56,6 +58,7 @@ export default function ChatbotPage() {
     const [msgs, setMsgs] = useState([])
     const [input, setInput] = useState('')
     const [sending, setSending] = useState(false)
+    const [statusText, setStatusText] = useState('')
     const [sidebar, setSidebar] = useState(false)
     const [ready, setReady] = useState(false)
     const mountedRef = useRef(true)
@@ -94,7 +97,7 @@ export default function ChatbotPage() {
             setSending(true)
 
             const controller = new AbortController()
-            const timeoutId = setTimeout(() => controller.abort(), 300000)
+            const timeoutId = setTimeout(() => controller.abort(), 600000)
 
             fetch('/api/chat', {
                 method: 'POST',
@@ -183,8 +186,10 @@ export default function ChatbotPage() {
             done: false
         })
 
+        setStatusText('Đang xử lý...')
+
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 300000)
+        const timeoutId = setTimeout(() => controller.abort(), 600000)
 
         try {
             const res = await fetch('/api/chat', {
@@ -194,30 +199,90 @@ export default function ChatbotPage() {
                 signal: controller.signal
             })
             clearTimeout(timeoutId)
-            const data = await res.json()
-            const botMsg = {
-                role: 'assistant',
-                content: data.error ? `Lỗi: ${data.error}` : (data.response || 'Không có phản hồi.'),
-                time: now()
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => null)
+                throw new Error(errData?.detail || errData?.response || `HTTP ${res.status}`)
             }
-            const final = [...next, botMsg]
 
-            directSaveSession(id, final)
+            const contentType = res.headers.get('content-type') || ''
 
-            if (mountedRef.current) {
-                setMsgs(final)
-                updateSessions(final, id)
-                lsDel(PENDING_KEY)
+            if (contentType.includes('text/event-stream')) {
+                const reader = res.body.getReader()
+                const decoder = new TextDecoder()
+                let buffer = ''
+                let finalData = null
+
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done) break
+
+                    buffer += decoder.decode(value, { stream: true })
+                    const lines = buffer.split('\n')
+                    buffer = lines.pop() || ''
+
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue
+                        try {
+                            const event = JSON.parse(line.slice(6))
+
+                            if (event.step === 'done' || event.step === 'error') {
+                                finalData = event.data
+                            } else if (event.message && mountedRef.current) {
+                                setStatusText(event.message)
+                            }
+                        } catch { }
+                    }
+                }
+
+                if (finalData) {
+                    const botMsg = {
+                        role: 'assistant',
+                        content: finalData.error
+                            ? (finalData.response || 'Model đang không khả dụng.')
+                            : (finalData.response || 'Không có phản hồi.'),
+                        time: now(),
+                        searchUsed: finalData.search_used,
+                        ragUsed: finalData.rag_used,
+                        webSources: finalData.web_sources
+                    }
+                    const final = [...next, botMsg]
+                    directSaveSession(id, final)
+                    if (mountedRef.current) {
+                        setMsgs(final)
+                        updateSessions(final, id)
+                        lsDel(PENDING_KEY)
+                    }
+                } else {
+                    throw new Error('Stream ended without response')
+                }
+
             } else {
-                lsSet(PENDING_KEY, { sessionId: id, finalMessages: final, done: true })
+                const data = await res.json()
+                const botMsg = {
+                    role: 'assistant',
+                    content: data.error ? (data.response || 'Model đang không khả dụng.') : (data.response || 'Không có phản hồi.'),
+                    time: now(),
+                    searchUsed: data.search_used,
+                    ragUsed: data.rag_used,
+                    webSources: data.web_sources
+                }
+                const final = [...next, botMsg]
+                directSaveSession(id, final)
+                if (mountedRef.current) {
+                    setMsgs(final)
+                    updateSessions(final, id)
+                    lsDel(PENDING_KEY)
+                }
             }
+
         } catch (err) {
             clearTimeout(timeoutId)
             if (mountedRef.current) {
                 const isAbort = err?.name === 'AbortError'
                 const errContent = isAbort
                     ? 'Request timeout (5 phút). Model đang quá tải.'
-                    : 'Lỗi kết nối. Vui lòng thử lại.'
+                    : `Lỗi kết nối: ${err.message}`
                 const errMsg = { role: 'assistant', content: errContent, time: now() }
                 const final = [...next, errMsg]
                 directSaveSession(id, final)
@@ -226,7 +291,10 @@ export default function ChatbotPage() {
                 lsDel(PENDING_KEY)
             }
         } finally {
-            if (mountedRef.current) setSending(false)
+            if (mountedRef.current) {
+                setSending(false)
+                setStatusText('')
+            }
         }
     }
 
@@ -291,10 +359,11 @@ export default function ChatbotPage() {
                 </div>
 
                 <div className={styles.chatArea}>
-                    {msgs.length === 0 ? (
+                    {msgs.length === 0 && !sending ? (
                         <div className={styles.welcome}>
-                            <h2 className={styles.welcomeTitle}>Xin chào 👋</h2>
-                            <p className={styles.welcomeSub}>Hỏi bất cứ điều gì về ISO 27001 và TCVN 14423</p>
+                            <div className={styles.welcomeIcon}>💬</div>
+                            <h2 className={styles.welcomeTitle}>Xin chào!</h2>
+                            <p className={styles.welcomeSub}>Trợ lý AI hỗ trợ ISO 27001, TCVN 14423 và tìm kiếm thông tin bảo mật</p>
                             <div className={styles.chips}>
                                 {SUGGESTIONS.map((s, i) => (
                                     <button key={i} className={styles.chip} onClick={() => send(s.text)}>
@@ -312,17 +381,17 @@ export default function ChatbotPage() {
                                         {m.role === 'assistant' ? (
                                             <div className={styles.md}><ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown></div>
                                         ) : m.content}
+                                        {m.searchUsed && <span className={styles.badge}>🌐 Web Search</span>}
+                                        {m.ragUsed && <span className={styles.badge}>📚 RAG</span>}
                                         <span className={styles.time}>{m.time}</span>
                                     </div>
                                     {m.role === 'user' && <div className={styles.avatarUser}>👤</div>}
                                 </div>
                             ))}
                             {sending && (
-                                <div className={`${styles.msg} ${styles.msgBot}`}>
-                                    <div className={styles.avatar}>🤖</div>
-                                    <div className={`${styles.bubble} ${styles.bubbleBot}`}>
-                                        <div className={styles.dots}><span /><span /><span /></div>
-                                    </div>
+                                <div className={styles.typingWrap}>
+                                    <div className={styles.typingDots}><span /><span /><span /></div>
+                                    {statusText && <span className={styles.statusText}>{statusText}</span>}
                                 </div>
                             )}
                             <div ref={endRef} />

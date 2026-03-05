@@ -1,0 +1,49 @@
+{
+  "id": "7e0b008d-34d9-4c5b-bf9a-f3de2d53658e",
+  "status": "completed",
+  "system_info": {
+    "organization": {
+      "name": "Công ty NGS",
+      "size": "medium",
+      "industry": "Công nghệ thông tin",
+      "employees": 155,
+      "it_staff": 100
+    },
+    "infrastructure": {
+      "servers": 24,
+      "firewalls": "sophos, pfsense",
+      "vpn": "Có",
+      "cloud": "Không sử dụng",
+      "antivirus": "kaspersky",
+      "backup": "veeam",
+      "siem": "elk, qradar, siem PT",
+      "network_diagram": "Hệ thống có 10 server đặt sau 1 con Firewall Cisco, chia làm mạng User và mạng Server riêng, có xài VPN"
+    },
+    "compliance": {
+      "iso_status": "Đang triển khai",
+      "existing_policies": [
+        "Kiểm soát truy cập",
+        "Backup và khôi phục",
+        "BYOD / Thiết bị di động",
+        "Mã hóa dữ liệu",
+        "Quản lý nhà cung cấp",
+        "Clean desk policy",
+        "Chính sách ATTT tổng thể",
+        "Quản lý mật khẩu",
+        "Quản lý sự cố",
+        "Phân loại thông tin",
+        "Đào tạo nhận thức ATTT",
+        "Kinh doanh liên tục (BCP)"
+      ],
+      "incidents_12m": 0
+    },
+    "notes": ""
+  },
+  "created_at": "2026-03-02T23:41:14.558990+00:00",
+  "updated_at": "2026-03-02T23:46:14.843077+00:00",
+  "result": {
+    "report": "Lỗi tạo báo cáo: HTTPConnectionPool(host='localai', port=8080): Read timed out. (read timeout=300)",
+    "details": [],
+    "error": true
+  }
+}

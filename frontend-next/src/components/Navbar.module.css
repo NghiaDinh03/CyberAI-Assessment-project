@@ -91,6 +91,8 @@
     background: rgba(16, 185, 129, 0.08);
     border: 1px solid rgba(16, 185, 129, 0.15);
     flex-shrink: 0;
+    height: 28px;
+    box-sizing: border-box;
 }
 
 .dot {
@@ -114,6 +116,76 @@
     }
 }
 
+.rightSection {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 100%;
+}
+
+.clock {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    padding: 4px 10px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    height: 28px;
+    box-sizing: border-box;
+}
+
+.clock:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #f8fafc;
+}
+
+.clockIcon {
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+.timeWrapper {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.timeText {
+    font-family: monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    letter-spacing: 0.5px;
+}
+
+.dateText {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.tzLabel {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+}
+
 @media (max-width: 768px) {
     .inner {
         padding: 0 1rem;
@@ -127,11 +199,19 @@
         padding: 7px 10px;
     }
 
-    .status span {
+    .status {
         display: none;
     }
 
     .brandName {
+        display: none;
+    }
+
+    .clock {
+        padding: 4px 8px;
+    }
+
+    .tzLabel {
         display: none;
     }
 }

@@ -22,9 +22,19 @@ function setCachedStats(data) {
 }
 
 export default function SystemStats() {
-    const [stats, setStats] = useState(() => getCachedStats())
-    const [loading, setLoading] = useState(!getCachedStats())
+    const [stats, setStats] = useState(null)
+    const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+        const cached = getCachedStats()
+        if (cached) {
+            setStats(cached)
+            setLoading(false)
+        }
+    }, [])
 
     const fetchStats = useCallback(async (isBackground = false) => {
         if (isBackground) setRefreshing(true)
@@ -66,22 +76,26 @@ export default function SystemStats() {
         return days > 0 ? `${days}d ${hours}h` : `${hours}h`
     }
 
-    if (loading && !stats) {
+    if (!mounted || (loading && !stats)) {
         return (
-            <div className={styles.grid}>
-                {[1, 2, 3, 4].map(i => (
-                    <div key={i} className={styles.card}>
-                        <div className={styles.skeleton} />
-                    </div>
-                ))}
+            <div className={styles.wrapper}>
+                <div className={styles.grid}>
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className={styles.card}>
+                            <div className={styles.skeleton} style={{ height: '80%' }} />
+                        </div>
+                    ))}
+                </div>
             </div>
         )
     }
 
     if (!stats) {
         return (
-            <div className={styles.errorCard}>
-                <p>⚠️ Không thể kết nối hệ thống</p>
+            <div className={styles.wrapper}>
+                <div className={styles.errorCard}>
+                    <p>⚠️ Không thể kết nối hệ thống</p>
+                </div>
             </div>
         )
     }

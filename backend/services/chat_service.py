@@ -1,8 +1,11 @@
 ﻿import requests
 import os
 import re
-from typing import Dict, Any
+import json
+import threading
+from typing import Dict, Any, Generator
 from services.model_router import route_model
+from services.web_search import WebSearch
 from repositories.vector_store import VectorStore
 
 
@@ -19,11 +22,14 @@ class ChatService:
     )
 
     _vector_store = None
+    _vs_lock = threading.Lock()
 
     @classmethod
     def get_vector_store(cls):
         if cls._vector_store is None:
-            cls._vector_store = VectorStore()
+            with cls._vs_lock:
+                if cls._vector_store is None:
+                    cls._vector_store = VectorStore()
         return cls._vector_store
 
     @staticmethod
@@ -46,7 +52,7 @@ class ChatService:
         response = requests.post(
             f"{ChatService.LOCALAI_URL}/v1/chat/completions",
             json=payload,
-            timeout=300
+            timeout=900
         )
 
         if response.status_code == 200:
@@ -60,14 +66,65 @@ class ChatService:
             raise Exception(f"LocalAI error ({response.status_code}): {response.text[:200]}")
 
     @staticmethod
+    def _build_messages(message: str, routing: dict, context: str = "", search_context: str = ""):
+        use_rag = routing["use_rag"]
+        use_search = routing.get("use_search", False)
+
+        if use_rag and context:
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        "Bạn là chuyên gia đánh giá ISO 27001:2022. "
+                        "Trả lời chính xác dựa trên tài liệu chuẩn được cung cấp. "
+                        "Không bịa thêm thông tin ngoài tài liệu. "
+                        "Nếu không tìm thấy thông tin, hãy nói rõ."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Tài liệu tham chiếu:\n{context}\n\nCâu hỏi: {message}"
+                }
+            ]
+        elif use_search and search_context:
+            return [
+                {
+                    "role": "system",
+                    "content": (
+                        "Bạn là trợ lý AI thông minh có khả năng phân tích thông tin từ internet. "
+                        "Dưới đây là kết quả tìm kiếm web. Hãy tổng hợp và trả lời chính xác dựa trên những nguồn này. "
+                        "Trích dẫn nguồn URL khi cần. Trả lời bằng tiếng Việt."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Kết quả tìm kiếm:\n{search_context}\n\nCâu hỏi: {message}"
+                }
+            ]
+        else:
+            return [
+                {
+                    "role": "system",
+                    "content": "Bạn là trợ lý AI thông minh. Trả lời bằng tiếng Việt, rõ ràng và chính xác."
+                },
+                {
+                    "role": "user",
+                    "content": message
+                }
+            ]
+
+    @staticmethod
     def generate_response(message: str, session_id: str = "default") -> Dict[str, Any]:
         try:
             routing = route_model(message)
             model_name = routing["model"]
             use_rag = routing["use_rag"]
+            use_search = routing.get("use_search", False)
 
             context = ""
+            search_context = ""
             sources = []
+            web_sources = []
 
             if use_rag:
                 vs = ChatService.get_vector_store()
@@ -76,34 +133,13 @@ class ChatService:
                     context = "\n\n---\n\n".join([r["text"] for r in results])
                     sources = [r.get("source", "") for r in results]
 
-            if use_rag and context:
-                messages = [
-                    {
-                        "role": "system",
-                        "content": (
-                            "Bạn là chuyên gia đánh giá ISO 27001:2022. "
-                            "Trả lời chính xác dựa trên tài liệu chuẩn được cung cấp. "
-                            "Không bịa thêm thông tin ngoài tài liệu. "
-                            "Nếu không tìm thấy thông tin, hãy nói rõ."
-                        )
-                    },
-                    {
-                        "role": "user",
-                        "content": f"Tài liệu tham chiếu:\n{context}\n\nCâu hỏi: {message}"
-                    }
-                ]
-            else:
-                messages = [
-                    {
-                        "role": "system",
-                        "content": "Bạn là trợ lý AI thông minh. Trả lời bằng tiếng Việt, rõ ràng và chính xác."
-                    },
-                    {
-                        "role": "user",
-                        "content": message
-                    }
-                ]
+            if use_search:
+                search_results = WebSearch.search(message, max_results=5)
+                if search_results:
+                    search_context = WebSearch.format_context(search_results)
+                    web_sources = [{"title": r["title"], "url": r["url"]} for r in search_results]
 
+            messages = ChatService._build_messages(message, routing, context, search_context)
             result = ChatService._call_model(model_name, messages)
 
             return {
@@ -112,7 +148,9 @@ class ChatService:
                 "route": routing["route"],
                 "session_id": session_id,
                 "rag_used": use_rag,
+                "search_used": use_search,
                 "sources": list(set(sources)) if sources else [],
+                "web_sources": web_sources,
                 "tokens": {
                     "prompt_tokens": result["usage"].get("prompt_tokens", 0),
                     "completion_tokens": result["usage"].get("completion_tokens", 0),
@@ -145,102 +183,132 @@ class ChatService:
             }
 
     @staticmethod
+    def generate_response_stream(message: str, session_id: str = "default") -> Generator:
+        try:
+            yield {"step": "routing", "message": "Đang phân tích câu hỏi..."}
+
+            routing = route_model(message)
+            model_name = routing["model"]
+            use_rag = routing["use_rag"]
+            use_search = routing.get("use_search", False)
+
+            context = ""
+            search_context = ""
+            sources = []
+            web_sources = []
+
+            if use_rag:
+                yield {"step": "rag", "message": "📚 Đang tra cứu tài liệu nội bộ..."}
+                vs = ChatService.get_vector_store()
+                results = vs.search(message, top_k=5)
+                if results:
+                    context = "\n\n---\n\n".join([r["text"] for r in results])
+                    sources = [r.get("source", "") for r in results]
+
+            if use_search:
+                yield {"step": "searching", "message": "🔍 Đang tìm kiếm trên internet..."}
+                search_results = WebSearch.search(message, max_results=5)
+                if search_results:
+                    search_context = WebSearch.format_context(search_results)
+                    web_sources = [{"title": r["title"], "url": r["url"]} for r in search_results]
+                    yield {"step": "search_done", "message": f"✅ Tìm thấy {len(search_results)} kết quả, đang phân tích..."}
+
+            yield {"step": "thinking", "message": "🤖 Đang tạo câu trả lời..."}
+
+            messages = ChatService._build_messages(message, routing, context, search_context)
+            result = ChatService._call_model(model_name, messages)
+
+            yield {
+                "step": "done",
+                "data": {
+                    "response": result["content"] or "Model không trả về response.",
+                    "model": model_name,
+                    "route": routing["route"],
+                    "session_id": session_id,
+                    "rag_used": use_rag,
+                    "search_used": use_search,
+                    "sources": list(set(sources)) if sources else [],
+                    "web_sources": web_sources,
+                    "tokens": {
+                        "prompt_tokens": result["usage"].get("prompt_tokens", 0),
+                        "completion_tokens": result["usage"].get("completion_tokens", 0),
+                        "total_tokens": result["usage"].get("total_tokens", 0)
+                    }
+                }
+            }
+
+        except Exception as e:
+            yield {
+                "step": "error",
+                "data": {
+                    "response": f"Lỗi: {str(e)}",
+                    "model": ChatService.MODEL_NAME,
+                    "session_id": session_id,
+                    "error": True
+                }
+            }
+
+    @staticmethod
     def assess_system(system_data: Dict[str, Any]) -> Dict[str, Any]:
         vs = ChatService.get_vector_store()
 
-        categories = {
-            "organization": "A.5 Kiểm soát tổ chức chính sách ATTT",
-            "people": "A.6 Kiểm soát con người đào tạo nhận thức",
-            "physical": "A.7 Kiểm soát vật lý server room camera",
-            "technology": "A.8 Kiểm soát công nghệ firewall backup mã hóa"
-        }
+        search_query = "A.5 Tổ chức nội bộ chính sách, A.6 Nhân sự đào tạo, A.7 Vật lý hệ thống camera quản lý, A.8 Công nghệ mạng firewall mã hóa backup"
+        context_results = vs.search(search_query, top_k=6)
+        context = "\n---\n".join([r["text"] for r in context_results])
 
-        assessment_results = []
-        total_score = 0
+        system_info = ""
+        for key, value in system_data.items():
+            system_info += f"### {key.upper()}\n"
+            if isinstance(value, dict):
+                for k, v in value.items():
+                    system_info += f"- {k}: {v}\n"
+            elif isinstance(value, list):
+                system_info += f"- {key}: {', '.join(str(v) for v in value)}\n"
+            else:
+                system_info += f"- {key}: {value}\n"
 
-        for category, search_query in categories.items():
-            context_results = vs.search(search_query, top_k=3)
-            context = "\n".join([r["text"] for r in context_results])
-
-            system_info = ""
-            for key, value in system_data.items():
-                if isinstance(value, dict):
-                    for k, v in value.items():
-                        system_info += f"- {k}: {v}\n"
-                elif isinstance(value, list):
-                    system_info += f"- {key}: {', '.join(str(v) for v in value)}\n"
-                else:
-                    system_info += f"- {key}: {value}\n"
-
-            messages = [
-                {
-                    "role": "system",
-                    "content": (
-                        "Bạn là auditor ISO 27001:2022. Đánh giá hệ thống dựa trên tiêu chuẩn. "
-                        "Trả lời theo format:\n"
-                        "ĐIỂM: [số từ 0-100]\n"
-                        "ĐÁNH GIÁ: [Tuân thủ/Một phần/Không tuân thủ]\n"
-                        "PHÁT HIỆN: [danh sách findings]\n"
-                        "KHUYẾN NGHỊ: [danh sách recommendations]"
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Tiêu chuẩn ISO 27001:\n{context}\n\n"
-                        f"Thông tin hệ thống:\n{system_info}\n\n"
-                        f"Đánh giá nhóm: {category}"
-                    )
-                }
-            ]
-
-            security_model = os.getenv("SECURITY_MODEL_NAME", ChatService.MODEL_NAME)
-            try:
-                result = ChatService._call_model(security_model, messages, temperature=0.3)
-                assessment_results.append({
-                    "category": category,
-                    "analysis": result["content"]
-                })
-            except Exception as e:
-                assessment_results.append({
-                    "category": category,
-                    "analysis": f"Lỗi phân tích: {str(e)}"
-                })
-
-        combined_analysis = "\n\n".join([
-            f"### {r['category'].upper()}\n{r['analysis']}"
-            for r in assessment_results
-        ])
-
-        summary_messages = [
+        messages = [
             {
                 "role": "system",
                 "content": (
-                    "Bạn là chuyên gia ISO 27001. Tổng hợp kết quả đánh giá và viết báo cáo bằng tiếng Việt. "
-                    "Bao gồm: điểm tổng thể, xếp hạng (A/B/C/D/F), các phát hiện quan trọng, "
-                    "khuyến nghị ưu tiên, và lộ trình cải thiện."
+                    "Bạn là chuyên gia Auditor ISO 27001:2022. Đánh giá TỔNG THỂ hệ thống.\n"
+                    "Trả lời bằng tiếng Việt chuyên nghiệp, theo format sau:\n\n"
+                    "1. ĐIỂM TỔNG THỂ: [số từ 0-100] (Xếp hạng A/B/C/D/F)\n"
+                    "2. ĐÁNH GIÁ CHUNG: [Tuân thủ xuất sắc / Đạt yêu cầu cơ bản / Còn nhiều lỗ hổng]\n"
+                    "3. PHÂN TÍCH THEO NHÓM:\n"
+                    "   - Tổ chức (A.5): [Phát hiện & Nhận xét]\n"
+                    "   - Nhân sự (A.6): [Phát hiện & Nhận xét]\n"
+                    "   - Vật lý (A.7): [Phát hiện & Nhận xét]\n"
+                    "   - Công nghệ (A.8): [Phát hiện & Nhận xét]\n"
+                    "4. KHUYẾN NGHỊ ƯU TIÊN: [Danh sách ít nhất 3 hành động khắc phục cấp thiết nhất theo chuẩn ISO]"
                 )
             },
             {
                 "role": "user",
-                "content": f"Kết quả phân tích chi tiết:\n{combined_analysis}\n\nViết báo cáo tổng hợp."
+                "content": (
+                    f"Tiêu chuẩn ISO tham chiếu:\n{context}\n\n"
+                    f"Thông tin hệ thống cần đánh giá:\n{system_info}"
+                )
             }
         ]
 
+        security_model = os.getenv("SECURITY_MODEL_NAME", ChatService.MODEL_NAME)
+        
         try:
-            summary = ChatService._call_model(ChatService.MODEL_NAME, summary_messages, temperature=0.5)
+            result = ChatService._call_model(security_model, messages, temperature=0.3)
+            report_text = result["content"]
+            
             return {
-                "report": summary["content"],
-                "details": assessment_results,
+                "report": report_text,
+                "details": [],
                 "model_used": {
-                    "analysis": security_model,
-                    "summary": ChatService.MODEL_NAME
+                    "analysis_and_summary": security_model
                 }
             }
         except Exception as e:
             return {
                 "report": f"Lỗi tạo báo cáo: {str(e)}",
-                "details": assessment_results,
+                "details": [],
                 "error": True
             }
 

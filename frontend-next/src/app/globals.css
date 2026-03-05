@@ -86,12 +86,13 @@ h3 {
 }
 
 .section-title {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
   color: var(--text-dim);
-  margin-bottom: 1rem;
+  margin-bottom: 1.15rem;
+  padding-top: 0.25rem;
   display: flex;
   align-items: center;
   gap: 8px;

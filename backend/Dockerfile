@@ -2,7 +2,6 @@
 
 WORKDIR /app
 
-# Tăng timeout cho pip
 ENV PIP_DEFAULT_TIMEOUT=300
 
 COPY requirements.txt .
