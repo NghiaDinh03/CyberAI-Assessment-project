@@ -66,6 +66,78 @@
     cursor: not-allowed;
 }
 
+.searchWrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+
+.searchBox {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    max-width: 420px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 0 12px;
+    transition: border-color 0.15s;
+}
+
+.searchBox:focus-within {
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.searchIcon {
+    font-size: 0.8rem;
+    opacity: 0.5;
+    margin-right: 8px;
+}
+
+.searchInput {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text-primary, #F1F5F9);
+    font-size: 0.78rem;
+    font-family: inherit;
+    padding: 8px 0;
+}
+
+.searchInput::placeholder {
+    color: var(--text-dim, #64748B);
+}
+
+.searchClear {
+    background: none;
+    border: none;
+    color: var(--text-dim, #64748B);
+    cursor: pointer;
+    font-size: 0.72rem;
+    padding: 4px;
+    font-family: inherit;
+}
+
+.searchClear:hover {
+    color: var(--text-primary, #F1F5F9);
+}
+
+.searchStatus {
+    font-size: 0.68rem;
+    color: var(--text-dim, #64748B);
+    white-space: nowrap;
+}
+
+.cardCategory {
+    font-size: 0.6rem;
+    color: var(--accent-blue, #60A5FA);
+    background: rgba(59, 130, 246, 0.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
 .tabs {
     display: flex;
     gap: 4px;

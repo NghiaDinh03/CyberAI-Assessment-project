@@ -9,6 +9,8 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+LOCALAI_URL = os.getenv("LOCALAI_URL", "http://localai:8080")
+MODEL_NAME = os.getenv("MODEL_NAME", "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 CACHE_DIR = Path("/data/translations")
@@ -46,33 +48,60 @@ class TranslationService:
         return hashlib.md5(title.strip().lower().encode()).hexdigest()[:12]
 
     @staticmethod
-    def translate_batch(titles: List[str], category: str) -> Dict[str, str]:
+    def _build_prompt(titles: List[str]) -> str:
+        prompt = (
+            "Dịch các tiêu đề tin tức sau sang tiếng Việt. "
+            "Giữ nguyên tên riêng, thuật ngữ kỹ thuật. "
+            "Dịch tự nhiên, ngắn gọn. "
+            "Trả về duy nhất JSON array.\n\n"
+        )
+        for i, t in enumerate(titles):
+            prompt += f"{i+1}. {t}\n"
+        prompt += '\nJSON: ["bản dịch 1", "bản dịch 2", ...]'
+        return prompt
+
+    @staticmethod
+    def _parse_response(text: str) -> List[str]:
+        text = text.strip()
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+            text = text.rsplit("```", 1)[0]
+        text = text.strip()
+
+        start = text.find("[")
+        end = text.rfind("]")
+        if start != -1 and end != -1:
+            text = text[start:end + 1]
+
+        return json.loads(text)
+
+    @staticmethod
+    def _translate_via_localai(titles: List[str]) -> List[str]:
+        prompt = TranslationService._build_prompt(titles)
+        resp = requests.post(
+            f"{LOCALAI_URL}/v1/chat/completions",
+            json={
+                "model": MODEL_NAME,
+                "messages": [
+                    {"role": "system", "content": "Bạn là dịch giả chuyên nghiệp. Chỉ trả về JSON array."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.1,
+                "max_tokens": 1024
+            },
+            timeout=300
+        )
+        resp.raise_for_status()
+        text = resp.json()["choices"][0]["message"]["content"]
+        return TranslationService._parse_response(text)
+
+    @staticmethod
+    def _translate_via_gemini(titles: List[str]) -> List[str]:
         if not GEMINI_API_KEY:
-            return {}
-
-        cache = TranslationService._load_cache(category)
-
-        missing = []
-        for t in titles:
-            key = TranslationService._make_key(t)
-            if key not in cache:
-                missing.append(t)
-
-        if not missing:
-            return cache
-
-        try:
-            prompt = (
-                "Dịch các tiêu đề tin tức sau sang tiếng Việt. "
-                "Giữ nguyên tên riêng, thuật ngữ kỹ thuật. "
-                "Dịch tự nhiên, ngắn gọn, dễ hiểu. "
-                "Trả về JSON array theo thứ tự tương ứng.\n\n"
-            )
-            for i, t in enumerate(missing):
-                prompt += f"{i+1}. {t}\n"
-
-            prompt += '\nTrả về duy nhất JSON array: ["bản dịch 1", "bản dịch 2", ...]'
-
+            raise ValueError("GEMINI_API_KEY not set")
+        prompt = TranslationService._build_prompt(titles)
+        resp = None
+        for attempt in range(3):
             resp = requests.post(
                 f"{GEMINI_URL}?key={GEMINI_API_KEY}",
                 json={
@@ -81,27 +110,41 @@ class TranslationService:
                 },
                 timeout=30
             )
-            resp.raise_for_status()
+            if resp.status_code == 429:
+                time.sleep(5 * (attempt + 1))
+                continue
+            break
+        resp.raise_for_status()
+        text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+        return TranslationService._parse_response(text)
 
-            result = resp.json()
-            text = result["candidates"][0]["content"]["parts"][0]["text"]
-            text = text.strip()
-            if text.startswith("```"):
-                text = text.split("\n", 1)[1] if "\n" in text else text[3:]
-                text = text.rsplit("```", 1)[0]
-            text = text.strip()
+    @staticmethod
+    def translate_batch(titles: List[str], category: str) -> Dict[str, str]:
+        cache = TranslationService._load_cache(category)
 
-            translated = json.loads(text)
+        missing = [t for t in titles if TranslationService._make_key(t) not in cache]
+        if not missing:
+            return cache
 
-            for i, t in enumerate(missing):
-                key = TranslationService._make_key(t)
-                if i < len(translated):
-                    cache[key] = translated[i]
-
-            TranslationService._save_cache(category, cache)
-
+        translated = []
+        try:
+            translated = TranslationService._translate_via_gemini(missing)
+            logger.info(f"Dịch {len(missing)} titles qua Gemini")
         except Exception as e:
-            logger.warning(f"Gemini translation thất bại: {e}")
+            logger.info(f"Gemini không khả dụng ({e}), chuyển sang LocalAI")
+            try:
+                translated = TranslationService._translate_via_localai(missing)
+                logger.info(f"Dịch {len(missing)} titles qua LocalAI")
+            except Exception as e2:
+                logger.warning(f"Translation thất bại: {e2}")
+
+        for i, t in enumerate(missing):
+            key = TranslationService._make_key(t)
+            if i < len(translated):
+                cache[key] = translated[i]
+
+        if translated:
+            TranslationService._save_cache(category, cache)
 
         return cache
 

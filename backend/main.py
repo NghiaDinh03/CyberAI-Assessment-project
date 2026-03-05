@@ -25,6 +25,12 @@ app.include_router(iso27001.router, prefix="/api", tags=["ISO27001"])
 app.include_router(system.router, prefix="/api", tags=["System"])
 app.include_router(news.router, prefix="/api", tags=["News"])
 
+
+@app.on_event("startup")
+def on_startup():
+    from services.news_service import start_bg_worker
+    start_bg_worker()
+
 @app.get("/")
 def root():
     return {

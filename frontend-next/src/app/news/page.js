@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import styles from './page.module.css'
 
 const CATEGORIES = [
@@ -15,6 +15,10 @@ export default function NewsPage() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
     const [lastUpdate, setLastUpdate] = useState('')
+    const [searchQuery, setSearchQuery] = useState('')
+    const [searchResults, setSearchResults] = useState(null)
+    const [searching, setSearching] = useState(false)
+    const searchTimerRef = useRef(null)
 
     const fetchNews = useCallback(async (category) => {
         setLoading(true)
@@ -37,6 +41,23 @@ export default function NewsPage() {
         }
     }, [])
 
+    const searchNews = useCallback(async (query) => {
+        if (!query.trim()) {
+            setSearchResults(null)
+            return
+        }
+        setSearching(true)
+        try {
+            const res = await fetch(`/api/news/search?q=${encodeURIComponent(query)}&limit=20`)
+            const data = await res.json()
+            setSearchResults(data)
+        } catch {
+            setSearchResults({ articles: [], count: 0 })
+        } finally {
+            setSearching(false)
+        }
+    }, [])
+
     useEffect(() => {
         fetchNews(activeTab)
     }, [activeTab, fetchNews])
@@ -45,6 +66,25 @@ export default function NewsPage() {
         const interval = setInterval(() => fetchNews(activeTab), 300000)
         return () => clearInterval(interval)
     }, [activeTab, fetchNews])
+
+    const handleSearchInput = (e) => {
+        const val = e.target.value
+        setSearchQuery(val)
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+        if (!val.trim()) {
+            setSearchResults(null)
+            return
+        }
+        searchTimerRef.current = setTimeout(() => searchNews(val), 500)
+    }
+
+    const clearSearch = () => {
+        setSearchQuery('')
+        setSearchResults(null)
+    }
+
+    const displayArticles = searchResults ? searchResults.articles : articles
+    const isSearchMode = searchResults !== null
 
     return (
         <div className={styles.container}>
@@ -56,42 +96,66 @@ export default function NewsPage() {
                 <div className={styles.headerRight}>
                     {lastUpdate && <span className={styles.lastUpdate}>{lastUpdate}</span>}
                     <button className={styles.refreshBtn} onClick={() => fetchNews(activeTab)} disabled={loading}>
-                        {loading ? '⏳' : '🔄'} Làm mới
+                        {loading ? '⏳' : '🔄'}
                     </button>
                 </div>
             </div>
 
-            <div className={styles.tabs}>
-                {CATEGORIES.map(cat => (
-                    <button
-                        key={cat.id}
-                        className={`${styles.tab} ${activeTab === cat.id ? styles.tabActive : ''}`}
-                        onClick={() => setActiveTab(cat.id)}
-                    >
-                        <span className={styles.tabIcon}>{cat.icon}</span>
-                        <span className={styles.tabName}>{cat.name}</span>
-                    </button>
-                ))}
+            <div className={styles.searchWrap}>
+                <div className={styles.searchBox}>
+                    <span className={styles.searchIcon}>🔍</span>
+                    <input
+                        className={styles.searchInput}
+                        type="text"
+                        placeholder="Tìm kiếm tin tức..."
+                        value={searchQuery}
+                        onChange={handleSearchInput}
+                    />
+                    {searchQuery && (
+                        <button className={styles.searchClear} onClick={clearSearch}>✕</button>
+                    )}
+                </div>
+                {searching && <span className={styles.searchStatus}>Đang tìm...</span>}
+                {isSearchMode && !searching && (
+                    <span className={styles.searchStatus}>
+                        {searchResults.count} kết quả cho &ldquo;{searchQuery}&rdquo;
+                    </span>
+                )}
             </div>
 
+            {!isSearchMode && (
+                <div className={styles.tabs}>
+                    {CATEGORIES.map(cat => (
+                        <button
+                            key={cat.id}
+                            className={`${styles.tab} ${activeTab === cat.id ? styles.tabActive : ''}`}
+                            onClick={() => setActiveTab(cat.id)}
+                        >
+                            <span className={styles.tabIcon}>{cat.icon}</span>
+                            <span className={styles.tabName}>{cat.name}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+
             <div className={styles.content}>
-                {loading ? (
+                {(loading && !isSearchMode) ? (
                     <div className={styles.loadingWrap}>
                         <div className={styles.spinner} />
                         <p>Đang tải tin tức...</p>
                     </div>
-                ) : error ? (
+                ) : error && !isSearchMode ? (
                     <div className={styles.errorWrap}>
                         <p>⚠️ {error}</p>
                         <button className={styles.retryBtn} onClick={() => fetchNews(activeTab)}>Thử lại</button>
                     </div>
-                ) : articles.length === 0 ? (
+                ) : displayArticles.length === 0 ? (
                     <div className={styles.emptyWrap}>
-                        <p>Không có tin tức nào</p>
+                        <p>{isSearchMode ? 'Không tìm thấy kết quả' : 'Không có tin tức nào'}</p>
                     </div>
                 ) : (
                     <div className={styles.list}>
-                        {articles.map((article, i) => (
+                        {displayArticles.map((article, i) => (
                             <a
                                 key={i}
                                 href={article.url}
@@ -107,6 +171,11 @@ export default function NewsPage() {
                                     <div className={styles.cardMeta}>
                                         <span className={styles.cardSource}>{article.icon} {article.source}</span>
                                         {article.date && <span className={styles.cardDate}>{article.date}</span>}
+                                        {isSearchMode && article.category && (
+                                            <span className={styles.cardCategory}>
+                                                {CATEGORIES.find(c => c.id === article.category)?.name || article.category}
+                                            </span>
+                                        )}
                                     </div>
                                     {article.description && (
                                         <p className={styles.cardDesc}>{article.description}</p>
