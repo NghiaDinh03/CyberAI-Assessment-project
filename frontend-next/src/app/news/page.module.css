@@ -15,8 +15,9 @@
 
 .headerLeft {
     display: flex;
-    align-items: baseline;
-    gap: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
 }
 
 .title {

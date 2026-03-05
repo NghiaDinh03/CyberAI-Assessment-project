@@ -91,7 +91,7 @@ export default function NewsPage() {
             <div className={styles.header}>
                 <div className={styles.headerLeft}>
                     <h1 className={styles.title}>Tin tức</h1>
-                    <span className={styles.subtitle}>Cập nhật realtime từ các nguồn uy tín</span>
+                    <span className={styles.subtitle}>Tổng hợp tin tức thị trường, chứng khoán và an ninh mạng giúp AI phân tích</span>
                 </div>
                 <div className={styles.headerRight}>
                     {lastUpdate && <span className={styles.lastUpdate}>{lastUpdate}</span>}
