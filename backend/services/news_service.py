@@ -156,6 +156,20 @@ class NewsService:
         all_articles.sort(key=lambda x: x.get("date", ""), reverse=True)
         all_articles = all_articles[:limit]
 
+        if category in ("cybersecurity", "stocks_international"):
+            try:
+                from services.translation_service import TranslationService
+                en_titles = [a["title"] for a in all_articles if a.get("lang") == "en"]
+                if en_titles:
+                    trans_cache = TranslationService.translate_batch(en_titles, category)
+                    for article in all_articles:
+                        if article.get("lang") == "en":
+                            vi = TranslationService.get_translation(article["title"], trans_cache)
+                            if vi:
+                                article["title_vi"] = vi
+            except Exception as e:
+                logger.warning(f"Translation failed: {e}")
+
         result = {
             "articles": all_articles,
             "category": category,

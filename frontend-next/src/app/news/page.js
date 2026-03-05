@@ -29,7 +29,7 @@ export default function NewsPage() {
                 setArticles(data.articles || [])
                 setLastUpdate(data.cached_at || '')
             }
-        } catch (err) {
+        } catch {
             setError('Không thể tải tin tức')
             setArticles([])
         } finally {
@@ -42,27 +42,19 @@ export default function NewsPage() {
     }, [activeTab, fetchNews])
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            fetchNews(activeTab)
-        }, 300000)
+        const interval = setInterval(() => fetchNews(activeTab), 300000)
         return () => clearInterval(interval)
     }, [activeTab, fetchNews])
-
-    const switchTab = (id) => {
-        setActiveTab(id)
-    }
 
     return (
         <div className={styles.container}>
             <div className={styles.header}>
                 <div className={styles.headerLeft}>
                     <h1 className={styles.title}>Tin tức</h1>
-                    <p className={styles.subtitle}>Cập nhật realtime từ các nguồn uy tín</p>
+                    <span className={styles.subtitle}>Cập nhật realtime từ các nguồn uy tín</span>
                 </div>
                 <div className={styles.headerRight}>
-                    {lastUpdate && (
-                        <span className={styles.lastUpdate}>Cập nhật: {lastUpdate}</span>
-                    )}
+                    {lastUpdate && <span className={styles.lastUpdate}>{lastUpdate}</span>}
                     <button className={styles.refreshBtn} onClick={() => fetchNews(activeTab)} disabled={loading}>
                         {loading ? '⏳' : '🔄'} Làm mới
                     </button>
@@ -74,7 +66,7 @@ export default function NewsPage() {
                     <button
                         key={cat.id}
                         className={`${styles.tab} ${activeTab === cat.id ? styles.tabActive : ''}`}
-                        onClick={() => switchTab(cat.id)}
+                        onClick={() => setActiveTab(cat.id)}
                     >
                         <span className={styles.tabIcon}>{cat.icon}</span>
                         <span className={styles.tabName}>{cat.name}</span>
@@ -98,7 +90,7 @@ export default function NewsPage() {
                         <p>Không có tin tức nào</p>
                     </div>
                 ) : (
-                    <div className={styles.grid}>
+                    <div className={styles.list}>
                         {articles.map((article, i) => (
                             <a
                                 key={i}
@@ -107,23 +99,24 @@ export default function NewsPage() {
                                 rel="noopener noreferrer"
                                 className={styles.card}
                             >
-                                <div className={styles.cardHeader}>
-                                    <span className={styles.cardSource}>
-                                        {article.icon} {article.source}
-                                    </span>
-                                    {article.date && (
-                                        <span className={styles.cardDate}>{article.date}</span>
+                                <div className={styles.cardBody}>
+                                    <h3 className={styles.cardTitle}>{article.title}</h3>
+                                    {article.title_vi && (
+                                        <p className={styles.cardTitleVi}>{article.title_vi}</p>
+                                    )}
+                                    <div className={styles.cardMeta}>
+                                        <span className={styles.cardSource}>{article.icon} {article.source}</span>
+                                        {article.date && <span className={styles.cardDate}>{article.date}</span>}
+                                    </div>
+                                    {article.description && (
+                                        <p className={styles.cardDesc}>{article.description}</p>
                                     )}
                                 </div>
-                                <h3 className={styles.cardTitle}>{article.title}</h3>
-                                {article.description && (
-                                    <p className={styles.cardDesc}>{article.description}</p>
-                                )}
-                                <div className={styles.cardFooter}>
+                                <div className={styles.cardRight}>
                                     <span className={styles.cardLang}>
-                                        {article.lang === 'vi' ? '🇻🇳 Tiếng Việt' : '🌐 English'}
+                                        {article.lang === 'vi' ? '🇻🇳' : '🌐'}
                                     </span>
-                                    <span className={styles.cardLink}>Đọc thêm →</span>
+                                    <span className={styles.cardLink}>→</span>
                                 </div>
                             </a>
                         ))}
