@@ -18,11 +18,36 @@ export default function NewsPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [searchResults, setSearchResults] = useState(null)
     const [searching, setSearching] = useState(false)
+    const [aiStatus, setAiStatus] = useState('Đang rảnh')
     const searchTimerRef = useRef(null)
 
     // Voice & Summary states
     const [audioData, setAudioData] = useState({}) // { [url]: { status: 'loading'|'ready'|'playing'|'error', audioUrl: '', text: '' } }
     const audioRef = useRef(null)
+    const [expandedArticles, setExpandedArticles] = useState({})
+    const [isPlayAll, setIsPlayAll] = useState(false)
+    const playStateRef = useRef({ isPlayAll: false, currentUrl: null, articles: [] })
+    const forcePlayRef = useRef(null)
+
+    const playNext = useCallback(() => {
+        const state = playStateRef.current
+        if (!state.isPlayAll || !state.currentUrl) return
+        const idx = state.articles.findIndex(a => a.url === state.currentUrl)
+        if (idx >= 0) {
+            let nextArt = null
+            for (let i = idx + 1; i < state.articles.length; i++) {
+                if (state.articles[i].audio_cached || state.articles[i].summary_text) {
+                    nextArt = state.articles[i]
+                    break
+                }
+            }
+            if (nextArt) {
+                if (forcePlayRef.current) forcePlayRef.current(nextArt)
+            } else {
+                setIsPlayAll(false)
+            }
+        }
+    }, [])
 
     useEffect(() => {
         audioRef.current = new Audio()
@@ -34,29 +59,53 @@ export default function NewsPage() {
                 }
                 return next
             })
+            playNext()
         }
-    }, [])
+    }, [playNext])
 
-    const togglePlay = async (e, article) => {
-        e.preventDefault()
+    const togglePlay = async (e, article, forcePlay = false) => {
+        if (e) e.preventDefault()
         const data = audioData[article.url]
 
-        if (data?.status === 'playing') {
+        if (data?.status === 'playing' && !forcePlay) {
             audioRef.current.pause()
             setAudioData(prev => ({ ...prev, [article.url]: { ...prev[article.url], status: 'ready' } }))
+            playStateRef.current.currentUrl = null
             return
         }
 
-        if (data?.status === 'ready') {
+        playStateRef.current.currentUrl = article.url
+
+        if (data?.status === 'ready' || article.audio_cached) {
+            // Check if we need to fetch the audio url (if cached but not in audioData)
+            let finalUrl = data?.audioUrl
+            let finalText = data?.text || article.summary_text
+
+            if (!finalUrl && article.audio_cached) {
+                try {
+                    setAudioData(prev => ({ ...prev, [article.url]: { status: 'loading' } }))
+                    const res = await fetch('/api/news/summarize', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: article.url, lang: article.lang, title: article.title_vi || article.title })
+                    })
+                    const result = await res.json()
+                    finalUrl = result.audio_url
+                    finalText = result.summary_vi
+                } catch (err) {
+                    setAudioData(prev => ({ ...prev, [article.url]: { status: 'error' } }))
+                    return
+                }
+            }
+
             setAudioData(prev => {
                 const next = { ...prev }
-                for (let k in next) { if (next[k].status === 'playing') next[k].status = 'ready' }
-                next[article.url].status = 'playing'
+                for (let k in next) { if (next[k]?.status === 'playing') next[k].status = 'ready' }
+                next[article.url] = { status: 'playing', audioUrl: finalUrl, text: finalText }
                 return next
             })
-            // Force replay from start if needed or resume
-            if (!audioRef.current.src.includes(data.audioUrl)) {
-                audioRef.current.src = data.audioUrl
+            if (!audioRef.current.src.includes(finalUrl)) {
+                audioRef.current.src = finalUrl
             }
             audioRef.current.play()
             return
@@ -67,14 +116,14 @@ export default function NewsPage() {
             const res = await fetch('/api/news/summarize', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: article.url, lang: article.lang })
+                body: JSON.stringify({ url: article.url, lang: article.lang, title: article.title_vi || article.title })
             })
             const result = await res.json()
             if (result.error) throw new Error(result.error)
 
             setAudioData(prev => {
                 const next = { ...prev }
-                for (let k in next) { if (next[k].status === 'playing') next[k].status = 'ready' }
+                for (let k in next) { if (next[k]?.status === 'playing') next[k].status = 'ready' }
                 next[article.url] = { status: 'playing', audioUrl: result.audio_url, text: result.summary_vi }
                 return next
             })
@@ -86,6 +135,10 @@ export default function NewsPage() {
             setAudioData(prev => ({ ...prev, [article.url]: { status: 'error' } }))
         }
     }
+
+    useEffect(() => {
+        forcePlayRef.current = (article) => togglePlay(null, article, true)
+    }, [togglePlay])
 
     const fetchNews = useCallback(async (category, isBackground = false) => {
         if (!isBackground) setLoading(true)
@@ -129,10 +182,28 @@ export default function NewsPage() {
         fetchNews(activeTab)
     }, [activeTab, fetchNews])
 
+    const displayArticles = searchResults ? searchResults.articles : articles
+    const isSearchMode = searchResults !== null
+
     const articlesRef = useRef(articles)
     useEffect(() => {
-        articlesRef.current = articles
-    }, [articles])
+        articlesRef.current = displayArticles
+        playStateRef.current.articles = displayArticles
+        playStateRef.current.isPlayAll = isPlayAll
+    }, [displayArticles, isPlayAll])
+
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch('/api/news/ai-status')
+                const data = await res.json()
+                setAiStatus(data.status || 'Đang rảnh')
+            } catch (err) {
+                console.error("AI status error:", err)
+            }
+        }, 2000)
+        return () => clearInterval(interval)
+    }, [])
 
     useEffect(() => {
         let tick = 0;
@@ -164,9 +235,6 @@ export default function NewsPage() {
         setSearchResults(null)
     }
 
-    const displayArticles = searchResults ? searchResults.articles : articles
-    const isSearchMode = searchResults !== null
-
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -175,6 +243,12 @@ export default function NewsPage() {
                     <span className={styles.subtitle}>Tổng hợp tin tức thị trường, chứng khoán và an ninh mạng giúp AI phân tích</span>
                 </div>
                 <div className={styles.headerRight}>
+                    {aiStatus !== 'Đang rảnh' && (
+                        <div className={styles.aiMonitor}>
+                            <span className={styles.pulse}></span>
+                            <span className={styles.statusText}>🤖 {aiStatus}</span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -201,17 +275,40 @@ export default function NewsPage() {
             </div>
 
             {!isSearchMode && (
-                <div className={styles.tabs}>
-                    {CATEGORIES.map(cat => (
-                        <button
-                            key={cat.id}
-                            className={`${styles.tab} ${activeTab === cat.id ? styles.tabActive : ''}`}
-                            onClick={() => setActiveTab(cat.id)}
-                        >
-                            <span className={styles.tabIcon}>{cat.icon}</span>
-                            <span className={styles.tabName}>{cat.name}</span>
-                        </button>
-                    ))}
+                <div className={styles.tabsContainer}>
+                    <div className={styles.tabs}>
+                        {CATEGORIES.map(cat => (
+                            <button
+                                key={cat.id}
+                                className={`${styles.tab} ${activeTab === cat.id ? styles.tabActive : ''}`}
+                                onClick={() => setActiveTab(cat.id)}
+                            >
+                                <span className={styles.tabIcon}>{cat.icon}</span>
+                                <span className={styles.tabName}>{cat.name}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    <button
+                        className={styles.playAllBtn}
+                        onClick={() => {
+                            if (isPlayAll) {
+                                setIsPlayAll(false)
+                                audioRef.current.pause()
+                                setAudioData(prev => {
+                                    const next = { ...prev }
+                                    for (let k in next) { if (next[k]?.status === 'playing') next[k].status = 'ready' }
+                                    return next
+                                })
+                            } else {
+                                setIsPlayAll(true)
+                                const firstPlayable = displayArticles.find(a => a.audio_cached)
+                                if (firstPlayable) forcePlayRef.current(firstPlayable)
+                            }
+                        }}
+                    >
+                        {isPlayAll ? '⏹️ Dừng phát' : '▶️ Phát tất cả'}
+                    </button>
                 </div>
             )}
 
@@ -278,8 +375,22 @@ export default function NewsPage() {
                                         <p className={styles.cardDesc}>{article.description}</p>
                                     )}
                                     {(audioData[article.url]?.text || article.summary_text) && (
-                                        <div style={{ marginTop: '10px', padding: '10px', background: '#1e293b', borderRadius: '6px', fontSize: '14px', color: '#cbd5e1', borderLeft: '3px solid #3b82f6' }}>
-                                            🎙️ <b>AI tóm tắt:</b> {audioData[article.url]?.text || article.summary_text}
+                                        <div style={{ marginTop: '5px' }}>
+                                            <button
+                                                className={styles.expandBtn}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    setExpandedArticles(prev => ({ ...prev, [article.url]: !prev[article.url] }));
+                                                }}
+                                            >
+                                                {expandedArticles[article.url] ? '▲ Thu gọn tóm tắt' : '▼ Xem nội dung tóm tắt'}
+                                            </button>
+
+                                            {expandedArticles[article.url] && (
+                                                <div style={{ marginTop: '8px', padding: '10px', background: '#1e293b', borderRadius: '6px', fontSize: '13px', color: '#cbd5e1', borderLeft: '3px solid #3b82f6', lineHeight: '1.5' }}>
+                                                    🎙️ <b>AI tóm tắt:</b> {audioData[article.url]?.text || article.summary_text}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

@@ -44,10 +44,11 @@ class SummaryService:
             logger.warning(f"Failed to save cache {cache_path}: {e}")
 
     @staticmethod
-    def process_article(url: str, lang: str = "en") -> Dict:
+    def process_article(url: str, lang: str = "en", title: str = "") -> Dict:
         """
         Crawls article, summarizes via Llama, generates TTS audio, caches results.
         lang: original language of the article ('en' or 'vi')
+        title: article title (passed to edge-tts to read first)
         """
         cached = SummaryService._get_cache(url)
         if cached:
@@ -63,9 +64,12 @@ class SummaryService:
             article_scraper.download()
             article_scraper.parse()
             text = article_scraper.text
-            if not text or len(text) < 100:
+            if not text or len(text) < 500:
+                logger.warning(f"Bỏ qua bài báo do nội dung quá ngắn ({len(text) if text else 0} ký tự): {url}")
                 raise Exception("Not enough text extracted")
-            # Truncate to save context window
+            
+            logger.info(f"[AI] Đã cào được {len(text)} ký tự từ: {url}")
+            # Truncate to save context window (3000 chars is enough for summary)
             text = text[:3000] 
         except Exception as e:
             logger.error(f"Failed to parse article {url}: {e}")
@@ -103,14 +107,19 @@ class SummaryService:
                 "model": "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf",
                 "messages": messages,
                 "temperature": 0.3,
-                "max_tokens": 1024 # Tăng để có thể chứa bài viết đầy đủ hơn
+                "max_tokens": 2400
             }
-            res = httpx.post(f"{LLM_API_URL}/chat/completions", json=payload, timeout=60.0)
+            res = httpx.post(f"{LLM_API_URL}/chat/completions", json=payload, timeout=900.0)
             res.raise_for_status()
             summary_vi = res.json()["choices"][0]["message"]["content"].strip()
             
             # Post process summary (remove asterisks, weird artifacts)
             summary_vi = summary_vi.replace("*", "").replace("#", "").replace('"', "")
+            summary_vi = summary_vi.replace("<|eot_id|>", "").replace("assistant", "").strip()
+            
+            # Loại bỏ từ assistant ở đầu nếu có
+            if summary_vi.lower().startswith("assistant"):
+                summary_vi = summary_vi[len("assistant"):].strip()
             
         except Exception as e:
             logger.error(f"Failed to summarize article {url}: {e}")
@@ -120,7 +129,13 @@ class SummaryService:
         try:
             # Sử dụng giọng tiếng Việt chất lượng cao của Microsoft Edge
             voice = "vi-VN-HoaiMyNeural" 
-            communicate = edge_tts.Communicate(summary_vi, voice)
+            
+            # Ghép title vào trước bài đọc nếu có
+            text_to_read = summary_vi
+            if title:
+                text_to_read = f"{title}.\n{summary_vi}"
+                
+            communicate = edge_tts.Communicate(text_to_read, voice)
             asyncio.run(communicate.save(audio_path))
         except Exception as e:
             logger.error(f"edge-tts error for {url}: {e}")

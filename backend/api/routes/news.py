@@ -2,12 +2,13 @@ from fastapi import APIRouter, Query, Body, HTTPException
 from fastapi.responses import FileResponse
 import os
 from pydantic import BaseModel
-from services.news_service import NewsService, _cache
+from services.news_service import NewsService, _cache, get_ai_status
 from services.summary_service import SummaryService, AUDIO_DIR
 
 class SummaryRequest(BaseModel):
     url: str
     lang: str = "en"
+    title: str = ""
 
 router = APIRouter()
 
@@ -23,6 +24,12 @@ async def get_news(
 @router.get("/news/categories")
 async def get_categories():
     return NewsService.get_all_categories()
+
+
+@router.get("/news/ai-status")
+async def get_news_ai_status():
+    """Trả về trạng thái hiện tại của AI Worker (Đang dịch, tóm tắt...)"""
+    return {"status": get_ai_status()}
 
 
 @router.get("/news/search")
@@ -56,7 +63,7 @@ async def clear_cache():
 
 @router.post("/news/summarize")
 async def summarize_news(req: SummaryRequest):
-    result = SummaryService.process_article(req.url, req.lang)
+    result = SummaryService.process_article(req.url, req.lang, req.title)
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
     return result

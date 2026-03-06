@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 from typing import List, Dict
 from datetime import datetime
 import requests
+import queue
 from email.utils import parsedate_to_datetime
 
 logger = logging.getLogger(__name__)
@@ -31,8 +32,22 @@ RSS_SOURCES = {
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 _cache: Dict[str, Dict] = {}
 CACHE_TTL = 300
-_translate_lock = threading.Lock()
 _bg_started = False
+_translation_queue = queue.Queue()
+_llama_queue = queue.Queue()
+_current_status = "Đang rảnh"
+_status_lock = threading.Lock()
+
+def set_ai_status(status: str):
+    global _current_status
+    with _status_lock:
+        _current_status = status
+        if status != "Đang rảnh":
+            logger.info(f"[AI MONITOR] {status}")
+
+def get_ai_status():
+    with _status_lock:
+        return _current_status
 
 
 class NewsService:
@@ -90,58 +105,97 @@ class NewsService:
             pass
 
     @staticmethod
-    def _bg_translate(articles: List[Dict], category: str):
-        with _translate_lock:
+    def _translation_worker():
+        """Worker xử lý ưu tiên việc dịch Title bằng VinAI (nhẹ và nhanh)"""
+        while True:
             try:
+                task = _translation_queue.get()
+                if task is None:
+                    _translation_queue.task_done()
+                    break
+                category = task.get("category")
+                articles = task.get("articles")
                 from services.translation_service import TranslationService
-                import httpx
-                import os
                 
-                LLM_API_URL = os.getenv("LLM_API_URL", "http://phobert-localai:8080/v1")
-                
-                # 1. Dịch Title
                 en_titles = [a["title"] for a in articles if a.get("lang") == "en" and "title_vi" not in a]
                 if en_titles:
                     TranslationService.translate_batch(en_titles, category)
                 
-                # 2. Phân loại tin tức (Tagged)
-                untagged_articles = [a for a in articles if "tag" not in a]
-                if untagged_articles:
-                    for a in untagged_articles:
-                        try:
-                            check_title = a.get("title_vi") or a.get("title")
-                            prompt = (
-                                "Dựa vào tiêu đề bài báo sau đây, hãy gán đúng 1 từ khóa (tag) ngắn gọn nhất (1-2 từ) miêu tả thể loại tin tức. "
-                                "Ví dụ: 'Thị trường', 'Chiến sự', 'Khảo sát', 'Doanh nghiệp', 'Công nghệ', 'Bên lề', 'Pháp luật'. "
-                                "Chỉ được in ra đúng 1 từ khóa đó, không giải thích."
-                                f"\n\nTiêu đề: {check_title}"
-                            )
-                            payload = {
-                                "model": "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf",
-                                "messages": [{"role": "user", "content": prompt}],
-                                "temperature": 0.1,
-                                "max_tokens": 10
-                            }
-                            res = httpx.post(f"{LLM_API_URL}/chat/completions", json=payload, timeout=20.0)
-                            res.raise_for_status()
-                            tag_ai = res.json()["choices"][0]["message"]["content"].strip()
-                            # Clean up
-                            tag_ai = tag_ai.replace(".", "").replace('"', "").replace("'", "")
-                            a["tag"] = tag_ai
-                        except Exception:
-                            a["tag"] = "Tin tức"
-                
-                # 3. Tóm tắt & Voice
-                from services.summary_service import SummaryService
-                for a in articles:
-                    SummaryService.process_article(a["url"], a.get("lang", "en"))
-                            
-                logger.info(f"Background process [{category}] xong (Dịch, Phân loại & Voice)")
+                # Cập nhật title_vi vào list articles ngay sau khi dịch
+                NewsService._apply_translations(articles, category)
+                _translation_queue.task_done()
             except Exception as e:
-                logger.warning(f"Background process thất bại: {e}")
+                logger.error(f"Translation Worker error: {e}")
+                _translation_queue.task_done()
+                time.sleep(2)
+
+    @staticmethod
+    def _llama_worker():
+        """Worker xử lý tuần tự Tagging & Summarization bằng LocalAI (tránh quá tải)"""
+        while True:
+            try:
+                task = _llama_queue.get()
+                if task is None:
+                    _llama_queue.task_done()
+                    break
+                
+                category = task.get("category")
+                articles = task.get("articles")
+                
+                # 1. Cập nhật lại bản dịch mới nhất trước khi xử lý (đề phòng translation worker vừa chạy xong)
+                NewsService._apply_translations(articles, category)
+                
+
+                import httpx
+                import os
+                LLM_API_URL = os.getenv("LLM_API_URL", "http://phobert-localai:8080/v1")
+                
+                untagged_articles = [a for a in articles if "tag" not in a]
+                for idx, a in enumerate(untagged_articles):
+                    check_title = a.get("title_vi") or a.get("title")
+                    set_ai_status(f"AI đang phân loại tin ({idx+1}/{len(untagged_articles)}): {check_title[:40]}...")
+                    try:
+                        prompt = (
+                            "Hãy gán đúng 1 từ khóa (tag) ngắn gọn nhất (1-2 từ) miêu tả thể loại tin tức. "
+                            "Ví dụ: 'Thị trường', 'Chiến sự', 'Lỗ hổng', 'Doanh nghiệp', 'Công nghệ', 'Chứng khoán'. "
+                            "Chỉ được in ra đúng 1 từ khóa đó, không giải thích gì thêm."
+                            f"\n\nTiêu đề: {check_title}"
+                        )
+                        payload = {
+                            "model": "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf",
+                            "messages": [{"role": "user", "content": prompt}],
+                            "temperature": 0.1,
+                            "max_tokens": 10
+                        }
+                        res = httpx.post(f"{LLM_API_URL}/chat/completions", json=payload, timeout=30.0)
+                        res.raise_for_status()
+                        tag_ai = res.json()["choices"][0]["message"]["content"].strip()
+                        a["tag"] = tag_ai.replace(".", "").replace('"', "").replace("'", "")
+                    except Exception:
+                        a["tag"] = "Tin tức"
+
+                # 3. Tóm tắt & Voice (Edge-TTS) - Chuyên mục nặng nhất
+                from services.summary_service import SummaryService
+                # Chỉ xử lý 3 bản tin mới nhất chưa có audio để tối ưu tài nguyên
+                to_process = [a for a in articles if not a.get("audio_cached")][:3]
+                for idx, a in enumerate(to_process):
+                    title = a.get("title_vi") or a.get("title")
+                    set_ai_status(f"AI tóm tắt & đọc bài ({idx+1}/{len(to_process)}): {title[:40]}...")
+                    SummaryService.process_article(a["url"], a.get("lang", "en"), title)
+                
+                set_ai_status("Đang rảnh")
+                _llama_queue.task_done()
+            except Exception as e:
+                logger.error(f"Llama Worker error: {e}")
+                set_ai_status("Đang rảnh")
+                _llama_queue.task_done()
+                time.sleep(5)
 
     @staticmethod
     def get_news(category: str, limit: int = 15) -> Dict:
+        # Khởi động worker chung nếu chưa chạy (gọi function module level)
+        start_bg_worker()
+        
         cache_key = f"{category}_{limit}"
         now = time.time()
 
@@ -164,44 +218,31 @@ class NewsService:
         all_articles.sort(key=lambda x: x.get("date", ""), reverse=True)
         all_articles = all_articles[:limit]
 
-        if category in ("cybersecurity", "stocks_international"):
+        if category in ("cybersecurity", "stocks_international", "stocks_vietnam"):
             NewsService._apply_translations(all_articles, category)
+            
+            # Check audio status & cached data
+            from services.summary_service import SummaryService
+            needs_processing = False
+            for article in all_articles:
+                cached_sum = SummaryService._get_cache(article["url"])
+                if cached_sum and "audio_url" in cached_sum:
+                    article["audio_cached"] = True
+                    article["summary_text"] = cached_sum.get("summary_vi", "")
+                else:
+                    article["audio_cached"] = False
+                    needs_processing = True
 
-            NewsService._apply_translations(all_articles, category)
-
-            # Check if any translation or tag is missing
-            has_untranslated = any(
-                a.get("lang") == "en" and "title_vi" not in a for a in all_articles
-            )
+            has_untranslated = any(a.get("lang") == "en" and "title_vi" not in a for a in all_articles)
             has_untagged = any("tag" not in a for a in all_articles)
             
-            if has_untranslated or has_untagged:
-                thread = threading.Thread(
-                    target=NewsService._bg_translate,
-                    args=(all_articles, category),
-                    daemon=True
-                )
-                thread.start()
-
-        # Check audio summary
-        from services.summary_service import SummaryService
-        has_new_summary = False
-        for article in all_articles:
-            cached_sum = SummaryService._get_cache(article["url"])
-            if cached_sum and "audio_url" in cached_sum:
-                article["audio_cached"] = True
-                article["summary_text"] = cached_sum.get("summary_vi", "")
-            else:
-                article["audio_cached"] = False
-                has_new_summary = True
-
-        if has_new_summary:
-            thread = threading.Thread(
-                target=NewsService._bg_translate,
-                args=(all_articles, category),
-                daemon=True
-            )
-            thread.start()
+            # Gửi task dịch title sang luồng Translation riêng biệt (nhanh)
+            if has_untranslated:
+                _translation_queue.put({"category": category, "articles": all_articles})
+            
+            # Gửi task xử lý Llama sang luồng Llama (chậm)
+            if has_untagged or needs_processing:
+                _llama_queue.put({"category": category, "articles": all_articles})
 
         result = {
             "articles": all_articles,
@@ -289,7 +330,8 @@ class NewsService:
 def _auto_translate_worker():
     time.sleep(30)
     while True:
-        for cat in ("cybersecurity", "stocks_international", "stocks_vietnam"):
+        # Ưu tiên An ninh mạng và Chứng khoán VN trước
+        for cat in ("cybersecurity", "stocks_vietnam", "stocks_international"):
             try:
                 news = NewsService.get_news(cat, limit=20)
                 # Note: get_news automatically triggers background process if anything is missing
@@ -334,6 +376,16 @@ def start_bg_worker():
     global _bg_started
     if not _bg_started:
         _bg_started = True
-        t = threading.Thread(target=_auto_translate_worker, daemon=True)
-        t.start()
-        logger.info("Background translation worker started (2h interval)")
+        
+        # Worker Dịch thuật (VinAI) - Mượt, chạy độc lập
+        t_trans = threading.Thread(target=NewsService._translation_worker, daemon=True)
+        t_trans.start()
+        
+        # Worker Llama - Tuần tự để tránh nghẽn CPU
+        t_llama = threading.Thread(target=NewsService._llama_worker, daemon=True)
+        t_llama.start()
+        
+        # Worker tự động quét RSS định kỳ
+        t_cron = threading.Thread(target=_auto_translate_worker, daemon=True)
+        t_cron.start()
+        logger.info("Parallel Workers (Translation & Llama) & Cron started")

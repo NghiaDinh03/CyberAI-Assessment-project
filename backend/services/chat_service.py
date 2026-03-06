@@ -39,6 +39,18 @@ class ChatService:
 
     @staticmethod
     def _call_model(model: str, messages: list, temperature: float = 0.7) -> Dict[str, Any]:
+        # Tránh xung đột tài nguyên: Nếu API News đang chiếm dụng LocalAI, từ chối Chat Request ngay
+        try:
+            from services.news_service import get_ai_status
+            ai_status = get_ai_status()
+            if "Đang rảnh" not in ai_status:
+                return {
+                    "content": f"⚠️ Hệ thống AI hiện đang bận tác vụ nền ({ai_status}).\nĐể tránh quá tải hệ thống, vui lòng chờ quá trình này hoàn tất rồi thử lại nhé!",
+                    "usage": {}
+                }
+        except ImportError:
+            pass
+
         payload = {
             "model": model,
             "messages": messages,
@@ -185,6 +197,29 @@ class ChatService:
     @staticmethod
     def generate_response_stream(message: str, session_id: str = "default") -> Generator:
         try:
+            # Kiểm tra tài nguyên hệ thống trước (cùng logic với non-stream)
+            try:
+                from services.news_service import get_ai_status
+                ai_status = get_ai_status()
+                if "Đang rảnh" not in ai_status:
+                    yield {
+                        "step": "done",
+                        "data": {
+                            "response": f"⚠️ Hệ thống AI hiện đang bận tác vụ nền ({ai_status}).\nĐể tránh quá tải hệ thống, vui lòng chờ trong giây lát rồi đặt lại câu hỏi nhé!",
+                            "model": ChatService.MODEL_NAME,
+                            "route": "blocked_by_queue",
+                            "session_id": session_id,
+                            "rag_used": False,
+                            "search_used": False,
+                            "sources": [],
+                            "web_sources": [],
+                            "tokens": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+                        }
+                    }
+                    return
+            except ImportError:
+                pass
+                
             yield {"step": "routing", "message": "Đang phân tích câu hỏi..."}
 
             routing = route_model(message)
