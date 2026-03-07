@@ -14,15 +14,15 @@ export async function GET(request) {
         if (!res.ok) {
             return Response.json(
                 { articles: [], count: 0, error: `Backend error: ${res.status}` },
-                { status: res.status }
+                { status: 200 }
             )
         }
 
         return Response.json(await res.json())
     } catch (err) {
         return Response.json(
-            { articles: [], count: 0, error: err.message },
-            { status: 502 }
+            { articles: [], count: 0, error: `Không thể kết nối Backend: ${err.message}` },
+            { status: 200 }
         )
     }
 }

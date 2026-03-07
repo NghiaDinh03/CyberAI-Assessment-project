@@ -5,59 +5,62 @@ import hashlib
 import logging
 from typing import Dict, List, Optional
 from pathlib import Path
-import torch
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 logger = logging.getLogger(__name__)
 
-CACHE_DIR = Path("/data/translations")
-CACHE_TTL = 43200
-
-class VinAITranslator:
-    tokenizer = None
-    model = None
-    device = None
+class AITranslator:
+    _tokenizer = None
+    _model = None
 
     @classmethod
-    def load(cls):
-        if cls.model is None:
-            model_name = "vinai/vinai-translate-en2vi-v2"
-            logger.info(f"Đang tải model {model_name} vào bộ nhớ...")
-            cls.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            cls.tokenizer = AutoTokenizer.from_pretrained(model_name, src_lang="en_XX")
-            cls.model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(cls.device)
-            logger.info("Tải VinAI Translate thành công!")
-        return cls.tokenizer, cls.model
+    def _load_model(cls):
+        if cls._model is None:
+            logger.info("Đang tải model vinai/vinai-translate-en2vi (VinAI)...")
+            import torch
+            from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+            
+            cls._tokenizer = AutoTokenizer.from_pretrained("vinai/vinai-translate-en2vi", src_lang="en_XX")
+            cls._model = AutoModelForSeq2SeqLM.from_pretrained("vinai/vinai-translate-en2vi")
+            cls._model.eval()
+            if torch.cuda.is_available():
+                cls._model.to("cuda")
 
     @classmethod
     def translate(cls, texts: List[str]) -> List[str]:
-        if not cls.model or not cls.tokenizer:
-            cls.load()
-
         if not texts:
             return []
-
-        results = []
+            
         try:
+            cls._load_model()
+            import torch
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            
+            input_ids = cls._tokenizer(texts, padding=True, return_tensors="pt").to(device)
             with torch.no_grad():
-                input_ids = cls.tokenizer(texts, padding=True, return_tensors="pt").to(cls.device)
-                output_ids = cls.model.generate(
+                output_ids = cls._model.generate(
                     **input_ids,
-                    decoder_start_token_id=cls.tokenizer.lang_code_to_id["vi_VN"],
+                    decoder_start_token_id=cls._tokenizer.lang_code_to_id["vi_VN"],
                     num_return_sequences=1,
-                    num_beams=3, # giảm beam cho nhẹ
+                    num_beams=5,
                     early_stopping=True,
-                    max_length=512 # Giữ ở mức an toàn
+                    max_length=512
                 )
-                
-                results = cls.tokenizer.batch_decode(output_ids, skip_special_tokens=True)
-                # clear torch cache if needed
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-            return results
+            
+            vi_texts = cls._tokenizer.batch_decode(output_ids, skip_special_tokens=True)
+            logger.info(f"Hoàn tất dịch VinAI cho {len(texts)} bài viết.")
+            
+            actual_translations = []
+            for orig, trans in zip(texts, vi_texts):
+                if trans.lower().strip() == orig.lower().strip():
+                    logger.warning(f"Bản dịch giống hệt gốc, bỏ qua: {orig[:50]}")
+                    actual_translations.append(None)
+                else:
+                    actual_translations.append(trans.strip())
+            return actual_translations
+            
         except Exception as e:
             logger.error(f"VinAI translate failed: {e}")
-            return [""] * len(texts)
+            return [None] * len(texts)
 CACHE_DIR = Path("/data/translations")
 CACHE_TTL = 43200
 
@@ -106,8 +109,8 @@ class TranslationService:
             translated = []
 
             try:
-                translated = VinAITranslator.translate(chunk)
-                logger.info(f"Dịch {len(chunk)} titles qua VinAI Translate")
+                translated = AITranslator.translate(chunk)
+                logger.info(f"Dịch {len(chunk)} titles qua AI Translate")
             except Exception as e:
                 logger.warning(f"Chunk translation thất bại: {e}")
                 continue
@@ -116,6 +119,7 @@ class TranslationService:
                 key = TranslationService._make_key(t)
                 if i < len(translated) and translated[i]:
                     cache[key] = translated[i]
+                    logger.info(f"Đã dịch: '{t[:40]}' -> '{translated[i][:40]}'")
 
             if translated:
                 TranslationService._save_cache(category, cache)

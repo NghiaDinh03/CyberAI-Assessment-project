@@ -16,3 +16,4 @@ newspaper3k==0.2.8
 edge-tts
 lxml_html_clean
 httpx
+google-generativeai

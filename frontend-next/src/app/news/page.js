@@ -21,6 +21,66 @@ export default function NewsPage() {
     const [aiStatus, setAiStatus] = useState('Đang rảnh')
     const searchTimerRef = useRef(null)
 
+    // History & Reprocess States
+    const [showHistory, setShowHistory] = useState(false)
+    const [historyData, setHistoryData] = useState([])
+    const [historyTab, setHistoryTab] = useState('all')
+    const [historyLoading, setHistoryLoading] = useState(false)
+    const [reprocessing, setReprocessing] = useState({}) // { [url]: boolean }
+
+    const fetchHistory = useCallback(async (cat = 'all') => {
+        setHistoryLoading(true)
+        try {
+            const res = await fetch(`/api/news/history?category=${cat}`)
+            if (res.ok) {
+                const data = await res.json()
+                setHistoryData(data)
+            } else {
+                setHistoryData([])
+            }
+        } catch (err) {
+            console.warn('History fetch failure:', err)
+            setHistoryData([])
+        } finally {
+            setHistoryLoading(false)
+        }
+    }, [])
+
+    useEffect(() => {
+        if (showHistory) fetchHistory(historyTab)
+    }, [showHistory, historyTab, fetchHistory])
+
+    const handleReprocess = async (e, article) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (!confirm('Dịch và tóm tắt lại bài báo này từ đầu?')) return
+
+        setReprocessing(p => ({ ...p, [article.url]: true }))
+        try {
+            const res = await fetch('/api/news/reprocess', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: article.url })
+            })
+            if (res.ok) {
+                alert('Đã đưa bài báo vào hàng đợi. Vui lòng đợi trong giây lát...')
+                setAudioData(prev => {
+                    const next = { ...prev }
+                    delete next[article.url]
+                    return next
+                })
+                fetchNews(activeTab)
+            } else {
+                const data = await res.json()
+                alert(data.error || 'Lỗi hệ thống')
+            }
+        } catch (err) {
+            alert('Không thể kết nối máy chủ')
+        } finally {
+            setReprocessing(p => ({ ...p, [article.url]: false }))
+        }
+    }
+
     // Voice & Summary states
     const [audioData, setAudioData] = useState({}) // { [url]: { status: 'loading'|'ready'|'playing'|'error', audioUrl: '', text: '' } }
     const audioRef = useRef(null)
@@ -89,10 +149,12 @@ export default function NewsPage() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ url: article.url, lang: article.lang, title: article.title_vi || article.title })
                     })
+                    if (!res.ok) throw new Error('Summarize unstable')
                     const result = await res.json()
                     finalUrl = result.audio_url
                     finalText = result.summary_vi
                 } catch (err) {
+                    console.error("Audio cache fetch error:", err)
                     setAudioData(prev => ({ ...prev, [article.url]: { status: 'error' } }))
                     return
                 }
@@ -118,6 +180,10 @@ export default function NewsPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: article.url, lang: article.lang, title: article.title_vi || article.title })
             })
+            if (!res.ok) {
+                const text = await res.text()
+                throw new Error(text || 'Server error')
+            }
             const result = await res.json()
             if (result.error) throw new Error(result.error)
 
@@ -131,7 +197,7 @@ export default function NewsPage() {
             audioRef.current.src = result.audio_url
             audioRef.current.play()
         } catch (err) {
-            alert("Lỗi tải âm thanh: " + err.message)
+            console.error("Audio error:", err)
             setAudioData(prev => ({ ...prev, [article.url]: { status: 'error' } }))
         }
     }
@@ -140,26 +206,48 @@ export default function NewsPage() {
         forcePlayRef.current = (article) => togglePlay(null, article, true)
     }, [togglePlay])
 
+    const [categoryCache, setCategoryCache] = useState({}) // { [cat]: { articles, cached_at } }
     const fetchNews = useCallback(async (category, isBackground = false) => {
-        if (!isBackground) setLoading(true)
-        if (!isBackground) setError('')
+        if (!isBackground) {
+            if (categoryCache[category]) {
+                setArticles(categoryCache[category].articles)
+                setLastUpdate(categoryCache[category].cached_at)
+                setLoading(false) // Show cached data immediately
+            } else {
+                setLoading(true)
+            }
+            setError('')
+        }
+
         try {
             const res = await fetch(`/api/news?category=${category}&limit=20`)
+            if (!res.ok) throw new Error('API unstable')
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                throw new Error("Not JSON response");
+            }
             const data = await res.json()
             if (data.error) {
-                setError(data.error)
-                setArticles([])
+                if (!isBackground) {
+                    setError(data.error)
+                    setArticles([])
+                }
             } else {
-                setArticles(data.articles || [])
+                const newArticles = data.articles || []
+                setArticles(newArticles)
                 setLastUpdate(data.cached_at || '')
+                setCategoryCache(prev => ({
+                    ...prev,
+                    [category]: { articles: newArticles, cached_at: data.cached_at }
+                }))
             }
-        } catch {
-            setError('Không thể tải tin tức')
-            setArticles([])
+        } catch (err) {
+            console.warn('Silent news update failure:', err)
+            if (!isBackground && !categoryCache[category]) setError('Không thể tải tin tức lúc này')
         } finally {
             setLoading(false)
         }
-    }, [])
+    }, [categoryCache])
 
     const searchNews = useCallback(async (query) => {
         if (!query.trim()) {
@@ -169,6 +257,7 @@ export default function NewsPage() {
         setSearching(true)
         try {
             const res = await fetch(`/api/news/search?q=${encodeURIComponent(query)}&limit=20`)
+            if (!res.ok) throw new Error('Search failed')
             const data = await res.json()
             setSearchResults(data)
         } catch {
@@ -180,7 +269,7 @@ export default function NewsPage() {
 
     useEffect(() => {
         fetchNews(activeTab)
-    }, [activeTab, fetchNews])
+    }, [activeTab]) // Removed fetchNews from deps to avoid loop with categoryCache
 
     const displayArticles = searchResults ? searchResults.articles : articles
     const isSearchMode = searchResults !== null
@@ -196,10 +285,17 @@ export default function NewsPage() {
         const interval = setInterval(async () => {
             try {
                 const res = await fetch('/api/news/ai-status')
-                const data = await res.json()
-                setAiStatus(data.status || 'Đang rảnh')
-            } catch (err) {
-                console.error("AI status error:", err)
+                if (res.ok) {
+                    const contentType = res.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        const data = await res.json()
+                        setAiStatus(data.status || 'Đang rảnh')
+                    }
+                } else {
+                    setAiStatus('Kết nối...')
+                }
+            } catch { 
+                setAiStatus('Mất kết nối')
             }
         }, 2000)
         return () => clearInterval(interval)
@@ -243,6 +339,9 @@ export default function NewsPage() {
                     <span className={styles.subtitle}>Tổng hợp tin tức thị trường, chứng khoán và an ninh mạng giúp AI phân tích</span>
                 </div>
                 <div className={styles.headerRight}>
+                    <button className={styles.refreshBtn} onClick={() => setShowHistory(true)} style={{ marginRight: '10px' }}>
+                        🕒 Lịch sử 7 ngày
+                    </button>
                     {aiStatus !== 'Đang rảnh' && (
                         <div className={styles.aiMonitor}>
                             <span className={styles.pulse}></span>
@@ -330,17 +429,30 @@ export default function NewsPage() {
                 ) : (
                     <div className={styles.list}>
                         {displayArticles.map((article, i) => (
-                            <a
+                            <div
                                 key={i}
-                                href={article.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
                                 className={styles.card}
                             >
+                                <button 
+                                    className={styles.reprocessBtnCorner} 
+                                    onClick={(e) => handleReprocess(e, article)}
+                                    disabled={reprocessing[article.url]}
+                                    title="Dịch lại bài báo này"
+                                >
+                                    {reprocessing[article.url] ? '⏳' : '🔄'}
+                                </button>
                                 <div className={styles.cardBody}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                                        <h3 className={styles.cardTitle} style={{ margin: 0 }}>{article.title}</h3>
-                                        {article.audio_cached ? (
+                                        <a
+                                            href={article.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={styles.cardTitle}
+                                            style={{ margin: 0, textDecoration: 'none', color: 'inherit' }}
+                                        >
+                                            {article.title} 🔗
+                                        </a>
+                                        {article.audio_cached && article.audio_cached !== 'error' ? (
                                             <button
                                                 onClick={(e) => togglePlay(e, article)}
                                                 style={{ background: audioData[article.url]?.status === 'playing' ? '#10b981' : 'transparent', color: audioData[article.url]?.status === 'playing' ? '#fff' : '#3b82f6', border: '1px solid', borderColor: audioData[article.url]?.status === 'playing' ? '#10b981' : '#3b82f6', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 'bold' }}
@@ -348,11 +460,11 @@ export default function NewsPage() {
                                             >
                                                 {audioData[article.url]?.status === 'loading' ? '⏳ Đang tải' : audioData[article.url]?.status === 'playing' ? '⏸️ Đang phát' : '▶️ Nghe'}
                                             </button>
-                                        ) : (
+                                        ) : !article.audio_cached ? (
                                             <span style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', border: '1px dashed #64748b', padding: '2px 8px', borderRadius: '4px' }}>
                                                 ⏳ Đang tạo Audio
                                             </span>
-                                        )}
+                                        ) : null}
                                     </div>
                                     {article.title_vi && (
                                         <p className={styles.cardTitleVi}>{article.title_vi}</p>
@@ -374,7 +486,7 @@ export default function NewsPage() {
                                     {article.description && (
                                         <p className={styles.cardDesc}>{article.description}</p>
                                     )}
-                                    {(audioData[article.url]?.text || article.summary_text) && (
+                                    {(audioData[article.url]?.text || article.summary_text || article.audio_cached === 'error') && (
                                         <div style={{ marginTop: '5px' }}>
                                             <button
                                                 className={styles.expandBtn}
@@ -383,27 +495,86 @@ export default function NewsPage() {
                                                     setExpandedArticles(prev => ({ ...prev, [article.url]: !prev[article.url] }));
                                                 }}
                                             >
-                                                {expandedArticles[article.url] ? '▲ Thu gọn tóm tắt' : '▼ Xem nội dung tóm tắt'}
+                                                {expandedArticles[article.url] ? '▲ Thu gọn tóm tắt' : '▼ Xem nội dung tóm tắt' + (article.audio_cached === 'error' ? ' (Có lỗi)' : '')}
                                             </button>
 
                                             {expandedArticles[article.url] && (
-                                                <div style={{ marginTop: '8px', padding: '10px', background: '#1e293b', borderRadius: '6px', fontSize: '13px', color: '#cbd5e1', borderLeft: '3px solid #3b82f6', lineHeight: '1.5' }}>
-                                                    🎙️ <b>AI tóm tắt:</b> {audioData[article.url]?.text || article.summary_text}
+                                                <div style={{ 
+                                                    marginTop: '8px', 
+                                                    padding: '10px', 
+                                                    background: '#1e293b', 
+                                                    borderRadius: '6px', 
+                                                    fontSize: '13px', 
+                                                    color: article.audio_cached === 'error' ? '#fca5a5' : '#cbd5e1', 
+                                                    borderLeft: article.audio_cached === 'error' ? '3px solid #ef4444' : '3px solid #3b82f6', 
+                                                    lineHeight: '1.5' 
+                                                }}>
+                                                    {article.audio_cached === 'error' ? (
+                                                        <>⚠️ <b>Lỗi AI:</b> {article.summary_text || 'Hệ thống AI đang quá tải, vui lòng thử lại sau giây lát.'}</>
+                                                    ) : (
+                                                        <>🎙️ <b>AI tóm tắt:</b> {audioData[article.url]?.text || article.summary_text}</>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
                                     )}
                                 </div>
-                                <div className={styles.cardRight}>
+                                <a
+                                    href={article.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={styles.cardRight}
+                                    style={{ textDecoration: 'none' }}
+                                >
                                     <span className={styles.cardLang}>
                                         {article.lang === 'vi' ? '🇻🇳' : '🌐'}
                                     </span>
                                     <span className={styles.cardLink}>→</span>
-                                </div>
-                            </a>
+                                </a>
+                            </div>
                         ))}
                     </div>
                 )}
+            </div>
+
+            {showHistory && <div className={styles.historyOverlay} onClick={() => setShowHistory(false)} />}
+            <div className={`${styles.historySidebar} ${showHistory ? styles.open : ''}`}>
+                <div className={styles.historyHeader}>
+                    <h2>Lịch sử tin tức</h2>
+                    <button className={styles.historyClose} onClick={() => setShowHistory(false)}>✕</button>
+                </div>
+                <div className={styles.historyTabs}>
+                    <button className={`${styles.htab} ${historyTab === 'all' ? styles.active : ''}`} onClick={() => setHistoryTab('all')}>Tất cả</button>
+                    {CATEGORIES.map(c => (
+                        <button key={c.id} className={`${styles.htab} ${historyTab === c.id ? styles.active : ''}`} onClick={() => setHistoryTab(c.id)}>{c.name}</button>
+                    ))}
+                </div>
+                <div className={styles.historyContent}>
+                    {historyLoading ? (
+                        <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontSize: '13px' }}>Đang tải lịch sử...</div>
+                    ) : historyData.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontSize: '13px' }}>Không có lịch sử 7 ngày qua</div>
+                    ) : (
+                        historyData.map((hItem, idx) => (
+                            <div key={idx} className={styles.historyItem}>
+                                <a href={hItem.url} target="_blank" rel="noopener noreferrer" className={styles.historyItemTitle}>
+                                    {hItem.title_vi || hItem.title}
+                                </a>
+                                {hItem.title_vi && hItem.title_vi !== hItem.title && (
+                                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px', fontStyle: 'italic' }}>
+                                        Gốc: {hItem.title}
+                                    </div>
+                                )}
+                                <div className={styles.historyItemMeta}>
+                                    <span>{new Date(hItem.added_at).toLocaleString('vi-VN')}</span>
+                                    <span>
+                                        {hItem.audio_cached === true ? '✅ Có Audio' : (hItem.audio_cached === 'error' ? '❌ Lỗi' : '⏳ Chờ')}
+                                    </span>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
             </div>
         </div>
     )

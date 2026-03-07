@@ -8,6 +8,9 @@ from datetime import datetime
 import requests
 import queue
 from email.utils import parsedate_to_datetime
+import json
+import os
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -23,20 +26,25 @@ RSS_SOURCES = {
         {"name": "Yahoo Finance", "url": "https://finance.yahoo.com/news/rssindex", "icon": "💰", "lang": "en"},
     ],
     "stocks_vietnam": [
-        {"name": "CafeF", "url": "https://cafef.vn/rss/trang-chu.rss", "icon": "☕", "lang": "vi"},
+        {"name": "Znews Kinh doanh", "url": "https://znews.vn/rss/kinh-doanh-tai-chinh.rss", "icon": "💹", "lang": "vi"},
         {"name": "VnExpress Kinh doanh", "url": "https://vnexpress.net/rss/kinh-doanh.rss", "icon": "📰", "lang": "vi"},
-        {"name": "VnEconomy", "url": "https://vneconomy.vn/chung-khoan.rss", "icon": "💹", "lang": "vi"},
+        {"name": "VnEconomy", "url": "https://vneconomy.vn/chung-khoan.rss", "icon": "📊", "lang": "vi"},
     ]
 }
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 _cache: Dict[str, Dict] = {}
-CACHE_TTL = 300
+CACHE_TTL = 15
 _bg_started = False
 _translation_queue = queue.Queue()
 _llama_queue = queue.Queue()
+_translation_queue_cats = set()
+_llama_queue_cats = set()
 _current_status = "Đang rảnh"
 _status_lock = threading.Lock()
+
+HISTORY_FILE = "/data/articles_history.json"
+_history_lock = threading.Lock()
 
 def set_ai_status(status: str):
     global _current_status
@@ -51,6 +59,114 @@ def get_ai_status():
 
 
 class NewsService:
+    @staticmethod
+    def _update_history(articles: List[Dict]):
+        with _history_lock:
+            history = NewsService.get_history_no_lock()
+            history_dict = {a["url"]: a for a in history}
+            
+            now = datetime.now()
+            for a in articles:
+                url = a["url"]
+                # Đảm bảo bài báo có title_vi trước khi lưu nếu có trong cache
+                if a.get("lang") == "en" and not a.get("title_vi"):
+                    from services.translation_service import TranslationService
+                    cache = TranslationService._load_cache(a.get("category", "cybersecurity"))
+                    vi = TranslationService.get_translation(a["title"], cache)
+                    if vi:
+                        a["title_vi"] = vi
+
+                if url not in history_dict:
+                    a_copy = a.copy()
+                    a_copy["added_at"] = now.isoformat()
+                    history_dict[url] = a_copy
+                else:
+                    curr = history_dict[url]
+                    for key in ["title_vi", "tag", "audio_cached", "summary_text", "category", "lang"]:
+                        if key in a:
+                            curr[key] = a[key]
+                        # Fallback title_vi từ cache nếu curr chưa có
+                        if key == "title_vi" and not curr.get("title_vi") and a.get("lang") == "en":
+                             from services.translation_service import TranslationService
+                             cache = TranslationService._load_cache(a.get("category", "cybersecurity"))
+                             vi = TranslationService.get_translation(a["title"], cache)
+                             if vi:
+                                 curr["title_vi"] = vi
+            
+            cutoff = now - timedelta(days=7)
+            new_history = []
+            for a in history_dict.values():
+                added = a.get("added_at")
+                if added:
+                    try:
+                        if datetime.fromisoformat(added) >= cutoff:
+                            new_history.append(a)
+                    except:
+                        new_history.append(a)
+                else:
+                    a["added_at"] = now.isoformat()
+                    new_history.append(a)
+                        
+            new_history.sort(key=lambda x: x.get("added_at", ""), reverse=True)
+            try:
+                with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+                    json.dump(new_history, f, ensure_ascii=False, indent=2)
+            except Exception as e:
+                logger.error(f"Failed to save history: {e}")
+
+    @staticmethod
+    def get_history_no_lock() -> List[Dict]:
+        if not os.path.exists(HISTORY_FILE):
+            return []
+        try:
+            with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            return []
+
+    @staticmethod
+    def get_history(category: str = None) -> List[Dict]:
+        with _history_lock:
+            hist = NewsService.get_history_no_lock()
+        if category and category != "all":
+            hist = [a for a in hist if a.get("category") == category]
+        return hist
+
+    @staticmethod
+    def reprocess_article(url: str) -> Dict:
+        hist = NewsService.get_history()
+        article = next((a for a in hist if a["url"] == url), None)
+        if not article:
+            return {"error": "Không tìm thấy bài báo trong lịch sử."}
+        
+        # 1. Delete cache files
+        from services.summary_service import SummaryService, CACHE_DIR, AUDIO_DIR
+        url_hash = SummaryService._generate_hash(url)
+        try: os.remove(os.path.join(CACHE_DIR, f"{url_hash}.json"))
+        except: pass
+        try: os.remove(os.path.join(AUDIO_DIR, f"{url_hash}.mp3"))
+        except: pass
+        
+        # 2. Reset fields
+        article.pop("title_vi", None)
+        article.pop("summary_text", None)
+        article.pop("audio_cached", None)
+        article.pop("tag", None)
+        NewsService._update_history([article])
+        
+        # 3. Trigger queue again
+        cat = article.get("category", "cybersecurity")
+        keys_to_delete = [k for k in _cache.keys() if k.startswith(f"{cat}_")]
+        for k in keys_to_delete:
+            del _cache[k]
+            
+        _translation_queue.put({"category": cat, "articles": [article]})
+        _translation_queue_cats.add(cat)
+        _llama_queue.put({"category": cat, "articles": [article]})
+        _llama_queue_cats.add(cat)
+        
+        return {"success": True, "message": "Đã xóa bản dịch cũ và đưa vào hàng chờ xử lý lại."}
+
     @staticmethod
     def _parse_rss(url: str, source_name: str, icon: str, lang: str, limit: int = 10) -> List[Dict]:
         try:
@@ -123,9 +239,13 @@ class NewsService:
                 
                 # Cập nhật title_vi vào list articles ngay sau khi dịch
                 NewsService._apply_translations(articles, category)
+                NewsService._update_history(articles)
+                _translation_queue_cats.discard(category)
                 _translation_queue.task_done()
             except Exception as e:
                 logger.error(f"Translation Worker error: {e}")
+                if 'category' in locals():
+                    _translation_queue_cats.discard(category)
                 _translation_queue.task_done()
                 time.sleep(2)
 
@@ -146,47 +266,87 @@ class NewsService:
                 NewsService._apply_translations(articles, category)
                 
 
+                # 2. Tóm tắt & Voice (Edge-TTS) - Xử lý từng bài, cập nhật Frontend liền
+                from services.summary_service import SummaryService
+                to_process = [a for a in articles if not a.get("audio_cached") and a.get("audio_cached") != "error"][:3]
+                for idx, a in enumerate(to_process):
+                    title = a.get("title_vi") or a.get("title")
+                    set_ai_status(f"AI tóm tắt & đọc bài ({idx+1}/{len(to_process)}): {title[:40]}...")
+                    SummaryService.process_article(a["url"], a.get("lang", "en"), title)
+                    # Lấy lại trạng thái sau khi cập nhật
+                    cached_sum = SummaryService._get_cache(a["url"])
+                    if cached_sum:
+                        if "error" in cached_sum:
+                            a["audio_cached"] = "error"
+                            a["summary_text"] = cached_sum.get("error", "")
+                        else:
+                            a["audio_cached"] = True
+                            a["summary_text"] = cached_sum.get("summary_vi", "")
+                    NewsService._update_history([a])
+                    
+                    # Invalidate API cache ngay để Frontend thấy nút Play liền
+                    keys_to_delete = [k for k in _cache.keys() if k.startswith(f"{category}_")]
+                    for k in keys_to_delete:
+                        del _cache[k]
+                        
+                    logger.info(f"Bài {idx+1}/{len(to_process)} xong - đã cập nhật cache")
+                    time.sleep(2)  # Hãm CPU/RAM sau khi xong 1 bài TTS
+
+                # 3. Phân loại tin tức (Llama) - Làm sau khi tóm tắt xong
                 import httpx
                 import os
-                LLM_API_URL = os.getenv("LLM_API_URL", "http://phobert-localai:8080/v1")
                 
                 untagged_articles = [a for a in articles if "tag" not in a]
+                OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+                LLM_API_URL = os.getenv("LLM_API_URL", "http://phobert-localai:8080/v1")
+                
                 for idx, a in enumerate(untagged_articles):
                     check_title = a.get("title_vi") or a.get("title")
                     set_ai_status(f"AI đang phân loại tin ({idx+1}/{len(untagged_articles)}): {check_title[:40]}...")
                     try:
                         prompt = (
                             "Hãy gán đúng 1 từ khóa (tag) ngắn gọn nhất (1-2 từ) miêu tả thể loại tin tức. "
-                            "Ví dụ: 'Thị trường', 'Chiến sự', 'Lỗ hổng', 'Doanh nghiệp', 'Công nghệ', 'Chứng khoán'. "
+                            "Ví dụ: 'Thị trường', 'Chiến sự', 'Lỗ hổng', 'Khám phá', 'Công nghệ', 'Chứng khoán'. "
                             "Chỉ được in ra đúng 1 từ khóa đó, không giải thích gì thêm."
                             f"\n\nTiêu đề: {check_title}"
                         )
-                        payload = {
-                            "model": "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf",
-                            "messages": [{"role": "user", "content": prompt}],
-                            "temperature": 0.1,
-                            "max_tokens": 10
-                        }
-                        res = httpx.post(f"{LLM_API_URL}/chat/completions", json=payload, timeout=30.0)
-                        res.raise_for_status()
-                        tag_ai = res.json()["choices"][0]["message"]["content"].strip()
+                        messages = [{"role": "user", "content": prompt}]
+                        tag_ai = ""
+                        
+                        if OPENROUTER_API_KEY:
+                            try:
+                                headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}"}
+                                payload = {"model": "openrouter/free", "messages": messages, "temperature": 0.1, "max_tokens": 10}
+                                res = httpx.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=20.0)
+                                res.raise_for_status()
+                                tag_ai = res.json()["choices"][0]["message"]["content"].strip()
+                            except Exception as e:
+                                logger.warning(f"Tagging OpenRouter failed: {e}")
+                        
+                        if not tag_ai:
+                            payload = {
+                                "model": "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf",
+                                "messages": messages,
+                                "temperature": 0.1,
+                                "max_tokens": 10
+                            }
+                            res = httpx.post(f"{LLM_API_URL}/chat/completions", json=payload, timeout=30.0)
+                            res.raise_for_status()
+                            tag_ai = res.json()["choices"][0]["message"]["content"].strip()
+
                         a["tag"] = tag_ai.replace(".", "").replace('"', "").replace("'", "")
                     except Exception:
                         a["tag"] = "Tin tức"
-
-                # 3. Tóm tắt & Voice (Edge-TTS) - Chuyên mục nặng nhất
-                from services.summary_service import SummaryService
-                # Chỉ xử lý 3 bản tin mới nhất chưa có audio để tối ưu tài nguyên
-                to_process = [a for a in articles if not a.get("audio_cached")][:3]
-                for idx, a in enumerate(to_process):
-                    title = a.get("title_vi") or a.get("title")
-                    set_ai_status(f"AI tóm tắt & đọc bài ({idx+1}/{len(to_process)}): {title[:40]}...")
-                    SummaryService.process_article(a["url"], a.get("lang", "en"), title)
+                    NewsService._update_history([a])
+                    time.sleep(2)  # Hãm CPU sau mỗi lần gọi API tag
                 
                 set_ai_status("Đang rảnh")
+                _llama_queue_cats.discard(category)
                 _llama_queue.task_done()
             except Exception as e:
                 logger.error(f"Llama Worker error: {e}")
+                if 'category' in locals():
+                    _llama_queue_cats.discard(category)
                 set_ai_status("Đang rảnh")
                 _llama_queue.task_done()
                 time.sleep(5)
@@ -225,23 +385,37 @@ class NewsService:
             from services.summary_service import SummaryService
             needs_processing = False
             for article in all_articles:
+                article["category"] = category
                 cached_sum = SummaryService._get_cache(article["url"])
-                if cached_sum and "audio_url" in cached_sum:
-                    article["audio_cached"] = True
-                    article["summary_text"] = cached_sum.get("summary_vi", "")
+                if cached_sum:
+                    if "error" in cached_sum:
+                        article["audio_cached"] = "error"
+                        article["summary_text"] = cached_sum.get("error", "")
+                    elif "audio_url" in cached_sum:
+                        article["audio_cached"] = True
+                        article["summary_text"] = cached_sum.get("summary_vi", "")
                 else:
                     article["audio_cached"] = False
                     needs_processing = True
+            
+            # Cập nhật history sau khi load xong từ RSS
+            NewsService._update_history(all_articles)
 
             has_untranslated = any(a.get("lang") == "en" and "title_vi" not in a for a in all_articles)
             has_untagged = any("tag" not in a for a in all_articles)
             
+            # Khởi tạo set để theo dõi category đang xử lý nếu chưa có
+            if not hasattr(NewsService, '_processing_cats'):
+                NewsService._processing_cats = set()
+
             # Gửi task dịch title sang luồng Translation riêng biệt (nhanh)
-            if has_untranslated:
+            if has_untranslated and category not in _translation_queue_cats:
+                _translation_queue_cats.add(category)
                 _translation_queue.put({"category": category, "articles": all_articles})
             
             # Gửi task xử lý Llama sang luồng Llama (chậm)
-            if has_untagged or needs_processing:
+            if (has_untagged or needs_processing) and category not in _llama_queue_cats:
+                _llama_queue_cats.add(category)
                 _llama_queue.put({"category": category, "articles": all_articles})
 
         result = {
@@ -369,7 +543,7 @@ def _auto_translate_worker():
         except Exception as e:
             logger.warning(f"Failed to clear old cache: {e}")
             
-        time.sleep(7200)
+        time.sleep(18000)
 
 
 def start_bg_worker():

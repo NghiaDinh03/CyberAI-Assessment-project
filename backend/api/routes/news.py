@@ -10,6 +10,9 @@ class SummaryRequest(BaseModel):
     lang: str = "en"
     title: str = ""
 
+class ReprocessRequest(BaseModel):
+    url: str
+
 router = APIRouter()
 
 
@@ -24,6 +27,12 @@ async def get_news(
 @router.get("/news/categories")
 async def get_categories():
     return NewsService.get_all_categories()
+
+
+@router.get("/news/history")
+async def get_news_history(category: str = Query("all", description="all | cybersecurity | stocks_international | stocks_vietnam")):
+    """Lấy danh sách các bài báo đã cào trong vòng 7 ngày"""
+    return NewsService.get_history(category)
 
 
 @router.get("/news/ai-status")
@@ -66,6 +75,14 @@ async def summarize_news(req: SummaryRequest):
     result = SummaryService.process_article(req.url, req.lang, req.title)
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
+    return result
+
+
+@router.post("/news/reprocess")
+async def reprocess_news(req: ReprocessRequest):
+    result = NewsService.reprocess_article(req.url)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
     return result
 
 

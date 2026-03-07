@@ -8,13 +8,13 @@ export async function GET(request) {
     try {
         const res = await fetch(
             `${BACKEND_URL}/api/news?category=${category}&limit=${limit}`,
-            { next: { revalidate: 300 } }
+            { cache: 'no-store' }
         )
 
         if (!res.ok) {
             return Response.json(
                 { articles: [], error: `Backend error: ${res.status}` },
-                { status: res.status }
+                { status: 200 }
             )
         }
 
@@ -22,8 +22,8 @@ export async function GET(request) {
         return Response.json(data)
     } catch (err) {
         return Response.json(
-            { articles: [], error: err.message },
-            { status: 502 }
+            { articles: [], error: `Không thể kết nối Backend: ${err.message}` },
+            { status: 200 }
         )
     }
 }

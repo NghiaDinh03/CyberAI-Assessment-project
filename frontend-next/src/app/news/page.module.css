@@ -339,6 +339,37 @@
     color: inherit;
     transition: all 0.15s;
     cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.reprocessBtnCorner {
+    position: absolute;
+    top: 8px;
+    right: 35px; /* Giữ bên trái của icon link và lang */
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    z-index: 10;
+    transition: all 0.2s;
+}
+
+.reprocessBtnCorner:hover:not(:disabled) {
+    background: rgba(245, 158, 11, 0.25);
+    transform: scale(1.1);
+}
+
+.reprocessBtnCorner:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .card:hover {
@@ -463,4 +494,144 @@
     .tabs {
         overflow-x: auto;
     }
+}
+
+.historySidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 380px;
+    height: 100vh;
+    background: #0f172a;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+.historySidebar.open {
+    transform: translateX(0);
+}
+
+.historyOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 999;
+}
+
+.historyHeader {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.historyHeader h2 {
+    font-size: 1.1rem;
+    margin: 0;
+    color: #f1f5f9;
+}
+
+.historyClose {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.historyClose:hover {
+    color: #f1f5f9;
+}
+
+.historyContent {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.historyItem {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.historyItemTitle {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 4px;
+    display: block;
+    text-decoration: none;
+}
+
+.historyItemTitle:hover {
+    text-decoration: underline;
+}
+
+.historyItemMeta {
+    font-size: 0.65rem;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.historyTabs {
+    display: flex;
+    gap: 10px;
+    padding: 0 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.htab {
+    background: none;
+    border: none;
+    color: #64748b;
+    padding: 10px 0;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-weight: 600;
+    border-bottom: 2px solid transparent;
+}
+
+.htab.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+}
+
+.reprocessBtn {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 4px;
+    padding: 2px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+}
+
+.reprocessBtn:hover:not(:disabled) {
+    background: rgba(245, 158, 11, 0.2);
+}
+
+.reprocessBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
