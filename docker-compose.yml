@@ -14,9 +14,9 @@ services:
       - LOG_LEVEL=INFO
       - ISO_DOCS_PATH=/data/iso_documents
       - VECTOR_STORE_PATH=/data/vector_store
-      - GEMINI_API_KEYS=AIzaSyA_PsdWOoPPcWbpbg8ECOVP7hcqe29lK78,AIzaSyAJaWvUEbQ3uxz8lcUAYKqYqhVjp_THnus,AIzaSyADzX2hQefrGd6cdyzHyJ3wq1FWBdlLkbE,AIzaSyBrL47_WeKblsZBaVSjGy-H8ZMWl6vzq58
+      - GEMINI_API_KEYS=${GEMINI_API_KEYS}
       - HF_HOME=/data/models/huggingface
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-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}
+      - OPENROUTER_API_KEYS=${OPENROUTER_API_KEYS}
       - LLM_API_URL=http://phobert-localai:8080/v1
     networks:
       - phobert-network

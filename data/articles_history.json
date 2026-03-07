@@ -309,9 +309,10 @@
     "icon": "💹",
     "lang": "vi",
     "category": "stocks_vietnam",
-    "audio_cached": false,
+    "audio_cached": "error",
     "added_at": "2026-03-07T12:27:36.667939",
-    "tag": "Thể loại tin tức: Lỗ hổng"
+    "tag": "Thể loại:<|eot_id|>",
+    "summary_text": "❌ AI từ chối xử lý: Tất cả các API Tóm tắt đang lỗi mạng hoặc cạn Quot"
   },
   {
     "title": "Phạt lãnh đạo một doanh nghiệp 1,5 tỷ, cấm giao dịch chứng khoán 2 năm",
@@ -322,9 +323,10 @@
     "icon": "💹",
     "lang": "vi",
     "category": "stocks_vietnam",
-    "audio_cached": false,
+    "audio_cached": "error",
     "added_at": "2026-03-07T12:27:36.667939",
-    "tag": "Chứng khoán"
+    "tag": "Thể loại tin tức: Lỗ hổng",
+    "summary_text": "❌ AI từ chối xử lý: Tất cả các API Tóm tắt đang lỗi mạng hoặc cạn Quot"
   },
   {
     "title": "Thủ tướng Phạm Minh Chính kiểm tra tiến độ dự án sân bay Gia Bình",
@@ -363,7 +365,7 @@
     "category": "stocks_vietnam",
     "audio_cached": false,
     "added_at": "2026-03-07T12:27:36.667939",
-    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+    "tag": "Thể loại tin tức: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Vay tiêu dùng dưới 400 triệu có thể không phải chứng minh tài chính",
@@ -376,7 +378,7 @@
     "category": "stocks_vietnam",
     "audio_cached": false,
     "added_at": "2026-03-07T12:27:36.667939",
-    "tag": "Thể loại tin tức này thuộc loại: L"
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Shopify Inc. (SHOP) a Strong Buy, Per Wall Street",
@@ -1146,10 +1148,10 @@
     "icon": "📰",
     "lang": "vi",
     "category": "stocks_vietnam",
-    "audio_cached": false,
+    "audio_cached": "error",
     "added_at": "2026-03-07T10:48:26.608019",
-    "summary_text": "❌ AI từ chối xử lý: timed out",
-    "tag": "Thể loại tin tức: Công nghệ<|eot_id|>"
+    "summary_text": "❌ AI từ chối xử lý: Tất cả các API Tóm tắt đang lỗi mạng hoặc cạn Quot",
+    "tag": "Kinh doanh"
   },
   {
     "title": "Giá xăng tăng 4.700 đồng một lít",
@@ -1190,7 +1192,7 @@
     "category": "stocks_vietnam",
     "audio_cached": false,
     "added_at": "2026-03-07T10:48:26.608019",
-    "tag": "Chứng khoán"
+    "tag": "Thị trường vàng trong nước hôm nay (31"
   },
   {
     "title": "Hàng không Việt tuyển thêm hàng nghìn tiếp viên",
@@ -1216,7 +1218,7 @@
     "category": "stocks_vietnam",
     "audio_cached": false,
     "added_at": "2026-03-07T10:48:26.608019",
-    "tag": "Thể loại tin tức này thuộc loại: Ch"
+    "tag": "Thể loại:<|eot_id|>"
   },
   {
     "title": "Tổng thống Trump kêu gọi Iran “đầu hàng vô điều kiện”, Qatar cảnh báo về cú sốc giá dầu",
@@ -1533,7 +1535,7 @@
     "category": "cybersecurity",
     "audio_cached": false,
     "added_at": "2026-03-07T10:47:06.356433",
-    "tag": "Thể loại tin tức: Công nghệ<|eot_id|>"
+    "tag": "Công nghệ"
   },
   {
     "title": "Ghanain man pleads guilty to role in $100 million fraud ring",
@@ -1547,6 +1549,6 @@
     "category": "cybersecurity",
     "audio_cached": false,
     "added_at": "2026-03-07T10:47:06.356433",
-    "tag": "Thể loại tin tức: Khám phá<|eot_id|>"
+    "tag": "Thể loại tin tức: Lỗ hổng"
   }
 ]

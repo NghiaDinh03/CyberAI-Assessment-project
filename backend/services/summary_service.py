@@ -140,6 +140,11 @@ class SummaryService:
                     if not hasattr(SummaryService, '_gemini_cooldowns'):
                         SummaryService._gemini_cooldowns = {} # {key_index: timestamp}
                     
+                    if not hasattr(SummaryService, '_openrouter_key_index'):
+                        SummaryService._openrouter_key_index = 0
+                    if not hasattr(SummaryService, '_openrouter_cooldowns'):
+                        SummaryService._openrouter_cooldowns = {} # {key_index: timestamp}
+                    
                     success = False
                     for _ in range(len(gemini_keys)):
                         idx = SummaryService._gemini_key_index % len(gemini_keys)
@@ -174,36 +179,54 @@ class SummaryService:
                                 logger.warning(f"Gemini Key index {idx} lỗi ({e}). Thử key tiếp theo...")
                             time.sleep(0.5) 
             
-            # Priority 2: Nếu không gọi được Gemini (Hoặc lỗi cả 4 keys), dùng dự phòng siêu mỏng OpenRouter Free
+            # Priority 2: Nếu không gọi được Gemini (Hoặc lỗi cả 4 keys), dùng dự phòng OpenRouter (Xoay vòng 2+ keys)
             if not summary_vi:
-                # Kiểm tra Cooldown OpenRouter (60s)
-                last_429 = getattr(SummaryService, '_openrouter_last_429', 0)
-                if time.time() - last_429 < 60:
-                    logger.warning("OpenRouter đang trong thời gian nghỉ (Cooldown 429). Bỏ qua...")
-                else:
-                    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-                    if OPENROUTER_API_KEY:
-                        logger.info("Tất cả Gemini Keys thất bại. Dùng OpenRouter dự phòng...")
-                        try:
-                            headers = {
-                                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                                "HTTP-Referer": "http://localhost:3000",
-                                "X-Title": "PhoBert Chatbot"
-                            }
-                            payload = {
-                                "model": "openrouter/free",
-                                "messages": [{"role": "user", "content": prompt}],
-                                "temperature": 0.3,
-                                "max_tokens": 2000
-                            }
-                            res = httpx.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=60.0)
-                            if res.status_code == 429:
-                                SummaryService._openrouter_last_429 = time.time()
-                                logger.error("OpenRouter báo lỗi 429 (Too Many Requests). Kích hoạt Cooldown 60s.")
-                            res.raise_for_status()
-                            summary_vi = res.json()["choices"][0]["message"]["content"].strip()
-                        except Exception as e:
-                            logger.error(f"OpenRouter thất bại ({e}). Tạm ngưng do thiếu AI Tóm tắt.")
+                or_keys_env = os.getenv("OPENROUTER_API_KEYS", "").strip()
+                if not or_keys_env:
+                    # Fallback cho biến môi trường cũ đơn lẻ nếu có
+                    or_keys_env = os.getenv("OPENROUTER_API_KEY", "").strip()
+                
+                if or_keys_env:
+                    or_keys = [k.strip() for k in or_keys_env.split(",") if k.strip()]
+                    if or_keys:
+                        logger.info(f"Tất cả Gemini Keys thất bại. Đang thử xoay vòng {len(or_keys)} OpenRouter Keys...")
+                        
+                        for _ in range(len(or_keys)):
+                            idx = SummaryService._openrouter_key_index % len(or_keys)
+                            SummaryService._openrouter_key_index += 1
+                            
+                            # Kiểm tra Cooldown của Key này
+                            last_429 = SummaryService._openrouter_cooldowns.get(idx, 0)
+                            if time.time() - last_429 < 60:
+                                continue
+
+                            current_or_key = or_keys[idx]
+                            try:
+                                headers = {
+                                    "Authorization": f"Bearer {current_or_key}",
+                                    "HTTP-Referer": "http://localhost:3000",
+                                    "X-Title": "PhoBert Chatbot"
+                                }
+                                payload = {
+                                    "model": "openrouter/free",
+                                    "messages": [{"role": "user", "content": prompt}],
+                                    "temperature": 0.3,
+                                    "max_tokens": 2000
+                                }
+                                res = httpx.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=60.0)
+                                
+                                if res.status_code == 429:
+                                    SummaryService._openrouter_cooldowns[idx] = time.time()
+                                    logger.error(f"OpenRouter Key index {idx} báo lỗi 429. Kích hoạt Cooldown 60s.")
+                                    continue
+                                    
+                                res.raise_for_status()
+                                summary_vi = res.json()["choices"][0]["message"]["content"].strip()
+                                logger.info(f"Đã tóm tắt bằng OpenRouter (Key index {idx})")
+                                break
+                            except Exception as e:
+                                logger.warning(f"OpenRouter Key index {idx} lỗi ({e}). Thử key tiếp theo...")
+                                time.sleep(0.5)
             
             if not summary_vi:
                 raise Exception("Tất cả các API Tóm tắt đang lỗi mạng hoặc cạn Quota. Xin chờ 5 phút.")
