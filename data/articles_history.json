@@ -1,5 +1,119 @@
 [
   {
+    "title": "SAP Patches Critical FS-QUO, NetWeaver Vulnerabilities",
+    "url": "https://www.securityweek.com/sap-patches-critical-fs-quo-netweaver-vulnerabilities/",
+    "description": "A code injection bug in FS-QUO and an insecure deserialization flaw in NetWeaver could lead to arbitrary code execution.\nThe post SAP Patches Critical FS-QUO, NetWeaver Vulnerabilities appeared first ",
+    "date": "10/03/2026 14:31",
+    "source": "SecurityWeek",
+    "icon": "🛡️",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": false,
+    "added_at": "2026-03-10T14:47:58.053458"
+  },
+  {
+    "title": "'BlackSanta' EDR Killer Targets HR Workflows",
+    "url": "https://www.darkreading.com/threat-intelligence/blacksanta-edr-killer-hr-workflows",
+    "description": "A campaign by Russian-speaking cyberattackers hijacks workflows to deliver security-busting malware, allowing attackers to steal data without detection.",
+    "date": "10/03/2026 13:30",
+    "source": "Dark Reading",
+    "icon": "💻",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": false,
+    "added_at": "2026-03-10T14:47:58.053458"
+  },
+  {
+    "title": "Thousands Affected by Ericsson Data Breach",
+    "url": "https://www.securityweek.com/thousands-affected-by-ericsson-data-breach/",
+    "description": "The telecommunications equipment and services giant has blamed the incident on a third-party vendor.\nThe post Thousands Affected by Ericsson Data Breach appeared first on SecurityWeek.",
+    "date": "10/03/2026 14:23",
+    "source": "SecurityWeek",
+    "icon": "🛡️",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": true,
+    "added_at": "2026-03-10T14:26:14.716379",
+    "title_vi": "Hàng ngàn người bị ảnh hưởng bởi vi phạm dữ liệu Ericsson",
+    "summary_text": "Tiêu đề: Bí mật dữ liệu Ericsson ảnh hưởng đến hàng nghìn người  \n\nNội dung báo: Chi nhánh Mỹ của tập đoàn lớn về thiết bị và dịch vụ truyền thông toàn cầu Ericsson đã công bố một sự vi phạm dữ liệu ảnh hưởng đến thông tin cá nhân của hàng nghìn người.  \n\nEricsson cho biết sự vi phạm dữ liệu xảy ra tại một nhà cung cấp dịch vụ thứ ba phát hiện truy cập không được phép vào dữ liệu trên hệ thống của họ vào tháng 4 năm 2025.  \n\nNhà cung cấp dịch vụ này không được công khai tên đã thực hiện một cuộc điều tra và kết luận rằng các tệp lưu trữ thông tin cá nhân có thể bị truy cập từ ngày 17 đến 22 tháng 4 năm 2025.  \n\nQuá trình điều tra về sự việc này chỉ hoàn tất vào tháng 2 năm 2026.  \n\nTrong một thông báo với Bộ trưởng An ninh Quốc gia Maine, Ericsson cho biết sự vi phạm dữ liệu ảnh hưởng đến khoảng 15.000 người.  \n\n“Vui lòng ghi chú rằng nhà cung cấp dịch vụ của chúng tôi đã cho chúng tôi biết họ không có bằng chứng về việc sử dụng sai bất kỳ thông tin nào có thể bị ảnh hưởng kể từ thời điểm sự việc,” Ericsson nói.  \n\nQuảng cáo. Duyệt để tiếp tục đọc.  \n\nTuy nhiên, “chưa có bằng chứng về việc sử dụng sai” là một clausule tiêu chuẩn thường được phát hành bởi các tổ chức bị vi phạm, ngay cả trong các trường hợp dữ liệu bị đánh thảm được xác nhận được phát tán công khai.  \n\nEricsson cho biết họ chia sẻ cả dữ liệu nhân viên lẫn khách hàng với các nhà cung cấp dịch vụ thứ ba, nhưng chưa xác định rõ danh mục nào bị ảnh hưởng trong sự việc này.  \n\nLiên quan: Hàng trăm khách hàng Salesforce bị tấn công trong một chiến dịch đánh thảm dữ liệu mới  \n\nLiên quan: Một sự vi phạm dữ liệu của LexisNexis được xác nhận sau khi hacker phát tán các tệp  \n\nLiên quan: 1.2 triệu người bị ảnh hưởng bởi sự vi phạm dữ liệu của Trung tâm Nghiên cứu ung thư Đại học Hawaii",
+    "tag": "Thể loại:<|eot_id|>"
+  },
+  {
+    "title": "New \"LeakyLooker\" Flaws in Google Looker Studio Could Enable Cross-Tenant SQL Queries",
+    "url": "https://thehackernews.com/2026/03/new-leakylooker-flaws-in-google-looker.html",
+    "description": "Cybersecurity researchers have disclosed nine cross-tenant vulnerabilities in Google Looker Studio that could have permitted attackers to run arbitrary SQL queries on victims' databases and exfiltrate",
+    "date": "10/03/2026 18:50",
+    "source": "The Hacker News",
+    "icon": "🔓",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": true,
+    "added_at": "2026-03-10T13:23:16.075761",
+    "title_vi": "Lỗ hổng \"LeakyLooker\" mới trong Google Looker Studio có thể cho phép truy vấn SQL của người thuê chéo",
+    "summary_text": "Lỗ hổng LeakyLooker mới trong Google Looker Studio có thể cho phép truy vấn SQL xuyên thuê bao\n\nCác nhà nghiên cứu bảo mật đã công bố chín lỗ hổng xuyên thuê bao trong Google Looker Studio có thể cho phép kẻ tấn công chạy các truy vấn SQL tùy ý trên cơ sở dữ liệu của nạn nhân và đánh cắp dữ liệu nhạy cảm trong môi trường Google Cloud của tổ chức.\n\nCác khiếm khuyết này đã được Tenable đặt tên chung là LeakyLooker. Hiện chưa có bằng chứng cho thấy các lỗ hổng đã bị khai thác ngoài thực tế. Sau khi được thông báo có trách nhiệm vào tháng 6 năm 2025, Google đã khắc phục các vấn đề này.\n\nDanh sách các lỗ hổng bảo mật bao gồm:\n\nCác lỗ hổng đã phá vỡ các giả định thiết kế cơ bản, tiết lộ một lớp tấn công mới, và có thể cho phép kẻ tấn công đánh cắp, chèn và xóa dữ liệu trong dịch vụ của nạn nhân và môi trường Google Cloud, nhà nghiên cứu bảo mật Liv Matan cho biết trong báo cáo chia sẻ với The Hacker News.\n\nCác lỗ hổng này đã phơi bày dữ liệu nhạy cảm trên các môi trường Google Cloud Platform (GCP), có thể ảnh hưởng đến bất kỳ tổ chức nào sử dụng Google Sheets, BigQuery, Spanner, PostgreSQL, MySQL, Cloud Storage và hầu như bất kỳ dữ liệu kết nối nào khác của Looker Studio.\n\nKhai thác thành công các lỗ hổng xuyên thuê bao có thể cho phép các tác nhân đe dọa truy cập vào toàn bộ tập dữ liệu và dự án trên các thuê bao đám mây khác nhau.\n\nKẻ tấn công có thể quét các báo cáo Looker Studio công khai hoặc truy cập vào các báo cáo riêng tư sử dụng các kết nối này (ví dụ: BigQuery) và chiếm quyền kiểm soát cơ sở dữ liệu, cho phép chúng chạy các truy vấn SQL tùy ý trên toàn bộ dự án GCP của chủ sở hữu.\n\nNgoài ra, nạn nhân tạo báo cáo ở chế độ công khai hoặc chia sẻ với người nhận cụ thể, và sử dụng nguồn dữ liệu kết nối JDBC như PostgreSQL. Trong kịch bản này, kẻ tấn công có thể tận dụng lỗ hổng logic trong tính năng sao chép báo cáo, cho phép sao chép báo cáo trong khi vẫn giữ lại thông tin đăng nhập của chủ sở hữu ban đầu, cho phép chúng xóa hoặc sửa đổi bảng.\n\nMột hướng tấn công tác động cao khác được công ty an ninh mạng chi tiết liên quan đến đánh cắp dữ liệu chỉ với một cú nhấp chuột, trong đó chia sẻ một báo cáo được tạo đặc biệt buộc trình duyệt của nạn nhân thực thi mã độc hại liên hệ với dự án do kẻ tấn công kiểm soát để tái tạo toàn bộ cơ sở dữ liệu từ nhật ký.\n\nCác lỗ hổng đã phá vỡ cam kết cơ bản rằng 'Người xem' không bao giờ có thể kiểm soát dữ liệu họ đang xem, Matan cho biết, đồng thời cho biết thêm chúng có thể cho phép kẻ tấn công đánh cắp hoặc sửa đổi dữ liệu trên các dịch vụ của Google như BigQuery và Google Sheets.",
+    "tag": "Thể loại: Lỗ hổng<|eot_id|>"
+  },
+  {
+    "title": "OpenAI Rolls Out Codex Security Vulnerability Scanner",
+    "url": "https://www.securityweek.com/openai-rolls-out-codex-security-vulnerability-scanner/",
+    "description": "Codex Security, formerly Aardvark⁠, has found hundreds of critical vulnerabilities in tested software in the past month.\nThe post OpenAI Rolls Out Codex Security Vulnerability Scanner appeared first o",
+    "date": "10/03/2026 13:23",
+    "source": "SecurityWeek",
+    "icon": "🛡️",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": true,
+    "added_at": "2026-03-10T13:23:16.075761",
+    "title_vi": "OpenAI triển khai Máy quét lỗ hổng bảo mật Codex",
+    "summary_text": "OpenAItriển khai Máy quét lỗ hổng bảo mật Codex\n\nOpenAI đang triển khai công cụ quét lỗ hổng bảo mật AI mới, được hãng tuyên bố có khả năng tìm ra các lỗi phức tạp mà các công cụ agentic khác có thể bỏ qua.\n\nCông cụ này, được gọi là Codex Security (trước đây là Aardvark), hiện đang trong giai đoạn nghiên cứu, nhưng đã được thử nghiệm trong phiên bản beta riêng tư kể từ năm ngoái, bao gồm các công ty lớn như Netgear.\n\nCodex Security hiện có sẵn cho khách hàng của ChatGPT Pro, Doanh nghiệp, Doanh nghiệp và Giáo dục với sử dụng miễn phí trong tháng đầu tiên.\n\nHãng AI cho biết công cụ mới của mình được thiết kế để phân tích kho lưu trữ cho hệ thống và tạo ra mô hình nguy cơ tập trung vào vai trò của hệ thống, các phần tử tin cậy và các lỗ hổng.\n\nDựa trên mô hình nguy cơ được tạo ra, Codex sẽ tìm kiếm các lỗ hổng và đánh giá chúng theo mức độ ảnh hưởng thực tế. Nó cũng đề xuất các bản sửa lỗi cho các lỗi đã được phát hiện.\n\nTheo OpenAI, Codex Security đã được thử nghiệm trên 1.2 triệu lệnh trong 30 ngày gần nhất, phát hiện gần 800 lỗi nghiêm trọng và hơn 10.000 lỗi độ cao.\n\nCác lỗ hổng này đã được tìm thấy trong các dự án mã nguồn mở phổ biến như Chromium, OpenSSL, PHP, GOGS và GnuTLS.\n\nThông báo của OpenAI đến sau khi Claude giới thiệu máy quét lỗ hổng bảo mật của riêng mình, Claude Code Security, điều này đã dẫn đến giảm giá trị của các công ty an ninh lớn.\n\nCác công cụ quét lỗ hổng bảo mật dựa trên AI không mới lạ. GitHub đã cung cấp những khả năng này trong nhiều năm, và Google tuyên bố đã tiến bộ đáng kể trong khu vực này.\n\nLiên quan: Nhà lập trình viên sử dụng Claude Code để tấn công chính phủ Mexico\n\nLiên quan: OpenClaw Vulnerability Cho phép Website Tấn công AI Agents\n\nLiên quan: Lỗ hổng trong MS-Agent AI Framework Có thể Dẫn đến Hợp đồng Hệ thống Hoàn toàn Thất bại",
+    "tag": "Thể loại: Lỗ hổng<|eot_id|>"
+  },
+  {
+    "title": "Kevin Mandia’s Armadin Launches With $190 Million in Funding",
+    "url": "https://www.securityweek.com/kevin-mandias-armadin-launches-with-189-9-million-in-funding/",
+    "description": "Armadin uses AI-powered red teaming to find and exploit weaknesses in the same way that attackers attack them.\nThe post Kevin Mandia’s Armadin Launches With $190 Million in Funding appeared first on S",
+    "date": "10/03/2026 13:21",
+    "source": "SecurityWeek",
+    "icon": "🛡️",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": true,
+    "added_at": "2026-03-10T13:22:14.735201",
+    "title_vi": "Kevin Mandias Armadin ra mắt với 190 triệu đô la trong tài trợ",
+    "summary_text": "Armadin của Kevin Mandia Khởi Động Với 190 Triệu USD Ngân Sách  \n\nKevin Mandia, người từng thành lập Mandiant và bán công ty cung cấp dịch vụ phản ứng sự cố và thông báo mối đe dọa cho FireEye với giá 1 tỷ USD năm 2014 trước khi Google mua lại FireEye với 5,4 tỷ USD, đã khởi động một startup mới trong lĩnh vực bảo mật mạng. Armadin, công ty có trụ sở tại San Francisco, đã công bố một vòng tài chính Seed và Series A với tổng số 189,9 triệu USD, đồng nghĩa với việc khởi động chính thức (công ty đã đồng thời đăng tải một bài blog của Mandia có tiêu đề Giới thiệu Armadin).  \n\nArmadin áp dụng phương pháp đụng cưỡng dựa trên AI để tìm và khai thác các lỗ hổng như cách mà các kẻ tấn công thực hiện. Mandia từng thành lập công ty phản ứng sự cố Mandiant, được FireEye mua với 1 tỷ USD năm 2014 và sau đó bị Google mua lại với 5,4 tỷ USD. Tài chính này được Accel lãnh đạo, với sự tham gia từ Google Ventures, Kleiner Perkins, Menlo Ventures, In-Q-Tel, và đầu tư tiếp theo từ 8VC và Ballistic Ventures – được cho là là vòng tài chính Seed và Series A lớn nhất trong lịch sử bảo mật mạng.  \n\nCông ty được khởi động một cách hiền hòa vào cuối năm 2025 với đầu tư Seed ban đầu 24 triệu USD. Bây giờ, với việc khởi động chính thức, các co-founder của Mandia được công khai là Travis Lanham (Chuyên gia kỹ thuật), Evan Peña (chủ tịch an ninh tấn công) và David Slater (giáo sư kiến trúc). Mandia giữ vai trò là CEO.  \n\nArmadin có thể được mô tả là đội đụng cưỡng biến đổi với AI. Tôi tin rằng trong vài năm tới, hầu hết các cuộc tấn công mạng sẽ dựa trên AI – tập thể, cá nhân hóa và không ngừng, Mandia viết trong blog của mình. Chúng sẽ không bị giới hạn bởi khả năng của con người và có thể thực hiện quy mô mà chúng ta chưa từng thấy trước.  \n\nArmadin ý định đấu tranh bằng cách dùng vũ khí tương tự. Trong thế giới có tốc độ tấn công máy tính, phòng thủ phải trở nên tự động. Bạn không thể có con người trong vòng lặp cho mỗi quyết định phòng thủ và vẫn hy vọng thắng, ông nhấn mạnh trong tài liệu khởi động. Chúng tôi đang xây dựng một đội đụng cưỡng mạnh mẽ nhất để cho các tổ chức có phòng thủ tốt nhất. Điều này quan trọng cho an ninh quốc gia.  \n\nĐội đụng cưỡng mạnh mẽ được xây dựng từ đội ngũ chuyên gia đụng cưỡng và nhà nghiên cứu AI. Mục tiêu là cung cấp một nền tảng có thể thực hiện an ninh tấn công dựa trên AI nhanh chóng như kẻ tấn công – để đóng hoặc ít nhất giảm khoảng cách tính nhanh truyền thống – với đàn tấn công tự động, có tính chủ động của riêng nó.  \n\nTrước khi có Armadin, bạn không thể đặt một kẻ thù cấp quốc gia bên trong mạng của mỗi tổ chức 24/7, Lanham nói. Chúng tôi đã xây dựng kẻ thù tối cực – nó không chỉ tuân theo kịch bản, mà còn có khả năng suy luận và học hỏi khi tập thể tấn công các hệ thống bảo vệ của bạn. Chúng tôi đào tạo các mô hình và xây dựng các tác nhân theo tiêu chuẩn đội đụng cưỡng cấp cao nhất, với an toàn là nền tảng và giải phóng chúng để phát hiện rủi ro có thể bị khai thác với tốc độ máy tính.  \n\nPhương pháp đụng cưỡng truyền thống không thể đối phó với thời đại mới của các cuộc tấn công được đẩy bởi AI. Armadin dự kiến giải quyết vấn đề này bằng phương pháp đụng cưỡng dựa trên AI.",
+    "tag": "Thể loại:<|eot_id|>"
+  },
+  {
+    "title": "Hundreds of Salesforce Customers Allegedly Targeted in New Data Theft Campaign",
+    "url": "https://www.securityweek.com/hundreds-of-salesforce-customers-allegedly-targeted-in-new-data-theft-campaign/",
+    "description": "Salesforce has confirmed that customers are being targeted via poorly secured instances.\nThe post Hundreds of Salesforce Customers Allegedly Targeted in New Data Theft Campaign appeared first on Secur",
+    "date": "10/03/2026 12:37",
+    "source": "SecurityWeek",
+    "icon": "🛡️",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": true,
+    "added_at": "2026-03-10T13:22:14.735201",
+    "title_vi": "Hàng trăm khách hàng Salesforce bị cáo buộc nhắm mục tiêu trong chiến dịch trộm cắp dữ liệu mới",
+    "summary_text": "Hàng trăm khách hàng Salesforce bị cáo ShinyHunters đe dọa dữ liệu",
+    "tag": "Thể loại:<|eot_id|>"
+  },
+  {
+    "title": "Escape Raises $18 Million to Automate Pentesting",
+    "url": "https://www.securityweek.com/escape-raises-18-million-to-automate-pentesting/",
+    "description": "The company will deepen its platform's AI agent capabilities and scale engineering and go-to-market teams.\nThe post Escape Raises $18 Million to Automate Pentesting appeared first on SecurityWeek.",
+    "date": "10/03/2026 11:58",
+    "source": "SecurityWeek",
+    "icon": "🛡️",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": true,
+    "added_at": "2026-03-10T11:58:43.002010",
+    "title_vi": "Thoát khỏi tăng 18 triệu đô la để tự động kiểm tra",
+    "summary_text": "TÊN BÀI BÁO: Escape Thăng Hạng $18 Tỷ Để Tự Động Kiểm Tra Bảo Mật Tấn Công\n\nNỘI DUNG:\n\nCông ty công nghệ bảo mật tấn công (offensive cybersecurity) Escape hôm nay tuyên bố đã thu hút 18 triệu đô la trong vòng đầu tư Series A, đẩy tổng số vốn đã thu được của công ty lên trên 23 triệu đô la.\n\nCuộc đầu tư mới được lãnh đạo bởi Balderton, với sự hỗ trợ thêm từ Uncorrelated Ventures và các nhà đầu tư trước đây IRIS và Y Combinator.\n\nCông ty được thành lập năm 2020, nằm tại Paris, Pháp. Escape nhắm đến mục tiêu tự động hóa toàn bộ chu kỳ bảo mật tấn công bằng các động cơ AI có thể liên tục khám phá, kiểm tra và sửa lỗi lỗ hổng trực tiếp trong các quy trình làm việc.\n\nNền tảng của Escape tự động hóa khám phá lỗ hổng trong lãnh vực tấn công, kiểm tra bảo mật và sửa lỗi, đảm bảo hệ thống vẫn hoạt động trong khi lỗ hổng được phát hiện và sửa chữa.\n\nCông ty cho biết đã làm việc với hơn 2.000 nhóm khách hàng trên toàn thế giới.\n\nKhoản vốn mới này sẽ giúp Escape nâng cao khả năng AI của nền tảng, thêm vào đó là lý thuyết ứng dụng để tạo ra các động cơ kiểm tra tấn công (agentic pentesting). Công ty cũng định hướng mở rộng đội ngũ kỹ thuật và chiến lược bán hàng trên cả Châu Âu và Châu Mỹ.\n\n“Các nhóm bảo mật đang bị thiếu người và đang bị cạn kiệt bởi các quy trình thủ công phân tách. Trong một thế giới nơi mã nguồn được viết và bị tấn công với tốc độ của AI, điều này không thể tiếp tục. Chúng tôi xây dựng Escape là nền tảng kỹ thuật bảo mật tấn công để giải quyết vấn đề này ở quy mô lớn,” nói Tristan Kalos, cựu tổng giám đốc và tổng giám đốc của Escape.\n\nLiên quan: Cylake Nhận $45 Tỷ Để Bảo Vệ Các Tổ Chức Không Được Phép Trở Thành Đám Mây  \nLiên quan: Báo cáo M&A Bảo Mật: 42 Đơn Đăng Ký Được Đăng Ký Trong Tháng 02/2026  \nLiên quan: ArmorCode Nhận $16 Tỷ Để Quản Lý Cảnh Bảo  \nLiên quan: Công Ty Bảo Mật Dữ Liệu Evervault Nhận $25 Tỷ Trong Vòng B Đầu Tiên",
+    "tag": "Thể loại tin tức: Khám phá<|eot_id|>"
+  },
+  {
     "title": "Ringmetall acquires Turkish liner maker Makplast",
     "url": "https://finance.yahoo.com/news/ringmetall-acquires-turkish-liner-maker-113716613.html",
     "description": "",
@@ -56,8 +170,11 @@
     "icon": "💰",
     "lang": "en",
     "category": "stocks_international",
-    "audio_cached": false,
-    "added_at": "2026-03-10T11:53:07.651715"
+    "audio_cached": "error",
+    "added_at": "2026-03-10T11:53:07.651715",
+    "title_vi": "Standard Chartered mở rộng đội ngũ ngân hàng tư nhân tại Singapore – báo cáo",
+    "summary_text": "❌ Lỗi truy cập trang: Article `download()` failed with HTTPSConnectionPo",
+    "tag": "Thể loại tin tức: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Strategy Adds 18k Bitcoin, Both Guns Blazing Amid $11.5 Billion Mystery",
@@ -68,8 +185,11 @@
     "icon": "💰",
     "lang": "en",
     "category": "stocks_international",
-    "audio_cached": false,
-    "added_at": "2026-03-10T11:53:07.651715"
+    "audio_cached": "error",
+    "added_at": "2026-03-10T11:53:07.651715",
+    "title_vi": "Chiến lược Thêm 18k Bitcoin, Cả hai súng Blazing Trong bối cảnh $11.5 Tỷ bí ẩn",
+    "summary_text": "❌ Nội dung bài báo quá ngắn hoặc bị chặn cào bot.",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
   },
   {
     "title": "BofA Cuts PT on Netflix, Inc. (NFLX) to $125 From $149 – Here’s Why",
@@ -80,8 +200,11 @@
     "icon": "💰",
     "lang": "en",
     "category": "stocks_international",
-    "audio_cached": false,
-    "added_at": "2026-03-10T11:53:07.651715"
+    "audio_cached": "error",
+    "added_at": "2026-03-10T11:53:07.651715",
+    "title_vi": "BofA cắt giảm PT trên Netflix, Inc. (NFLX) xuống $ 125 từ $ 149 - Đây là lý do tại sao",
+    "summary_text": "❌ Lỗi truy cập trang: Article `download()` failed with HTTPSConnectionPo",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Market Digest: MRVL, AVB, DGX, DEO, NCLH",
@@ -93,7 +216,9 @@
     "lang": "en",
     "category": "stocks_international",
     "audio_cached": false,
-    "added_at": "2026-03-10T11:53:07.651715"
+    "added_at": "2026-03-10T11:53:07.651715",
+    "title_vi": "Tiêu hoá thị trường: MRVL, AVB, DGX, DEO, NCLH",
+    "tag": "Thị trường chứng khoán Mỹ đã trải qua một"
   },
   {
     "title": "Stock market today: Dow, S&P 500, Nasdaq futures falter, oil slides as Wall Street weighs Iran war signals",
@@ -105,7 +230,9 @@
     "lang": "en",
     "category": "stocks_international",
     "audio_cached": false,
-    "added_at": "2026-03-10T11:53:07.651715"
+    "added_at": "2026-03-10T11:53:07.651715",
+    "title_vi": "Thị trường chứng khoán hôm nay: Dow, S&P 500, Nasdaq tương lai chùn bước, dầu trượt dốc khi Phố Wall cân nhắc các tín hiệu chiến tranh Iran",
+    "tag": "Từ khóa: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Earnings live: Hewlett Packard Enterprise raises earnings guidance, Casey's stock rises",
@@ -117,7 +244,9 @@
     "lang": "en",
     "category": "stocks_international",
     "audio_cached": false,
-    "added_at": "2026-03-10T11:53:07.651715"
+    "added_at": "2026-03-10T11:53:07.651715",
+    "title_vi": "Thu nhập trực tiếp: Hewlett Packard Enterprise tăng hướng dẫn thu nhập, cổ phiếu của Casey tăng",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Bill Ackman tries again with plan for IPO of Pershing Square and a new fund",
@@ -129,7 +258,9 @@
     "lang": "en",
     "category": "stocks_international",
     "audio_cached": false,
-    "added_at": "2026-03-10T11:53:07.651715"
+    "added_at": "2026-03-10T11:53:07.651715",
+    "title_vi": "Bill Ackman cố gắng một lần nữa với kế hoạch IPO của Pershing Square và một quỹ mới",
+    "tag": "Thể loại tin tức: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Scientists behind COVID-19 vaccine will depart BioNTech",
@@ -141,7 +272,9 @@
     "lang": "en",
     "category": "stocks_international",
     "audio_cached": false,
-    "added_at": "2026-03-10T11:53:07.651715"
+    "added_at": "2026-03-10T11:53:07.651715",
+    "title_vi": "Các nhà khoa học đằng sau vắc-xin COVID-19 sẽ rời BioNTech",
+    "tag": "Thể loại:<|eot_id|>"
   },
   {
     "title": "Olaplex stock has plunged since its IPO. Here’s how the hair care brand is trying to turn itself around",
@@ -153,7 +286,9 @@
     "lang": "en",
     "category": "stocks_international",
     "audio_cached": false,
-    "added_at": "2026-03-10T11:53:07.651715"
+    "added_at": "2026-03-10T11:53:07.651715",
+    "title_vi": "cổ phiếu Olaplex đã giảm mạnh kể từ khi IPO của nó. Dưới đây là cách các thương hiệu chăm sóc tóc đang cố gắng để biến bản thân xung quanh",
+    "tag": "Thể loại tin tức này được miêu tả bằng"
   },
   {
     "title": "Return to the 2022 stock-market playbook as Iran conflict drags on, say these strategists",
@@ -165,7 +300,9 @@
     "lang": "en",
     "category": "stocks_international",
     "audio_cached": false,
-    "added_at": "2026-03-10T11:53:07.651715"
+    "added_at": "2026-03-10T11:53:07.651715",
+    "title_vi": "Quay trở lại cuốn sách chiến lược thị trường chứng khoán 2022 khi xung đột Iran kéo dài, những nhà chiến lược này nói",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Saudi Aramco promises full production can be restored within days if Strait of Hormuz is reopened",
@@ -177,7 +314,9 @@
     "lang": "en",
     "category": "stocks_international",
     "audio_cached": false,
-    "added_at": "2026-03-10T11:53:07.651715"
+    "added_at": "2026-03-10T11:53:07.651715",
+    "title_vi": "Saudi Aramco hứa sản xuất đầy đủ có thể được phục hồi trong vòng vài ngày nếu Eo biển Hormuz được mở cửa trở lại",
+    "tag": "Thể loại:<|eot_id|>"
   },
   {
     "title": "Social Security is already the best antipoverty program we have — don’t make this radical change",
@@ -189,7 +328,9 @@
     "lang": "en",
     "category": "stocks_international",
     "audio_cached": false,
-    "added_at": "2026-03-10T11:53:07.651715"
+    "added_at": "2026-03-10T11:53:07.651715",
+    "title_vi": "An sinh xã hội đã là chương trình chống nghèo đói tốt nhất mà chúng ta có - đừng thực hiện thay đổi triệt để này",
+    "tag": "- Thứ trưởng Bộ LĐ-TB&"
   },
   {
     "title": "Việt Nam sắp có một tập đoàn đường sắt quốc gia",
@@ -200,8 +341,11 @@
     "icon": "💹",
     "lang": "vi",
     "category": "stocks_vietnam",
-    "audio_cached": false,
-    "added_at": "2026-03-10T11:52:54.128407"
+    "audio_cached": true,
+    "added_at": "2026-03-10T11:52:54.128407",
+    "title_vi": "Việt Nam sắp có một tập đoàn đường sắt quốc gia",
+    "summary_text": "Việt Nam sắp có một tập đoàn đường sắt quốc gia\n\nBộ Tài chính đề xuất chuyển đổi Tổng công ty Đường sắt Việt Nam thành Tập đoàn Đường sắt Quốc gia Việt Nam theo mô hình công ty mẹ - công ty con.\n\nChiều 10/3, Phó thủ tướng Hồ Đức Phớc chủ trì cuộc họp về đề án cơ cấu lại Tổng công ty Đường sắt Việt Nam giai đoạn 2026-2030, tầm nhìn đến năm 2035 theo định hướng tổ chức lại doanh nghiệp theo mô hình tập đoàn.\n\nTheo báo cáo của Bộ Tài chính, mục tiêu của việc cơ cấu lại là chuyển Tổng công ty Đường sắt Việt Nam sang mô hình tập đoàn kinh tế hoạt động theo cấu trúc nhóm công ty mẹ - công ty con, trong đó Nhà nước nắm giữ 100% vốn điều lệ tại công ty mẹ.\n\nCụ thể, Bộ Tài chính đề xuất thành lập Tập đoàn Đường sắt Quốc gia Việt Nam trên cơ sở chuyển đổi mô hình từ Tổng công ty Đường sắt Việt Nam. Doanh nghiệp này sẽ đóng vai trò công ty mẹ trong hệ thống tập đoàn, đảm bảo năng lực để tham gia triển khai, thực hiện các nhiệm vụ được giao.\n\nTheo định hướng, trong giai đoạn 2026-2030, tầm nhìn đến năm 2035, giá trị sản lượng và doanh thu toàn Tổng công ty Đường sắt Việt Nam, Tập đoàn Đường sắt Quốc gia Việt Nam (sau khi thành lập) sẽ tăng trưởng bình quân từ 10%/năm trở lên.\n\nNội dung cơ cấu lại doanh nghiệp bao gồm nhiều nội dung như: ngành nghề kinh doanh; phương án cơ cấu lại tài chính, vốn và tài sản; cơ cấu lại nhân sự và tổ chức bộ máy quản lý; kế hoạch/danh mục sắp xếp, cơ cấu lại công ty mẹ, các đơn vị thành viên; lộ trình thực hiện.\n\nKết luận cuộc họp, Phó thủ tướng Hồ Đức Phớc cho biết việc xây dựng đề án cơ cấu lại doanh nghiệp nhằm đáp ứng yêu cầu phát triển ngành đường sắt trong giai đoạn mới, khi nhiều dự án và tuyến đường sắt đang được chuẩn bị triển khai.\n\nTheo Phó thủ tướng, thực tiễn phát triển hệ thống đường sắt trong nước cũng như kinh nghiệm quốc tế cho thấy nhiều quốc gia có mạng lưới đường sắt phát triển như Trung Quốc, Đức, Pháp, Nga, Nhật Bản hay Hàn Quốc đều tổ chức doanh nghiệp đường sắt theo mô hình tập đoàn để tập trung nguồn lực. Vì vậy, việc định hướng nâng cấp Tổng công ty Đường sắt Việt Nam thành tập đoàn được cho là cần thiết.\n\nTuy nhiên, ông nhấn mạnh việc thành lập Tập đoàn Đường sắt Quốc gia Việt Nam về bản chất là nâng cấp mô hình hiện có, bởi Tổng công ty Đường sắt Việt Nam hiện đã hoạt động theo cấu trúc công ty mẹ - công ty con. Do đó, quá trình chuyển đổi cần tạo ra động lực phát triển thực chất từ bên trong, tránh tình trạng “bình mới rượu cũ”.\n\nTheo Phó thủ tướng, nếu hình thành tập đoàn, ngành đường sắt sẽ có điều kiện phát triển các lĩnh vực quan trọng như công nghiệp chế tạo trong ngành (chế tạo toa xe, đầu máy, thiết bị), phát triển logistics, quản lý và khai thác các tuyến đường sắt cao tốc cũng như các tuyến hiện hữu.\n\nBên cạnh đó, mô hình tập đoàn cũng được kỳ vọng giúp khai thác hiệu quả hơn hạ tầng đường sắt, tăng cường liên kết với khu vực tư nhân để mở rộng hệ sinh thái phát triển ngành.",
+    "tag": "Thể loại:<|eot_id|>"
   },
   {
     "title": "Cấm doanh nghiệp xăng dầu găm hàng, bán 'nhỏ giọt'",
@@ -212,8 +356,11 @@
     "icon": "💹",
     "lang": "vi",
     "category": "stocks_vietnam",
-    "audio_cached": false,
-    "added_at": "2026-03-10T11:52:54.128407"
+    "audio_cached": true,
+    "added_at": "2026-03-10T11:52:54.128407",
+    "title_vi": "Cấm doanh nghiệp xăng dầu găm hàng, bán 'nhỏ giọt'",
+    "summary_text": "Cấm doanh nghiệp xăng dầu găm hàng, bán 'nhỏ giọt'  \nThông tin này xuất phát từ quy trình của Bộ Công Thương trong quá trình ứng phó với biến động thị trường. Các chính quyền yêu cầu các địa phương và doanh nghiệp phải tuân thủ các biện pháp bảo đảm an toàn nguồn cung. Điều này được giải thích do việc xung đột tại Trung Đông gây ảnh hưởng đến cung cấp nguồn cung xăng dầu toàn cầu. Các biện pháp như kiểm tra chất lượng, giám sát, và tăng cường quản lý được đề nghị. Đồng thời, chính phủ kêu gọi hợp tác giữa các bên để giải quyết tình trạng bị cấm bán lẻ xăng dầu dừng. Quy trình này nhằm đảm bảo ổn định kinh tế và đảm bảo an toàn cho người dân.",
+    "tag": "Thể loại tin tức: Chứng khoán<|eot_id|>"
   },
   {
     "title": "How to Stop AI Data Leaks: A Webinar Guide to Auditing Modern Agentic Workflows",
@@ -227,7 +374,8 @@
     "audio_cached": true,
     "added_at": "2026-03-10T11:52:42.260527",
     "title_vi": "Làm thế nào để ngăn chặn rò rỉ dữ liệu AI: Hướng dẫn hội thảo trên web để kiểm toán quy trình làm việc đại lý hiện đại",
-    "summary_text": "Hướng Dẫn Dừng Trò Lỗi Rò Rỉ Dữ Liệu AI: Hướng Dẫn Kiểm Toán Các Quy Trình Công Việc Tự Động Hiện Đại\n\nArtificial Intelligence (AI) no còn chỉ là một công cụ mà chúng ta nói chuyện; nó là công cụ thực hiện các công việc cho chúng ta. Những công cụ này được gọi là AI Agents. Chúng có thể gửi email, di chuyển dữ liệu và thậm chí quản lý phần mềm một mình.\n\nNhưng có một vấn đề"
+    "summary_text": "Hướng Dẫn Dừng Trò Lỗi Rò Rỉ Dữ Liệu AI: Hướng Dẫn Kiểm Toán Các Quy Trình Công Việc Tự Động Hiện Đại\n\nArtificial Intelligence (AI) no còn chỉ là một công cụ mà chúng ta nói chuyện; nó là công cụ thực hiện các công việc cho chúng ta. Những công cụ này được gọi là AI Agents. Chúng có thể gửi email, di chuyển dữ liệu và thậm chí quản lý phần mềm một mình.\n\nNhưng có một vấn đề",
+    "tag": "Thể loại tin tức: Khám phá<|eot_id|>"
   },
   {
     "title": "The Zero-Day Scramble is Avoidable: A Guide to Attack Surface Reduction",
@@ -238,10 +386,11 @@
     "icon": "🔓",
     "lang": "en",
     "category": "cybersecurity",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T11:52:42.260527",
     "title_vi": "Zero-Day Scramble là tránh được: Hướng dẫn tấn công giảm bề mặt",
-    "summary_text": "Cách Tránh Cụm Tấn Công Zero-Day: Hướng Dẫn Giảm Bề Mặt Tấn Công\n\nBạn không thể kiểm soát khi lỗi nghiêm trọng tiếp theo xuất hiện. Bạn có thể kiểm soát mức độ mở rộng môi trường bị ảnh hưởng khi đó xảy ra. Vấn đề là hầu hết các nhóm có nhiều nội dung mở rộng mạng ngoại vi hơn họ nhận thức được. Giám đốc An ninh của Intruder phân tích nguyên nhân này và cách các nhóm có thể quản lý nó một cách có hệ thống.\n\nThời gian tấn công đang giảm dần\n\nMức độ lớn và ít kiểm soát hơn của bề mặt tấn công tăng"
+    "summary_text": "Cách Tránh Cụm Tấn Công Zero-Day: Hướng Dẫn Giảm Bề Mặt Tấn Công\n\nBạn không thể kiểm soát khi lỗi nghiêm trọng tiếp theo xuất hiện. Bạn có thể kiểm soát mức độ mở rộng môi trường bị ảnh hưởng khi đó xảy ra. Vấn đề là hầu hết các nhóm có nhiều nội dung mở rộng mạng ngoại vi hơn họ nhận thức được. Giám đốc An ninh của Intruder phân tích nguyên nhân này và cách các nhóm có thể quản lý nó một cách có hệ thống.\n\nThời gian tấn công đang giảm dần\n\nMức độ lớn và ít kiểm soát hơn của bề mặt tấn công tăng cao cơ hội bị tấn công. Cửa sổ để hành động càng giảm nhanh. Với các lỗi nghiêm trọng nhất, thời gian giữa khi thông báo và khi tấn công có thể chỉ là 24-48 giờ. Dự đoán thời điểm tấn công trước lỗi nghiêm trọng cho thấy thời gian này sẽ chỉ là phút đến năm 2028.\n\nĐó không phải là một khoảng thời gian dài khi bạn cân nhắc những gì phải xảy ra trước khi triển khai bản sửa lỗi: thực hiện quét, chờ kết quả, tạo phiếu yêu cầu, thảo luận ưu tiên, triển khai và xác nhận lỗi. Nếu thông báo xảy ra vào giờ nghỉ, nó thậm chí mất nhiều thời gian hơn.\n\nTrong nhiều trường hợp, các hệ thống nguy hiểm không cần phải mở rộng mạng ngoại vi. Với sự nhìn thấy rõ ràng của bề mặt tấn công, các nhóm có thể giảm bớt nội dung mở rộng không cần thiết từ trước và tránh được cụm tấn công khi một lỗi nghiêm trọng mới xuất hiện.\n\nKhi một lỗi nghiêm trọng xảy ra vào thứ Bảy\n\nToolShell là lỗi tấn công mã độc không được xác nhận trước khi Microsoft SharePoint. Nếu kẻ tấn công có thể tiếp cận nó, họ có thể thực thi mã trên máy chủ của bạn - và vì SharePoint kết nối với Active Directory, họ sẽ bắt đầu trong một phần môi trường rất quan trọng.\n\nĐây là một lỗi nghiêm trọng, có nghĩa là kẻ tấn công đang tấn công trước khi có bản sửa lỗi. Microsoft thông báo vào một thứ Bảy và xác nhận rằng các nhóm tấn công do chính phủ Trung Quốc đã tấn công nó trong hai tuần trước thông báo đó. Khi hầu hết các nhóm mới biết về nó, kẻ tấn công khả năng tấn công đã bắt đầu quét và tấn công ở quy mô lớn.\n\nNghiên cứu của Intruder phát hiện hàng nghìn máy chủ SharePoint công khai trước khi thông báo - mặc dù SharePoint không cần phải mở rộng mạng ngoại vi. Mỗi một trong những nội dung này đều không cần thiết - và mỗi máy chủ chưa sửa lỗi đều là một cửa sổ mở.\n\nTại sao các nội dung bị bỏ qua\n\nVậy tại sao các nội dung thường bị bỏ qua bởi các nhóm an ninh?\n\nTrong một quét bên ngoài thông thường, các phát hiện thông tin nằm dưới hàng trăm các lỗi nghiêm trọng, cao, trung bình và thấp. Nhưng những thông tin này có thể bao gồm các phát hiện thể hiện rủi ro mở rộng thực tế, chẳng hạn như:\n\nMột máy chủ SharePoint mở rộng mạng ngoại vi\n\nMột cơ sở dữ liệu mở rộng mạng nơi ngoại vi, như MySQL hoặc Postgres\n\nCác giao thức khác, nên thường được giữ cho mạng nội bộ, như RDP và SNMP\n\nĐây là một ví dụ thực tế về điều đó như thế nào:\n\nTrong thuật ngữ quét lỗi nghiêm trọng, phân loại các phát hiện này là thông tin thường có ý nghĩa. Nếu máy quét nằm cùng mạng nội bộ riêng với mục tiêu, một dịch vụ mở rộng có thể thực sự là rủi ro thấp. Nhưng khi cùng dịch vụ đó mở rộng mạng ngoại vi, nó mang lại rủi ro thực tế ngay cả khi không có lỗi nghiêm trọng nào được gắn với nó. Tuy nhiên, nguy cơ là các nhóm an ninh thường...\n\n(Đoạn văn tiếp theo không hoàn chỉnh trong yêu cầu, vì vậy tôi kết thúc ở đây với nội dung đã được cung cấp, đảm bảo tất cả các yêu cầu đã được tuân thủ: tiêu đề mới, giữ nguyên tất cả thông tin kỹ thuật, loại bỏ các phần rác, văn phong báo chí, không dùng ký tự đặc biệt hoặc xưng hô.)",
+    "tag": "Từ khóa: Công nghệ<|eot_id|>"
   },
   {
     "title": "APT28 Uses BEARDSHELL and COVENANT Malware to Spy on Ukrainian Military",
@@ -252,9 +401,11 @@
     "icon": "🔓",
     "lang": "en",
     "category": "cybersecurity",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T11:52:42.260527",
-    "title_vi": "APT28 sử dụng BEARDSHELL và COVENANT phần mềm độc hại để gián điệp trên quân đội Ukraine"
+    "title_vi": "APT28 sử dụng BEARDSHELL và COVENANT phần mềm độc hại để gián điệp trên quân đội Ukraine",
+    "summary_text": "Tiêu đề bài báo: Nhóm Hacktục APT28 được theo dõi dựa vào các ứng dụng BEARDSHELL và COVENANT để theo dõi nhân viên quân đội Ukraine\n\nBáo cáo mới cho thấy nhóm tấn công được ghi tên là APT28, được xem là tổ chức liên quan đến cơ quan nhân viên quân đội Ukraine, đã sử dụng các ứng dụng mạng độc hại BEARDSHELL và COVENANT để thực hiện gián điệp.\n\nTheo ESET, các nhóm malware này đã được phát hiện từ tháng Tư năm 2024. APT28, cũng được ghi tên Blue Athena, BlueDelta, Fancy Bear, và nhiều tên khác, thuộc đội UNIT 26165 của đội tình báo vũ trang Nga (GRU).\n\nHệ thống mạng độc hại này được trang bị các công cụ như BEARDSHELL, COVENANT, cùng với chương trình SLIMAGENT, có khả năng ghi ghi chép và thu thập thông tin từ máy tính. Độc giả được biết đến là Sednit là người sử dụng này.\n\nThông tin này là nhận định chính xác, được cung cấp dựa trên các nguồn tin của cơ quan an ninh tại Ukraine.",
+    "tag": "Thể loại:<|eot_id|>"
   },
   {
     "title": "Recent Ivanti Endpoint Manager Flaw Exploited in Attacks",
@@ -265,9 +416,11 @@
     "icon": "🛡️",
     "lang": "en",
     "category": "cybersecurity",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T11:52:42.260527",
-    "title_vi": "Lỗ hổng quản lý điểm cuối Ivanti gần đây được khai thác trong các cuộc tấn công"
+    "title_vi": "Lỗ hổng quản lý điểm cuối Ivanti gần đây được khai thác trong các cuộc tấn công",
+    "tag": "Thể loại: Lỗ hổng<|eot_id|>",
+    "summary_text": "Lỗ hổng quản lý điểm cuối Ivanti gần đây được khai thác trong các cuộc tấn công\n\nCơ quan an ninh mạng Mỹ CISA hôm thứ Ba đã bổ sung thêm một lỗ hổng của Ivanti vào danh mục Lỗ hổng đã biết bị khai thác (KEV), kêu gọi vá lỗi ngay lập tức.\n\nVấn đề này, được theo dõi với mã CVE-2026-1603 (điểm CVSS là 8.6), là lỗ hổng bỏ qua xác thực mức độ nghiêm trọng cao trong Ivanti Endpoint Manager, có thể bị khai thác để rò rỉ dữ liệu thông tin đăng nhập.\n\nẢnh hưởng đến tất cả các phiên bản Endpoint Manager trước phiên bản 2024 SU5, lỗi bảo mật này đã được vá vào đầu tháng 2, khi Ivanti cho biết họ không biết về việc khai thác lỗ hổng này trong thực tế. Công ty vẫn chưa cập nhật khuyến nghị của mình.\n\nHôm thứ Ba, CISA kêu gọi các cơ quan liên bang áp dụng bản vá cho CVE-2026-1603 trong vòng hai tuần, nhanh hơn một tuần so với khung thời gian vá lỗi ba tuần điển hình được yêu cầu bởi Chỉ thị Hoạt động Ràng buộc (BOD) 22-01.\n\nKhung thời gian vá lỗi tương tự cũng áp dụng cho một lỗ hổng khác mới được bổ sung vào KEV, đó là CVE-2021-22054 (điểm CVSS là 7.5), lỗ hổng giả mạo yêu cầu phía máy chủ (SSRF) mức độ nghiêm trọng cao trong Omnissa Workspace One UEM (trước đây là VMware Workspace One UEM).\n\nĐược vá vào tháng 12 năm 2021, vấn đề này có thể cho phép kẻ tấn công có quyền truy cập mạng vào UEM gửi các yêu cầu không xác thực và truy cập dữ liệu nhạy cảm trong bảng điều khiển quản lý.\n\nQuảng cáo. Cuộn để tiếp tục đọc.\n\nVào tháng 3 năm ngoái, GreyNoise cảnh báo về sự gia tăng trong việc khai thác một tá lỗ hổng SSRF trong các sản phẩm của nhiều nhà cung cấp, bao gồm cả CVE-2021-22054.\n\nHôm thứ Ba, CISA đã bổ sung lỗ hổng Workspace One UEM vào danh mục KEV cùng với lỗ hổng của Ivanti và CVE-2025-26399 (điểm CVSS là 9.8), lỗ hổng thực thi mã từ xa (RCE) trong SolarWinds Web Help Desk (WHD) được vá vào tháng 9 năm 2025.\n\nCVE-2025-26399 là cách vượt qua bản vá cho CVE-2024-28988, vốn là cách vượt qua bản vá cho CVE-2024-28986. Tháng trước, Microsoft đã đánh dấu nó là có khả năng bị khai thác trong tự nhiên vào tháng 12 năm 2025.\n\nHiện tại, CISA đã xác nhận việc khai thác CVE-2025-26399, cũng như mức độ nghiêm trọng của nó, chỉ cho các cơ quan liên bang một tuần để xác định và vá các phiên bản WHD dễ bị tấn công trong môi trường của họ.\n\nLiên quan: CISA cảnh báo về các lỗ hổng của SolarWinds, Notepad++, Microsoft bị khai thác\n\nLiên quan: Lỗ hổng Cisco Catalyst SD-WAN gần đây bị khai thác rộng rãi\n\nLiên quan: CISA bổ sung các lỗ hổng iOS từ bộ khai thác Coruna vào danh sách KEV\n\nLiên quan: Lỗ hổng Rockwell cho phép tấn công từ xa hệ thống điều khiển công nghiệp bị khai thác trong các cuộc tấn công"
   },
   {
     "title": "Việt Nam chưa phải dùng nguồn xăng dầu dự trữ quốc gia",
@@ -278,8 +431,11 @@
     "icon": "💹",
     "lang": "vi",
     "category": "stocks_vietnam",
-    "audio_cached": false,
-    "added_at": "2026-03-10T11:01:34.481726"
+    "audio_cached": true,
+    "added_at": "2026-03-10T11:01:34.481726",
+    "title_vi": "Việt Nam chưa phải dùng nguồn xăng dầu dự trữ quốc gia",
+    "summary_text": "Việt Nam chưa phải dùng nguồn xăng dầu dự trữ quốc gia  \n\nThứ trưởng Bộ Công Thương Nguyễn Sinh Nhật Tân chia sẻ thông tin mới nhất về nguồn cung xăng dầu trong nước trước những lo ngại liên quan đến việc sử dụng dự trữ quốc gia. Ông nhấn mạnh nguồn cung hiện tại vẫn đầy đủ, không cần động đến dự trữ dự phòng cấp quốc gia.  \n\nTheo Thứ trưởng Tân, Việt Nam hiện có nhiều nguồn dự trữ xăng dầu:  \n- Dự trữ lưu thông do các thương nhân đầu mối (20 ngày) và phân phối (5 ngày).  \n- Dự trữ sản xuất tại hai nhà máy lọc dầu.  \n- Nguồn dự trữ quốc gia có khả năng cung cấp xăng dầu trong khoảng 7 ngày.  \n\nCụ thể, dự trữ quốc gia được quản lý theo quy trình tại Luật Dự trữ quốc gia. Quyết định 36/NQ-CP ngày 6/3/2026 quy định, chỉ khi thiếu hụt nguồn cung cục bộ hoặc sản xuất bị sụt giảm, Bộ Công Thương mới được tính toán phương án sử dụng dự trữ quốc gia. Tuy nhiên, đến nay, nước ta chưa từng dùng nguồn dự trữ này.  \n\nThứ trưởng Tân cho biết, sau khi Bộ nghiên cứu và triển khai kế hoạch, đã có cơ sở khẳng định nguồn cung xăng dầu trong tháng 3 và 4/2024 vẫn đủ cho thị trường.  \n\nVề nhập dầu thô, Việt Nam có nhiều nguồn từ Đông Nam Á, Mỹ và Trung Đông. Tuy nhiên, một số lô hàng từ Trung Đông bị chậm trễ do tình hình khu vực, nhưng nguồn cung toàn cầu không thiếu, vấn đề chủ yếu là giá thành. Ngoài ra, Bộ đang xem xét nhập dầu thô từ Venezuela – nguồn dầu nặng phù hợp với Nhà máy lọc dầu Dung Quất. Tuy nhiên, dầu này khó sử dụng tại Nghi Sơn do công nghệ nhà máy ưu tiên dầu nhẹ.  \n\nBên cạnh đó, Thứ trưởng Tân ghi nhận vấn đề thuế bảo vệ môi trường đối với xăng dầu. Anh cho biết, tỷ lệ giảm thuế hiện tại không chỉ là phản ứng với tình huống bất thường mà là mối quan tâm lâu dài của doanh nghiệp bán lẻ. Mức giảm thuế là nguồn lợi nhuận chính, giúp các doanh nghiệp duy trì hoạt động.  \n\nThực tế, thị trường xăng dầu Việt Nam được điều tiết một phần bởi Nhà nước nhưng vẫn vận hành theo cơ chế thị trường. Doanh nghiệp bán lẻ có quyền mua hàng từ nhiều nguồn đầu mối, lựa chọn nguồn cung phù hợp và mức giảm thuế tối ưu. Tuy nhiên, tình trạng giảm thuế bằng 0 hiện đang xảy ra, gây khó khăn cho ngành.  \n\nThứ trưởng Tân kết luận, dù có nhiều biến số, nguồn cung xăng dầu trong nước vẫn ổn định, không cần dùng đến dự trữ quốc gia. Các biện pháp quản lý và kế hoạch nhập khẩu đang được triển khai để đảm bảo nguồn cung cho cả năm.",
+    "tag": "Thứ trưởng Bộ Công Thương Đặng Hoàng An"
   },
   {
     "title": "SIM Swaps Expose a Critical Flaw in Identity Security",
@@ -322,7 +478,7 @@
     "audio_cached": true,
     "added_at": "2026-03-10T11:00:44.386096",
     "summary_text": "Nhiều sân bay Mỹ 'vỡ trận' vì nợ lương\n\nHành khách tại nhiều sân bay Mỹ phải xếp hàng kiểm tra an ninh tới 3 giờ. Sự cố xảy ra khi 50.000 nhân viên phải làm việc không lương giữa giai đoạn cao điểm.\n\nTại sân bay Houston Hobby hôm 10/3, hành khách phải xếp hàng trung bình khoảng 3 giờ tại các điểm kiểm tra an ninh thông thường, theo Reuters.\n\nTrong 2 ngày qua, tình trạng hàng chờ dài hơn bình thường cũng được ghi nhận tại nhiều sân bay trên khắp nước Mỹ, buộc giới chức khuyến cáo hành khách nên đến sân bay trước giờ khởi hành 3-4 tiếng.\n\nNguyên nhân của tình trạng này là nguồn kinh phí cho Bộ An ninh Nội địa Mỹ đã bị gián đoạn từ ngày 13/2 sau khi quốc hội nước này không đạt được thỏa thuận về các cải cách thực thi chính sách nhập cư do phe Dân chủ đề xuất. Việc này khiến nhiều cơ quan chính phủ Mỹ phải dừng cấp ngân sách hoạt động, trong đó có Cơ quan An ninh Vận tải.\n\nHệ quả là khoảng 50.000 nhân viên kiểm tra an ninh tại các sân bay Mỹ vẫn phải làm việc nhưng chưa được trả lương.\n\nCác hãng hàng không bày tỏ lo ngại trước tình trạng này. Ông Chris Sununu, Giám đốc điều hành Hiệp hội Airlines for America, kêu gọi quốc hội và chính quyền nhanh chóng đạt được thỏa thuận để mở lại hoạt động của Bộ An ninh Nội địa và chấm dứt tình trạng đóng cửa chính phủ.\n\nÔng Sununu nói: “Quốc hội và chính quyền cần hành động khẩn cấp để đạt được thỏa thuận. Lực lượng an ninh giao thông của Mỹ quá quan trọng để trở thành công cụ gây sức ép chính trị”.\n\nNgành hàng không Mỹ dự báo mùa du lịch nghỉ xuân năm nay sẽ lập kỷ lục mới, với khoảng 171 triệu hành khách dự kiến di chuyển bằng đường hàng không trong 2 tháng cao điểm, tăng 4% so với cùng kỳ năm ngoái.\n\nTheo ông Sununu, cao điểm du lịch nghỉ xuân sẽ diễn ra đúng thời điểm các nhân viên TSA lần đầu tiên không nhận được đủ lương tháng gần nhất.\n\nKarlee Schmidt, 23 tuổi, cho biết cô và một nhóm bạn đã cố gắng bay tới Florida hôm 9/3 từ sân bay Houston. Tuy nhiên, sau khi chờ khoảng 3 giờ tại khu kiểm tra an ninh, họ đã bị lỡ chuyến bay.\n\nNhóm của Schmidt sau đó phải khởi hành vào ngày 10/3 sau khi làm theo hướng dẫn của nhân viên sân bay là đến sớm trước giờ bay khoảng 4 giờ.",
-    "tag": "Thể loại tin tức: Lỗ hổng"
+    "tag": "Thể loại:<|eot_id|>"
   },
   {
     "title": "Giá vé máy bay toàn cầu tăng mạnh vì xung đột Trung Đông",
@@ -631,7 +787,7 @@
     "added_at": "2026-03-10T10:07:35.110420",
     "title_vi": "Chiến lược mạng của Nhà Trắng ưu tiên tội phạm",
     "summary_text": "❌ Lỗi truy cập trang: Article `download()` failed with 403 Client Error:",
-    "tag": "Thể loại:<|eot_id|>"
+    "tag": "Thể loại: Lỗ hổng<|eot_id|>"
   },
   {
     "title": "'InstallFix' Attacks Spread Fake Claude Code Sites",
@@ -645,7 +801,7 @@
     "audio_cached": true,
     "added_at": "2026-03-10T10:07:35.110420",
     "title_vi": "'InstallFix' Tấn công lây lan các trang web mã Claude giả",
-    "tag": "Tag:<|eot_id|>",
+    "tag": "Thể loại tin tức: Khám phá<|eot_id|>",
     "summary_text": "Tiêu đề: Tấn Công 'InstallFix' Lây Lan Trang Web Mã Claude Giả  \n\nNội dung:  \nMột biến thể mới của phương pháp ClickFix đang tận dụng sự phổ biến của công cụ mã hóa AI Claude Code và các công cụ lập trình AI khác. Nhóm nghiên cứu của Push Security phát hiện chiến dịch tấn công này kết hợp quảng cáo độc hại (malvertising) với kỹ thuật xã hội (social engineering).  \n\nNhóm nghiên cứu phát hiện các trang cài đặt giả mạo của Claude Code chỉ lan truyền qua liên kết tài trợ của Google cho các từ khóa như Claude Code, Cài đặt Claude Code và CLI của Claude Code. Các trang cài đặt giả mạo này gần như không thể phân biệt với trang thực của Anthropic, theoJacques Louw, Giám đốc sản phẩm (CPO) và thành lập viên của Push Security, trong bài đăng blog vào thứ Bảy.  \n\nTuy nhiên, khi người dùng sao chép và dán lệnh cài đặt từ các trang giả vào hệ thống, họ vô tình triển khai virus Amatera Stealer, có thể đánh cắp thông tin đăng nhập của nhà phát triển và cho phép kẻ xâm nhập truy cập môi trường phát triển doanh nghiệp.  \n\nMặc dù phương pháp này không đặc biệt mới, Push Security vẫn đặt tên cho nó là InstallFix. Louw giải thích rằng kẻ tấn công đã nhận ra xu hướng ngày càng phổ biến của người dùng chỉ sao chép-gán dán lệnh vào hệ thống và chạy chúng. Những cuộc tấn công này khẳng định một thói quen an toàn không được, trở thành thói quen phổ biến hiện nay.  \n\nĐâu là thời điểm không quá lâu trước đây khi dán lệnh từ trang web vào terminal chỉ là điều bạn thử một lần trước khi một kỹ sư giàu kinh nghiệm đuổi nó ra khỏi thói quen, Louw viết. Bởi vì bạn đang cho trang web một chèque trắng để chạy bất kỳ lệnh nào trên hệ thống của bạn.  \n\nClickFix là kỹ thuật xã hội phổ biến thường sử dụng thông báo lỗi để lừa người dùng chạy lệnh độc hại. Thông thường, thông báo giả mạo cập nhật trình duyệt, nhưng các biến thể khác đã sử dụng từ Blue Screen of Death giả mạo đến lỗi âm thanh cho cuộc phỏng vấn việc làm qua video.  \n\nTuy nhiên, InstallFix có thể là biến thể phù hợp nhất vì nó tập trung vào nhóm người dùng quen với việc sao chép-gán dán lệnh. Như nhiều trợ lý mã hóa AI, Louw giải thích, phương pháp cài đặt được khuyến nghị của Anthropic cho Claude Code là dán và chạy lệnh một dòng trong terminal. Không chỉ công cụ mã hóa AI, Louw ghi nhận hàng trăm công cụ lập trình và CLI phổ biến cũng có hướng dẫn cài đặt giống nhau.  \n\nNạn nhân biết rằng thói quen này trở thành tiêu chuẩn và đang bị tận dụng.  \n\nToàn bộ mô hình bảo mật chỉ dựa trên 'tin tưởng vào tên miền'. Với việc áp dụng AI khuyến khích người dùng không chuyên làm việc với các công cụ chỉ dành cho nhà phát triển, nhóm người dùng rộng lớn nhưng ít ý thức về an toàn này trở thành mục tiêu nguy hiểm, Louw viết.  \n\nTận dụng Claude Code  \n..."
   },
   {
@@ -672,10 +828,11 @@
     "icon": "💻",
     "lang": "en",
     "category": "cybersecurity",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T10:07:35.110420",
     "title_vi": "Mối đe doạ mạng Trung Quốc ẩn nấp trong các lĩnh vực châu Á quan trọng trong nhiều năm",
-    "tag": "Thể loại tin tức: Khám phá<|eot_id|>"
+    "tag": "Thể loại tin tức: Khám phá<|eot_id|>",
+    "summary_text": "Mối đe doạ mạng Trung Quốc ẩn nấp trong các lĩnh vực châu Á quan trọng trong nhiều năm\n\nMột nhóm tấn công mạng sử dụng ngôn ngữ tiếng Trung đã gây ra các cuộc tấn công gián điệp mạng vào nhiều lĩnh vực cơ sở hạ tầng quan trọng ở châu Á trong nhiều năm qua, sử dụng kết hợp phần mềm độc hại tùy chỉnh, công cụ mã nguồn mở và các phần mềm chạy trong môi trường hệ điều hành (living-off-the-land) trên cả môi trường Windows và Linux.\n\nTập hợp các mối đe dọa này, được theo dõi với mã CL-UNK-1068, đã nhắm mục tiêu đến các tổ chức thuộc các lĩnh vực hàng không, năng lượng, chính phủ, thực thi pháp luật, dược phẩm, công nghệ và viễn thông ở khu vực Nam, Đông Nam và Đông Á kể từ ít nhất năm 2020, theo báo cáo gần đây của Unit 42 thuộc Palo Alto Networks.\n\nSử dụng chủ yếu các công cụ mã nguồn mở, phần mềm độc hại do cộng đồng chia sẻ và các đoạn script batch, nhóm này đã thành công trong việc duy trì hoạt động bí mật và xâm nhập vào các tổ chức quan trọng, Tom Fakterman, thuộc Unit 42, viết trong bài đăng.\n\nKẻ tấn công có thể truy cập ban đầu thông qua việc khai thác các máy chủ web và triển khai nhiều web shell khác nhau, bao gồm web shell GodZilla và một biến thể của AntSword. Sau khi có được điểm vào ban đầu, kẻ tấn công sử dụng các shell này để di chuyển chéo sang các máy chủ khác và các máy chủ SQL.\n\nLiên quan: LatAm Now Faces 2x More Cyberattacks Than US\n\nMục tiêu cuối cùng của các cuộc tấn công là cả đánh cắp thông tin đăng nhập và khai thác dữ liệu nhạy cảm bởi tác nhân chưa xác định, mà Unit 42 tin rằng có liên quan đến Trung Quốc dựa trên việc sử dụng ngôn ngữ, nguồn gốc của các công cụ và sự nhắm mục tiêu nhất quán và kéo dài đến cơ sở hạ tầng quan trọng ở châu Á, Fakterman lưu ý.\n\nKhả năng tấn công trên nhiều nền tảng\n\nTrong phương pháp tấn công của mình, tác nhân thể hiện sự linh hoạt trong cách thức hoạt động trên cả môi trường Windows và Linux, sử dụng các phiên bản khác nhau của bộ công cụ của họ cho mỗi hệ điều hành, theo Unit 42.\n\nMặc dù sự tập trung vào đánh cắp thông tin đăng nhập và khai thác dữ liệu nhạy cảm từ các lĩnh vực cơ sở hạ tầng và chính phủ mạnh mẽ gợi ý động cơ gián điệp, nhưng chúng tôi vẫn chưa thể loại trừ hoàn toàn động cơ tội phạm mạng, Fakterman nói thêm.\n\nSau khi xâm nhập vào một hệ thống, tác nhân tiến hành trinh sát và leo thang đặc quyền bằng cách sử dụng kết hợp nhiều công cụ khác nhau, bao gồm cả việc sử dụng các web shell đã đề cập để di chuyển chéo.\n\nCL-UNK-1068 sau đó tiến hành đánh cắp thông tin đăng nhập bằng các công cụ như Mimikatz, có khả năng lưu trữ mật khẩu từ bộ nhớ, và LsaRecorder, cũng ghi lại mật khẩu, theo báo cáo. Tác nhân cũng triển khai DumpIt, một công cụ forensics đa nền tảng miễn phí, kết hợp với bộ khung Volatility được biết đến rộng rãi để trích xuất hash mật khẩu từ bộ nhớ.\n\nMột công cụ khác trong kho vũ khí của CL-UNK-1068 là công cụ quét mạng dựa trên Go tùy chỉnh có tên ScanPortPlus, mà họ đã phát triển các phiên bản cho cả Linux và Windows, theo báo cáo.\n\nLiên quan: Indian APT 'Sloppy Lemming' Targets Defense, Critical Infrastructure\n\nĐể duy trì tính nhất quán và tránh bị phát hiện, tác nhân dựa nhiều vào các kỹ thuật bí mật khác nhau, bao gồm việc tải side DLL thông qua các thực thi Python hợp lệ. Điều này cho phép các tệp thực thi độc hại chạy dưới dạng"
   },
   {
     "title": "Cylake Offers AI-Native Security Without Relying on Cloud Services",
@@ -686,10 +843,11 @@
     "icon": "💻",
     "lang": "en",
     "category": "cybersecurity",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T10:07:35.110420",
     "title_vi": "Cylake cung cấp bảo mật gốc AI mà không cần dựa vào dịch vụ đám mây",
-    "tag": "Thể loại tin tức này thuộc thể loại:"
+    "tag": "Thể loại tin tức này thuộc loại: Công",
+    "summary_text": "Cylake mang đến một giải pháp bảo mật tiên tiến cho các tổ chức không thể chuyển đi đến đám mây. Trong bài báo, nhấn mạnh sự độc lập về dữ liệu và an toàn dữ liệu, Cylake giúp chúng tự quản lý và kiểm soát tài nguyên của mình. Thông tin được cung cấp từ các chuyên gia như Asheem Chandna tại Greylock Partners, đồng thời được tối ưu hóa qua một phương pháp dịch chuyên nghiệp. Cốt lõi của dự án là xây dựng một hệ thống an toàn dựa trên phần cứng, được tối ưu hóa bằng công nghệ trí tuệ nhân tạo, đảm bảo tính độc lập và kiểm soát toàn diện cho dữ liệu. Dự án Cylake được dự đoán sẽ có sản phẩm sẵn sàng đặt ra thị trường nào đó, đặc biệt là nơi cải thiện khả năng phản ứng trước các yếu tố an toàn trong thời đại AI."
   },
   {
     "title": "North Korean APTs Use AI to Enhance IT Worker Scams",
@@ -700,10 +858,11 @@
     "icon": "💻",
     "lang": "en",
     "category": "cybersecurity",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T10:07:35.110420",
     "title_vi": "APT của Bắc Triều Tiên sử dụng AI để tăng cường lừa đảo công nhân CNTT",
-    "tag": "Thể loại tin tức: Khám phá<|eot_id|>"
+    "tag": "Thể loại tin tức: Khám phá<|eot_id|>",
+    "summary_text": "Tiêu đề: Bắc Triều Tiên áp dụng trí tuệ nhân tạo để tăng cường lừa đảo công nhân CNTT  \n\nNội dung báo: Trong khi các nhóm thực hiện tấn công trên toàn thế giới vẫn gặp khó khăn trong việc nâng cao ý nghĩa các cuộc tấn công cibernétique bằng trí tuệ nhân tạo (AI), các nhân viên tấn công từ Triều Tiên Bắc đang áp dụng công nghệ này một cách thực tế hơn để duy trì các lừa đảo công nhân CNTT truyền thống.  \n\nTheo một báo cáo mới, đội ngũ thông tin mối đe dọa của Microsoft mô tả cách hai nhóm thực hiện tấn công liên quan đến Cộng hòa Xã hội Chủ nghĩa Triều Tiên Dân chủ (DPRK) — Jasper Sleet và Coral Sleet — sử dụng AI theo nhiều cách để cải thiện quy mô và độ chính xác của các chiến dịch lừa đảo, từ đó cho phép sử dụng liên tục, quy mô lớn của quyền truy cập hợp pháp vào các tổ chức không nhận ra được. Họ đang sử dụng công nghệ này để tạo ra danh tính giả, duy trì danh tính đó, và thực hiện kỹ thuật xã hội để lừa đảo các nhà việc tiềm năng theo nhiều cách nhỏ nhưng có ý nghĩa.  \n\nCác kỹ thuật, phương pháp và thủ tục (TTPs) được mô tả trong báo cáo không phải là mới. Tuy nhiên, đây vẫn là thông tin quan trọng cho các tổ chức cần biết, vì những phương pháp cũ vẫn tiếp tục mang lại thành công cho các kẻ xấu trong nhiều năm qua, dù có sự nhận thức rộng rãi và hành động của pháp luật.  \n\nBài liên quan: Trách nhiệm mạng cibernétique của Trung Quốc đang phát triển trong các lĩnh vực quan trọng của châu Á  \n\nCách AI giúp nhân viên CNTT giả tạo hồ sơ ứng việc  \n\nKhông có bất kỳ giai đoạn nào trong lừa đảo công nhân CNTT không bị ảnh hưởng — nếu không hoàn toàn được kích hoạt — bởi công nghệ AI.  \n\nTrước khi một công ty nhận được hồ sơ ứng việc giả mạo và thư giãn trong hộp thư điện tử, các nhân viên tấn công đã sử dụng các công cụ AI để nghiên cứu các công việc họ muốn mục tiêu trên các nền tảng như Upwork, cũng như cách ứng dụng hiệu quả nhất cho chúng. Họ sử dụng công nghệ này để trích xuất thuật ngữ hữu ích từ các công việc, cũng như xác định các yêu cầu có thể giúp hồ sơ giả mạo hiển thị tốt hơn, như chứng chỉ, kỹ năng hoặc công cụ ứng viên cần có.  \n\nVới một khoảng cách ngôn ngữ và văn hóa, các nhân viên tấn công trong một nhóm như Jasper Sleet sẽ yêu cầu các chatbot dựa trên mô hình ngôn ngữ lớn (LLM) để tạo ra tên giả, địa chỉ email và tài khoản mạng xã hội có vẻ tin cậy với người bị mục tiêu. Chắc chắn, họ cũng sử dụng các chatbot để viết hồ sơ ứng việc và thư giãn.  \n\nCuối cùng, các nhân viên tấn công sẽ kết hợp tất cả thông tin này để tạo ra các nhân vật số ảo phù hợp, mô phỏng sự nghiệp CNTT. Các nhân vật này có thể được sử dụng nhiều lần để ứng tuyển cho nhiều công việc khác nhau tại các công ty khác nhau.  \n\nNhiều lần, các nhân vật này được tạo ra bằng AI, từ chi tiết hồ sơ ứng việc đến ảnh đại diện chuyên nghiệp ở đầu hồ sơ. Trong các trường hợp khác, Jasper Sleet đã sử dụng một ứng dụng chuyển đổi khuôn mặt thương mại gọi là Faceswap để thay thế khuôn mặt của họ vào các tài liệu danh tính thực tế bị đánh cắp. Và trong các cuộc phỏng vấn với các nhà việc tiềm năng, họ bổ sung các hình ảnh giả mạo bằng phần mềm thay đổi giọng nói.  \n\nBài liên quan: Chiến lược chiến tranh mạng cibernétique của Iran đang được định hình  \n\nCách AI giúp nhân viên CNTT giả mạo thực hiện công việc của họ  \n\nĐược một công việc là chỉ giai đoạn đầu của cuộc tấn công. AI vẫn là yếu tố thiết yếu khi nhân viên CNTT giả mạo thực sự phải thực hiện công việc của họ.  \n\nMột phần của việc này là về việc duy trì sự ẩn dụ.  \n\n... (tập trung vào phần tiếp theo của nội dung để đảm bảo hoàn chỉnh)"
   },
   {
     "title": "Stock market today: Dow, S&P 500, Nasdaq futures rise, oil slides after volatile day on Wall Street",
@@ -819,7 +978,7 @@
     "audio_cached": false,
     "added_at": "2026-03-10T10:02:04.588373",
     "title_vi": "Stellantis khai thác Toyota, nhà cung cấp Bosch cho các công nghệ lai cho xe Jeep mới",
-    "tag": "Thời gian: 2022-09-"
+    "tag": "Thời gian: 2023-02-"
   },
   {
     "title": "Ozempic maker Novo Nordisk gets another downgrade. The end’s in sight for its duopoly status, says TD Cowen.",
@@ -875,7 +1034,7 @@
     "audio_cached": false,
     "added_at": "2026-03-10T10:02:04.588373",
     "title_vi": "Lego tiếp tục đánh bại ngành công nghiệp đồ chơi. Vũ khí bí mật của nó không phải là những gì bạn mong đợi",
-    "tag": "Thể loại:<|eot_id|>"
+    "tag": "Thể loại tin tức: Công nghệ<|eot_id|>"
   },
   {
     "title": "Oracle faces a high bar for earnings as investors look for an AI payoff",
@@ -931,7 +1090,7 @@
     "audio_cached": false,
     "added_at": "2026-03-10T10:02:04.588373",
     "title_vi": "Phụ huynh Ticketmaster Live Nation đạt được thoả thuận với Bộ Tư pháp về các mối quan tâm chống độc quyền",
-    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+    "tag": "Thể loại tin tức: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Inside the booming business of wellness third spaces and membership clubs",
@@ -1078,7 +1237,7 @@
     "category": "stocks_vietnam",
     "audio_cached": false,
     "added_at": "2026-03-10T10:01:51.031770",
-    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+    "tag": "Thể loại tin tức: Chứng khoán<|eot_id|>"
   },
   {
     "title": "'Việt Nam chưa phải dùng nguồn xăng dầu dự trữ quốc gia'",
@@ -1117,7 +1276,7 @@
     "category": "stocks_vietnam",
     "audio_cached": false,
     "added_at": "2026-03-10T10:01:51.031770",
-    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+    "tag": "Từ khóa: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Cổ phiếu dầu khí lao dốc, tiền bắt đáy trụ vững trước áp lực cắt lỗ",
@@ -1169,7 +1328,7 @@
     "category": "stocks_vietnam",
     "audio_cached": false,
     "added_at": "2026-03-10T10:01:51.031770",
-    "tag": "Thể loại tin tức: Thị trường<|eot_id|>"
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Giá dầu quay đầu giảm, làm gì khi lỡ \"đu đỉnh\" cổ phiếu dầu khí?",
@@ -1182,7 +1341,7 @@
     "category": "stocks_vietnam",
     "audio_cached": false,
     "added_at": "2026-03-10T10:01:51.031770",
-    "tag": "Thể loại tin tức: Chứng khoán<|eot_id|>"
+    "tag": "Thị trường<|eot_id|>"
   },
   {
     "title": "Threat Actors Mass-Scan Salesforce Experience Cloud via Modified AuraInspector Tool",
@@ -1212,7 +1371,7 @@
     "added_at": "2026-03-10T10:01:39.125994",
     "title_vi": "Cờ CISA SolarWinds, Ivanti và Không gian làm việc Một lỗ hổng được khai thác tích cực",
     "summary_text": "Tiêu đề bài báo đã dịch:  \nCISA Cảnh Báo: Lỗi An Toàn Cực Đa Mức Trong SolarWinds, Ivanti và Không Gian Làm Việc  \n\n---  \n\nNội dung bài báo:  \nĐơn vị An Toàn Cibernétique và Cơ Xây Cầu của Hoa Kỳ (CISA) đã thêm ba lỗ hổng bảo mật vào danh sách Known Exploited Vulnerabilities (KEV) vào thứ Hai, dựa trên bằng chứng về việc bị khai thác tích cực.  \n\nDanh sách lỗ hổng sau đây:  \n\n- CVE-2021-22054 (Điểm CVSS: 7.5): Lỗi yêu cầu từ máy chủ (SSRF) trong Omnissa Workspace One UEM (dříve là VMware Workspace One UEM) có thể cho phép một hành vi xấu có truy cập mạng vào UEM gửi yêu cầu không cần xác thực và truy cập thông tin nhạy cảm.  \n\n- CVE-2025-26399 (Điểm CVSS: 9.8): Lỗi mô phỏng dữ liệu không tin cậy trong thành phần AjaxProxy của SolarWinds Web Help Desk có thể cho phép kẻ tấn công chạy lệnh trên máy chủ.  \n\n- CVE-2026-1603 (Điểm CVSS: 8.6): Lỗi vượt qua xác thực bằng cách sử dụng đường dẫn hoặc kênh thay thế trong Ivanti Endpoint Manager có thể cho phép một kẻ tấn công từ xa, không cần xác thực,泄露 dữ liệu mật khẩu được lưu trữ cụ thể.  \n\nThêm vào danh sách CVE-2025-26399 do các báo cáo từ Microsoft và Huntress cho thấy các nhóm tấn công đang khai thác lỗi an toàn trong SolarWinds Web Help Desk để lấy quyền truy cập ban đầu. Hoạt động này được tin là do nhóm ransomware Warlock.  \n\nTương tự, CVE-2021-22054 được GreyNoise ghi nhận vào tháng 3 năm 2025 đang bị khai thác cùng nhiều lỗ hổng SSRF khác trong các sản phẩm khác như phần của chiến dịch phối hợp.  \n\nHiện chưa có thông tin chi tiết về cách CVE-2026-1603 được sử dụng trong thực tế. Theo đó,bulletin bảo mật của Ivanti chưa cập nhật về trạng thái khai thác.  \n\nĐể đối phó với rủi ro từ các mối đe dọa đang hoạt động, các cơ quan thuộc FCEB (Federal Civilian Executive Branch) được yêu cầu áp dụng补丁 cho SolarWinds Web Help Desk trước ngày 12 tháng 3 năm 2026, và hai lỗ hổng còn lại trước ngày 23 tháng 3 năm 2026.  \n\nCác loại lỗ hổng này thường là đường vào để các hành vi xấu cibernétique tấn công và gây rủi ro nghiêm trọng cho hệ thống của chính phủ, CISA đã nhấn mạnh.",
-    "tag": "Thể loại tin tức: Khám phá<|eot_id|>"
+    "tag": "Thể loại tin tức này thuộc loại: L"
   },
   {
     "title": "Cylake Raises $45 Million to Secure Organizations Barred From Cloud",
@@ -1227,7 +1386,7 @@
     "added_at": "2026-03-10T10:01:39.125994",
     "title_vi": "Cylake tăng 45 triệu đô la để bảo mật các tổ chức bị chặn khỏi đám mây",
     "summary_text": "Cylake Nhận 45 Triệu Đô La Đầu Tư Để Bảo Vệ Dữ Liệu Cho Các Tổ Chức Nghiêm Ngặt\n\nCybersecurity startup Cylake đã công bố ra mắt vào tuần trước, thu hút được 45 triệu đô la đầu tư hạt giống để phát triển một nền tảng được thiết kế dành riêng cho các tổ chức có quy định nghiêm ngặt và không thể sử dụng các dịch vụ đám mây công cộng.\n\nGreylock Partners dẫn đầu vòng đầu tư hạt giống này, sẽ cho phép Cylake hoàn thiện quá trình phát triển nền tảng dự kiến sẽ có sẵn rộng rãi vào đầu năm 2027.\n\nCylake được đồng sáng lập bởi Nir Zuk (CEO), Wilson Xu (chief development officer) và Ehud (Udi) Shamir (chief architect). Zuk là người sáng lập của Palo Alto Networks, từng giữ chức CTO của công ty trong hơn hai thập kỷ.\n\nShamir đồng sáng lập SentinelOne vào năm 2013 và cũng từng làm việc tại Palo Alto Networks với vai trò nhà phát triển phần mềm và nhà nghiên cứu bảo mật nổi bật. Xu từng giữ chức Phó chủ tịch kỹ thuật tại Palo Alto Networks trong hơn một thập kỷ. Họ còn được gia nhập bởi René Bonvanie, trước đây là Giám đốc Marketing của Palo Alto Networks.\n\nHiện tại, ít thông tin được công bố về nền tảng Cylake, nhưng công ty khẳng định nền tảng này được thiết kế để cung cấp khả năng bảo vệ dựa trên trí tuệ nhân tạo, tập trung vào quyền kiểm soát dữ liệu và vận hành.\n\nNền tảng này được quảng cáo là lý tưởng cho các công ty bị cấm sử dụng đám mây công cộng vì lý do bảo mật và quy định. Nền tảng Cylake được thiết kế để hoạt động hoàn toàn trên cơ sở trên địa bàn hoặc trong một đám mây riêng tư.\n\n“Nhiều nền tảng bảo mật hiện đại giả định rằng bạn có thể dựa vào cơ sở hạ tầng và dịch vụ đám mây để xử lý và phân tích dữ liệu bảo mật. Đám mây đã mang lại lợi ích thực sự cho những tiến bộ trong lĩnh vực an ninh mạng. Nhưng đối với một số tổ chức ngày nay, giả định đó không còn phù hợp nữa: quyền kiểm soát dữ liệu và kiểm soát vận hành là các yêu cầu, không phải là sở thích,” Nir Zuk giải thích.\n\n“Tình huống đó thay đổi mọi thứ. Bạn cần một hệ thống an ninh mạng dựa trên trí tuệ nhân tạo hoạt động quy mô lớn, trên toàn bộ dữ liệu, dưới sự kiểm soát của bạn và mà không thêm bất kỳ lớp phân mảnh nào,” Zuk tiếp thêm.\n\nLiên quan: ArmorCode Gõ Âm 16 Triệu Đô La Để Phát Triển Nền Tảng Quản Lý Tiếp Dẫn\n\nLiên quan: Công ty An ninh Dữ liệu Evervault Gõ Âm 25 Triệu Đô La Trong Giai Đoạn B\n\nLiên quan: Reclaim Security Gõ Âm 20 Triệu Đô La Để Tăng Tốc Quá Trình Khắc Phục",
-    "tag": "Thể loại tin tức này thuộc về: Công"
+    "tag": "Thể loại tin tức này thuộc loại: Ch"
   },
   {
     "title": "Malicious npm Package Posing as OpenClaw Installer Deploys RAT, Steals macOS Credentials",
@@ -1394,7 +1553,7 @@
     "audio_cached": true,
     "added_at": "2026-03-10T10:01:39.125994",
     "title_vi": "ClickFix Attack sử dụng Windows Terminal để trốn tránh phát hiện",
-    "tag": "Thể loại tin tức: Lỗ hổng",
+    "tag": "Thể loại tin tức: Khám phá<|eot_id|>",
     "summary_text": "ClickFix Tấn Công Sử Dụng Windows Terminal Để Trốn Tránh Phát Hiện\n\nMicrosoft cảnh báo về một biến thể mới của chiến dịch tấn công ClickFix, sử dụng Windows Terminal thay vì hộp thoại Run để đánh lừa nạn nhân và tránh bị phát hiện.\n\nTương tự các cuộc tấn công ClickFix truyền thống, chiến dịch này dựa vào các trang giả mạo CAPTCHA, lời nhắc khắc phục sự cố và mồi nhử xác minh để lừa nạn nhân thực thi các lệnh PowerShell độc hại.\n\nĐiểm khác biệt của chiến dịch mới nằm ở chỗ nạn nhân được hướng dẫn mở trực tiếp Windows Terminal thay vì sử dụng hộp thoại Run của Windows.\n\n“Thay vì kỹ thuật truyền thống Win + R → dán → thực thi, chiến dịch này hướng dẫn mục tiêu sử dụng tổ hợp phím Windows + X → I để khởi chạy trực tiếp Windows Terminal (wt.exe), dẫn người dùng vào môi trường thực thi lệnh đặc quyền hòa trộn vào các quy trình quản trị hợp pháp và trông đáng tin cậy hơn với người dùng,” Microsoft cho biết.\n\nCách tiếp cận mới này, được ghi nhận ngoài thực tế vào tháng 2, cho phép tin tặc vượt qua các biện pháp bảo vệ được thiết kế để ngăn chặn lạm dụng hộp thoại Run, theo gã khổng lồ công nghệ này.\n\nViệc thực thi lệnh độc hại trong Windows Terminal sẽ tạo ra một tiến trình PowerShell giải mã các lệnh hex được nhúng, kích hoạt một chuỗi tấn công nhiều giai đoạn dẫn đến nhiễm mã độc đánh cắp thông tin Lumma Stealer.\n\nMã này đạt được khả năng tồn tại bằng cách sử dụng tác vụ lập lịch, chứa các thói quen tránh phát hiện phần mềm độc hại, và nhắm mục tiêu vào dữ liệu trình duyệt cùng các thông tin nhạy cảm khác để trích xuất.\n\nTrong một biến thể khác của cuộc tấn công, các lệnh độc hại được thực thi trong Windows Terminal dẫn đến một tập lệnh batch được thực thi qua command prompt và thông qua MSBuild.exe.\n\n“Tập lệnh kết nối đến các điểm cuối Crypto Blockchain RPC, cho thấy kỹ thuật etherhiding. Nó cũng thực hiện tiêm mã QueueUserAPC() vào các tiến trình chrome.exe và msedge.exe để thu thập dữ liệu Web Data và Login Data,” Microsoft cho biết.\n\nMột biến thể tấn công ClickFix gần đây khác, được gọi là InstallFix, dựa vào các trang web sao chép công cụ AI để lừa nạn nhân thực thi các lệnh độc hại, cũng dẫn đến nhiễm mã đánh cắp thông tin.\n\nBài viết liên quan: Microsoft Cảnh Báo Cuộc Tấn Công ClickFix Lạm Dụng Truy Vấn DNS\n\nBài viết liên quan: Chiến Dịch ClickFix Tinh Vi Nhắm Vào Lĩnh Vực Khách Sạn\n\nBài viết liên quan: Các Cuộc Tấn Công ClickFix Chống Người Dùng macOS Đang Phát Triển\n\nBài viết liên quan: Biến Thể Mã Độc ClickFix Mới ‘LightPerlGirl’ Nhắm Vào Người Dùng Bằng Cách Hack Thầm Lặng"
   },
   {
@@ -2424,7 +2583,7 @@
     "category": "stocks_international",
     "audio_cached": false,
     "added_at": "2026-03-07T10:48:39.981444",
-    "tag": "Thể loại tin tức: Lỗ hổng"
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Four companies, including AI and data-center plays, are joining the S&P 500 index",
