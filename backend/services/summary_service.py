@@ -51,7 +51,6 @@ class SummaryService:
             logger.warning(f"Failed to save cache {cache_path}: {e}")
 
     @staticmethod
-    @staticmethod
     def process_article(url: str, lang: str = "en", title: str = "") -> Dict:
         with _process_lock:
             try:
@@ -99,9 +98,6 @@ class SummaryService:
 
         # 2. Summarize via AI
         try:
-            from services.translation_service import TranslationService
-            
-            from services.translation_service import TranslationService
             
             prompt = ""
             if lang == "en":
@@ -158,7 +154,7 @@ class SummaryService:
                         current_key = gemini_keys[idx]
                         try:
                             genai.configure(api_key=current_key)
-                            model = genai.GenerativeModel('gemini-1.5-flash')
+                            model = genai.GenerativeModel('gemini-2.0-flash')
                             response = model.generate_content(
                                 prompt,
                                 generation_config=genai.GenerationConfig(
@@ -244,18 +240,14 @@ class SummaryService:
                 if lines:
                     final_title_vi = lines[0]
                 
-                # Cập nhật cache dịch thuật và lịch sử ngay lập tức
+                # Cập nhật lịch sử ngay lập tức
                 try:
-                    from services.translation_service import TranslationService
-                    TranslationService.save_translation(title, final_title_vi, category)
-                    
                     from services.news_service import NewsService
                     NewsService._update_history([{
                         "url": url,
                         "title_vi": final_title_vi,
                         "summary_text": summary_vi[:500],
-                        "audio_cached": True,
-                        "category": category
+                        "audio_cached": True
                     }])
                 except Exception as e:
                     logger.warning(f"Cập nhật lịch sử đồng bộ từ SummaryService thất bại: {e}")

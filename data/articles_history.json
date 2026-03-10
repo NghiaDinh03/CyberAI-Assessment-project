@@ -1,5 +1,524 @@
 [
   {
+    "title": "Ringmetall acquires Turkish liner maker Makplast",
+    "url": "https://finance.yahoo.com/news/ringmetall-acquires-turkish-liner-maker-113716613.html",
+    "description": "",
+    "date": "2026-03-10T11:37:16Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:23.073261"
+  },
+  {
+    "title": "Eli Lilly and Company (LLY) Set to Launch Oral Obesity Drug in Q2, Reuters Reports",
+    "url": "https://finance.yahoo.com/news/eli-lilly-company-lly-set-113443447.html",
+    "description": "",
+    "date": "2026-03-10T11:34:43Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:23.073261"
+  },
+  {
+    "title": "Tesla, Inc. (TSLA) UK Car Sales Fall 37% Amid Heightening Chinese Competition, Reuters Reports",
+    "url": "https://finance.yahoo.com/news/tesla-inc-tsla-uk-car-113139218.html",
+    "description": "",
+    "date": "2026-03-10T11:31:39Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:23.073261"
+  },
+  {
+    "title": "Stock market today: Dow, S&P 500, Nasdaq futures falter, oil slides as Wall Street weighs Trump's war signals",
+    "url": "https://finance.yahoo.com/news/live/stock-market-today-dow-sp-500-nasdaq-futures-falter-oil-slides-as-wall-street-weighs-trumps-war-signals-224255088.html",
+    "description": "",
+    "date": "2026-03-09T22:42:55Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:23.073261"
+  },
+  {
+    "title": "Standard Chartered to expand private banking team in Singapore – report",
+    "url": "https://finance.yahoo.com/news/standard-chartered-expand-private-banking-114424327.html",
+    "description": "",
+    "date": "2026-03-10T11:44:24Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:07.651715"
+  },
+  {
+    "title": "Strategy Adds 18k Bitcoin, Both Guns Blazing Amid $11.5 Billion Mystery",
+    "url": "https://www.investors.com/news/mstr-stock-strategy-18k-bitcoin-both-guns-blazing-11-billion-mystery/?src=A00220&yptr=yahoo",
+    "description": "",
+    "date": "2026-03-10T11:40:39Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:07.651715"
+  },
+  {
+    "title": "BofA Cuts PT on Netflix, Inc. (NFLX) to $125 From $149 – Here’s Why",
+    "url": "https://finance.yahoo.com/news/bofa-cuts-pt-netflix-inc-113707515.html",
+    "description": "",
+    "date": "2026-03-10T11:37:07Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:07.651715"
+  },
+  {
+    "title": "Market Digest: MRVL, AVB, DGX, DEO, NCLH",
+    "url": "https://finance.yahoo.com/research/reports/ARGUS_46374_MarketSummary_1773140036000?yptr=yahoo&ncid=yahooproperties_plusresear_nm5q6ze1cei",
+    "description": "",
+    "date": "2026-03-10T10:53:56Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:07.651715"
+  },
+  {
+    "title": "Stock market today: Dow, S&P 500, Nasdaq futures falter, oil slides as Wall Street weighs Iran war signals",
+    "url": "https://finance.yahoo.com/news/live/stock-market-today-dow-sp-500-nasdaq-futures-falter-oil-slides-as-wall-street-weighs-iran-war-signals-224255455.html",
+    "description": "",
+    "date": "2026-03-09T22:42:55Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:07.651715"
+  },
+  {
+    "title": "Earnings live: Hewlett Packard Enterprise raises earnings guidance, Casey's stock rises",
+    "url": "https://finance.yahoo.com/news/live/earnings-live-hewlett-packard-enterprise-raises-earnings-guidance-caseys-stock-rises-211141710.html",
+    "description": "",
+    "date": "2026-03-09T21:11:41Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:07.651715"
+  },
+  {
+    "title": "Bill Ackman tries again with plan for IPO of Pershing Square and a new fund",
+    "url": "https://www.marketwatch.com/story/bill-ackman-tries-again-with-plan-for-ipo-of-pershing-square-and-a-new-fund-084ae953?mod=mw_rss_topstories",
+    "description": "Hedge fund manager Bill Ackman is again trying to take his fund management company public alongside the launch of a new fund.",
+    "date": "10/03/2026 11:47",
+    "source": "MarketWatch",
+    "icon": "📈",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:07.651715"
+  },
+  {
+    "title": "Scientists behind COVID-19 vaccine will depart BioNTech",
+    "url": "https://www.marketwatch.com/story/scientists-behind-covid-19-vaccine-will-depart-biontech-ef157c79?mod=mw_rss_topstories",
+    "description": "The company’s co-founders said they are leaving to start a new mRNA-based company.",
+    "date": "10/03/2026 11:40",
+    "source": "MarketWatch",
+    "icon": "📈",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:07.651715"
+  },
+  {
+    "title": "Olaplex stock has plunged since its IPO. Here’s how the hair care brand is trying to turn itself around",
+    "url": "https://www.cnbc.com/2026/03/10/olaplex-stock-ipo-business-turnaround.html",
+    "description": "Olaplex, a prestige hair care brand, has seen its sales and stock price plummet after a lawsuit. Now, the company is trying to turn its business around.",
+    "date": "10/03/2026 11:30",
+    "source": "CNBC Markets",
+    "icon": "📊",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:07.651715"
+  },
+  {
+    "title": "Return to the 2022 stock-market playbook as Iran conflict drags on, say these strategists",
+    "url": "https://www.marketwatch.com/story/return-to-the-2022-stock-market-playbook-as-iran-conflict-drags-on-say-these-strategists-7bb7e01b?mod=mw_rss_topstories",
+    "description": "Barclays says the chasm between winning and losing stocks in 2022 when Russia invaded Ukraine was huge. Here are their style picks.",
+    "date": "10/03/2026 11:28",
+    "source": "MarketWatch",
+    "icon": "📈",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:07.651715"
+  },
+  {
+    "title": "Saudi Aramco promises full production can be restored within days if Strait of Hormuz is reopened",
+    "url": "https://www.marketwatch.com/story/saudi-aramco-promises-full-production-can-be-restored-within-days-if-strait-of-hormuz-is-reopened-5741bad3?mod=mw_rss_topstories",
+    "description": "Aramco’s CEO warns of “catastrophic consequences” for the oil market if the effective closure of the Straits Of Hormuz were to remain for an extended period.  He was unenthusiastic about prospects for",
+    "date": "10/03/2026 11:16",
+    "source": "MarketWatch",
+    "icon": "📈",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:07.651715"
+  },
+  {
+    "title": "Social Security is already the best antipoverty program we have — don’t make this radical change",
+    "url": "https://www.marketwatch.com/story/social-security-is-already-the-best-antipoverty-program-we-have-dont-make-this-radical-change-929619b8?mod=mw_rss_topstories",
+    "description": "Changing Social Security to a flat benefit for all would put both workers and the poor at risk.",
+    "date": "10/03/2026 11:00",
+    "source": "MarketWatch",
+    "icon": "📈",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:53:07.651715"
+  },
+  {
+    "title": "Việt Nam sắp có một tập đoàn đường sắt quốc gia",
+    "url": "https://znews.vn/viet-nam-sap-co-mot-tap-doan-duong-sat-quoc-gia-post1633897.html",
+    "description": "Bộ Tài chính đề xuất chuyển đổi Tổng công ty Đường sắt Việt Nam thành Tập đoàn Đường sắt Quốc gia Việt Nam theo mô hình công ty mẹ - công ty con.",
+    "date": "10/03/2026 18:40",
+    "source": "Znews Kinh doanh",
+    "icon": "💹",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:52:54.128407"
+  },
+  {
+    "title": "Cấm doanh nghiệp xăng dầu găm hàng, bán 'nhỏ giọt'",
+    "url": "https://znews.vn/cam-doanh-nghiep-xang-dau-gam-hang-ban-nho-giot-post1633877.html",
+    "description": "Bộ Công Thương yêu cầu các địa phương và doanh nghiệp xăng dầu tuyệt đối không găm hàng, không bán cầm chừng gây thiếu hụt nguồn cung trên thị trường.",
+    "date": "10/03/2026 18:11",
+    "source": "Znews Kinh doanh",
+    "icon": "💹",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:52:54.128407"
+  },
+  {
+    "title": "How to Stop AI Data Leaks: A Webinar Guide to Auditing Modern Agentic Workflows",
+    "url": "https://thehackernews.com/2026/03/how-to-stop-ai-data-leaks-webinar-guide.html",
+    "description": "Artificial Intelligence (AI) is no longer just a tool we talk to; it is a tool that does things for us. These are called AI Agents. They can send emails, move data, and even manage software on their o",
+    "date": "10/03/2026 17:15",
+    "source": "The Hacker News",
+    "icon": "🔓",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": true,
+    "added_at": "2026-03-10T11:52:42.260527",
+    "title_vi": "Làm thế nào để ngăn chặn rò rỉ dữ liệu AI: Hướng dẫn hội thảo trên web để kiểm toán quy trình làm việc đại lý hiện đại",
+    "summary_text": "Hướng Dẫn Dừng Trò Lỗi Rò Rỉ Dữ Liệu AI: Hướng Dẫn Kiểm Toán Các Quy Trình Công Việc Tự Động Hiện Đại\n\nArtificial Intelligence (AI) no còn chỉ là một công cụ mà chúng ta nói chuyện; nó là công cụ thực hiện các công việc cho chúng ta. Những công cụ này được gọi là AI Agents. Chúng có thể gửi email, di chuyển dữ liệu và thậm chí quản lý phần mềm một mình.\n\nNhưng có một vấn đề"
+  },
+  {
+    "title": "The Zero-Day Scramble is Avoidable: A Guide to Attack Surface Reduction",
+    "url": "https://thehackernews.com/2026/03/the-zero-day-scramble-is-avoidable.html",
+    "description": "You can't control when the next critical vulnerability drops. You can control how much of your environment is exposed when it does. The problem is that most teams have more internet-facing exposure th",
+    "date": "10/03/2026 16:30",
+    "source": "The Hacker News",
+    "icon": "🔓",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:52:42.260527",
+    "title_vi": "Zero-Day Scramble là tránh được: Hướng dẫn tấn công giảm bề mặt",
+    "summary_text": "Cách Tránh Cụm Tấn Công Zero-Day: Hướng Dẫn Giảm Bề Mặt Tấn Công\n\nBạn không thể kiểm soát khi lỗi nghiêm trọng tiếp theo xuất hiện. Bạn có thể kiểm soát mức độ mở rộng môi trường bị ảnh hưởng khi đó xảy ra. Vấn đề là hầu hết các nhóm có nhiều nội dung mở rộng mạng ngoại vi hơn họ nhận thức được. Giám đốc An ninh của Intruder phân tích nguyên nhân này và cách các nhóm có thể quản lý nó một cách có hệ thống.\n\nThời gian tấn công đang giảm dần\n\nMức độ lớn và ít kiểm soát hơn của bề mặt tấn công tăng"
+  },
+  {
+    "title": "APT28 Uses BEARDSHELL and COVENANT Malware to Spy on Ukrainian Military",
+    "url": "https://thehackernews.com/2026/03/apt28-uses-beardshell-and-covenant.html",
+    "description": "The Russian state-sponsored hacking group tracked as APT28 has been observed using a pair of implants dubbed BEARDSHELL and COVENANT to facilitate long‑term surveillance of Ukrainian military personne",
+    "date": "10/03/2026 16:25",
+    "source": "The Hacker News",
+    "icon": "🔓",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:52:42.260527",
+    "title_vi": "APT28 sử dụng BEARDSHELL và COVENANT phần mềm độc hại để gián điệp trên quân đội Ukraine"
+  },
+  {
+    "title": "Recent Ivanti Endpoint Manager Flaw Exploited in Attacks",
+    "url": "https://www.securityweek.com/recent-ivanti-endpoint-manager-flaw-exploited-in-attacks/",
+    "description": "CISA has added the high-severity authentication bypass vulnerability to its KEV list, along with SolarWinds and Workspace One bugs.\nThe post Recent Ivanti Endpoint Manager Flaw Exploited in Attacks ap",
+    "date": "10/03/2026 11:51",
+    "source": "SecurityWeek",
+    "icon": "🛡️",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:52:42.260527",
+    "title_vi": "Lỗ hổng quản lý điểm cuối Ivanti gần đây được khai thác trong các cuộc tấn công"
+  },
+  {
+    "title": "Việt Nam chưa phải dùng nguồn xăng dầu dự trữ quốc gia",
+    "url": "https://znews.vn/viet-nam-chua-phai-dung-nguon-xang-dau-du-tru-quoc-gia-post1633870.html",
+    "description": "Đây là chia sẻ mới nhất của Thứ trưởng Công Thương Nguyễn Sinh Nhật Tân trước những lo ngại liên quan đến nguồn cung xăng dầu phục vụ đời sống sinh hoạt và sản xuất kinh doanh trong nước.",
+    "date": "10/03/2026 18:00",
+    "source": "Znews Kinh doanh",
+    "icon": "💹",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": false,
+    "added_at": "2026-03-10T11:01:34.481726"
+  },
+  {
+    "title": "SIM Swaps Expose a Critical Flaw in Identity Security",
+    "url": "https://www.securityweek.com/sim-swaps-expose-a-critical-flaw-in-identity-security/",
+    "description": "SIM swap attacks exploit misplaced trust in phone numbers and human processes to bypass authentication controls and seize high-value accounts.\nThe post SIM Swaps Expose a Critical Flaw in Identity Sec",
+    "date": "10/03/2026 11:00",
+    "source": "SecurityWeek",
+    "icon": "🛡️",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": true,
+    "added_at": "2026-03-10T11:01:06.496439",
+    "title_vi": "Trao đổi SIM phơi bày lỗ hổng quan trọng trong bảo mật danh tính",
+    "summary_text": "Summary:  \nSIM swap attacks exploit the vulnerability of using phone numbers as identity verification tools, even when organizations implement other security measures like strong passwords or multi-factor authentication (MFA). Attackers transfer a victim’s phone number through social engineering or insider collusion, gaining control of their digital identity. This allows them to intercept authentication codes, bypass MFA, and access accounts, including email, banking, and social media. Despite modern security practices, reliance on phone numbers creates a structural weakness, as these numbers are portable, recyclable, and easily compromised. The widespread nature of SIM swaps—resulting in significant financial losses—highlights the critical flaw in treating phone numbers as secure identity factors.",
+    "tag": "Thể loại tin tức: Lỗ hổng"
+  },
+  {
+    "title": "Sầu riêng gai đen tiền triệu mỗi trái vẫn 'cháy hàng'",
+    "url": "https://znews.vn/sau-rieng-gai-den-tien-trieu-moi-trai-van-chay-hang-post1633852.html",
+    "description": "Sầu riêng Blackthorn (gai đen) - giống sầu nổi tiếng của Malaysia - đang trở thành mặt hàng “đắt khách”, dù giá bán lên tới cả triệu đồng mỗi trái.",
+    "date": "10/03/2026 17:52",
+    "source": "Znews Kinh doanh",
+    "icon": "💹",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": true,
+    "added_at": "2026-03-10T11:00:44.386096",
+    "summary_text": "Sầu riêng gai đen tiền triệu mỗi trái vẫn 'cháy hàng'  \n\nSầu riêng Blackthorn (gai đen), giống sầu nổi tiếng từ Malaysia, đang trở thành mặt hàng đắt khách tại thị trường Việt Nam. Mặc dù giá bán lên tới hàng triệu đồng mỗi trái, nhưng sản phẩm này vẫn được khách hàng săn sàng mua, khiến nhiều cửa hàng phải đối mặt với tình trạng cháy hàng khi nhập hàng mới.  \n\nTheo chủ cửa hàng Sầu riêng Bà Nụ – chị Ngô Huỳnh Khánh Vy – tại đường Lạc Long Quân (TP.HCM), giá bán sầu riêng Blackthorn hiện tại là khoảng 450.000 đồng/kg. Đây là mức giá đã giảm rõ rệt so với giai đoạn đầu khi giống này xuất hiện tại Việt Nam. Trước đó, Blackthorn có thể đạt 1,6 triệu đồng/kg trái có vỏ. Sau 2-3 năm trồng nhiều hơn, giá đã giảm xuống khoảng 300.000-450.000 đồng/kg, tùy chất lượng và nguồn hàng.  \n\nVới trọng lượng trung bình 2-4 kg mỗi trái, giá một trái Blackthorn có thể lên đến 900.000 đồng đến gần 2 triệu đồng. Mặc dù giá cao, nhiều khách vẫn sẵn sàng chi tiền để thưởng thức hoặc mua làm quà biếu. Chị Vy cho biết, Blackthorn được ưa chuộng nhờ hình dạng trái đẹp, tròn đều, có 5-6 múi lớn, tạo cảm giác sang trọng và thu hút.  \n\nNgoài ra, nhu cầu mua Blackthorn vẫn rất lớn. Cửa hàng của chị Vy nhận được hàng ngày nhiều cuộc gọi hỏi mua sản phẩm này. Trong 10 khách hỏi mua sầu riêng, khoảng 6-7 khách đặc biệt quan tâm đến Blackthorn. Một số người còn để lại thông tin để được liên hệ khi cửa hàng có hàng mới.  \n\nTình trạng cháy hàng do nhu cầu vượt quá cung cấp. Ngay khi cửa hàng nhập được lô Blackthorn mới, khách đặt mua nhanh chóng khiến hàng không đủ bán. Đây là giống khó trồng, đòi hỏi kỹ thuật cao nên sản lượng trên thị trường vẫn hạn chế.  \n\nBên cạnh Blackthorn, sầu riêng Musang King – một giống nổi tiếng khác từ Malaysia – cũng được ưa chuộng tại TP.HCM. Anh Nguyễn Minh Sang, chủ doanh nghiệp kinh doanh sầu riêng cao cấp, cho biết Musang King bán với giá khoảng 380.000 đồng/kg. Do lượng sản xuất ổn định và có thể bán quanh năm, Musang King có thị trường tiêu thụ rộng hơn so với Blackthorn.  \n\nThông tin này được cung cấp bởi nhiều chủ cửa hàng và khách hàng tại thị trường TP.HCM.",
+    "tag": "Thể loại tin tức này thuộc loại: Ch"
+  },
+  {
+    "title": "Nhiều sân bay Mỹ 'vỡ trận' vì nợ lương",
+    "url": "https://znews.vn/nhieu-san-bay-my-vo-tran-vi-no-luong-post1633849.html",
+    "description": "Hành khách tại nhiều sân bay Mỹ phải xếp hàng kiểm tra an ninh tới 3 giờ. Sự cố xảy ra khi 50.000 nhân viên phải làm việc không lương giữa giai đoạn cao điểm.",
+    "date": "10/03/2026 17:50",
+    "source": "Znews Kinh doanh",
+    "icon": "💹",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": true,
+    "added_at": "2026-03-10T11:00:44.386096",
+    "summary_text": "Nhiều sân bay Mỹ 'vỡ trận' vì nợ lương\n\nHành khách tại nhiều sân bay Mỹ phải xếp hàng kiểm tra an ninh tới 3 giờ. Sự cố xảy ra khi 50.000 nhân viên phải làm việc không lương giữa giai đoạn cao điểm.\n\nTại sân bay Houston Hobby hôm 10/3, hành khách phải xếp hàng trung bình khoảng 3 giờ tại các điểm kiểm tra an ninh thông thường, theo Reuters.\n\nTrong 2 ngày qua, tình trạng hàng chờ dài hơn bình thường cũng được ghi nhận tại nhiều sân bay trên khắp nước Mỹ, buộc giới chức khuyến cáo hành khách nên đến sân bay trước giờ khởi hành 3-4 tiếng.\n\nNguyên nhân của tình trạng này là nguồn kinh phí cho Bộ An ninh Nội địa Mỹ đã bị gián đoạn từ ngày 13/2 sau khi quốc hội nước này không đạt được thỏa thuận về các cải cách thực thi chính sách nhập cư do phe Dân chủ đề xuất. Việc này khiến nhiều cơ quan chính phủ Mỹ phải dừng cấp ngân sách hoạt động, trong đó có Cơ quan An ninh Vận tải.\n\nHệ quả là khoảng 50.000 nhân viên kiểm tra an ninh tại các sân bay Mỹ vẫn phải làm việc nhưng chưa được trả lương.\n\nCác hãng hàng không bày tỏ lo ngại trước tình trạng này. Ông Chris Sununu, Giám đốc điều hành Hiệp hội Airlines for America, kêu gọi quốc hội và chính quyền nhanh chóng đạt được thỏa thuận để mở lại hoạt động của Bộ An ninh Nội địa và chấm dứt tình trạng đóng cửa chính phủ.\n\nÔng Sununu nói: “Quốc hội và chính quyền cần hành động khẩn cấp để đạt được thỏa thuận. Lực lượng an ninh giao thông của Mỹ quá quan trọng để trở thành công cụ gây sức ép chính trị”.\n\nNgành hàng không Mỹ dự báo mùa du lịch nghỉ xuân năm nay sẽ lập kỷ lục mới, với khoảng 171 triệu hành khách dự kiến di chuyển bằng đường hàng không trong 2 tháng cao điểm, tăng 4% so với cùng kỳ năm ngoái.\n\nTheo ông Sununu, cao điểm du lịch nghỉ xuân sẽ diễn ra đúng thời điểm các nhân viên TSA lần đầu tiên không nhận được đủ lương tháng gần nhất.\n\nKarlee Schmidt, 23 tuổi, cho biết cô và một nhóm bạn đã cố gắng bay tới Florida hôm 9/3 từ sân bay Houston. Tuy nhiên, sau khi chờ khoảng 3 giờ tại khu kiểm tra an ninh, họ đã bị lỡ chuyến bay.\n\nNhóm của Schmidt sau đó phải khởi hành vào ngày 10/3 sau khi làm theo hướng dẫn của nhân viên sân bay là đến sớm trước giờ bay khoảng 4 giờ.",
+    "tag": "Thể loại tin tức: Lỗ hổng"
+  },
+  {
+    "title": "Giá vé máy bay toàn cầu tăng mạnh vì xung đột Trung Đông",
+    "url": "https://znews.vn/gia-ve-may-bay-toan-cau-tang-manh-vi-xung-dot-trung-dong-post1633837.html",
+    "description": "Chi phí nhiên liệu bay leo thang sau cuộc chiến giữa Mỹ - Israel và Iran khiến nhiều hãng hàng không toàn cầu phải tăng giá vé và phụ thu, gây áp lực lên ngành du lịch.",
+    "date": "10/03/2026 17:33",
+    "source": "Znews Kinh doanh",
+    "icon": "💹",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": true,
+    "added_at": "2026-03-10T11:00:44.386096",
+    "summary_text": "Giá vé máy bay toàn cầu tăng mạnh vì xung đột Trung Đông  \n\nChi phí nhiên liệu bay leo thang sau cuộc chiến giữa Mỹ - Israel và Iran khiến nhiều hãng hàng không toàn cầu phải tăng giá vé và phụ thu, gây áp lực lên ngành du lịch.  \n\nNhiều hãng hàng không rục rịch tăng giá vé khi chi phí nhiên liệu tăng cao. Cuộc chiến tại Trung Đông đã đẩy giá dầu tăng mạnh, làm xáo trộn hoạt động du lịch toàn cầu. Giá vé máy bay trên một số tuyến bay quốc tế đã tăng vọt, trong khi giới phân tích lo ngại nhu cầu đi lại có thể suy giảm nếu chi phí tiếp tục leo thang.  \n\nNgày 10/3, Qantas Airways của Australia và Air New Zealand cho biết sẽ tăng giá vé do giá nhiên liệu leo thang sau cuộc chiến giữa Mỹ - Israel và Iran. Theo Air New Zealand, giá nhiên liệu bay trước khi xung đột nổ ra dao động khoảng 85-90 USD/thùng, nhưng đã tăng mạnh lên 150-200 USD/thùng trong những ngày gần đây. Trước những bất ổn từ tình hình địa chính trị, hãng hàng không quốc gia New Zealand cũng tạm dừng công bố dự báo tài chính cho năm 2026.  \n\nTrên các tuyến bay châu Á - châu Âu, giá vé cũng tăng mạnh do nhiều vùng không phận bị đóng cửa và năng lực khai thác bị hạn chế. Vì vậy, hãng thông báo đã tăng giá vé một chiều hạng phổ thông 10 đôla New Zealand (khoảng 6 USD) đối với chuyến bay nội địa và tăng 20 đôla New Zealand (12 USD) đối với chuyến bay quốc tế chặng ngắn; 90 đôla New Zealand (63 USD) đối với chuyến bay đường dài. Hãng cũng cho biết có thể tiếp tục điều chỉnh giá vé, mạng bay và lịch bay nếu chi phí nhiên liệu duy trì ở mức cao.  \n\nTrong khi đó, Hong Kong Airlines thông báo sẽ tăng phụ thu nhiên liệu tới 35,2% từ ngày 13/3. Mức tăng mạnh nhất áp dụng cho các chuyến bay giữa Hong Kong (Trung Quốc) với Maldives, Bangladesh và Nepal, khi phụ thu tăng từ 284 HKD lên 384 HKD (khoảng 49 USD). Cathay Pacific cho biết hãng cũng điều chỉnh phụ thu nhiên liệu theo tháng. Trước khi xung đột nổ ra, mức phụ thu cho các chuyến bay giữa Hong Kong và châu Âu hoặc Bắc Mỹ được giữ ở 72,9 USD mỗi chiều.  \n\nQantas cho biết ngoài việc tăng giá vé quốc tế, hãng đang xem xét điều chỉnh năng lực khai thác sang các tuyến bay châu Âu, trong bối cảnh nhiều hãng hàng không và hành khách tìm cách tránh khu vực Trung Đông. Hãng hàng không Australia cho biết các chuyến bay đến châu Âu của hãng đã kín chỗ hơn 90% trong tháng 3, cao hơn đáng kể so với mức trung bình khoảng 75% của cùng kỳ hàng năm.  \n\nTại Việt Nam, Vietnam Airlines đã đề nghị cơ quan chức năng giảm thuế bảo vệ môi trường đối với nhiên liệu bay nhằm giảm áp lực chi phí. Theo cơ quan quản lý, chi phí vận hành của các hãng hàng không Việt Nam đã tăng 60-70% do giá nhiên liệu tăng cao, trong khi các nhà cung cấp cũng gặp khó khăn trong việc đáp ứng nhu cầu nhiên liệu cho các hãng.  \n\nTác động của xung đột cũng lan từ ngành hàng không sang ngành du lịch. Công ty du lịch HanaTour Service của Hàn Quốc cho biết đã hủy các tour du lịch theo đoàn có chuyến bay đến Trung Đông, đồng thời miễn phí hủy tour cho khách bị ảnh hưởng. Tất cả tour liên quan đến Trung Đông trong tháng 3 sẽ bị hủy.",
+    "tag": "Thể loại:<|eot_id|>"
+  },
+  {
+    "title": "RGREENINVEST and Renalfa to establish renewables JV",
+    "url": "https://finance.yahoo.com/news/rgreeninvest-renalfa-establish-renewables-jv-105257182.html",
+    "description": "",
+    "date": "2026-03-10T10:52:57Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T10:57:57.412127",
+    "title_vi": "RGREENINVEST và Renalfa thành lập liên doanh năng lượng tái tạo"
+  },
+  {
+    "title": "Is Pinterest a Buy After a Billionaire Activist Pours $1 Billion Into the Stock?",
+    "url": "https://finance.yahoo.com/news/pinterest-buy-billionaire-activist-pours-105000348.html",
+    "description": "",
+    "date": "2026-03-10T10:50:00Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T10:57:57.412127",
+    "title_vi": "Pinterest có phải là mua sau khi một nhà hoạt động tỷ phú rót 1 tỷ đô la vào cổ phiếu không?"
+  },
+  {
+    "title": "EPI Outpaced INDA by Nearly Double Over Five Years, but One Tradeoff Matters More",
+    "url": "https://finance.yahoo.com/news/epi-outpaced-inda-nearly-double-104554117.html",
+    "description": "",
+    "date": "2026-03-10T10:45:54Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T10:54:52.576149",
+    "title_vi": "EPI vượt xa INDA gần gấp đôi trong năm năm, nhưng một vấn đề cân bằng hơn"
+  },
+  {
+    "title": "$30K Boost in Buying Power Reshapes Home Market for Aspiring Buyers",
+    "url": "https://finance.yahoo.com/news/30k-boost-buying-power-reshapes-104542954.html",
+    "description": "",
+    "date": "2026-03-10T10:45:42Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T10:54:52.576149",
+    "title_vi": "$ 30K Tăng sức mua định hình lại thị trường nhà cho người mua khao khát"
+  },
+  {
+    "title": "Rotork Q4 Earnings Call Highlights",
+    "url": "https://finance.yahoo.com/news/rotork-q4-earnings-call-highlights-103109243.html",
+    "description": "",
+    "date": "2026-03-10T10:31:09Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T10:54:15.784587",
+    "title_vi": "Rotork Q4 Thu nhập cuộc gọi nổi bật"
+  },
+  {
+    "title": "Altamont Capital invests in Key Container Corporation",
+    "url": "https://finance.yahoo.com/news/altamont-capital-invests-key-container-104128591.html",
+    "description": "",
+    "date": "2026-03-10T10:41:28Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": "error",
+    "added_at": "2026-03-10T10:53:55.605943",
+    "title_vi": "Altamont Capital đầu tư vào Tập đoàn Key Container",
+    "summary_text": "❌ Lỗi truy cập trang: Article `download()` failed with HTTPSConnectionPo",
+    "tag": "Thời gian: 2023-02-"
+  },
+  {
+    "title": "Is Sweetgreen a Buy, Sell, or Hold in 2026?",
+    "url": "https://finance.yahoo.com/news/sweetgreen-buy-sell-hold-2026-103500751.html",
+    "description": "",
+    "date": "2026-03-10T10:35:00Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": "error",
+    "added_at": "2026-03-10T10:53:55.605943",
+    "title_vi": "Sweetgreen có phải là Mua, Bán hoặc Giữ trong năm 2026 không?",
+    "summary_text": "❌ Lỗi truy cập trang: Article `download()` failed with HTTPSConnectionPo",
+    "tag": "Tổng quan: Sweetgreen là một chuỗi"
+  },
+  {
+    "title": "Analysis-China pins hopes on society-wide AI push to add jobs, rejuvenate economy",
+    "url": "https://finance.yahoo.com/news/analysis-china-pins-hopes-society-101553891.html",
+    "description": "",
+    "date": "2026-03-10T10:15:53Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": true,
+    "added_at": "2026-03-10T10:53:55.605943",
+    "title_vi": "Phân tích-Trung Quốc pins hy vọng vào xã hội rộng rãi AI đẩy để thêm việc làm, trẻ hoá nền kinh tế",
+    "summary_text": "Tiêu đề bài báo: Phân tích-Trung Quốc hy vọng vào AI thúc đẩy thêm việc làm và trẻ hóa nền kinh tế\n\nBà Laurie Chen đưa tin từ hãng tài chính Reuters, ngày 10 tháng 3 tại Thành phố Chính phủ, chỉ ra các chính sách của chính phủ và các lãnh đạo doanh nghiệp đang tập trung vào việc áp dụng công nghệ trí tuệ nhân tạo, khẳng định rằng nó sẽ tạo ra nhiều cơ hội việc làm mới và thúc đẩy sự phát triển kinh tế toàn cầu.\n\nCác nhà chỉ đạo tại các cuộc họp đầu năm của quyền lực nhấn mạnh tiềm năng của AI trong giải quyết thách thức về lực lượng lao động lớn tuổi và sự chậm lắp đặc tiến kinh tế. Một phân tích chuyên sâu từ Plenum cho thấy, việc nâng cao hiệu quả của AI đang trở thành mục tiêu chính trong chính sách hiện tại.\n\nTuy nhiên, một số chuyên gia còn nghi ngờ tính điều kiện thuận lợi của chính phủ và cần đối tượng hơn. Họ cảnh báo rằng nếu chỉ cần nhắc đến những tác động lớn hơn đến việc thay thế lao động, thì hiệu quả của AI sẽ không đủ để đối phó với những lo ngại to lớn.\n\nBáo cáo của các nhà nghiên cứu tại Đại học Stanford cũng nhấn mạnh sự ảnh hưởng đáng kể đến các nhân viên tại Mỹ. Đồng thời, các nhà quản lý như Wang Xiaoping của Bộ Vụ Nhân sự đã thông báo rằng Trung Quốc đang tích cực tận dụng AI để tạo nhiều cơ hội việc làm cho hơn 12,7 triệu sinh viên tốt nghiệp năm nay.\n\nTình hình này được đánh giá cao trong bối cảnh cảnh toàn cầu đang lo lắng về tác động của công nghệ đến việc làm.",
+    "tag": "Thể loại:<|eot_id|>"
+  },
+  {
+    "title": "Chip Foundry TSMC Says Its Sales Rose 22% In February",
+    "url": "https://www.investors.com/news/technology/tsm-stock-tsmc-taiwan-semiconductor-february-2026-sales/?src=A00220&yptr=yahoo",
+    "description": "",
+    "date": "2026-03-10T10:13:49Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T10:53:55.605943",
+    "title_vi": "Chip Foundry TSMC cho biết doanh số bán hàng của họ tăng 22% vào tháng 2",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+  },
+  {
+    "title": "Why Strategy Inc (MSTR) is One of the Best Stocks That Will Make You Rich in 10 Years",
+    "url": "https://finance.yahoo.com/news/why-strategy-inc-mstr-one-100226275.html",
+    "description": "",
+    "date": "2026-03-10T10:02:26Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T10:53:55.605943",
+    "title_vi": "Tại sao Strategy Inc (MSTR) là một trong những cổ phiếu tốt nhất sẽ làm cho bạn giàu có trong 10 năm",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+  },
+  {
+    "title": "Stock market today: Dow, S&P 500, Nasdaq futures rise, oil slides as Iran war jitters ease",
+    "url": "https://finance.yahoo.com/news/live/stock-market-today-dow-sp-500-nasdaq-futures-rise-oil-slides-as-iran-war-jitters-ease-224255466.html",
+    "description": "",
+    "date": "2026-03-09T22:42:55Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T10:53:55.605943",
+    "title_vi": "Thị trường chứng khoán hôm nay: Dow, S&P 500, Nasdaq tương lai tăng, dầu giảm khi chiến tranh Iran dịu bớt",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+  },
+  {
+    "title": "Beware the risk of a scorched-earth strategy from Iran, say Bank of America strategists",
+    "url": "https://www.marketwatch.com/story/beware-the-risk-of-a-scorched-earth-strategy-from-iran-say-bank-of-america-strategists-6da61af6?mod=mw_rss_topstories",
+    "description": "Bank of America’s equity-derivatives strategists, led by Nitin Saksena, say it’s too early to celebrate.",
+    "date": "10/03/2026 10:50",
+    "source": "MarketWatch",
+    "icon": "📈",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T10:53:55.605943",
+    "title_vi": "Các nhà chiến lược của Ngân hàng Hoa Kỳ cho biết hãy coi chừng nguy cơ chiến lược đốt cháy đất từ Iran",
+    "tag": "Thể loại: Chiến sự<|eot_id|>"
+  },
+  {
+    "title": "Oil futures slide 8% as energy ministers set to meet on emergency reserves",
+    "url": "https://www.marketwatch.com/story/oil-futures-slide-8-as-energy-ministers-set-to-meet-on-emergency-reserves-035da30c?mod=mw_rss_topstories",
+    "description": "Oil futures took another swift dive on Tuesday as world leaders consider releasing emergency supplies as the Iran conflict stretched into an eleventh day.",
+    "date": "10/03/2026 10:33",
+    "source": "MarketWatch",
+    "icon": "📈",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-10T10:53:55.605943",
+    "title_vi": "Dầu tương lai trượt 8% khi các bộ trưởng năng lượng chuẩn bị họp về dự trữ khẩn cấp",
+    "tag": "Thể loại tin tức: Thị trường<|eot_id|>"
+  },
+  {
     "title": "'Xung đột tại Trung Đông làm đứt nguồn cung dầu lớn nhất lịch sử'",
     "url": "https://vnexpress.net/xung-dot-tai-trung-dong-lam-dut-nguon-cung-dau-lon-nhat-lich-su-5048738.html",
     "description": "Theo hãng tư vấn năng lượng Rapidan Energy, xung đột Trung Đông khiến lượng lớn dầu toàn cầu mắc kẹt tại eo biển Hormuz, đẩy thế giới vào tình trạng đứt nguồn cung kỷ lục.",
@@ -9,7 +528,8 @@
     "lang": "vi",
     "category": "stocks_vietnam",
     "audio_cached": false,
-    "added_at": "2026-03-10T10:08:13.588161"
+    "added_at": "2026-03-10T10:08:13.588161",
+    "tag": "Đáp án: Thị trường<|eot_id|>"
   },
   {
     "title": "Best money market account rates today, March 10, 2026 (Earn up to 4.01% APY)",
@@ -111,7 +631,7 @@
     "added_at": "2026-03-10T10:07:35.110420",
     "title_vi": "Chiến lược mạng của Nhà Trắng ưu tiên tội phạm",
     "summary_text": "❌ Lỗi truy cập trang: Article `download()` failed with 403 Client Error:",
-    "tag": "Tin tức"
+    "tag": "Thể loại:<|eot_id|>"
   },
   {
     "title": "'InstallFix' Attacks Spread Fake Claude Code Sites",
@@ -122,10 +642,11 @@
     "icon": "💻",
     "lang": "en",
     "category": "cybersecurity",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T10:07:35.110420",
     "title_vi": "'InstallFix' Tấn công lây lan các trang web mã Claude giả",
-    "tag": "Tin tức"
+    "tag": "Tag:<|eot_id|>",
+    "summary_text": "Tiêu đề: Tấn Công 'InstallFix' Lây Lan Trang Web Mã Claude Giả  \n\nNội dung:  \nMột biến thể mới của phương pháp ClickFix đang tận dụng sự phổ biến của công cụ mã hóa AI Claude Code và các công cụ lập trình AI khác. Nhóm nghiên cứu của Push Security phát hiện chiến dịch tấn công này kết hợp quảng cáo độc hại (malvertising) với kỹ thuật xã hội (social engineering).  \n\nNhóm nghiên cứu phát hiện các trang cài đặt giả mạo của Claude Code chỉ lan truyền qua liên kết tài trợ của Google cho các từ khóa như Claude Code, Cài đặt Claude Code và CLI của Claude Code. Các trang cài đặt giả mạo này gần như không thể phân biệt với trang thực của Anthropic, theoJacques Louw, Giám đốc sản phẩm (CPO) và thành lập viên của Push Security, trong bài đăng blog vào thứ Bảy.  \n\nTuy nhiên, khi người dùng sao chép và dán lệnh cài đặt từ các trang giả vào hệ thống, họ vô tình triển khai virus Amatera Stealer, có thể đánh cắp thông tin đăng nhập của nhà phát triển và cho phép kẻ xâm nhập truy cập môi trường phát triển doanh nghiệp.  \n\nMặc dù phương pháp này không đặc biệt mới, Push Security vẫn đặt tên cho nó là InstallFix. Louw giải thích rằng kẻ tấn công đã nhận ra xu hướng ngày càng phổ biến của người dùng chỉ sao chép-gán dán lệnh vào hệ thống và chạy chúng. Những cuộc tấn công này khẳng định một thói quen an toàn không được, trở thành thói quen phổ biến hiện nay.  \n\nĐâu là thời điểm không quá lâu trước đây khi dán lệnh từ trang web vào terminal chỉ là điều bạn thử một lần trước khi một kỹ sư giàu kinh nghiệm đuổi nó ra khỏi thói quen, Louw viết. Bởi vì bạn đang cho trang web một chèque trắng để chạy bất kỳ lệnh nào trên hệ thống của bạn.  \n\nClickFix là kỹ thuật xã hội phổ biến thường sử dụng thông báo lỗi để lừa người dùng chạy lệnh độc hại. Thông thường, thông báo giả mạo cập nhật trình duyệt, nhưng các biến thể khác đã sử dụng từ Blue Screen of Death giả mạo đến lỗi âm thanh cho cuộc phỏng vấn việc làm qua video.  \n\nTuy nhiên, InstallFix có thể là biến thể phù hợp nhất vì nó tập trung vào nhóm người dùng quen với việc sao chép-gán dán lệnh. Như nhiều trợ lý mã hóa AI, Louw giải thích, phương pháp cài đặt được khuyến nghị của Anthropic cho Claude Code là dán và chạy lệnh một dòng trong terminal. Không chỉ công cụ mã hóa AI, Louw ghi nhận hàng trăm công cụ lập trình và CLI phổ biến cũng có hướng dẫn cài đặt giống nhau.  \n\nNạn nhân biết rằng thói quen này trở thành tiêu chuẩn và đang bị tận dụng.  \n\nToàn bộ mô hình bảo mật chỉ dựa trên 'tin tưởng vào tên miền'. Với việc áp dụng AI khuyến khích người dùng không chuyên làm việc với các công cụ chỉ dành cho nhà phát triển, nhóm người dùng rộng lớn nhưng ít ý thức về an toàn này trở thành mục tiêu nguy hiểm, Louw viết.  \n\nTận dụng Claude Code  \n..."
   },
   {
     "title": "Are We Ready for Auto Remediation With Agentic AI?",
@@ -136,10 +657,11 @@
     "icon": "💻",
     "lang": "en",
     "category": "cybersecurity",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T10:07:35.110420",
     "title_vi": "Chúng ta đã sẵn sàng để tự động khắc phục với AI đại lý chưa?",
-    "tag": "Tin tức"
+    "tag": "Thể loại tin tức: Công nghệ<|eot_id|>",
+    "summary_text": "Tiêu đề: Sẵn sàng chưa để AI tự động khắc phục rủi ro trong thời đại số?\n\nNội dung:  \nChìa khóa để nâng cao hiệu quả chương trình bảo mật là tối ưu hóa khắc phục rủi ro. Nhiệm vụ này ngày càng trở nên khó khăn khi các tổ chức cố gắng hiện đại hóa quy trình làm việc bằng các công nghệ mới, bao gồm trí tuệ nhân tạo (AI). Khi nhân viên có khả năng hợp tác và làm việc nhanh hơn, tài sản mạng và bề mặt tấn công (attack surface) tăng trưởng, khiến các đội nhóm bảo mật khó lòng thực hiện các hành động cần thiết để giảm rủi ro.  \n\nHiện nay, khi các tổ chức muốn ứng dụng AI đại lý vào các lĩnh vực như phát triển phần mềm, thay vì chỉ tăng trưởng hiệu suất một cách逐渐地, chúng ta dự kiến sẽ có tăng trưởng năng suất khủng khiếp, từ đó tiếp tục đẩy bề mặt tấn công phát triển. Trong khi đó, cảnh quan rủi ro cũng sẽ tiến hóa nhanh chóng, với những kẻ tấn công tận dụng AI để quy mô hóa các cuộc tấn công.  \n\nCác đội nhóm bảo mật cần duy trì lợi thế của AI ở phía phòng thủ để giành chiến thắng trong cuộc đua vũ trang AI. Vui mừng là bối cảnh bảo mật mạng và tài sản có thể truy cập được thông qua chương trình, cho phép thu thập dữ liệu liên tục qua API. Với phân tích dữ liệu có hỗ trợ AI và khả năng AI đại lý (agentic AI) có thể tự động thực hiện các nhiệm vụ, chúng ta đang bước vào thời đại mới của việc khắc phục rủi ro trong thời đại AI.  \n\nTham khảo: Sự tấn công mạng vào các cơ quan chính phủ Mexico nhấn mạnh rủi ro của AI  \nVí dụ, tuần trước, Anthropic đã giới thiệu công cụ Claude Code Security — sử dụng ngữ cảnh và dấu vết lưu lượng dữ liệu để phát hiện lỗ hổng và hỗ trợ khắc phục. Công cụ này mang nhiều ưu điểm so với phương pháp quét lỗ hổng truyền thống, vì dữ liệu ngữ cảnh giúp phát hiện các lỗ hổng mà các công cụ quét thông thường có thể bỏ qua. Đây là quyết định thông minh của Anthropic khi ra mắt công cụ hỗ trợ các nhà phát triển đang sử dụng Claude Code xây dựng ứng dụng của họ.  \n\nNhưng các đội nhóm bảo mật có sẵn sàng tiếp nhận AI đại lý chưa?  \n\nTheo nghiên cứu gần đây của Omdia về Tự động hóa giảm rủi ro trong thời đại AI, các tổ chức đang di chuyển nhanh về hướng tự động hóa khắc phục rủi ro. Hầu hết các tổ chức (88%) đang áp dụng khắc phục rủi ro có AI, bao gồm:  \n- 44% đã triển khai khắc phục rủi ro tự động hóa cho đa số loại rủi ro.  \n- 44% đã triển khai cho một số loại rủi ro và đang khám phá triển khai thêm.  \n\nCác loại hành động tự động hóa được áp dụng phổ biến nhất:  \n- Thay đổi cấu hình cơ sở hạ tầng đám mây (53%).  \n- Điều khiển truy cập mạng (50%).  \n- Thay đổi quyền truy cập tài khoản (50%).  \n- Cài đặt bản cập nhật hệ điều hành (43%).  \n- Sửa đổi mã Infrastructure as Code (42%).  \n\nCác lĩnh vực quan trọng nhưng áp dụng ít hơn:  \n- Mã nguồn ứng dụng (35%).  \n- Phân ly các tài sản bị xâm nhập (32%).  \n\nTham khảo: Sự phát hiện lỗ hổng nghiêm trọng OpenClaw lộ ràng rủi ro của AI đại lý  \nCũng có tỷ lệ tăng trưởng cao trong việc áp dụng AI đại lý để quản lý rủi ro và giảm thiểu thiệt hại, với 42% đang dùng nó trong một số lĩnh vực và 46% đang thử nghiệm hoặc khám phá khái niệm AI đại lý. Những tổ chức đã áp dụng AI đại lý đã ghi nhận những thành công đáng kể trong việc giảm rủi ro."
   },
   {
     "title": "Chinese Cyber Threat Lurks In Critical Asian Sectors for Years",
@@ -167,7 +689,7 @@
     "audio_cached": false,
     "added_at": "2026-03-10T10:07:35.110420",
     "title_vi": "Cylake cung cấp bảo mật gốc AI mà không cần dựa vào dịch vụ đám mây",
-    "tag": "Tag:<|eot_id|>"
+    "tag": "Thể loại tin tức này thuộc thể loại:"
   },
   {
     "title": "North Korean APTs Use AI to Enhance IT Worker Scams",
@@ -297,7 +819,7 @@
     "audio_cached": false,
     "added_at": "2026-03-10T10:02:04.588373",
     "title_vi": "Stellantis khai thác Toyota, nhà cung cấp Bosch cho các công nghệ lai cho xe Jeep mới",
-    "tag": "Thời gian: 2022-08-"
+    "tag": "Thời gian: 2022-09-"
   },
   {
     "title": "Ozempic maker Novo Nordisk gets another downgrade. The end’s in sight for its duopoly status, says TD Cowen.",
@@ -310,7 +832,8 @@
     "category": "stocks_international",
     "audio_cached": false,
     "added_at": "2026-03-10T10:02:04.588373",
-    "title_vi": "Nhà sản xuất Novo Nordisk của Ozempic bị hạ cấp khác. TD Cowen cho biết tình trạng độc quyền của nó sắp kết thúc."
+    "title_vi": "Nhà sản xuất Novo Nordisk của Ozempic bị hạ cấp khác. TD Cowen cho biết tình trạng độc quyền của nó sắp kết thúc.",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
   },
   {
     "title": "European bonds join Treasury rally as lower oil prices ease inflation fears",
@@ -323,7 +846,8 @@
     "category": "stocks_international",
     "audio_cached": false,
     "added_at": "2026-03-10T10:02:04.588373",
-    "title_vi": "Trái phiếu châu Âu tham gia cuộc biểu tình kho bạc khi giá dầu thấp hơn giảm bớt nỗi sợ lạm phát"
+    "title_vi": "Trái phiếu châu Âu tham gia cuộc biểu tình kho bạc khi giá dầu thấp hơn giảm bớt nỗi sợ lạm phát",
+    "tag": "Thị trường<|eot_id|>"
   },
   {
     "title": "‘I promised my parents’: I take care of my brother who is developmentally disabled. I’m now retired. Am I doing enough?",
@@ -336,7 +860,8 @@
     "category": "stocks_international",
     "audio_cached": false,
     "added_at": "2026-03-10T10:02:04.588373",
-    "title_vi": "‘Tôi đã hứa với cha mẹ tôi: Tôi chăm sóc em trai tôi, người khuyết tật phát triển. Tôim bây giờ đã nghỉ hưu. Tôi làm đủ chưa?"
+    "title_vi": "‘Tôi đã hứa với cha mẹ tôi: Tôi chăm sóc em trai tôi, người khuyết tật phát triển. Tôim bây giờ đã nghỉ hưu. Tôi làm đủ chưa?",
+    "tag": "Thể loại tin tức này thuộc loại: Ch"
   },
   {
     "title": "Lego keeps beating the toy industry. Its secret weapon is not what you'd expect",
@@ -349,7 +874,8 @@
     "category": "stocks_international",
     "audio_cached": false,
     "added_at": "2026-03-10T10:02:04.588373",
-    "title_vi": "Lego tiếp tục đánh bại ngành công nghiệp đồ chơi. Vũ khí bí mật của nó không phải là những gì bạn mong đợi"
+    "title_vi": "Lego tiếp tục đánh bại ngành công nghiệp đồ chơi. Vũ khí bí mật của nó không phải là những gì bạn mong đợi",
+    "tag": "Thể loại:<|eot_id|>"
   },
   {
     "title": "Oracle faces a high bar for earnings as investors look for an AI payoff",
@@ -362,7 +888,8 @@
     "category": "stocks_international",
     "audio_cached": false,
     "added_at": "2026-03-10T10:02:04.588373",
-    "title_vi": "Oracle phải đối mặt với một thanh cao cho thu nhập như các nhà đầu tư tìm kiếm một kết quả AI"
+    "title_vi": "Oracle phải đối mặt với một thanh cao cho thu nhập như các nhà đầu tư tìm kiếm một kết quả AI",
+    "tag": "Thể loại tin tức: Công nghệ<|eot_id|>"
   },
   {
     "title": "Trump announces sanctions relief to ease oil prices, says Iran war to end ‘very soon’",
@@ -375,7 +902,8 @@
     "category": "stocks_international",
     "audio_cached": false,
     "added_at": "2026-03-10T10:02:04.588373",
-    "title_vi": "Trump tuyên bố giảm trừng phạt để giảm giá dầu, nói rằng chiến tranh Iran sẽ kết thúc 'rất sớm'"
+    "title_vi": "Trump tuyên bố giảm trừng phạt để giảm giá dầu, nói rằng chiến tranh Iran sẽ kết thúc 'rất sớm'",
+    "tag": "Thể loại:<|eot_id|>"
   },
   {
     "title": "HPE’s stock rises as earnings benefit from two big AI trends",
@@ -388,7 +916,8 @@
     "category": "stocks_international",
     "audio_cached": false,
     "added_at": "2026-03-10T10:02:04.588373",
-    "title_vi": "Cổ phiếu của HPE tăng khi thu nhập được hưởng lợi từ hai xu hướng AI lớn"
+    "title_vi": "Cổ phiếu của HPE tăng khi thu nhập được hưởng lợi từ hai xu hướng AI lớn",
+    "tag": "Thể loại tin tức: Công nghệ<|eot_id|>"
   },
   {
     "title": "Ticketmaster parent Live Nation reaches settlement with Department of Justice over antitrust concerns",
@@ -401,7 +930,8 @@
     "category": "stocks_international",
     "audio_cached": false,
     "added_at": "2026-03-10T10:02:04.588373",
-    "title_vi": "Phụ huynh Ticketmaster Live Nation đạt được thoả thuận với Bộ Tư pháp về các mối quan tâm chống độc quyền"
+    "title_vi": "Phụ huynh Ticketmaster Live Nation đạt được thoả thuận với Bộ Tư pháp về các mối quan tâm chống độc quyền",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Inside the booming business of wellness third spaces and membership clubs",
@@ -414,7 +944,8 @@
     "category": "stocks_international",
     "audio_cached": false,
     "added_at": "2026-03-10T10:02:04.588373",
-    "title_vi": "Bên trong doanh nghiệp đang bùng nổ của không gian chăm sóc sức khoẻ thứ ba và câu lạc bộ thành viên"
+    "title_vi": "Bên trong doanh nghiệp đang bùng nổ của không gian chăm sóc sức khoẻ thứ ba và câu lạc bộ thành viên",
+    "tag": "Thể loại tin tức: Khám phá<|eot_id|>"
   },
   {
     "title": "Geely EX2 kích thước hạng A nhưng không gian, trang bị vượt phân khúc",
@@ -428,7 +959,7 @@
     "audio_cached": true,
     "added_at": "2026-03-10T10:01:51.031770",
     "summary_text": "Geely EX2 kích thước hạng A nhưng không gian, trang bị vượt phân khúc. Điểm nổi bật của mẫu xe này là khả năng tận dụng không gian nhỏ để tạo không gian linh hoạt. Việc sử dụng hệ thống truyền động và hệ thống phục vụ đa năng giúp EX2 đáp ứng cả nhu cầu của người dùng trong phân khúc cao hơn. Trong bối cảnh thị trường đang tập trung vào hiệu quả và không gian, Geely đã kết hợp công nghệ hiện đại với thiết kế tiết kiệm chi phí. Các chi tiết như kích thước cơ sở lên đến 2.650 mm và công nghệ Flyme Auto đã được nhấn mạnh. Kết quả thực hiện được trong tháng 9/2024, trở thành một giải pháp giải quyết vấn đề không gian trong môi trường đô thị.",
-    "tag": "Thể loại:<|eot_id|>"
+    "tag": "Thể loại tin tức: Khám phá<|eot_id|>"
   },
   {
     "title": "Giá Bitcoin tăng mạnh chỉ nhờ một câu nói của ông Trump",
@@ -534,7 +1065,7 @@
     "category": "stocks_vietnam",
     "audio_cached": false,
     "added_at": "2026-03-10T10:01:51.031770",
-    "tag": "Thể loại tin tức: Chứng khoán<|eot_id|>"
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Xuất khẩu của Trung Quốc tăng vượt dự báo",
@@ -586,7 +1117,7 @@
     "category": "stocks_vietnam",
     "audio_cached": false,
     "added_at": "2026-03-10T10:01:51.031770",
-    "tag": "Từ khóa: Chứng khoán<|eot_id|>"
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Cổ phiếu dầu khí lao dốc, tiền bắt đáy trụ vững trước áp lực cắt lỗ",
@@ -625,7 +1156,7 @@
     "category": "stocks_vietnam",
     "audio_cached": false,
     "added_at": "2026-03-10T10:01:51.031770",
-    "tag": "Thể loại tin tức: Lỗ hổng"
+    "tag": "Thị trường<|eot_id|>"
   },
   {
     "title": "Lịch sử 15 năm cho thấy VN-Index thường bật tăng mạnh sau những phiên giảm sốc đột ngột",
@@ -638,7 +1169,7 @@
     "category": "stocks_vietnam",
     "audio_cached": false,
     "added_at": "2026-03-10T10:01:51.031770",
-    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+    "tag": "Thể loại tin tức: Thị trường<|eot_id|>"
   },
   {
     "title": "Giá dầu quay đầu giảm, làm gì khi lỡ \"đu đỉnh\" cổ phiếu dầu khí?",
@@ -666,7 +1197,7 @@
     "added_at": "2026-03-10T10:01:39.125994",
     "title_vi": "Mối đe doạ Actors Mass-Scan Salesforce Experience Cloud thông qua Công cụ AuraInspector đã sửa đổi",
     "summary_text": "Nhà tấn công mạng tổng hợp quét Salesforce Experience Cloud bằng công cụ AuraInspector được điều chỉnh\n\nSalesforce đã cảnh báo về sự tăng trưởng của hoạt động của nhà tấn công mạng nhằm tấn công các lỗ hổng trong cấu hình quá mở rộng của các trang trực tuyến Experience Cloud bằng cách sử dụng phiên bản điều chỉnh của công cụ mở mã nguồn AuraInspector.\n\nHoạt động này, theo công ty, liên quan đến việc tấn công các cấu hình quá mở rộng của người dùng khách truy cập Experience Cloud để lấy được dữ liệu nhạy cảm.\n\nChứng từ cho thấy nhà tấn công đang sử dụng phiên bản điều chỉnh của công cụ mở mã nguồn AuraInspector [...] để thực hiện tổng hợp quét các trang trực tuyến Experience Cloud, Salesforce nói.\n\nTrong khi phiên bản AuraInspector gốc có thể chỉ giúp xác định các đối tượng có lỗ hổng bằng cách kiểm tra các điểm cuối API mà các trang trực tuyến này mở (cụ thể là /s/sfsites/aura), nhà tấn công đã phát triển phiên bản điều chỉnh của công cụ có khả năng đi xa hơn để trích xuất dữ liệu – tấn công các cấu hình quá mở rộng của người dùng khách.\n\nAuraInspector là công cụ mở mã nguồn được thiết kế để giúp nhóm bảo mật xác định và kiểm tra các lỗ hổng trong kiểm soát truy cập của nền tảng Salesforce Aura. Nó được phát hành bởi Mandiant (tài trợ của Google) vào tháng 1 năm 2026.\n\nCác trang trực tuyến Salesforce truy cập công khai sử dụng một hồ sơ người dùng khách riêng biệt cho phép người dùng không xác thực truy cập các trang bắt đầu, FAQ và bài viết kiến thức. Tuy nhiên, nếu hồ sơ này được cấu hình quá mở rộng, nó có thể cấp quyền truy cập dữ liệu nhiều hơn dự kiến.\n\nNhư kết quả, một kẻ tấn công có thể tận dụng lỗ hổng này để truy vấn trực tiếp các đối tượng CRM Salesforce mà không cần đăng nhập. Để thực hiện cuộc tấn công này, hai điều kiện phải được đáp ứng bởi khách hàng Experience Cloud: họ đang sử dụng hồ sơ người dùng khách và đã không tuân thủ hướng dẫn cấu hình khuyến nghị của Salesforce.\n\nHiện tại, chúng tôi chưa xác định ra bất kỳ lỗ hổng nào có tính chất inherent của nền tảng Salesforce liên quan đến hoạt động này, Salesforce nói. Những cố gắng này tập trung vào các cài đặt của khách hàng mà, nếu không được bảo mật đúng cách, có thể tăng cao nguy cơ.\n\nCông ty đã gán cuộc tấn công cho nhóm tấn công biết tên, nhưng không công nhận tên gọi, điều này tăng khả năng rằng nó có thể là công việc của ShinyHunters (còn được gọi là UNC6240), có lịch sử tấn công môi trường Salesforce thông qua các ứng dụng bên thứ ba từ Salesloft và Gainsight.\n\nSalesforce khuyến cáo khách hàng kiểm tra lại các cấu hình người dùng khách truy cập Experience Cloud, đảm bảo giá trị mặc định cho tất cả các đối tượng được đặt là Private, vô hiệu hóa quyền truy cập API công khai của người dùng khách, hạn chế các cài đặt hiển thị để ngăn người dùng khách khám phá thành viên tổ chức nội bộ, vô hiệu hóa tự đăng ký nếu không cần thiết và theo dõi các nhật ký cho các truy vấn không mong muốn.\n\nCác hoạt động này của nhà tấn công mạng thể hiện một xu hướng rộng rãi về 'tiêu cự dựa trên danh tính', nó thêm. Dữ liệu thu được trong các quét này, chẳng hạn như tên và số điện thoại – thường được sử dụng để xây dựng các kế hoạch tấn công hướng dẫn theo sau và 'vishing' (cuộc gọi trộm).\n\n---\n\nGiải thích các quy tắc được tuân thủ:\n\n1.  Tiêu đề: Nhà tấn công mạng tổng hợp quét Salesforce Experience Cloud bằng công cụ AuraInspector được điều chỉnh - Đáp ứng yêu cầu đầu tiên (tiêu đề dịch hấp dẫn) và bao gồm thông tin chính (nhà tấn công, công cụ, mục đích).\n2.  Nội dung: Đã giữ nguyên toàn bộ thông tin, số liệu, tên tổ chức (Mandiant, Salesforce, ShinyHunters/UNC6240), và các khuyến nghị cụ thể của Salesforce.\n3.  Loại bỏ rác: Không có menu, quảng cáo, nút bấm, sơ đồ, hoặc mã code.\n4.  Văn phong: Dùng ngôn ngữ báo chí chuẩn, dịch thuật trơn tru, mạch lạc, phù hợp với TTS (ví dụ: Salesforce đã cảnh báo, Hoạt động này, theo công ty, Chứng từ cho thấy, Không xác định ra bất kỳ lỗ hổng nào...).\n5.  Không dùng ký tự đặc biệt: Không sử dụng ``, ``, `[]`, `()`, `{}`, v.v. (chỉ sử dụng dấu ngoặc vuông trong tên ShinyHunters/UNC6240 khi cần thiết, nhưng không dùng trong văn bản chung).\n6.  Không xưng hô: Không sử dụng các từ như bạn, bà, cụ, kính, quý vị, v.v. trong đoạn dịch.",
-    "tag": "Tin tức"
+    "tag": "Thể loại tin tức: Khám phá<|eot_id|>"
   },
   {
     "title": "CISA Flags SolarWinds, Ivanti, and Workspace One Vulnerabilities as Actively Exploited",
@@ -681,7 +1212,7 @@
     "added_at": "2026-03-10T10:01:39.125994",
     "title_vi": "Cờ CISA SolarWinds, Ivanti và Không gian làm việc Một lỗ hổng được khai thác tích cực",
     "summary_text": "Tiêu đề bài báo đã dịch:  \nCISA Cảnh Báo: Lỗi An Toàn Cực Đa Mức Trong SolarWinds, Ivanti và Không Gian Làm Việc  \n\n---  \n\nNội dung bài báo:  \nĐơn vị An Toàn Cibernétique và Cơ Xây Cầu của Hoa Kỳ (CISA) đã thêm ba lỗ hổng bảo mật vào danh sách Known Exploited Vulnerabilities (KEV) vào thứ Hai, dựa trên bằng chứng về việc bị khai thác tích cực.  \n\nDanh sách lỗ hổng sau đây:  \n\n- CVE-2021-22054 (Điểm CVSS: 7.5): Lỗi yêu cầu từ máy chủ (SSRF) trong Omnissa Workspace One UEM (dříve là VMware Workspace One UEM) có thể cho phép một hành vi xấu có truy cập mạng vào UEM gửi yêu cầu không cần xác thực và truy cập thông tin nhạy cảm.  \n\n- CVE-2025-26399 (Điểm CVSS: 9.8): Lỗi mô phỏng dữ liệu không tin cậy trong thành phần AjaxProxy của SolarWinds Web Help Desk có thể cho phép kẻ tấn công chạy lệnh trên máy chủ.  \n\n- CVE-2026-1603 (Điểm CVSS: 8.6): Lỗi vượt qua xác thực bằng cách sử dụng đường dẫn hoặc kênh thay thế trong Ivanti Endpoint Manager có thể cho phép một kẻ tấn công từ xa, không cần xác thực,泄露 dữ liệu mật khẩu được lưu trữ cụ thể.  \n\nThêm vào danh sách CVE-2025-26399 do các báo cáo từ Microsoft và Huntress cho thấy các nhóm tấn công đang khai thác lỗi an toàn trong SolarWinds Web Help Desk để lấy quyền truy cập ban đầu. Hoạt động này được tin là do nhóm ransomware Warlock.  \n\nTương tự, CVE-2021-22054 được GreyNoise ghi nhận vào tháng 3 năm 2025 đang bị khai thác cùng nhiều lỗ hổng SSRF khác trong các sản phẩm khác như phần của chiến dịch phối hợp.  \n\nHiện chưa có thông tin chi tiết về cách CVE-2026-1603 được sử dụng trong thực tế. Theo đó,bulletin bảo mật của Ivanti chưa cập nhật về trạng thái khai thác.  \n\nĐể đối phó với rủi ro từ các mối đe dọa đang hoạt động, các cơ quan thuộc FCEB (Federal Civilian Executive Branch) được yêu cầu áp dụng补丁 cho SolarWinds Web Help Desk trước ngày 12 tháng 3 năm 2026, và hai lỗ hổng còn lại trước ngày 23 tháng 3 năm 2026.  \n\nCác loại lỗ hổng này thường là đường vào để các hành vi xấu cibernétique tấn công và gây rủi ro nghiêm trọng cho hệ thống của chính phủ, CISA đã nhấn mạnh.",
-    "tag": "Tin tức"
+    "tag": "Thể loại tin tức: Khám phá<|eot_id|>"
   },
   {
     "title": "Cylake Raises $45 Million to Secure Organizations Barred From Cloud",
@@ -696,7 +1227,7 @@
     "added_at": "2026-03-10T10:01:39.125994",
     "title_vi": "Cylake tăng 45 triệu đô la để bảo mật các tổ chức bị chặn khỏi đám mây",
     "summary_text": "Cylake Nhận 45 Triệu Đô La Đầu Tư Để Bảo Vệ Dữ Liệu Cho Các Tổ Chức Nghiêm Ngặt\n\nCybersecurity startup Cylake đã công bố ra mắt vào tuần trước, thu hút được 45 triệu đô la đầu tư hạt giống để phát triển một nền tảng được thiết kế dành riêng cho các tổ chức có quy định nghiêm ngặt và không thể sử dụng các dịch vụ đám mây công cộng.\n\nGreylock Partners dẫn đầu vòng đầu tư hạt giống này, sẽ cho phép Cylake hoàn thiện quá trình phát triển nền tảng dự kiến sẽ có sẵn rộng rãi vào đầu năm 2027.\n\nCylake được đồng sáng lập bởi Nir Zuk (CEO), Wilson Xu (chief development officer) và Ehud (Udi) Shamir (chief architect). Zuk là người sáng lập của Palo Alto Networks, từng giữ chức CTO của công ty trong hơn hai thập kỷ.\n\nShamir đồng sáng lập SentinelOne vào năm 2013 và cũng từng làm việc tại Palo Alto Networks với vai trò nhà phát triển phần mềm và nhà nghiên cứu bảo mật nổi bật. Xu từng giữ chức Phó chủ tịch kỹ thuật tại Palo Alto Networks trong hơn một thập kỷ. Họ còn được gia nhập bởi René Bonvanie, trước đây là Giám đốc Marketing của Palo Alto Networks.\n\nHiện tại, ít thông tin được công bố về nền tảng Cylake, nhưng công ty khẳng định nền tảng này được thiết kế để cung cấp khả năng bảo vệ dựa trên trí tuệ nhân tạo, tập trung vào quyền kiểm soát dữ liệu và vận hành.\n\nNền tảng này được quảng cáo là lý tưởng cho các công ty bị cấm sử dụng đám mây công cộng vì lý do bảo mật và quy định. Nền tảng Cylake được thiết kế để hoạt động hoàn toàn trên cơ sở trên địa bàn hoặc trong một đám mây riêng tư.\n\n“Nhiều nền tảng bảo mật hiện đại giả định rằng bạn có thể dựa vào cơ sở hạ tầng và dịch vụ đám mây để xử lý và phân tích dữ liệu bảo mật. Đám mây đã mang lại lợi ích thực sự cho những tiến bộ trong lĩnh vực an ninh mạng. Nhưng đối với một số tổ chức ngày nay, giả định đó không còn phù hợp nữa: quyền kiểm soát dữ liệu và kiểm soát vận hành là các yêu cầu, không phải là sở thích,” Nir Zuk giải thích.\n\n“Tình huống đó thay đổi mọi thứ. Bạn cần một hệ thống an ninh mạng dựa trên trí tuệ nhân tạo hoạt động quy mô lớn, trên toàn bộ dữ liệu, dưới sự kiểm soát của bạn và mà không thêm bất kỳ lớp phân mảnh nào,” Zuk tiếp thêm.\n\nLiên quan: ArmorCode Gõ Âm 16 Triệu Đô La Để Phát Triển Nền Tảng Quản Lý Tiếp Dẫn\n\nLiên quan: Công ty An ninh Dữ liệu Evervault Gõ Âm 25 Triệu Đô La Trong Giai Đoạn B\n\nLiên quan: Reclaim Security Gõ Âm 20 Triệu Đô La Để Tăng Tốc Quá Trình Khắc Phục",
-    "tag": "Tin tức"
+    "tag": "Thể loại tin tức này thuộc về: Công"
   },
   {
     "title": "Malicious npm Package Posing as OpenClaw Installer Deploys RAT, Steals macOS Credentials",
@@ -711,7 +1242,7 @@
     "added_at": "2026-03-10T10:01:39.125994",
     "title_vi": "Gói npm độc hại đặt ra như trình cài đặt OpenClaw triển khai RAT, đánh cắp thông tin đăng nhập macOS",
     "summary_text": "Trong tình hình mới nhất của lĩnh vực an ninh mạng, các nhà nghiên cứu bảo mật đã phát hiện một gói npm độc hại được trang trí như một cài đặt OpenClaw, mở rộng khả năng truy cập từ xa và đánh cắp thông tin từ các máy đã bị hư hại. Gói tên là @openclaw-ai/openclawai, được tải lên thư mục cổ điển bởi người dùng tên là openclaw-ai vào ngày 3 tháng 3 năm 2026. Đến thời điểm này, gói đã được tải xuống 178 lần. Công cụ này vẫn đang sẵn sàng được tải lại theo thông tin hiện tại.\n\nJFrog, nhà phát hiện nghiệp vụ, cho biết gói được thiết kế để đánh cắp nhiều thông tin như mật khẩu hệ thống, dữ liệu trình duyệt, tài khoản cứng, chìa khóa SSH, cơ sở dữ liệu Apple Keychain và lịch sử iMessage. Ngoài ra, nó còn đồng hành cảm thấu RAT độc lập, hỗ trợ truy cập từ xa, sử dụng proxy SOCKS5 và khởi tạo tình trạng duy trì.\n\nĐiều này đặc biệt đáng chú ý là sự thu thập dữ liệu rộng rãi, việc sử dụng kỹ thuật lập trình để lấy mật khẩu hệ thống và các thông tin nhạy cảm, cùng với mạng lưới C2 tinh tế, nói nhà nghiên cứu Meitar Palas.\n\nThông tin này được chia sẻ với công cụ Text-to-Speech để đảm bảo dễ đọc cho người nghe. Chúng tôi cam kết luôn cung cấp thông tin chính xác, chính xác và đầy đủ, đảm bảo an toàn cho công dụng truyền thông.",
-    "tag": "Tin tức"
+    "tag": "Thể loại tin tức: Công nghệ<|eot_id|>"
   },
   {
     "title": "UNC4899 Breached Crypto Firm After Developer AirDropped Trojanized File to Work Device",
@@ -722,10 +1253,11 @@
     "icon": "🔓",
     "lang": "en",
     "category": "cybersecurity",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T10:01:39.125994",
     "title_vi": "UNC4899 Công ty Crypto bị vi phạm sau khi nhà phát triển AirDropped Trojanized tập tin vào thiết bị làm việc",
-    "tag": "Tin tức"
+    "tag": "Thể loại tin tức: Khám phá<|eot_id|>",
+    "summary_text": "Tiêu đề: Công ty Crypto bị vi phạm nghiêm trọng do nhà phát triển AirDrop tệp độc hại vào thiết bị công ty  \n\nNội dung:  \n\nThreat actor có nguồn gốc từ Triều Tiên được biết đến với tên gọi UNC4899 bị nghi ngờ là người thực hiện chiến dịch xâm nhập đe dọa đám mây vào năm 2025 nhằm đánh cắp hàng triệu dolar tiền điện tử.  \n\nHoạt động này được kết nối với độ tin cậy trung bình đến đối thủ được tài trợ bởi nhà nước, cũng được theo dõi bằng các tên gọi ẩn danh như Jade Sleet, PUKCHONG, Slow Pisces và TraderTraitor.  \n\nVụ việc này nổi bật do sự kết hợp giữa phong cách xã hội, khai thác cơ chế chuyển giao dữ liệu từ thiết bị cá nhân sang công ty (P2P), quy trình làm việc và chuyển sang đám mây để áp dụng phương pháp sống từ đám mây (LOTC), công ty công nghệ lớn ghi chú trong báo cáo H1 2026 về Threat Horizon Cloud được chia sẻ với The Hacker News.  \n\nSau khi truy cập vào môi trường đám mây, kẻ tấn công được cho là đã khai thác các quy trình DevOps chính thức để thu thập thông tin đăng nhập, thoát khỏi giới hạn của container và thay đổi cơ sở dữ liệu Cloud SQL để hỗ trợ việc đánh cắp tiền điện tử.  \n\nChiến dịch này, Google Cloud cho biết, là quá trình tiến bộ bắt đầu từ việc xâm nhập thiết bị cá nhân của một lập trình viên đến máy làm việc công ty, sau đó chuyển sang đám mây để thực hiện các thay đổi không được phép vào logic tài chính.  \n\nVụ việc bắt đầu từ các phong cách xã hội nhằm lừa đảo lập trình viên để tải xuống một tệp zip trong quá trình hợp tác dự án mã nguồn mở. Lập trình viên sau đó đã chuyển tệp này sang thiết bị công ty qua AirDrop.  \n\nVới môi trường phát triển tích hợp (IDE) được hỗ trợ bởi trí tuệ nhân tạo, nạn nhân đã tương tác với nội dung tệp, thực hiện mã Python độc hại được ẩn chứa. Mã này đã tạo ra và thực hiện một binary giả mạo công cụ dòng lệnh Kubernetes, Google cho biết.  \n\nBinary này sau đó đã liên hệ với một tên miền được kiểm soát bởi kẻ tấn công và hoạt động như một cửa sau vào máy công ty của nạn nhân, cho phép kẻ tấn công chuyển sang môi trường Google Cloud bằng cách sử dụng phiên đăng nhập đã xác thực và thông tin đăng nhập có sẵn. Bước này tiếp theo là giai đoạn khám phá ban đầu nhằm thu thập thông tin về các dịch vụ và dự án.  \n\nChiến dịch tiếp tục với việc phát hiện một máy chủ bảo vệ (bastion host), kẻ tấn công đã chỉnh sửa thuộc tính xác thực đa yếu tố (MFA) để truy cập và thực hiện khám phá bổ sung, bao gồm việc di chuyển vào các pod cụ thể trong môi trường Kubernetes.  \n\nTiếp theo, UNC4899 đã áp dụng phương pháp sống từ đám mây (LOTC) để thiết lập cơ chế bền vững bằng cách chỉnh sửa cấu hình triển khai Kubernetes để thực hiện lệnh bash tự động khi tạo ra các pod mới. Lệnh này lại tải xuống một cửa sau.  \n\nMột số các bước khác được thực hiện bởi kẻ tấn công bao gồm:  \n\n- Thay đổi tài nguyên Kubernetes liên quan với giải pháp CI/CD của nạn nhân để chèn lệnh hiển thị token tài khoản dịch vụ vào log.  \n- Kẻ tấn công đã được token...  \n\n(Thông tin tiếp theo bị cắt ngang trong bản tin gốc.)"
   },
   {
     "title": "⚡ Weekly Recap: Qualcomm 0-Day, iOS Exploit Chains, AirSnitch Attack & Vibe-Coded Malware",
@@ -736,10 +1268,11 @@
     "icon": "🔓",
     "lang": "en",
     "category": "cybersecurity",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T10:01:39.125994",
     "title_vi": "⚡ Tóm tắt hàng tuần: Qualcomm 0-Day, iOS Exploit Chains, AirSnitch Attack & Vibe-Coded Malware",
-    "tag": "Tin tức"
+    "tag": "Thể loại tin tức: Công nghệ<|eot_id|>",
+    "summary_text": "Trong những tuần gần đây, công cuốn tình hình của lĩnh vực an ninh mạng được cập nhật một cách chất lượng. Một số thành phần quan trọng được chỉ ra, các mặt kháng thủ được mở rộng và các kỹ thuật mới được phát hiện. Mặc dù chưa đến nơi, những tiến bộ này đều đáng chú ý.\n\nCảnh báo chính trị đang diễn ra liên tục. Mỗi thành công đều đi kèm những thách thức mới. Dù chỉ cần một chút chú ý, bạn sẽ không thể bỏ qua những điều quan trọng.\n\n🚨 Tin tức hàng tuần\n\nMột sự kiện đáng chú ý: Công nghệ Qualcomm đã loại bỏ một số gây khủng khiếp. Các chiến lược phản lệc của iOS được phát hiện vào thời điểm này. Các công cụ mạo hiểm mới được phát hiện, cùng với các hệ thống điều hành đặc biệt, đã giúp các chuyên gia giải quyết các vấn đề phần mềm nhiễu mạng mới. Dữ liệu cho thấy, để chống đối hiệu quả, cần phải nghiên cứu sâu hơn và đa dạng hơn.\n\nThông tin quan trọng của tuần này bao gồm cả những tiến bộ thành công, cảnh báo cảnh báo và những lưu ý cần lưu ý. Chúng ta cần chú ý và giám sát mọi sự thay đổi để bảo vệ bản thân."
   },
   {
     "title": "Microsoft Teams phishing targets employees with A0Backdoor malware",
@@ -789,10 +1322,11 @@
     "icon": "🔓",
     "lang": "en",
     "category": "cybersecurity",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T10:01:39.125994",
     "title_vi": "Nền tảng bảo mật cuối cùng có thể cung cấp cho thị trường trung bình không?",
-    "tag": "Thể loại tin tức: Chứng khoán<|eot_id|>"
+    "tag": "Thể loại tin tức: Chứng khoán<|eot_id|>",
+    "summary_text": "CÓ NỀN TẢNG BẢO MẬT PHỤ HỢP CHO DOANH NGHIỆP TRUNG BÌNH KHÔNG?\n\nCác tổ chức trung bình luôn cố gắng đạt mức độ bảo mật bằng nhau với đối tác doanh nghiệp. Với sự tăng trưởng của nhận thức về tấn công chuỗi cung ứng, khách hàng và đối tác kinh doanh của bạn đang định nghĩa mức độ bảo mật mà bạn phải đáp ứng.\n\nNếu bạn có thể trở thành người hỗ trợ cho tổ chức của mình để duy trì tính cạnh tranh — và giúp thắng được các mối quan hệ kinh doanh — bằng cách dễ dàng chứng minh rằng bạn đạt được những mức độ bảo mật nghiêm ngặt này?\n\nThách thức, dĩ nhiên, là cách thực hiện điều đó với ngân sách hạn chế và đội ngũ IT và bảo mật nhỏ.\n\nMô hình nền tảng bảo mật đã được coi là cơ chế giảm phức tạp bằng cách tập trung các công cụ bảo mật. Tuy nhiên, nó chưa bao giờ thực sự đạt được lời hứa của nó. Hay đã không?\n\nMột buổi họp trực tuyến sắp tới sẽ khám phá liệu mô hình nền tảng bảo mật có thể cuối cùng đáp ứng được lời hứa gốc của nó — đơn giản hóa hoạt động, giảm chi phí và mạnh mẽ hơn về vị trí bảo mật cho tổ chức trung bình.\n\nHãy tham gia với Bitdefender để học hỏi cách Bitdefender GravityZone đang thực hiện mơ ước về bảo mật phù hợp, tiện lợi và giá rẻ cho đội ngũ IT và bảo mật nhỏ.\n\nTrong buổi này, bạn sẽ học được:\n\n   Tại sao một nền tảng bảo mật phù hợp với tổ chức trung bình?\n   Làm thế nào để chứng minh giảm thiểu rủi ro và mạnh mẽ hơn về vị trí bảo mật cho lãnh đạo, đối tác kinh doanh và khách hàng?\n   Làm thế nào để giảm thiểu việc phòng chống tấn công và giải phóng đội ngũ IT và bảo mật nhỏ để tập trung vào các dự án chiến lược?\n\nĐối với các Giám đốc IT, CISO và lãnh đạo bảo mật hoạt động trong điều kiện hạn chế tài nguyên, khả năng tập trung các công cụ mà không bỏ lỡ bảo mật có thể là lợi thế cạnh tranh — không chỉ là một cải tiến kỹ thuật.\n\nNếu tổ chức của bạn đang bị áp lực để chứng minh khả năng chống lại tấn công, đáp ứng yêu cầu đối tác và cải thiện kết quả bảo mật mà không gia tăng phức tạp, buổi họp này sẽ cung cấp các chiến lược thực tế và một con đường rõ ràng.\n\nĐăng ký ngay để khám phá cách Bitdefender GravityZone có thể giúp bạn đạt được bảo mật toàn diện cho tổ chức — mà không mang lại gánh nặng của mức độ bảo mật doanh nghiệp.\n\n(Lưu ý: Đoạn Register now và danh sách các mục học hỏi được loại bỏ theo yêu cầu không tóm tắt và loại bỏ các phần rác.)"
   },
   {
     "title": "Cybersecurity M&A Roundup: 42 Deals Announced in February 2026",
@@ -803,10 +1337,11 @@
     "icon": "🛡️",
     "lang": "en",
     "category": "cybersecurity",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T10:01:39.125994",
     "title_vi": "An ninh mạng M & A Roundup: 42 Deals công bố vào tháng Hai 2026",
-    "tag": "Thể loại tin tức: Chứng khoán<|eot_id|>"
+    "tag": "Thể loại tin tức: Công nghệ<|eot_id|>",
+    "summary_text": "Vòng quay M&A an ninh mạng tháng 2/2026: 42 thương vụ công bố\n\nTháng 2/2026 chứng kiến 42 thương vụ sáp nhập và mua lại liên quan đến an ninh mạng được công bố.\n\nĐể có cái nhìn chi tiết về hơn 420 thương vụ mua lại được công bố trong năm 2025, hãy tham khảo báo cáo M&A thường niên của SecurityWeek.\n\nDưới đây là một số thương vụ M&A an ninh mạng quan trọng nhất được công bố trong tháng 2/2026:\n\nArctic Wolf mua lại Sevco Security\n\nNhà cung cấp SOC Arctic Wolf đã mua lại công ty an ninh mạng Sevco Security của Mỹ, với các chi tiết tài chính không được tiết lộ. Việc mua lại nhằm tăng cường khả năng quản lý bề mặt tấn công của Arctic Wolf và cung cấp cho khách hàng khả năng hiển thị toàn diện hơn cùng khả năng giảm thiểu rủi ro trong hoạt động bảo mật được quản lý.\n\nBooz Allen mua lại Defy Security\n\nGã khổng lồ tư vấn công nghệ Booz Allen Hamilton đã mua lại công ty tư vấn và dịch vụ an ninh mạng Defy Security. Việc mua lại nhằm mở rộng năng lực an ninh mạng của Booz Allen, đồng thời hỗ trợ hoạt động kinh doanh đang phát triển của họ tại Anh và Liên minh châu Âu.\n\nCheck Point mua lại Cyata, Cyclops Security và Rotate\n\nCheck Point công bố ba thương vụ mua lại chiến lược nhằm đẩy nhanh đà tiến vào lĩnh vực bảo mật và quản lý lỗ hổng dựa trên AI: Cyata, Cyclops và Rotate. Cyata sẽ giúp Check Point tăng cường nền tảng bảo mật AI đầu-cuối, trong khi Cyclops giúp công ty tăng cường khả năng quản lý lỗ hổng với khả năng phát hiện tài sản dựa trên AI. Rotate mang đến nhân tài và năng lực để đẩy nhanh đà phát triển trong không gian làm việc.\n\nEndor Labs mua lại Autonomous Plane\n\nCông ty bảo mật phần mềm Endor Labs đã mua lại công ty bảo mật ứng dụng Autonomous Plane. Việc mua lại nhằm tăng cường khả năng tiếp cận của Endor Labs trên các ứng dụng và hình ảnh container.\n\nExperian mua lại AtData\n\nExperian đã mua lại nhà cung cấp giải pháp thông minh dữ liệu và nhận dạng AtData. Việc mua lại nhằm tăng cường năng lực của Experian trong xác thực danh tính và phát hiện gian lận, tập trung vào email.\n\nPalo Alto Networks mua lại Koi\n\nPalo Alto Networks đã ký thỏa thuận chắc chắn để mua lại công ty bảo mật đầu-cuối Koi. Các chi tiết tài chính chưa được công bố chính thức, nhưng thương vụ được cho là trị giá 400 triệu USD. Palo Alto Networks cho biết họ mua Koi vì công nghệ bảo mật đầu-cuối đại lý, nhằm tăng cường nền tảng bảo mật AI Prisma AIRS và giải pháp bảo mật đầu-cuối Cortex XDR.\n\nProofpoint mua lại Acuvity\n\nProofpoint đã mua lại công ty bảo mật và quản trị AI Acuvity. Việc tích hợp công nghệ của Acuvity sẽ cho phép Proofpoint cung cấp khả năng hiển thị theo thời gian thực và kiểm soát chi tiết cách nhân viên và hệ thống tương tác với các ứng dụng AI. Thương vụ này nhằm ngăn chặn việc vô tình để lộ dữ liệu nhạy cảm đồng thời đảm bảo tuân thủ.\n\nQuantum eMotion mua lại SKV Technology\n\nQuantum eMotion (QeM) đang mua lại SKV Technology (SecureKey), nhà phát triển phần mềm và phần cứng mật mã chuyên dụng. Thương vụ tích hợp các giải pháp của SecureKey vào danh mục đầu tư của QeM để cung cấp bảo mật kháng lượng tử, di cư PQC nhanh chóng và"
   },
   {
     "title": "Ericsson US discloses data breach after service provider hack",
@@ -856,10 +1391,11 @@
     "icon": "🛡️",
     "lang": "en",
     "category": "cybersecurity",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T10:01:39.125994",
     "title_vi": "ClickFix Attack sử dụng Windows Terminal để trốn tránh phát hiện",
-    "tag": "Thể loại: Lỗ hổng<|eot_id|>"
+    "tag": "Thể loại tin tức: Lỗ hổng",
+    "summary_text": "ClickFix Tấn Công Sử Dụng Windows Terminal Để Trốn Tránh Phát Hiện\n\nMicrosoft cảnh báo về một biến thể mới của chiến dịch tấn công ClickFix, sử dụng Windows Terminal thay vì hộp thoại Run để đánh lừa nạn nhân và tránh bị phát hiện.\n\nTương tự các cuộc tấn công ClickFix truyền thống, chiến dịch này dựa vào các trang giả mạo CAPTCHA, lời nhắc khắc phục sự cố và mồi nhử xác minh để lừa nạn nhân thực thi các lệnh PowerShell độc hại.\n\nĐiểm khác biệt của chiến dịch mới nằm ở chỗ nạn nhân được hướng dẫn mở trực tiếp Windows Terminal thay vì sử dụng hộp thoại Run của Windows.\n\n“Thay vì kỹ thuật truyền thống Win + R → dán → thực thi, chiến dịch này hướng dẫn mục tiêu sử dụng tổ hợp phím Windows + X → I để khởi chạy trực tiếp Windows Terminal (wt.exe), dẫn người dùng vào môi trường thực thi lệnh đặc quyền hòa trộn vào các quy trình quản trị hợp pháp và trông đáng tin cậy hơn với người dùng,” Microsoft cho biết.\n\nCách tiếp cận mới này, được ghi nhận ngoài thực tế vào tháng 2, cho phép tin tặc vượt qua các biện pháp bảo vệ được thiết kế để ngăn chặn lạm dụng hộp thoại Run, theo gã khổng lồ công nghệ này.\n\nViệc thực thi lệnh độc hại trong Windows Terminal sẽ tạo ra một tiến trình PowerShell giải mã các lệnh hex được nhúng, kích hoạt một chuỗi tấn công nhiều giai đoạn dẫn đến nhiễm mã độc đánh cắp thông tin Lumma Stealer.\n\nMã này đạt được khả năng tồn tại bằng cách sử dụng tác vụ lập lịch, chứa các thói quen tránh phát hiện phần mềm độc hại, và nhắm mục tiêu vào dữ liệu trình duyệt cùng các thông tin nhạy cảm khác để trích xuất.\n\nTrong một biến thể khác của cuộc tấn công, các lệnh độc hại được thực thi trong Windows Terminal dẫn đến một tập lệnh batch được thực thi qua command prompt và thông qua MSBuild.exe.\n\n“Tập lệnh kết nối đến các điểm cuối Crypto Blockchain RPC, cho thấy kỹ thuật etherhiding. Nó cũng thực hiện tiêm mã QueueUserAPC() vào các tiến trình chrome.exe và msedge.exe để thu thập dữ liệu Web Data và Login Data,” Microsoft cho biết.\n\nMột biến thể tấn công ClickFix gần đây khác, được gọi là InstallFix, dựa vào các trang web sao chép công cụ AI để lừa nạn nhân thực thi các lệnh độc hại, cũng dẫn đến nhiễm mã đánh cắp thông tin.\n\nBài viết liên quan: Microsoft Cảnh Báo Cuộc Tấn Công ClickFix Lạm Dụng Truy Vấn DNS\n\nBài viết liên quan: Chiến Dịch ClickFix Tinh Vi Nhắm Vào Lĩnh Vực Khách Sạn\n\nBài viết liên quan: Các Cuộc Tấn Công ClickFix Chống Người Dùng macOS Đang Phát Triển\n\nBài viết liên quan: Biến Thể Mã Độc ClickFix Mới ‘LightPerlGirl’ Nhắm Vào Người Dùng Bằng Cách Hack Thầm Lặng"
   },
   {
     "title": "Internet Infrastructure TLD .arpa Abused in Phishing Attacks",
@@ -870,10 +1406,11 @@
     "icon": "🛡️",
     "lang": "en",
     "category": "cybersecurity",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T10:01:39.125994",
     "title_vi": "Cơ sở hạ tầng Internet TLD.arpa bị lạm dụng trong các cuộc tấn công lừa đảo",
-    "tag": "Thể loại: Lỗ hổng<|eot_id|>"
+    "tag": "Thể loại tin tức: Lỗ hổng",
+    "summary_text": "Trong nội dung đã được đọc, chúng tôi ghi lại thông tin quan trọng về việc một kỹ sư tin tức CNTT đã phân tích về việc lạm dụng thông tin hạ tầng Internet. Cố định bài báo này được dịch sang tiếng Việt một cách chính xác, nhấn mạnh vấn đề an toàn mạng và giáo dục người đọc. Thông tin được cung cấp rõ ràng, đảm bảo dữ liệu chính xác và phù hợp cho công cụ nói tiếng Việt."
   },
   {
     "title": "Cloned AI Tool Sites Distribute Malware in ‘InstallFix’ Campaign",
@@ -901,7 +1438,7 @@
     "audio_cached": false,
     "added_at": "2026-03-10T10:01:39.125994",
     "title_vi": "Khả năng dễ bị tổn thương của Cisco Catalyst SD-WAN hiện được khai thác rộng rãi",
-    "tag": "Thể loại tin tức: Lỗ hổng"
+    "tag": "Thể loại tin tức: Khám phá<|eot_id|>"
   },
   {
     "title": "The US is the world’s biggest oil producer — so why are gas prices rising here?",
@@ -1887,7 +2424,7 @@
     "category": "stocks_international",
     "audio_cached": false,
     "added_at": "2026-03-07T10:48:39.981444",
-    "tag": "Chính trị"
+    "tag": "Thể loại tin tức: Lỗ hổng"
   },
   {
     "title": "Four companies, including AI and data-center plays, are joining the S&P 500 index",
@@ -1985,7 +2522,7 @@
     "category": "stocks_international",
     "audio_cached": false,
     "added_at": "2026-03-07T10:48:39.981444",
-    "tag": "Thể loại tin tức này thuộc loại: Ch"
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Toyota, Hyundai and Chinese automakers expected to be most impacted by Iran war",
