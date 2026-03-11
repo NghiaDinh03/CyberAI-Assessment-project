@@ -41,21 +41,35 @@ Hệ thống API thần tốc đáp ứng mọi request từ Frontend thông qua
 - Các nút dẫn hướng nhanh giới thiệu tính năng hệ thống.
 
 ### 💬 AI Chat (ISO RAG)
+👉 **[Xem chi tiết Hướng dẫn Cơ chế Hoạt động RAG](./docs/chatbot_rag.md)**
 - Ứng dụng Retrieval-Augmented Generation (RAG). Người dùng chat, hệ thống trích xuất vector từ `vector_store` kết hợp với prompt gửi vào LocalAI Llama 3.1 để trả lời chính xác thông tin nội bộ.
 
 ### 📊 Analytics (Monitor)
+👉 **[Xem chi tiết Hướng dẫn Quản trị và Analytics](./docs/analytics_monitoring.md)**
 - Dashboard tối thượng theo dõi sức khỏe phần cứng (CPU, RAM).
 - Theo dõi các Container và trạng thái Model AI rảnh hay đang bận.
 - Quản lý kho ChromaDB (Clear, Reload), Lịch sử hệ thống.
+👉 *Tham khảo thêm: [Hướng dẫn nạp dữ liệu ChromaDB](./docs/chromadb_guide.md)*
 
 ### 📝 Form ISO
+👉 **[Xem chi tiết Luồng Data Form Đánh giá ISO](./docs/iso_assessment_form.md)**
 - Khảo sát nhanh 20+ câu hỏi về hạ tầng Mạng doanh nghiệp.
 - Sinh báo cáo Action Plan bằng AI Llama 3.1 & SecurityLLM.
 
 ### 📰 Tin tức (AI News Aggregator)
+👉 **[Xem chi tiết Cơ chế Crawl Tin & Sinh Audio TTS Nội bộ](./docs/news_aggregator.md)**
 - 3 Chuyên mục tin tức chính. Bài đăng được fetch liên tục.
 - Hiển thị bài viết, ấn **🔊 Nghe** hệ thống sẽ tóm tắt -> sinh MP3 -> và phát (Phát từ Cache nếu nghe lần 2).
 - **Panel Lịch Sử 7 Ngày Sidebar:** Hiển thị bài báo cũ của tuần, cho phép người dùng click Nghe lại Audio tĩnh đã được tạo trong lịch sử mà không tốn token.
+
+---
+
+## 📚 Hệ thống Tài liệu Kỹ thuật (Docs)
+Dự án đi kèm bộ tài liệu phân tích kỹ thuật rất sâu, nằm trong thư mục `docs/`. Bạn có thể đọc chúng để hiểu rõ hơn cách hệ thống hoạt động:
+- 📖 **[Kiến trúc Tổng thể (Architecture)](./docs/architecture.md):** Giải thích mô hình Client-Server và luồng dữ liệu.
+- 📖 **[Tài liệu API Dữ liệu (API References)](./docs/api.md):** Danh sách các Endpoint API Backend đang hỗ trợ.
+- 📖 **[Hướng dẫn Triển khai (Deployment)](./docs/deployment.md):** Các bước để triển khai lên server thật bằng Docker.
+- 📖 **[Hướng dẫn Nạp ChromaDB (ChromaDB Guide)](./docs/chromadb_guide.md):** Cơ chế Embed file `.md` thành vector nội bộ.
 
 ---
 

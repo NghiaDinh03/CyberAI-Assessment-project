@@ -26,15 +26,19 @@ Trong kỷ nguyên an ninh thông tin, việc tiếp thu kịp thời các tin t
 
 ## 2. Luồng Audio Text-To-Speech (AI Tóm tắt báo)
 
-Trọng tâm của tính năng (Button [Play Audio 🎧]):
+Trọng tâm của tính năng (Button [Play Audio 🔊 Nghe]):
 
-1. Khi click Play (hoặc khi background chạy), thư viện `newspaper3k` sẽ vào link báo gốc cào toàn diện bài phân tích (Html -> Raw Text).
-2. Xóa sạch rác, quảng cáo, chèn cái chổi lọc.
-3. Nếu bài Tiếng Anh: Yêu cầu **Llama 3.1** *"Dịch tóm tắt súc tích, lược bỏ ký tự đặc biệt, nối câu mạch lạc để dùng đọc Voice"*.
-4. Nếu báo tiếng Việt: Llama *"Làm gọn bài báo lại, loại bỏ các đường dẫn hỏng, ngắt câu mạch lạc chuẩn phong thái Tiếng Việt"*.
-5. Bơm dòng văn bản (Summary text) vừa sinh ra vào thư viện chuyên dụng **Microsoft Edge-TTS** thông qua python `edge-tts`. Sử dụng giọng Vocal AI `vi-VN-HoaiMyNeural` chuẩn phát thanh viên.
-6. Sinh ra File mp3, lưu định tuyến tại `data/summaries/audio/`. Trả URL hiển thị để Browser tự phát loa cho người dùng nghe (Kèm chữ chạy theo).
-7. Trạng thái `Audio_cached=True` (Nút màu xanh) có hiệu lực.
+1. Khi click Nghe (hoặc khi background chạy), thư viện `newspaper3k` sẽ vào link báo gốc cào toàn diện bài.
+2. Xóa sạch HTML, rác, định hình Text (giới hạn độ dài).
+3. **Cơ Chế 3-Tier Fallback Summarization**: Hệ thống ném bài báo này vào kiến trúc 3 Tầng AI để tóm tắt chuẩn báo chí:
+   - **Tầng 1 (Gemini 2.5 Flash)**: Gọi API mảng xoay vòng. Tốc độ ánh sáng. Nếu lỗi/429 khóa key 60s, thử tiếp.
+   - **Tầng 2 (OpenRouter)**: Nếu toàn bộ Gemini tịt, tự động dùng OpenRouter xoay vòng.
+   - **Tầng 3 (LocalAI)**: Tại máy ảo, dùng Llama xử lý nếu rớt mạng hoàn toàn.
+4. Bơm dòng văn bản tóm tắt (Summary text) vừa sinh ra vào thư viện chuyên dụng **Microsoft Edge-TTS**.
+5. Sinh ra File mp3, lưu định tuyến tại `data/summaries/audio/{hash}.mp3` bằng cách băm chuỗi nội dung MD5.  
+6. Trạng thái nút chuyển thành `🔊 Nghe` màu xanh -> Có hiệu lực vĩnh viễn lưu đệm trên thanh Lịch sử bên cạnh.
 
-## 3. Storage & Cleanup
-- Để không bị nổ ổ cứng do File Mp3 (Voice), chu kỳ dọn rác của hệ thống (2h) sẽ tự dò xem: Bài báo nằm trong Audio Cache có đang hiện trên Bảng Tin hay không? Nếu không nằm trong Top News -> **Tự động Delete MP3 + JSON**. Hệ thống bảo toàn vĩnh viễn mức RAM và Ổ Cứng lý tưởng!
+## 3. Storage & Cleanup (Vòng đời 7 ngày)
+- Để không bị nổ ổ cứng do File Mp3 (Voice), chu kỳ dọn rác của hệ thống không xóa báo trong 2 giờ nữa. Hệ thống thiết lập **Lưu giữ Lịch sử Tin tức trong 7 NGÀY**.
+- Tính năng Panel Lịch Sử: Cho phép người dùng lục lại toàn bộ tin bài cũ của tuần vừa rồi để đọc tóm tắt hoặc ấn "Nghe lại" Audio Mp3 với độ trễ phản hồi bằng 0 giây (Hit Cache Object).
+- Các Text/Audio Cache quá 7 Ngày sẽ bị hệ thống âm thầm Delete vĩnh viễn không thương tiếc nhằm giải phóng RAM và SSD Disk. Hệ thống bảo đảm luôn duy trì mức Storage an toàn vô hạn.

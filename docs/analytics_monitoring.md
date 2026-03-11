@@ -10,14 +10,14 @@ Giao diện sẽ liên tục (Mỗi 5 giây) Pinging tới Backend thông qua En
 - **ChromaDB**: Kho lưu trữ Vector Embeddings cục bộ.
 - **Llama 3.1 8B**: Load vào RAM, phục vụ RAG và Chat. (Dành cho General/Summary).
 - **SecurityLLM 7B**: Mô hình soi lỗi bảo mật hệ thống. (ISO Assessor).
-- **VinAI Translate Model**: Giao thức NLP siêu nhẹ (135 Models) phục vụ Dịch tin.
+- **VinAI Translate Model**: Giao thức NLP siêu nhẹ (135M parameters) phục vụ Dịch tin.
 
 ## 2. Thống kê Sinh Cache (Audio & Translation)
 Do tính năng **Feed Tin Tức** tự động Cào bài báo -> Dịch tiếng việt -> Lưu Audio MP3 ngầm nên Cảnh báo tràn đĩa cứng là bài toán ưu tiên.
 Khu vực này giải quyết bằng Data biểu đồ (Lấy từ Endpoint: `GET /api/system/cache-stats`):
 - **CACHE TRANSLATIONS (TEXT):** Số lượng tiêu đề lưu JSON.
 - **CACHE SUMMARIES (AUDIO):** Tổng MP3 đã lưu trong hệ thống thời điểm hiện tại.
-- **TỔNG DUNG LƯỢNG STORAGE:** Hiển thị Megabytes rác hệ thống sử dụng (Dung lượng này sẽ **tự động bốc hơi 100%** do Garbage Collector của News Backend dọn dẹp sau 2 tiếng / Tránh tràn Server Disk).
+- **TỔNG DUNG LƯỢNG STORAGE:** Hiển thị Megabytes File rác hệ thống (Data sẽ tự động được dọn dẹp sau **7 ngày** kể từ khi tạo theo thiết lập trong Backend, tránh tràn ổ đĩa).
 
 ## 3. Kho Tài liệu AI (ChromaDB Vector Hub)
 

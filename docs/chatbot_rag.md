@@ -26,8 +26,8 @@ LLM Llama 3.1 dưới sự ép buộc của Prompt: *"Dựa vào các bối cả
 
 ## 2. Kiến trúc và Models
 
-*   **ChromaDB**: Local Vector Database lưu trữ Embedding của các file Markdown (`docs/iso_documents`).
-*   **Embedding Model**: Sủ dụng thuật toán mã nguồn mở, độ trễ cực thấp để embedding dữ liệu.
+*   **ChromaDB**: Local Vector Database lưu trữ Embedding của các file Markdown (`data/iso_documents`).
+*   **Embedding Model**: Sử dụng thuật toán mã nguồn mở (all-MiniLM-L6-v2), độ trễ cực thấp để embedding dữ liệu.
 *   **Llama 3.1 (8B instruct)**: AI trung tâm đảm đương vai trò tổng hợp, suy ngẫm và phát biểu lại bằng Tiếng Việt.
 
 ---
