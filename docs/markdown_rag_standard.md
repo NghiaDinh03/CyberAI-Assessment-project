@@ -39,38 +39,39 @@ Các mục tiêu này phải đo lường được và nhất quán với chính
 
 ---
 
-## 3. Câu hỏi về "Giải pháp của PicoLM & PICO Format" trong RAG
+## 3. Giải pháp PicoLM & Ứng dụng PICO Format trong RAG
 
-Gần đây có nhiều thảo luận về "PicoLM RAG Markdown" hay PICO Format. Sự thực được chia làm 2 nghĩa:
+### 3.1. Giải pháp PicoLM là gì?
+**PicoLM** là một framework mã nguồn mở được thiết kế tối giản nhằm hỗ trợ huấn luyện (training) và phân tích các mô hình ngôn ngữ quy mô nhỏ (như 1M đến 1B tham số). Điểm đáng giá của PicoLM nằm ở khâu tiền xử lý dữ liệu: Hệ thống thiết lập tiêu chuẩn chia nhỏ và đóng gói kho dữ liệu đầu vào thành các đoạn (chunks) có kích thước cố định là **2049 tokens** rành mạch. Việc chuẩn hóa kích thước token này giúp mô hình hấp thu dữ liệu với Performance (hiệu suất) và sự ổn định cao nhất, tránh nhiễu ngữ cảnh.
 
-1. **PicoLM (Framework):** Là một framework dùng để *huấn luyện* các mô hình nhỏ (1M - 1B parameters). Nó tự chia data thành các khối chuẩn 2049 tokens để cho AI nạp vào.
-2. **PICOs-RAG / PICO Chunking Strategy:** Trong nghiên cứu Y tế và Học thuật, PICO là viết tắt của chuỗi cấu trúc:
-   - **P** (Patient/Problem - Vấn đề)
-   - **I** (Intervention - Can thiệp)
-   - **C** (Comparison - So sánh)
-   - **O** (Outcome - Kết quả)
+Tuy nhiên, khi làm việc với kỹ thuật RAG (sinh văn bản theo câu truy vấn), khái niệm này thường được kết hợp với một kỹ thuật đỉnh cao khác trong Y tế/Bảo mật có tên là **PICO Chunking Format** để tách mảng văn bản thành các Vector tối ưu.
 
-👉 **Có nên áp dụng PICO vào hệ thống này không? - CÓ, Rất hợp lý!**  
-Kiến trúc PICO hay còn gọi là *Structured Chunking* (Chia nhỏ có tính hệ thống) cực kỳ phù hợp để viết các file về Xử lý Sự cố An Ninh Mạng (Incident Response) để RAG nuốt vào.
+### 3.2. Phương pháp Chunk và Convert Vector kết hợp PICO Format như thế nào là hợp lý?
+Việc chỉ cắt văn bản thô theo số lượng ký tự hay token cố định (như 2049 tokens) dễ làm LLM mất đi mạch văn giữa chừng (Context Fragmentation). 
+Bởi vậy, chuẩn hợp lý và tiên tiến nhất khi convert Vector là **chia Chunk Semantic (Theo ngữ nghĩa PICO: Problem - Intervention - Comparison - Outcome)** kết hợp với kĩ thuật Header-Aware.
 
-### Ví dụ Format PICO-Style chuẩn để nạp vào hệ thống:
+**Luồng Convert Vector (Embedding) chuẩn mực:**
+
+1. **Khâu định dạng Metadata (Document Level):** Trong file `.md`, bạn viết rõ các thẻ ranh giới `## [PROBLEM]`, `## [INTERVENTION]`.
+2. **Khâu Chunking (Cắt khúc dữ liệu):** Hàm `chunk_text()` trước khi đưa dữ liệu vào ChromaDB sẽ không cắt mù quáng theo số chữ. Thay vào đó, nó nhận diện kí tự `##` làm ranh giới phân tách mảng. Nếu đoạn văn bị quá dài, hệ thống sẽ chèn lại cái thẻ `## [INTERVENTION]` đấy vào phần văn bản bị ngắt đứt.
+3. **Khâu Embedding (Convert Vector):** Khi đoạn text này được biến đổi thành dạng CSDL Vector thông qua model `all-MiniLM-L6-v2`, bộ não toán học của Model sẽ gán mức độ tương đồng cực đại (Cosine Similarity) giữa câu hỏi như *"Cách ly network như thế nào"* với nguyên một cụm Vector dày đặc ý nghĩa thuộc nhóm `[INTERVENTION]`.
+
+**Mẫu ví dụ cấu trúc tài liệu PICO RAG cực kì hiệu quả:**
 
 ```markdown
 # Báo cáo Sự cố Ransomware LockBit (Q3/2026)
 
-## [PROBLEM] Phát hiện sự cố Ransomware
-Vào lúc 2AM, hệ thống SIEM phát hiện hàng loạt cảnh báo mã hóa file bất thường tại phân vùng Database Server. Mã độc được xác định là loại LockBit 3.0.
+## [PROBLEM] Phát hiện sự cố
+Vào lúc 2AM, hệ thống SIEM cảnh báo bị mã hóa file bất thường do LockBit 3.0.
 
-## [INTERVENTION] Hành động cách ly 
-Đội SOC ngay lập tức ngắt kết nối mạng của 3 server DB. Chuyển hướng lưu lượng truy cập sang Server Backup ở Site B. Kích hoạt Firewall chặn toàn bộ Inbound từ IP lạ mạng Châu Âu.
+## [INTERVENTION] Hành động khắc phục
+Đội SOC ngắt mạng 3 server DB, chặn Inbound IP lạ. Chuyển hướng lưu lượng truy cập sang Server Backup ở Site B.
 
-## [COMPARISON] Đánh giá mức độ thiệt hại 
-So với đợt tấn công Wannacry năm 2017, hệ thống lần này không bị sập hoàn toàn nhờ cơ chế tách biệt Zone mạng. Rủi ro rò rỉ dữ liệu mức 2.
+## [COMPARISON] So sánh phạm vi
+Rủi ro nhỏ hơn đợt tấn công Wannacry năm 2017 nhờ có Zone tách biệt trên hệ thống. Rủi ro rò rỉ ở cấp độ 2.
 
-## [OUTCOME] Kết quả và Bài học
-Khôi phục thành công 100% dữ liệu từ bản Snapshot lúc 1AM.
-Nguyên nhân gốc do phơi cổng RDP 3389 ra WAN.
-Hành động khắc phục: Chặn RDP port public và bắt buộc dùng VPN 2FA.
+## [OUTCOME] Kết quả cuối cùng
+Khôi phục 100% data từ Data Backup nguyên vẹn. Lỗ hổng gốc là do lộ port RDP 3389 ra thẻ mạng WAN.
 ```
 
-Nhờ mô hình `## [KEYWORD] Tiêu đề` kết hợp với thuật toán `chunk_text()` nhạy cảm Header cấp 2 của chúng ta trong file `vector_store.py`, RAG sẽ truy xuất lại câu trả lời vô cùng xuất sắc nếu người dùng hỏi *"Hôm trước Ransomware tấn công mình đã cách ly như thế nào và bài học ra sao?"*.
+**Tổng kết:** Bằng phương thức này, thay vì RAG tự động "xới tung" một đại dương file `.md` dạng thô, thì việc chuẩn bị cấu trúc PICO sẽ giúp thuật toán tìm Vector ánh xạ thẳng tỷ lệ 100% vào Chunk có gắn tag `## [INTERVENTION]`. Từ đó, Llama 3.1 sẽ lấy đúng bối cảnh dọn dẹp để trả lời người dùng mà không bao giờ bị chém gió (Hallucination) sang đoạn khác.
