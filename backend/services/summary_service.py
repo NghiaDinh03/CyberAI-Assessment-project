@@ -62,7 +62,7 @@ class SummaryService:
     @staticmethod
     def _process_article_internal(url: str, lang: str = "en", title: str = "") -> Dict:
         """
-        Logic thực tế để xử lý bài báo, được bảo vệ bởi Semaphore.
+        Core article processing logic, protected by Semaphore.
         """
         cached = SummaryService._get_cache(url)
         if cached:
@@ -125,7 +125,7 @@ class SummaryService:
                 )
 
             summary_vi = ""
-            # Priority 1: Dùng Gemini với vòng lặp Round-Robin (Xoay vòng 4 Keys)
+            # Priority 1: Gemini with round-robin key rotation
             gemini_keys_env = os.getenv("GEMINI_API_KEYS", "").strip()
             if gemini_keys_env:
                 gemini_keys = [k.strip() for k in gemini_keys_env.split(",") if k.strip()]
@@ -145,7 +145,7 @@ class SummaryService:
                         idx = SummaryService._gemini_key_index % len(gemini_keys)
                         SummaryService._gemini_key_index += 1
                         
-                        # Kiểm tra Cooldown của Key này
+                        # Check cooldown for this key
                         last_429 = SummaryService._gemini_cooldowns.get(idx, 0)
                         if time.time() - last_429 < 60:
                             continue
@@ -174,11 +174,11 @@ class SummaryService:
                                 logger.warning(f"Gemini Key index {idx} lỗi ({e}). Thử key tiếp theo...")
                             time.sleep(0.5) 
             
-            # Priority 2: Nếu không gọi được Gemini (Hoặc lỗi cả 4 keys), dùng dự phòng OpenRouter (Xoay vòng 2+ keys)
+            # Priority 2: Fallback to OpenRouter with round-robin keys
             if not summary_vi:
                 or_keys_env = os.getenv("OPENROUTER_API_KEYS", "").strip()
                 if not or_keys_env:
-                    # Fallback cho biến môi trường cũ đơn lẻ nếu có
+                    # Fallback to legacy single-key env var
                     or_keys_env = os.getenv("OPENROUTER_API_KEY", "").strip()
                 
                 if or_keys_env:
@@ -190,7 +190,7 @@ class SummaryService:
                             idx = SummaryService._openrouter_key_index % len(or_keys)
                             SummaryService._openrouter_key_index += 1
                             
-                            # Kiểm tra Cooldown của Key này
+                            # Check cooldown for this key
                             last_429 = SummaryService._openrouter_cooldowns.get(idx, 0)
                             if time.time() - last_429 < 60:
                                 continue
@@ -244,7 +244,7 @@ class SummaryService:
             if not summary_vi:
                 raise Exception("Tất cả các API đang lỗi hoặc cạn Quota. Xin chờ 5 phút.")
             
-            # Post process: loại bỏ ký tự đặc biệt và meta-commentary của AI
+            # Post-process: strip special chars and AI meta-commentary
             if summary_vi:
                 summary_vi = summary_vi.replace("*", "").replace("#", "").replace('"', "")
                 summary_vi = summary_vi.replace("<|eot_id|>", "").replace("<|end_header_id|>", "").replace("assistant", "").strip()
@@ -258,13 +258,13 @@ class SummaryService:
                 summary_vi = re.sub(r'\(Chú thích:.*$', '', summary_vi, flags=re.DOTALL).strip()
                 summary_vi = re.sub(r'---.*$', '', summary_vi, flags=re.DOTALL).strip()
 
-                # Tách tiêu đề (dòng đầu tiên) và nội dung tóm tắt để đồng bộ Lịch sử
+                # Extract title (first line) and sync with history
                 lines = [l.strip() for l in summary_vi.split("\n") if l.strip()]
                 final_title_vi = title
                 if lines:
                     final_title_vi = lines[0]
                 
-                # Cập nhật lịch sử ngay lập tức
+                # Update history immediately
                 try:
                     from services.news_service import NewsService
                     NewsService._update_history([{
@@ -293,7 +293,7 @@ class SummaryService:
             import re
             
             def fix_pronunciation(text: str) -> str:
-                # Dictionary phiên âm các từ viết tắt chuyên ngành
+                # Pronunciation dictionary for abbreviations
                 replacements = {
                     r'\bRAT\b': 'Rát',
                     r'\bAI\b': 'Ây ai',
@@ -326,7 +326,7 @@ class SummaryService:
                 for pattern, replacement in replacements.items():
                     text = re.sub(pattern, replacement, text)
                 
-                # Các từ in hoa còn lại (ví dụ IBM, HTTP), nếu để nguyên edge-tts tiếng Việt sẽ đọc từng chữ (vd: H T T P) - điều này chấp nhận được với đa số từ.
+                # Remaining uppercase words (e.g. IBM, HTTP) are read letter-by-letter by edge-tts Vietnamese voice - acceptable.
                 return text
 
             voice = "vi-VN-HoaiMyNeural" 

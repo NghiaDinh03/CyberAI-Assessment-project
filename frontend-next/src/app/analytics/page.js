@@ -50,7 +50,7 @@ export default function AnalyticsPage() {
     }
 
     const checkDeleteWarning = (id, e) => {
-        e.stopPropagation() // Ngăn click nhầm vào mở row detail
+        e.stopPropagation()
         const suppressUntil = localStorage.getItem('skip_delete_warning_iso')
         if (suppressUntil && Date.now() < parseInt(suppressUntil)) {
             executeDelete(id)
@@ -75,7 +75,7 @@ export default function AnalyticsPage() {
 
     const confirmDelete = () => {
         if (dontAskAgain) {
-            // Lấy thời gian hiện tại + 24 giờ (ms)
+            // Suppress warnings for 24 hours
             const twentyFourHours = 24 * 60 * 60 * 1000
             localStorage.setItem('skip_delete_warning_iso', Date.now() + twentyFourHours)
         }

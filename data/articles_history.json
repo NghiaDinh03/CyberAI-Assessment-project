@@ -1,5 +1,598 @@
 [
   {
+    "title": "Stocks Fall as Oil Prices Spike up to $100 Per Barrel",
+    "url": "https://finance.yahoo.com/news/stocks-fall-oil-prices-spike-154748354.html",
+    "description": "",
+    "date": "2026-03-09T15:47:48Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T03:37:41.829317"
+  },
+  {
+    "title": "Live Nation Rallies Near Buy Point On Legal Settlement. Why Its Troubles Aren't Over.",
+    "url": "https://www.investors.com/news/live-nation-lyv-stock-antitrust-settlement/?src=A00220&yptr=yahoo",
+    "description": "",
+    "date": "2026-03-09T15:44:05Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T03:37:41.829317"
+  },
+  {
+    "title": "Kitces Research: Advisor Wellbeing Improved in 2025",
+    "url": "https://finance.yahoo.com/news/kitces-research-advisor-wellbeing-improved-154125055.html",
+    "description": "",
+    "date": "2026-03-09T15:41:25Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T03:37:41.829317"
+  },
+  {
+    "title": "Wall Street Just Sent a Clear Signal on DOW and LyondellBasell. Here’s What It Means",
+    "url": "https://finance.yahoo.com/news/wall-street-just-sent-clear-153833902.html",
+    "description": "",
+    "date": "2026-03-09T15:38:33Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T03:37:41.829317"
+  },
+  {
+    "title": "The Real Winner from Broadcom’s Q1 Earnings Is This 1 Lesser-Known Stock",
+    "url": "https://finance.yahoo.com/news/real-winner-broadcom-q1-earnings-153449919.html",
+    "description": "",
+    "date": "2026-03-09T15:34:49Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T03:37:41.829317"
+  },
+  {
+    "title": "AI company Anthropic sues Trump administration seeking to undo 'supply chain risk' designation",
+    "url": "https://finance.yahoo.com/news/anthropic-sues-trump-administration-seeking-152755142.html",
+    "description": "",
+    "date": "2026-03-09T15:27:55Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T03:37:41.829317"
+  },
+  {
+    "title": "Những đột phá số từ VietinBank",
+    "url": "https://znews.vn/nhung-dot-pha-so-tu-vietinbank-post1634025.html",
+    "description": "Trong dòng chảy của kỷ nguyên số, VietinBank không ngừng nỗ lực xây dựng hệ sinh thái số “đo ni đóng giày” cho cả khách hàng doanh nghiệp và cá nhân, tạo nên lợi thế cạnh tranh khác biệt.",
+    "date": "11/03/2026 10:30",
+    "source": "Znews Kinh doanh",
+    "icon": "💹",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": false,
+    "added_at": "2026-03-11T03:37:28.395359"
+  },
+  {
+    "title": "Tham vọng của các ngân hàng tư nhân",
+    "url": "https://znews.vn/tham-vong-cua-cac-ngan-hang-tu-nhan-post1633428.html",
+    "description": "Trước mùa Đại hội đồng cổ đông thường niên, nhiều ngân hàng đã công bố kế hoạch kinh doanh năm 2026 với các mục tiêu tăng trưởng mạnh cả về lợi nhuận và quy mô tài sản.",
+    "date": "11/03/2026 10:19",
+    "source": "Znews Kinh doanh",
+    "icon": "💹",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": false,
+    "added_at": "2026-03-11T03:37:28.395359"
+  },
+  {
+    "title": "Hơn 3.400 tỷ phú nắm khối tài sản bằng cả nền kinh tế Trung Quốc",
+    "url": "https://znews.vn/hon-3400-ty-phu-nam-khoi-tai-san-bang-ca-nen-kinh-te-trung-quoc-post1633961.html",
+    "description": "Trong bảng xếp hạng năm 2026, hơn 3.000 doanh nhân trên thế giới góp mặt vào danh sách tỷ phú thế giới của Forbes và mức độ ảnh hưởng trải dài ở rất nhiều lĩnh vực khác nhau.",
+    "date": "11/03/2026 09:55",
+    "source": "Znews Kinh doanh",
+    "icon": "💹",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": false,
+    "added_at": "2026-03-11T03:37:28.395359"
+  },
+  {
+    "title": "Thông tin mới liên quan giao dịch Tập đoàn Đất Xanh mua dự án ở Dĩ An",
+    "url": "https://znews.vn/thong-tin-moi-lien-quan-giao-dich-tap-doan-dat-xanh-mua-du-an-o-di-an-post1633958.html",
+    "description": "Liên quan dự án 8,6 ha tại Dĩ An (TP.HCM), chủ đầu tư Vương Bảo Long cho biết chưa từng ký hợp đồng mua bán dự án với Đất Xanh hoặc Công ty Hà An. Công ty Hà An sau đó cũng đã lên tiếng về giao dịch n",
+    "date": "11/03/2026 09:40",
+    "source": "Znews Kinh doanh",
+    "icon": "💹",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": false,
+    "added_at": "2026-03-11T03:37:28.395359"
+  },
+  {
+    "title": "Tháng 2/2026, thanh khoản trên UPCoM giảm 29,91%",
+    "url": "https://vneconomy.vn/thang-22026-thanh-khoan-tren-upcom-giam-2991.htm",
+    "description": "HNX cho biết thị trường UPCoM th#225;ng 02/2026, chứng kiến diễn biến chỉ số gi#225; UPCoM Index biến động mạnh, với xu hướng giảm điểm mạnh trong thời gian gần 2 tuần trước kỳ nghỉ Tết Nguy#234;n đ#2",
+    "date": "11/03/2026 02:25",
+    "source": "VnEconomy",
+    "icon": "📊",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": false,
+    "added_at": "2026-03-11T03:37:28.395359"
+  },
+  {
+    "title": "Vốn đầu tư mạo hiểm vào tiền điện tử tăng 50%",
+    "url": "https://vneconomy.vn/von-dau-tu-mao-hiem-vao-tien-dien-tu-tang-50.htm",
+    "description": "Quy m#244; trung b#236;nh của mỗi thương vụ đầu tư dự #225;n tiền điện tử l#224; khoảng 34 triệu USD, tăng 272% so với giai đoạn trước...",
+    "date": "11/03/2026 02:23",
+    "source": "VnEconomy",
+    "icon": "📊",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": false,
+    "added_at": "2026-03-11T03:37:28.395359"
+  },
+  {
+    "title": "Huy động trái phiếu Chính phủ tháng 2/2026 tăng 32,44%",
+    "url": "https://vneconomy.vn/huy-dong-trai-phieu-chinh-phu-thang-22026-tang-3244.htm",
+    "description": "T#237;nh lũy kế từ đầu năm, Kho bạc Nh#224; nước đ#227; huy động được 60.541 tỷ đồng, ho#224;n th#224;nh 55% kế hoạch ph#225;t h#224;nh qu#253; 1 v#224; đạt 12% kế hoạch ph#225;t h#224;nh của năm 2026",
+    "date": "11/03/2026 02:20",
+    "source": "VnEconomy",
+    "icon": "📊",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": false,
+    "added_at": "2026-03-11T03:37:28.395359"
+  },
+  {
+    "title": "This Software Stock Is Shrugging Off Apocalypse Fears. Should You Chase the Rally Here?",
+    "url": "https://finance.yahoo.com/news/software-stock-shrugging-off-apocalypse-145453534.html",
+    "description": "",
+    "date": "2026-03-09T14:54:53Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": true,
+    "added_at": "2026-03-11T02:33:56.578210",
+    "title_vi": "Cổ phiếu phần mềm này đang đẩy lùi nỗi sợ ngày tận thế. Bạn có nên theo đuổi cuộc biểu tình ở đây không?",
+    "summary_text": "Cổ phiếu phần mềm này đang xua tan nỗi lo ngày tận thế: Liệu có nên theo đuổi đà tăng trưởng?\n\nCổ phiếu Samsara (IOT) đóng cửa tăng gần 20% vào ngày 6 tháng 3 sau khi công ty phần mềm đám mây này công bố kết quả kinh doanh quý 4 vững chắc và định hướng tương lai ấn tượng, cho thấy những lo ngại về sự gián đoạn do trí tuệ nhân tạo (AI) gây ra thực sự đã bị thổi phồng quá mức.\n\nCông ty có trụ sở tại San Francisco ghi nhận doanh thu 444 triệu USD, tăng khoảng 28% so với cùng kỳ năm trước, giúp công ty đạt lợi nhuận GAAP quý thứ hai liên tiếp.\n\nSo với mức thấp nhất từ đầu năm đến nay, cổ phiếu Samsara hiện đã tăng tới 50%. Tuy nhiên, các nhà phân tích của Craig Hallum tin rằng cổ phiếu phần mềm này sẽ còn tăng mạnh hơn nữa trong thời gian tới khi năm nay tiếp diễn.\n\nCổ phiếu Samsara được dự báo đạt 48 USD vào năm 2026\n\nSamsara kết thúc quý tháng 1 với doanh thu định kỳ hàng năm (ARR) đạt 1,89 tỷ USD, tăng 30% so với cùng kỳ năm trước, cho thấy “đòn bẩy hoạt động được cải thiện” khi biên lợi nhuận gộp vẫn ở mức lành mạnh 77%.\n\nĐiều này khiến các chuyên gia của Craig Hallum duy trì xếp hạng “Mua” đối với cổ phiếu IOT, với mục tiêu giá 48 USD, cho thấy tiềm năng tăng giá khoảng 35% từ mức hiện tại.\n\nCamera hành trình tích hợp trí tuệ nhân tạo của Samsara tiếp tục là động lực tăng trưởng lớn, chiếm gần một nửa tổng doanh thu trong quý 4.\n\nTrong khi đó, mảng “quốc tế” hiện chiếm khoảng 15% các hợp đồng mới, củng cố nhận định rằng nền tảng này đang mở rộng tốt ra ngoài Bắc Mỹ, các chuyên gia này cho biết thêm trong báo cáo lạc quan của họ vào thứ Sáu.\n\nCổ phiếu IOT không thực sự đắt đỏ để sở hữu\n\nĐịnh hướng doanh thu 1,97 tỷ USD trong năm nay của ban lãnh đạo, tốt hơn dự kiến, sau khi bổ sung 13 khách hàng mới với ARR hơn 1 triệu USD, là một trong những lý do khác mà Craig Hallum đưa ra cho quan điểm tích cực của mình.\n\nTheo các nhà phân tích của công ty này, hệ số giá trên doanh thu (P/S) hiện tại của IOT khoảng 11 lần không quá cao khi xét đến tốc độ tăng trưởng ấn tượng của công ty qua từng quý.\n\nVà các nhà giao dịch quyền chọn dường như cũng đồng tình với họ, đặc biệt là khi Giám đốc điều hành của Nvidia (NVDA), Jensen Huang, đã từng nói rằng tác động của trí tuệ nhân tạo đối với các công ty phần mềm đang bị hiểu sai.\n\nMức giá cao nhất trên các hợp đồng quyền chọn đáo hạn vào giữa tháng 6 hiện ở mức khoảng 44 USD, tương đương với tiềm năng tăng giá hơn 20% đối với cổ phiếu Samsara trong vòng ba tháng tới.\n\nXếp hạng đồng thuận đối với Samsara là gì?\n\nMô hình kinh doanh của Samsara thể hiện những đặc điểm khác biệt giúp nó khác biệt so với những lỗ hổng của mô hình đăng ký phần mềm truyền thống theo từng chỗ ngồi.",
+    "tag": "Thể loại tin tức: Chứng khoán<|eot_id|>"
+  },
+  {
+    "title": "As the Dollar and Energy Prices Spike on Continued Iran War, Make This 1 Trade Now",
+    "url": "https://finance.yahoo.com/news/dollar-energy-prices-spike-continued-144832877.html",
+    "description": "",
+    "date": "2026-03-09T14:48:32Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": true,
+    "added_at": "2026-03-11T02:33:56.578210",
+    "title_vi": "Khi đồng đô la và giá năng lượng tăng đột biến trong cuộc chiến Iran tiếp tục, hãy thực hiện giao dịch 1 này ngay bây giờ",
+    "summary_text": "Khi đồng đô la và giá năng lượng tăng đột biến trong cuộc chiến Iran tiếp tục, hãy thực hiện giao dịch 1 này ngay bây giờ\n\nHợp đồng tương lai tiền tệ Euro tháng 6 (E6M26) mang đến cơ hội bán khi giá tiếp tục suy yếu.\n\nQuan sát biểu đồ nến hàng ngày của hợp đồng tương lai tiền tệ Euro tháng 6 cho thấy giá đang có xu hướng giảm và vừa chạm mức thấp nhất trong 10 tháng. Cũng có thể thấy ở cuối biểu đồ rằng chỉ báo phân kỳ hội tụ đường trung bình động (MACD) đang ở trạng thái giảm giá khi đường MACD màu xanh lam nằm dưới đường tín hiệu màu đỏ và cả hai đường đều đang có xu hướng giảm. Phe bán đang chiếm ưu thế kỹ thuật trong ngắn hạn.\n\nThêm tin tức từ Barchart\n\nVề cơ bản, đồng đô la Mỹ ($DXY) đang hưởng lợi từ nhu cầu trú ẩn an toàn trong bối cảnh cuộc chiến Iran, trong khi các nền kinh tế khu vực đồng Euro đang chịu ảnh hưởng từ giá năng lượng tăng vọt.\n\nMột động thái của đồng Euro tháng 6 xuống dưới mức hỗ trợ biểu đồ tại mức thấp nhất qua đêm là 1.1561 sẽ trở thành cơ hội bán. Mục tiêu giá giảm sẽ là 1.1100, hoặc thấp hơn. Mức kháng cự kỹ thuật, nơi có thể đặt lệnh dừng mua bảo vệ ngay phía trên, nằm ở 1.1770.\n\nwww.barchart.com\n\nLƯU Ý QUAN TRỌNG: Tôi không phải là nhà môi giới hợp đồng tương lai và không quản lý bất kỳ tài khoản giao dịch nào ngoài tài khoản cá nhân của mình. Mục tiêu của tôi là chỉ ra cho bạn các cơ hội giao dịch tiềm năng. Tuy nhiên, bạn phải tự mình: (1) quyết định khi nào và liệu bạn có muốn thực hiện bất kỳ giao dịch nào hay không và (2) xác định quy mô của bất kỳ giao dịch nào bạn có thể thực hiện. Bất kỳ giao dịch nào tôi thảo luận đều mang tính chất giả định.\n\nĐây là những gì Ủy ban Giao dịch Hàng hóa Tương lai (CFTC) đã nói về giao dịch hợp đồng tương lai (và tôi hoàn toàn đồng ý):\n\nGiao dịch hợp đồng tương lai và quyền chọn hàng hóa không dành cho tất cả mọi người. ĐÂY LÀ MỘT HOẠT ĐỘNG BIẾN ĐỘNG, PHỨC TẠP VÀ RỦI RO. Trước khi bạn đầu tư bất kỳ khoản tiền nào vào hợp đồng tương lai hoặc quyền chọn, bạn nên xem xét kinh nghiệm tài chính, mục tiêu và nguồn lực tài chính của mình, và biết bạn có thể chấp nhận mất bao nhiêu ngoài khoản thanh toán ban đầu cho nhà môi giới. Bạn nên hiểu các hợp đồng tương lai và quyền chọn hàng hóa cũng như các nghĩa vụ của mình khi tham gia vào các hợp đồng đó. Bạn nên hiểu mức độ rủi ro của mình và các khía cạnh khác của giao dịch bằng cách xem xét kỹ lưỡng các tài liệu tiết lộ rủi ro mà nhà môi giới của bạn có nghĩa vụ cung cấp cho bạn.\n\nVào ngày xuất bản, Jim Wyckoff không nắm giữ (trực tiếp hoặc gián tiếp) vị thế nào trong bất kỳ chứng khoán nào được đề cập trong bài viết này. Tất cả thông tin và dữ liệu trong bài viết này chỉ dành cho mục đích thông tin. Bài viết này ban đầu được xuất bản trên Barchart.com.",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+  },
+  {
+    "title": "Stocks stun with sharp reversal. Here's how the market finished.",
+    "url": "https://finance.yahoo.com/news/dow-sheds-more-800-pts-143902067.html",
+    "description": "",
+    "date": "2026-03-09T14:39:02Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": true,
+    "added_at": "2026-03-11T02:33:56.578210",
+    "title_vi": "Cổ phiếu choáng váng với sự đảo ngược mạnh. Đây là cách thị trường kết thúc.",
+    "summary_text": "Cổ phiếu Mỹ phục hồi mạnh mẽ sau cú sốc dầu mỏ: Giá dầu giảm sâu, thị trường thở phào nhẹ nhõm\n\nCổ phiếu Mỹ đã phục hồi vào buổi chiều và đóng cửa ở mức cao hơn sau khi giá dầu một lần nữa giảm xuống dưới mốc quan trọng 100 USD mỗi thùng, với hy vọng giao tranh ở Iran sẽ sớm kết thúc.\n\nTổng thống Donald Trump nói với CBS News rằng ông nghĩ cuộc chiến đã gần như hoàn tất, khiến các nhà đầu tư thở phào nhẹ nhõm. Dầu West Texas giảm xuống dưới 100 USD mỗi thùng sau khi tăng vọt lên tới 119 USD qua đêm do lo ngại việc đóng cửa Eo biển Hormuz, tuyến đường chính vận chuyển khoảng một phần năm lượng dầu mỏ thế giới, sẽ hạn chế nguồn cung dầu toàn cầu.\n\nNếu không có dầu được vận chuyển, một số nhà sản xuất dầu hàng đầu thế giới cũng bắt đầu hết chỗ để lưu trữ dầu và cắt giảm sản lượng. Kuwait và Iraq nằm trong số đó. Các báo cáo cho biết UAE cũng vừa bắt đầu giảm sản lượng.\n\nCác bộ trưởng năng lượng từ nhóm G7, bao gồm Canada, Pháp, Đức, Ý, Nhật Bản, Vương quốc Anh và Hoa Kỳ, dự kiến họp trực tuyến vào ngày 10 tháng 2 để thảo luận về khả năng giải phóng dự trữ dầu mỏ. Một nỗ lực phối hợp để giải phóng dầu cũng có thể giúp kiểm soát giá dầu.\n\nChỉ số Dow Jones blue-chip đóng cửa tăng 0.5%, tương đương 239.25 điểm, sau khi giảm hơn 800 điểm vào buổi sáng, đạt 47,740.80 điểm. Chỉ số S&P 500 rộng hơn tăng 0.83%, tương đương 55.93 điểm, lên 6,795.95 điểm, và chỉ số Nasdaq nặng về công nghệ tăng 1.38%, tương đương 308.267 điểm, đạt 22,695.946 điểm. Dầu West Texas giảm 6.59% xuống còn 84.91 USD mỗi thùng, thấp hơn nhiều so với mức đỉnh 119 USD qua đêm.\n\nThị trường chứng khoán có đang tiến vào thị trường gấu?\n\nThị trường gấu là khi thị trường chứng khoán giảm 20% trở lên so với mức đỉnh gần đây, hoặc mức đóng cửa cao nhất. Điều này khác với các đợt điều chỉnh, vốn đề cập đến mức giảm ít nhất 10%. Cho đến nay, các nhà phân tích chưa thấy một thị trường gấu nào sắp xảy ra.\n\nTheo một số chỉ số, chúng ta chưa đạt đến mức đó, điều này giải thích tại sao cổ phiếu chưa chứng kiến sự sụt giảm của thị trường gấu, như chúng ta đã thấy vào năm 2022, Henry Allen, chiến lược gia vĩ mô tại Deutsche Bank, cho biết.\n\nĐể dễ hình dung, chỉ số S&P 500 đã giảm 2% vào tuần trước và hiện đang thấp hơn khoảng 3.7% so với mức cao nhất mọi thời đại là 7,002 điểm được thiết lập vào ngày 28 tháng 1. Sự sụt giảm đó có thể bị che phủ bởi những tiêu đề đáng ngại, nhưng mức giảm phần trăm của chỉ số chỉ là một vết thương nhỏ, Jay Woods, chiến lược gia thị trường trưởng tại Freedom Capital Markets, nhận xét.\n\nGiá xăng sẽ tăng cao đến mức nào?\n\nCác nhà phân tích cho biết người tiêu dùng đã cảm thấy một số khó khăn khi đổ xăng. Chỉ trong một tuần, giá xăng đã tăng trung bình hơn 51 cent, một trong những tốc độ nhanh nhất trong nhiều năm khi giá dầu tăng vọt do tình trạng bế tắc tại Eo biển Hormuz.\n\nPatrick De Haan, người đứng đầu bộ phận phân tích dầu mỏ tại GasBuddy, cho biết trong một bài đăng trên blog rằng giá xăng ở nhiều bang có thể tăng thêm 20 đến 50 cent mỗi gallon trong tuần này, và dầu diesel thậm chí còn tăng nhiều hơn.",
+    "tag": "Thị trường<|eot_id|>"
+  },
+  {
+    "title": "Retirees Shouldn’t Overlook The Small Cap ETF That Has Paid 44 Consecutive Dividends",
+    "url": "https://finance.yahoo.com/news/retirees-shouldn-t-overlook-small-143657200.html",
+    "description": "",
+    "date": "2026-03-09T14:36:57Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T02:33:56.578210",
+    "title_vi": "Người nghỉ hưu không nên bỏ qua quỹ ETF nhỏ đã trả 44 cổ tức liên tiếp",
+    "tag": "Thời gian: 2022-07-"
+  },
+  {
+    "title": "Giá dầu thô tiếp tục giảm sâu",
+    "url": "https://znews.vn/gia-dau-tho-tiep-tuc-giam-sau-post1634004.html",
+    "description": "Giá dầu thô tiếp tục hạ nhiệt sau khi IEA đề xuất đợt xả kho dầu dự trữ lớn nhất trong lịch sử, nhằm bù đắp sự gián đoạn nguồn cung do cuộc chiến của Mỹ - Israel với Iran.",
+    "date": "11/03/2026 09:30",
+    "source": "Znews Kinh doanh",
+    "icon": "💹",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": true,
+    "added_at": "2026-03-11T02:33:43.274527",
+    "title_vi": "Giá dầu thô tiếp tục giảm sâu",
+    "summary_text": "Giá dầu thô tiếp tục giảm sâu\nGiá dầu thô tiếp tục hạ nhiệt sau khi IEA đề xuất đợt xả kho dầu dự trữ lớn nhất trong lịch sử, nhằm bù đắp sự gián đoạn nguồn cung do cuộc chiến của Mỹ - Israel với Iran.\n\nTrong phiên 10/3 giờ Mỹ, cả 2 hợp đồng dầu Brent và WTI tiếp tục hạ nhiệt.\n\nTrong phiên giao dịch 10/3 giờ Mỹ, giá dầu thô WTI tại Mỹ tiếp tục giảm gần 12%, đóng cửa ở 83,45 USD /thùng. Trong khi đó, hợp đồng chuẩn dầu Brent tại Anh cũng giảm 11,3% xuống 87,8 USD /thùng.\n\nNhư vậy, cả 2 hợp đồng dầu thô có giao dịch lớn nhất thế giới đều đã lao dốc hơn 11%, mức giảm theo ngày mạnh nhất kể từ năm 2022, sau khi Tổng thống Donald Trump phát thông điệp cuộc chiến ở Trung Đông có thể kết thúc nhanh chóng. Trước đó, giá dầu thô từng tăng vọt lên trên 119 USD /thùng vào ngày 9/3, mức cao nhất kể từ tháng 6/2022.\n\nTheo Wall Street Journal, kế hoạch xả kho dầu do Cơ quan Năng lượng Quốc tế IEA đề xuất có thể vượt mức 182 triệu thùng dầu, cao hơn cả số lượng dầu các nước thành viên IEA đã tung ra thị trường trong 2 đợt vào năm 2022, khi xung đột Nga - Ukraine nổ ra.\n\nTrong khi đó, Mỹ và Israel đã tấn công Iran vào ngày 10/3 giờ địa phương bằng những đợt không kích mà Bộ Quốc phòng Mỹ và người dân Iran tại hiện trường mô tả là dữ dội nhất kể từ khi cuộc chiến bắt đầu, theo Reuters.\n\nBộ Tư lệnh Trung tâm Mỹ cũng cho biết quân đội nước này đã loại bỏ 16 tàu rải thủy lôi của Iran gần eo biển Hormuz, trong bối cảnh Tổng thống Mỹ Donald Trump cảnh báo rằng mọi quả thủy lôi do Iran thả tại eo biển này phải được dỡ bỏ ngay lập tức.\n\nTrước đó, ông Trump nhiều lần tuyên bố Mỹ sẵn sàng hộ tống các tàu chở dầu đi qua eo biển Hormuz khi cần thiết. Tuy nhiên, các nguồn tin Reuters tiết lộ Hải quân Mỹ đã từ chối yêu cầu của ngành vận tải biển về việc hộ tống quân sự, do rủi ro bị tấn công hiện vẫn ở mức cao.\n\nChúng tôi dự đoán giá dầu thô sẽ biến động mạnh, dao động trong biên độ khá rộng từ khoảng 75 đến 105 USD /thùng trong thời gian tới, ông Tony Sycamore, chuyên gia phân tích thị trường tại Tập đoàn IG ở Sydney, cho biết.\n\nCác quan chức thuộc nhóm G7 sau đó đã họp trực tuyến để thảo luận khả năng xả kho dầu khẩn cấp nhằm giảm bớt cú sốc đối với thị trường.\n\nTổng thống Pháp Emmanuel Macron dự kiến chủ trì cuộc họp trực tuyến với các nhà lãnh đạo G7 vào ngày 11/3 giờ địa phương để bàn về tác động của xung đột Trung Đông đối với thị trường năng lượng và các biện pháp ứng phó.\n\nTrong khi đó, Tập đoàn Dầu khí Quốc gia Abu Dhabi đã đóng cửa nhà máy lọc dầu Ruwais sau khi một cơ sở trong khu phức hợp này bốc cháy, liên quan đến một cuộc tấn công bằng máy bay không người lái. Đây là vụ gián đoạn cơ sở hạ tầng năng lượng mới nhất liên quan đến cuộc chiến Mỹ - Israel với Iran.\n\nArab Saudi, nước xuất khẩu dầu lớn nhất thế giới, được cho là đang tăng nguồn cung thông qua tuyến biển Đỏ. Tuy nhiên, lượng dầu này vẫn thấp hơn nhiều so với mức cần thiết để bù đắp sự sụt giảm dòng chảy dầu thô qua eo biển Hormuz.\n\nHiện, Arab Saudi đang dựa vào cảng Yanbu trên biển Đỏ để tăng xuất khẩu nhằm tránh phải cắt giảm sản lượng mạnh, trong khi các nước láng giềng như Iraq, Kuwait và UAE đã giảm sản lượng trong bối cảnh chiến sự leo thang.\n\nCông ty tư vấn năng lượng Wood Mackenzie cho biết cuộc chiến hiện làm giảm khoảng 15 triệu thùng/ngày nguồn cung dầu và sản phẩm dầu từ khu vực vùng Vịnh, điều này có thể đẩy giá dầu lên tới 150 USD /thùng.\n\nTrong một báo cáo, ngân hàng Morgan Stanley nhận định ngay cả khi xung đột được giải quyết nhanh chóng, thị trường năng lượng vẫn có thể phải đối mặt với nhiều tuần gián đoạn.",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+  },
+  {
+    "title": "Giá vàng trong nước đã vượt 187 triệu đồng/lượng",
+    "url": "https://znews.vn/gia-vang-trong-nuoc-da-vuot-187-trieu-dongluong-post1634006.html",
+    "description": "Giá vàng miếng SJC và vàng nhẫn cùng bật tăng mạnh trong sáng 11/3, vượt mốc 187 triệu đồng/lượng.",
+    "date": "11/03/2026 09:10",
+    "source": "Znews Kinh doanh",
+    "icon": "💹",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": true,
+    "added_at": "2026-03-11T02:24:21.731941",
+    "title_vi": "Giá vàng trong nước đã vượt 187 triệu đồng/lượng",
+    "summary_text": "Giá vàng trong nước đã vượt 187 triệu đồng/lượng\n\nGiá vàng miếng SJC và vàng nhẫn cùng bật tăng mạnh trong sáng 11/3, vượt mốc 187 triệu đồng/lượng.\n\nGiá vàng trong nước đang có xu hướng tăng liên tiếp, hiện đã vượt mốc 187 triệu đồng/lượng.\n\nSáng nay 11/3, Công ty Vàng bạc đá quý Sài Gòn SJC tăng giá vàng miếng thêm 1,1 triệu đồng so với giá chốt phiên liền trước, hiện niêm yết tại 184,2 - 187,2 triệu đồng/lượng mua - bán. Đây cũng là mức giá cao nhất mà vàng miếng SJC có được trong vòng 1 tuần qua.\n\nHiện CTCP Vàng bạc đá quý Phú Nhuận PNJ, Tập đoàn DOJI, Tập đoàn Phú Quý, Bảo Tín Minh Châu, Công ty Mi Hồng cũng tăng giá bán vàng miếng vượt mức 187 triệu đồng/lượng tương tự SJC.\n\nỞ chiều mua vào, các doanh nghiệp này neo giá quanh vùng 184-185 triệu đồng/lượng.\n\nTương tự vàng miếng, giá vàng nhẫn cũng ghi nhận đà tăng trong phiên giao dịch sáng 11/3, để kéo giá bán vượt mức 187 triệu đồng.\n\nTheo đó, Công ty SJC tăng giá vàng nhẫn 99,99 loại 1-5 chỉ thêm 1,1 triệu đồng, hiện giao dịch ở mức 183,9 - 186,9 triệu/lượng mua - bán. PNJ, DOJI và Phú Quý cùng tăng giá hơn 1 triệu đồng với vàng nhẫn trơn, hiện neo tại mức 184,2 - 187,2 triệu/lượng.\n\nBảo Tín Minh Châu, Bảo Tín Mạnh Hải giao dịch vàng nhẫn tròn ở mức 183,3 - 186,3 triệu/lượng. Mi Hồng cũng tăng giá vàng nhẫn 999, hiện neo tại 185 - 187 triệu đồng/lượng.\n\nĐà tăng của giá vàng trong nước chủ yếu được hỗ trợ bởi đà tăng của giá vàng thế giới. Kim quý vừa có đợt tăng mạnh gần 25 USD, lấy lại mốc 5.200 USD/ounce. Tính đến thời điểm hiện tại, giá kim quý đã phục hồi khoảng 4% từ vùng đáy từng thiết lập.\n\nHiện, quy đổi giá vàng thế giới sang tiền Việt chưa bao gồm thuế, phí vào khoảng 166 triệu đồng/lượng. Mức giá này vẫn thấp hơn giá vàng trong nước khoảng 21 triệu đồng/lượng.",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+  },
+  {
+    "title": "Giá vàng trong nước chưa ngừng tăng, đã vượt 187 triệu đồng/lượng",
+    "url": "https://znews.vn/gia-vang-trong-nuoc-chua-ngung-tang-da-vuot-187-trieu-dongluong-post1634006.html",
+    "description": "Giá vàng miếng SJC và vàng nhẫn cùng bật tăng mạnh trong sáng 11/3, vượt mốc 187 triệu đồng/lượng.",
+    "date": "11/03/2026 09:10",
+    "source": "Znews Kinh doanh",
+    "icon": "💹",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": false,
+    "added_at": "2026-03-11T02:11:51.113351"
+  },
+  {
+    "title": "Berkshire Hathaway Is Buying Back Stock. Why That’s a Key Signal for Investors to Watch Now.",
+    "url": "https://finance.yahoo.com/news/berkshire-hathaway-buying-back-stock-143347950.html",
+    "description": "",
+    "date": "2026-03-09T14:33:47Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T02:11:48.738968",
+    "title_vi": "Berkshire Hathaway đang mua lại cổ phiếu. Tại sao đó là một tín hiệu quan trọng cho các nhà đầu tư để xem bây giờ.",
+    "tag": "Thị trường<|eot_id|>"
+  },
+  {
+    "title": "Palantir Stock Up 17% in 1 Month as Iran Tensions Ignite Defense AI Boom",
+    "url": "https://finance.yahoo.com/news/palantir-stock-17-1-month-143002006.html",
+    "description": "",
+    "date": "2026-03-09T14:30:02Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T02:11:48.738968",
+    "title_vi": "Palantir Cổ phiếu tăng 17% trong 1 tháng khi Iran Căng thẳng Ignite Quốc phòng AI Boom",
+    "tag": "Thể loại tin tức: Công nghệ<|eot_id|>"
+  },
+  {
+    "title": "Lisata Therapeutics shares up 20% as Kuva Labs acquisition advances",
+    "url": "https://finance.yahoo.com/news/lisata-therapeutics-acquired-kuva-labs-122900963.html",
+    "description": "",
+    "date": "2026-03-09T14:29:00Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T02:11:48.738968",
+    "title_vi": "Lisata Therapeutics chia sẻ 20% khi Kuva Labs mua lại những tiến bộ"
+  },
+  {
+    "title": "Financial Advisor Well-Being Is on the Rise, Kitces Research Shows. Higher Pay Helps.",
+    "url": "https://www.barrons.com/advisor/articles/financial-advisor-well-being-kitces-research-69b57451?siteid=yhoof2&yptr=yahoo",
+    "description": "",
+    "date": "2026-03-09T14:25:00Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T02:11:48.738968",
+    "title_vi": "Cố vấn tài chính Hạnh phúc đang gia tăng, nghiên cứu của Kitces cho thấy. Trợ giúp trả lương cao hơn."
+  },
+  {
+    "title": "iMGP Small Company Fund’s Views on AppFolio (APPF)",
+    "url": "https://finance.yahoo.com/news/imgp-small-company-fund-views-142111558.html",
+    "description": "",
+    "date": "2026-03-09T14:21:11Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T02:11:48.738968",
+    "title_vi": "Quỹ Công ty Nhỏ iMGP Lượt xem trên AppFolio (APPF)"
+  },
+  {
+    "title": "Paychex Stock: Is PAYX Underperforming the Technology Sector?",
+    "url": "https://finance.yahoo.com/news/paychex-stock-payx-underperforming-technology-141959853.html",
+    "description": "",
+    "date": "2026-03-09T14:19:59Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T02:11:30.899549",
+    "title_vi": "Cổ phiếu Paychex: PAYX có hoạt động kém trong lĩnh vực công nghệ không?"
+  },
+  {
+    "title": "Advance Auto Parts (AAP) is Hurt by Inflation Dynamics and Consumer Behavior",
+    "url": "https://finance.yahoo.com/news/advance-auto-parts-aap-hurt-141842693.html",
+    "description": "",
+    "date": "2026-03-09T14:18:42Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T02:11:30.899549",
+    "title_vi": "Phụ tùng ô tô nâng cao (AAP) bị tổn thương bởi động lực lạm phát và hành vi của người tiêu dùng"
+  },
+  {
+    "title": "Live Nation reaches settlement with DOJ in antitrust case",
+    "url": "https://finance.yahoo.com/news/live-nation-settles-us-antitrust-114457235.html",
+    "description": "",
+    "date": "2026-03-09T14:17:48Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T02:11:30.899549",
+    "title_vi": "Live Nation đạt được thoả thuận với DOJ trong vụ kiện chống độc quyền"
+  },
+  {
+    "title": "RBC Bearings (RBC) Surged as Results Exceeded Expectations",
+    "url": "https://finance.yahoo.com/news/rbc-bearings-rbc-surged-results-141628395.html",
+    "description": "",
+    "date": "2026-03-09T14:16:28Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T02:11:30.899549",
+    "title_vi": "Vòng bi RBC (RBC) Surged như kết quả vượt quá mong đợi"
+  },
+  {
+    "title": "Morning Minute: Bitcoin Rebounds to $69K as Oil Skyrockets, Then Cools",
+    "url": "https://finance.yahoo.com/news/morning-minute-bitcoin-rebounds-69k-141503310.html",
+    "description": "",
+    "date": "2026-03-09T14:15:03Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T02:11:30.899549",
+    "title_vi": "Buổi sáng phút: Bitcoin Rebounds để $ 69K như dầu Skyrockets, Sau đó Cools"
+  },
+  {
+    "title": "How Is Prudential Financial's Stock Performance Compared to Other Insurance Stocks?",
+    "url": "https://finance.yahoo.com/news/prudential-financials-stock-performance-compared-141451959.html",
+    "description": "",
+    "date": "2026-03-09T14:14:51Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T02:11:30.899549",
+    "title_vi": "Hiệu suất hoạt động của cổ phiếu Prudential Financial so với các cổ phiếu bảo hiểm khác như thế nào?"
+  },
+  {
+    "title": "Giá vàng thế giới lại vượt 5.200 USD/ounce",
+    "url": "https://znews.vn/gia-vang-the-gioi-lai-vuot-5200-usdounce-post1634001.html",
+    "description": "Giá vàng thế giới tăng trong bối cảnh đồng USD suy yếu và lo ngại lạm phát giảm bớt khi giá dầu hạ nhiệt. Những tín hiệu khác cho thấy xung đột tại Trung Đông có thể sớm kết thúc.",
+    "date": "11/03/2026 08:51",
+    "source": "Znews Kinh doanh",
+    "icon": "💹",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": true,
+    "added_at": "2026-03-11T02:11:12.777670",
+    "title_vi": "Giá vàng thế giới lại vượt 5.200 USD/ounce",
+    "summary_text": "Giá vàng thế giới lại vượt 5.200 USD/ounce\nGiá vàng thế giới tăng trong bối cảnh đồng USD suy yếu và lo ngại lạm phát giảm bớt khi giá dầu hạ nhiệt. Những tín hiệu khác cho thấy xung đột tại Trung Đông có thể sớm kết thúc.\n\nTrong phiên đang diễn ra, kim loại quý tăng lên vùng giá 5.212 USD/ounce.\n\nChốt phiên giao dịch 10/3 (giờ Mỹ), giá vàng thế giới giao ngay tăng 54,3 USD lên 5.190,3 USD/ounce. Hợp đồng vàng tương lai giao tháng 4 tại Mỹ chốt phiên tăng 2,7%, lên 5.242,1 USD/ounce.\n\nTrong phiên đang diễn ra, kim loại quý tăng thêm 21,7 USD lên vùng giá 5.212 USD/ounce và có thời điểm tăng vọt lên 5.221 USD/ounce.\n\nTrước đó, giá vàng thế giới đã âm thầm tăng trở lại trên mốc 5.100 USD/ounce sau chuỗi giảm sốc hơn 100 USD/ounce vào cuối tuần qua. Tính đến thời điểm hiện tại, giá kim quý đã phục hồi hơn 3,8% từ vùng đáy từng thiết lập.\n\nTrong khi đó, chỉ số USD-Index đã hạ nhiệt, qua đó hỗ trợ giá vàng vì đồng USD yếu khiến vàng, vốn được định giá bằng đồng bạc xanh, trở nên rẻ hơn đối với những người nắm giữ các đồng tiền khác, theo Reuters.\n\nMặt khác, giá dầu tiếp tục lao dốc sau khi đã tăng vọt lên mức cao nhất trong hơn 3 năm ở phiên liền trước, sau thời điểm Tổng thống Mỹ Donald Trump dự đoán cuộc chiến tại Trung Đông có thể sớm kết thúc. Phát biểu này làm dịu bớt lo ngại về nguy cơ gián đoạn nguồn cung dầu kéo dài. Tuy nhiên trên thực địa, xung đột vẫn chưa có dấu hiệu hạ nhiệt.\n\nÔng Bart Melek, Trưởng bộ phận chiến lược hàng hóa toàn cầu tại TD Securities, cho biết việc giá dầu không còn cao giúp giảm bớt mức độ ảnh hưởng đến khả năng Cục Dự trữ Liên bang Mỹ (Fed) cắt giảm lãi suất. Điều này khiến nhà đầu tư cảm thấy yên tâm hơn.\n\nDù thường được xem là công cụ phòng ngừa lạm phát, vàng lại mất đi một phần sức hấp dẫn khi lãi suất tăng, vì kim loại quý này không mang lại lợi suất.\n\nCác nhà đầu tư cũng đang chờ đợi dữ liệu chỉ số giá tiêu dùng (CPI) và chỉ số chi tiêu tiêu dùng cá nhân (PCE) của Mỹ sẽ công bố vào cuối tuần này. Fed được kỳ vọng sẽ giữ nguyên lãi suất tại cuộc họp ngày 17-18/3 sắp tới.\n\nTrong khi đó, giá vàng tại Dubai đang được giao dịch thấp hơn so với London (Anh) khi các chuyến bay bị hạn chế do xung đột khiến lượng vàng miếng bị giữ lại nhiều hơn tại thị trường địa phương, trong khi nhu cầu mua vàng của người dân nước này vẫn ở mức yếu.\n\nĐối với thị trường kim loại khác, giá bạc giao ngay tăng 2,7% lên 89,39 USD/ounce, bạch kim giao ngay tăng 2,2% lên 2.229,15 USD/ounce và palladium tăng 1,22% lên 1.663 USD/ounce.",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+  },
+  {
+    "title": "Chứng khoán Mỹ chững lại trong lúc chờ báo cáo CPI, giá dầu thô sụt mạnh",
+    "url": "https://vneconomy.vn/chung-khoan-my-chung-lai-trong-luc-cho-bao-cao-cpi-gia-dau-tho-sut-manh.htm",
+    "description": "Gi#225; dầu th#244; giảm về v#249;ng 80 - 90 USD/th#249;ng d#249; chiến sự ở Trung Đ#244;ng vẫn căng thẳng v#224; Bộ trưởng Bộ Năng lượng Mỹ n#243;i nhầm về việc t#224;u hải qu#226;n hộ tống t#224;u c",
+    "date": "11/03/2026 01:08",
+    "source": "VnEconomy",
+    "icon": "📊",
+    "lang": "vi",
+    "category": "stocks_vietnam",
+    "audio_cached": true,
+    "added_at": "2026-03-11T02:11:12.777670",
+    "title_vi": "Chứng khoán Mỹ chững lại trong lúc chờ báo cáo CPI, giá dầu thô sụt mạnh",
+    "summary_text": "Chứng khoán Mỹ chững lại trong lúc chờ báo cáo CPI, giá dầu thô sụt mạnh\nGiá dầu thô giảm về vùng 80 - 90 USD/thùng dù chiến sự ở Trung Đông vẫn căng thẳng và Bộ trưởng Bộ Năng lượng Mỹ nói nhầm về việc tàu hải quân hộ tống tàu chở dầu...\n\nThị trường chứng khoán Mỹ giằng co trong phiên giao dịch ngày thứ Ba (10/3) trước khi kết thúc phiên trong trạng thái không có nhiều thay đổi so với phiên trước, do nhà đầu tư có tâm lý chờ đợi các báo cáo lạm phát sắp công bố. Giá dầu thô giảm về vùng 80 USD/thùng dù chiến sự ở Trung Đông vẫn căng thẳng và Bộ trưởng Bộ Năng lượng Mỹ nói nhầm về việc tàu hải quân hộ tống tàu chở dầu.\n\nLúc đóng cửa, chỉ số S&P 500 giảm 0,21%, còn 6.781,48 điểm. Chỉ số Dow Jones trượt 34,29 điểm, tương đương giảm 0,07%, còn 47.706,51 điểm. Chỉ số Nasdaq tăng 0,01%, đạt 22.706,51 điểm.\n\nỞ thời điểm thấp nhất trong phiên, Dow Jones giảm 0,6%, S&P 500 và Nasdaq giảm tương ứng 0,5% và 0,4%. Cũng giống như trong phiên trước, sự giằng co của các chỉ số cho thấy tâm lý nhà đầu tư chưa ổn định trở lại trong lúc xung đột quân sự giữa Mỹ và Iran tiếp diễn và giá dầu còn có những pha trồi sụt khó lường.\n\nTuy nhiên, áp lực giảm lên thị trường đã được giải tỏa đáng kể nhờ sự xuống thang của giá dầu.\n\nLúc đóng cửa, giá dầu WTI giao sau tại New York giảm hơn 11,9%, còn 83,45 USD/thùng. Giá dầu Brent giao sau tại London giảm gần 11,3%, còn 87,8 USD/thùng.\n\nTrong một bài đăng trên mạng xã hội X, Bộ trưởng Bộ Năng lượng Mỹ Chris Wright nói rằng hải quân Mỹ đã hộ tống một tàu chở dầu đi qua eo biển Hormuz. Sau khi bài đăng này xuất hiện, giá dầu sụt tới 17%. Nhưng sau đó, thông tin này đã bị Nhà Trắng bác bỏ và ông Wright cũng xóa bài đăng này.\n\n“Hải quân Mỹ hiện tại chưa hộ tống một tàu chở dầu nào”, thư ký báo chí Nhà Trắng Karoline Leavitt nói tại một cuộc họp báo.\n\nHôm thứ Hai, giá dầu có lúc lên gần 120 USD/thùng do chiến sự leo thang và eo biển Hormuz đóng cửa khiến nhiều nước Vùng Vịnh phải cắt giảm sản lượng khai thác dầu.\n\nVề tình hình Trung Đông, chiến sự vẫn chưa có dấu hiệu xuống thang trong ngày thứ Ba dù vào hôm thứ Hai, Tổng thống Donald Trump tuyên bố cuộc chiến sẽ sớm kết thúc.\n\nBộ trưởng Bộ Quốc phòng Mỹ Pete Hegseth tuyên bố: “Ngày hôm nay sẽ là ngày chúng tôi không kích Iran dữ dội nhất” và Iran “đang thua đau”. Cư dân ở Tehran nói với hãng tin Reuters rằng các cuộc không kích của Mỹ và Israel trong đêm nhằm vào thành phố này là mạnh chưa từng thấy kể từ khi xung đột nổ ra.\n\nNgoài ra, theo kênh CBS News, Mỹ đã bắt đầu nhận thấy những dấu hiệu về việc Iran có động thái nhằm triển khai mìn ở eo biển Hormuz.\n\nCơ quan Năng lượng Quốc tế (IEA) sẽ tổ chức một cuộc họp bất thường trong ngày thứ Ba theo giờ Mỹ để thảo luận về khả năng xả dự trữ dầu khẩn cấp. 30 thành viên của IEA là các nền kinh tế phát triển ở châu Âu, Bắc Mỹ và Đông Bắc Á, đang nắm tổng cộng 1,2 tỷ thùng dầu dự trữ.\n\nNhà quản lý danh mục Mike Sanders của công ty Madison Investments dự báo nếu giá dầu giảm trở lại vùng 60-70 USD/thùng, nền kinh tế Mỹ sẽ không bị ảnh hưởng đáng kể.\n\n“Còn nếu giá dầu vẫn giữ ở mức cao, bởi tình hình vẫn còn bất ổn và thị trường đòi hỏi một phần bù rủi ro, tôi nghĩ nền kinh tế sẽ đối mặt với thách thức. Sẽ phải mất một thời gian để vượt qua khó khăn này”, ông Sanders nói.\n\nTrong thời gian còn lại của tuần này, ngoài các tin tức từ Trung Đông, giới đầu tư sẽ theo dõi các số liệu lạm phát quan trọng của Mỹ để định hình kỳ vọng về lãi suất của Cục Dự trữ Liên bang Mỹ (Fed). Các báo cáo này bao gồm chỉ số giá tiêu dùng (CPI) theo dự kiến sẽ được công bố vào ngày thứ Tư và chỉ số giá tiêu dùng cá nhân (PCE) vào ngày thứ Sáu.",
+    "tag": "Thể loại tin tức này thuộc loại: Ch"
+  },
+  {
+    "title": "Middle East Conflict Highlights Cloud Resilience Gaps",
+    "url": "https://www.darkreading.com/cyber-risk/middle-east-conflict-highlights-cloud-resilience-gaps",
+    "description": "Data centers — used by both governments and militaries for operations — are now fair game, not just for cyberattacks, but for kinetic attacks as well.",
+    "date": "11/03/2026 05:00",
+    "source": "Dark Reading",
+    "icon": "💻",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": true,
+    "added_at": "2026-03-11T02:10:56.055676",
+    "title_vi": "Xung đột Trung Đông nổi bật khoảng trống khả năng phục hồi đám mây",
+    "summary_text": "Xung đột Trung Đông: Hạ tầng đám mây bộc lộ điểm yếu về khả năng chống chịu\n\nCác doanh nghiệp từng tin tưởng vào tính chất phân tán của đám mây để đảm bảo tính khả dụng của dữ liệu đã phải đối mặt với một thực tế phũ phàng trong hai tuần qua.\n\nVào ngày 28 tháng 2, sau các cuộc không kích của Mỹ và Israel, lưu lượng truy cập Internet của Iran đã giảm xuống dưới 1% trên tất cả các mạng lớn trong nước, theo Cloudflare Radar, một công cụ theo dõi lưu lượng Internet quốc tế. Trong vòng 24 giờ, Iran đã đáp trả, nhắm mục tiêu vào cơ sở hạ tầng ở Các Tiểu vương quốc Ả Rập Thống nhất (UAE), Bahrain và các quốc gia vùng Vịnh khác, tấn công hai cơ sở của Amazon Web Services tại UAE bằng máy bay không người lái, trong khi một cơ sở thứ ba ở Bahrain phải chịu tác động vật lý đến cơ sở hạ tầng, Amazon Web Services tuyên bố vào ngày 2 tháng 3 trên Bảng điều khiển sức khỏe AWS của mình.\n\nCác cuộc tấn công này đã gây ra thiệt hại về cấu trúc, làm gián đoạn việc cung cấp điện cho cơ sở hạ tầng của chúng tôi, và trong một số trường hợp đòi hỏi các hoạt động dập lửa dẫn đến thiệt hại do nước bổ sung, AWS cho biết. Chúng tôi đang làm việc chặt chẽ với chính quyền địa phương và ưu tiên sự an toàn của nhân viên trong suốt quá trình khắc phục.\n\nTrong khi các cuộc tấn công vào cơ sở hạ tầng điện, mạng lưới hệ thống điều khiển công nghiệp (ICS) và cáp xuyên đại dương thỉnh thoảng vẫn xảy ra, các cuộc tấn công trực tiếp vào trung tâm dữ liệu lại hiếm khi được ghi nhận. Các cuộc tấn công gần đây nhất là một sự thừa nhận rằng quân đội, giống như hầu hết các doanh nghiệp, đều dựa vào đám mây cho các hoạt động của mình, Kathryn Raines, trưởng nhóm tình báo mối đe dọa mạng cho đội giải pháp an ninh quốc gia tại nhà cung cấp tình báo mối đe dọa Flashpoint, cho biết.\n\nCác cuộc tấn công vật lý vào các cơ sở chứa hạ tầng đám mây... có vẻ là những trường hợp ngoại lệ, nhưng thực tế là chúng có thể là bản thiết kế mới cho chiến tranh hiện đại, cô nói. Chúng tôi đang thấy các báo cáo về việc đối thủ sử dụng phương pháp tiếp cận đa miền — các cuộc bắn phá động học kết hợp với các tuyên bố về các cuộc tấn công mạng đồng thời vào mạng ICS bởi các nhóm tin tặc ủy nhiệm — với mục đích làm mù mục tiêu quân sự và làm tê liệt nền kinh tế dân sự.\n\nQuân đội hiện đại hoạt động trên đám mây\n\nTầm quan trọng của các cuộc tấn công được báo cáo vào các cơ sở của AWS không thể bị đánh giá thấp, Raines nói. Cơ sở hạ tầng tư nhân hiện đang vận hành các hoạt động quân sự và chính phủ, biến các trung tâm dữ liệu đám mây siêu quy mô thành mục tiêu chiến lược cấp 1, cô cho biết.\n\nQuân đội và chính phủ hiện đại hoạt động trên đám mây... và kiến trúc đám mây được xây dựng để chống chịu thời tiết xấu, chứ không phải chiến tranh, cô nói, đồng thời cho biết thêm rằng nhiều nhà cung cấp xây dựng các trung tâm dữ liệu dự phòng trong vòng 60 dặm so với các trung tâm chính, khiến chúng cũng dễ bị nhắm mục tiêu không kém.\n\nMột sự cố mất điện dễ dàng khắc phục, nhưng một cuộc tấn công tên lửa gây ra hỏa hoạn, sập mái và hư hại do nước từ hệ thống phun nước khẩn cấp, phá hủy vĩnh viễn phần cứng, Raines nói thêm. Hơn nữa, kẻ tấn công thậm chí không cần phải tấn công các máy chủ — nếu chúng làm hỏng các sợi cáp vật lý kết nối tòa nhà với Internet bên ngoài, trung tâm dữ liệu sẽ trở nên vô dụng.\n\nMạng lưới của Iran đã bị ngắt kết nối khỏi Internet ngay sau các cuộc tấn công quân sự của Mỹ và Israel vào ngày 28 tháng 2. Nguồn: Cloudflare Radar.\n\nTrong khi Nga đã nhắm mục tiêu vào cơ sở hạ tầng quan trọng như thông tin liên lạc, điện và giao thông vận tải trong cuộc chiến đang diễn ra chống lại Ukraine, các trung tâm dữ liệu đám mây bên ngoài Ukraine vẫn chưa bị nhắm mục tiêu. Ngoài việc mở rộng chiến tranh, việc nhắm mục tiêu như vậy cũng có thể cản trở các hoạt động quân sự của Nga, vốn dường như phụ thuộc nhiều vào cơ sở hạ tầng đám mây công cộng, theo nghiên cứu Cloud of War được trình bày tại Hội nghị Quốc tế về Xung đột Mạng lần thứ 17 (CyCon) năm ngoái.\n\nTuy nhiên, các cuộc tấn công mạng đã trở nên phổ biến.\n\nCác cuộc tấn công mạng vẫn là một trong những hình thức gây hấn thường xuyên nhất trong tất cả các giai đoạn xung đột, Blake Darché, trưởng bộ phận tình báo mối đe dọa tại nhóm Cloudforce One của Cloudflare, cho biết thêm: Chúng tôi đã thấy các tác nhân đe dọa sử dụng các công cụ xóa đĩa truyền thống và các tập lệnh được thiết kế để xóa thông tin quan trọng — điều này đặc biệt có vấn đề nếu việc khôi phục là không thể.\n\nCác lỗ hổng theo thời gian thực\n\nNhiều ngành công nghiệp dễ bị gián đoạn hơn do thiệt hại trong các lĩnh vực vật lý hoặc mạng, Darché nói. Ví dụ, giao thông vận tải, hậu cần, điện và tiện ích công cộng phải đối mặt với những hậu quả tức thì nếu mạng lưới bị gián đoạn.\n\nNếu một khu vực đám mây gặp sự cố gián đoạn, tác động sẽ không được phân bổ đều — một số ngành công nghiệp phải đối mặt với tình trạng mất điện kỹ thuật số hoàn toàn có thể ngay lập tức làm ngừng các hoạt động trong thế giới vật lý, ông nói. Bất kỳ ngành công nghiệp nào khác xử lý thông tin thời gian thực hoặc các cửa hàng thực hiện giao dịch thời gian thực đều sẽ dễ bị ảnh hưởng bởi các sự cố ngừng hoạt động.\n\nCác công ty cần không nhầm lẫn tính khả dụng cao với khả năng phục hồi thực sự, Kim Larsen, CISO nhóm tại Keepit, nhà cung cấp giải pháp bảo vệ dữ liệu cho các ứng dụng SaaS, cho biết. Mặc dù khả năng phục hồi có ba trụ cột — phòng ngừa, phát hiện và khôi phục — hầu hết các tổ chức đầu tư mạnh vào hai trụ cột đầu tiên, và cho rằng việc khôi phục sẽ tự động hoạt động khi họ cần, nhưng điều đó thường không xảy ra, cô nói.\n\nTrong nhiều năm, nhiều tổ chức đã coi đám mây như thể nó nằm ngoài giới hạn địa lý, cô nói. Những sự cố này là một lời nhắc nhở rằng đám mây vẫn được tạo thành từ các tòa nhà, điện, cáp quang, con người — và do đó, nó thừa hưởng cùng một rủi ro địa chính trị và động học như bất kỳ cơ sở hạ tầng quan trọng nào khác.\n\nCác doanh nghiệp nên xem xét lại chiến lược của mình về khả năng phục hồi đám mây, Raines của Flashpoint cho biết. Các khối lượng công việc dễ bị tổn thương nhất có thể là những khối lượng công việc yêu cầu cả xử lý thời gian thực và độ trễ cực thấp, chẳng hạn như các ứng dụng tài chính, y tế, cơ sở hạ tầng quan trọng và quốc phòng phổ biến.\n\nMột trong những hậu quả đầu tiên của các cuộc tấn công vào cơ sở hạ tầng đám mây có thể là việc nhiều quốc gia thúc đẩy giữ dữ liệu và dịch vụ kỹ thuật số trong biên giới của họ.\n\nBuộc dữ liệu của một quốc gia phải bị mắc kẹt trong biên giới vật lý của nó biến nó thành một gánh nặng chiến lược khổng lồ có thể bị xóa sổ chỉ trong một chiến dịch ném bom, Raines nói. Do đó, tôi dự đoán chúng ta sẽ thấy các chính phủ...",
+    "tag": "Thể loại tin tức: Khám phá<|eot_id|>"
+  },
+  {
+    "title": "Texas carrier Serna’s Trucking files for Chapter 11 bankruptcy",
+    "url": "https://finance.yahoo.com/news/texas-carrier-serna-trucking-files-134739274.html",
+    "description": "",
+    "date": "2026-03-09T13:47:39Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T01:48:16.055993"
+  },
+  {
+    "title": "The 1 Thing You Should Never Do With Your 401(k) When You Leave a Job",
+    "url": "https://finance.yahoo.com/news/1-thing-never-401-k-133800277.html",
+    "description": "",
+    "date": "2026-03-09T13:38:00Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T01:48:16.055993"
+  },
+  {
+    "title": "Jimmy John’s promotes CMO to president",
+    "url": "https://finance.yahoo.com/news/jimmy-john-promotes-cmo-president-133759177.html",
+    "description": "",
+    "date": "2026-03-09T13:37:59Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T01:48:16.055993"
+  },
+  {
+    "title": "Even After a Monster Rally, Analysts Still Think You Should Buy Sandisk Stock",
+    "url": "https://finance.yahoo.com/news/even-monster-rally-analysts-still-134815775.html",
+    "description": "",
+    "date": "2026-03-09T13:48:15Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": true,
+    "added_at": "2026-03-11T01:48:00.730980",
+    "title_vi": "Ngay cả sau một cuộc biểu tình quái vật, các nhà phân tích vẫn nghĩ rằng bạn nên mua cổ phiếu Sandisk",
+    "summary_text": "Sandisk: Bất chấp tăng trưởng phi mã, cổ phiếu vẫn được khuyến nghị mua\n\nHiện tại, vấn đề gây tranh cãi là liệu Sandisk có thể duy trì đà tăng trưởng này hay không. Thành thật mà nói, mặc dù BNP Paribas đã đưa ra lập luận ủng hộ việc đầu tư vào cổ phiếu này, nhưng ý kiến của họ dựa trên các yếu tố kích hoạt ngắn hạn. Liệu Sandisk có đủ khả năng để trở thành một công ty tạo ra của cải thực sự trong nhiều năm tới? Hãy cùng tìm hiểu.\n\nĐược thành lập vào năm 1988, Sandisk cho đến gần đây vẫn là một cái tên chuyên biệt, chỉ được biết đến trong lĩnh vực công nghệ nhờ năng lực về bộ nhớ của mình. Tuy nhiên, khi cổ phiếu bộ nhớ tăng trưởng phi mã, Sandisk đã thu hút sự chú ý của đông đảo giới đầu tư. Được thành lập để thương mại hóa công nghệ lưu trữ bộ nhớ flash, Sandisk hiện là một công ty lưu trữ bán dẫn tập trung vào bộ nhớ flash NAND và các giải pháp lưu trữ thể rắn.\n\nDựa trên phân tích này, BNP Paribas vẫn duy trì khuyến nghị “Tăng tỷ trọng” đối với cổ phiếu Sandisk (SNDK) với mục tiêu giá 650 USD, ngụ ý tiềm năng tăng giá 23% so với mức hiện tại.\n\nTập đoàn dịch vụ tài chính lớn BNP Paribas cũng có cùng quan điểm. Trong một báo cáo gần đây gửi khách hàng, công ty môi giới này cho biết: “Phân tích của chúng tôi về giá hợp đồng quý 1 theo lịch (CQ1) của hơn 50 SKU DRAM và hơn 75 SKU NAND cho thấy giá bán trung bình (ASP) DRAM tổng thể có thể tăng 90% so với quý trước (Q/Q) trong CQ1, sau đó là mức tăng 6% Q/Q trong CQ2, do nhu cầu máy chủ AI ngày càng tăng đang thúc đẩy sự mất cân bằng cung cầu rộng hơn, gây áp lực tăng giá. Đối với NAND, chúng tôi ước tính giá CQ1 có thể tăng 55% Q/Q, sau đó là mức tăng 5% Q/Q trong CQ2, chủ yếu được thúc đẩy bởi động lực phía cung khi các nhà cung cấp NAND tiếp tục chuyển đổi năng lực sản xuất sang các sản phẩm lưu trữ doanh nghiệp đồng thời vẫn thận trọng trong việc bổ sung năng lực.”\n\nTrong một bài viết gần đây, tôi đã nhấn mạnh cách Morgan Stanley tin rằng nhu cầu “đặc biệt” đối với chip nhớ sẽ bình thường hóa, và do đó Nvidia (NVDA) sẽ là bên thắng cuộc nhờ điều này. Tuy nhiên, ngay cả trong một tình huống được gọi là bình thường hóa, nhu cầu về chip nhớ vẫn sẽ tiếp tục tăng trưởng. Đồng ý rằng tốc độ tăng trưởng có thể biến động theo chu kỳ thị trường, nhưng bộ nhớ vẫn là một thành phần quan trọng và không thể phủ nhận trong bức tranh AI rộng lớn hơn, giữ cho nhu cầu không suy giảm.\n\nCâu chuyện tiếp diễn\n\nTình hình tài chính đang đi đúng hướng\n\nSandisk đã hoạt động chưa đầy một năm dưới hình thức hiện tại sau khi tách ra từ Western Digital (WDC). Tuy nhiên, kết quả của công ty trong giai đoạn này không thể tốt hơn, với lợi nhuận ròng vượt ước tính trong mỗi bốn quý vừa qua. Đáng chú ý, kết quả quý gần đây nhất cũng rất đột phá, với cả doanh thu và lợi nhuận đều vượt xa các ước tính đồng thuận một cách dễ dàng.\n\nDoanh thu quý 2 năm 2026 đạt 3 tỷ USD, tăng 31% so với quý trước. Doanh thu trong phân khúc Edge, phân khúc lớn nhất của công ty và tập trung vào chuyên môn cốt lõi là bộ nhớ flash và SSD, đã tăng 21% trong cùng kỳ lên 1,7 tỷ USD. Tuy nhiên, tăng trưởng nhanh nhất được ghi nhận ở phân khúc Trung tâm dữ liệu, tăng vọt 64% so với quý trước lên 440 triệu USD.\n\nTrong khi đó, lợi nhuận đã tăng hơn năm lần so với quý trước, đạt 6,20 USD trên mỗi cổ phiếu. Con số này cao hơn nhiều so với kỳ vọng của Phố Wall là 3,62 USD trên mỗi cổ phiếu. Hiện tại, đối với quý 3 năm 2026, Sandisk dự kiến EPS sẽ nằm trong khoảng từ 12 đến 14 USD trên mỗi cổ phiếu. Đây sẽ là một sự cải thiện đáng kể so với cùng kỳ năm trước khi công ty báo lỗ. Mặt khác, doanh thu được dự báo sẽ nằm trong khoảng từ 4,40 đến 4,80 tỷ USD, với điểm giữa sẽ cho thấy tốc độ tăng trưởng hàng năm là 170,6% trên cơ sở so với cùng kỳ năm trước (YoY).\n\nQuay trở lại quý 2 năm 2026, dòng tiền thuần từ hoạt động kinh doanh trong quý đạt 1 tỷ USD so với chỉ 95 triệu USD trong quý trước, khi Sandisk kết thúc quý với số dư tiền mặt là 1,5 tỷ USD. Con số này cao hơn nhiều so với mức nợ ngắn hạn 20 triệu USD của công ty.\n\nNgoài ra, cổ phiếu SNDK cũng tiếp tục giao dịch ở mức hợp lý. Trong khi P/E dự phóng và P/CF dự phóng của công ty lần lượt là 13,24 và 15,13, thấp hơn so với giá trị trung vị ngành là 21,20 và 17,65, thì P/S dự phóng là 5,03 không cao hơn nhiều so với giá trị trung vị ngành là 3,03.\n\nKhắc ghi dấu ấn riêng trong ngành bộ nhớ\n\nViệc Sandisk tách ra từ Western Digital đã diễn ra không thể tốt hơn, với bằng chứng rõ ràng nhất là đợt tăng giá cổ phiếu vượt trội của công ty. Tuy nhiên, về bản chất, điều này cũng đánh dấu một bước chuyển mình chiến lược để công ty trở thành một nhà cung cấp NAND và SSD thuần túy, đưa nó trở thành một thành phần đáng chú ý trong lĩnh vực hạ tầng AI.\n\nĐi sâu hơn vào trọng tâm của Sandisk đối với NAND, thông điệp rõ ràng của công ty gửi tới thị trường đã mang lại kết quả tốt. Khách hàng doanh nghiệp, chủ yếu là các nhà phát triển LLM, ưa chuộng bộ nhớ NAND vì khả năng lưu trữ dài hạn và bản chất không bay hơi, nghĩa là nó giữ dữ liệu của bạn ngay cả khi mất điện. Ngoài ra, mô hình kinh doanh tập trung của Sandisk, xoay quanh bộ nhớ và lưu trữ thay vì sản xuất chip quy mô lớn, giúp chi phí vốn tương đối thấp và tránh được những rủi ro được ăn cả ngã về không mà các nhà sản xuất thuần túy thường phải đối mặt.\n\nNgoài ra, quỹ đạo tăng trưởng của công ty được hỗ trợ bởi sự gia tăng liên tục về hàm lượng NAND trên mỗi thiết bị, một xu hướng được thúc đẩy bởi sự chuyển dịch sang AI biên (edge AI) và suy luận phi tập trung. Các nhà thiết kế chip đang tích cực tìm cách giảm sự phụ thuộc vào DRAM đắt tiền, tiêu tốn nhiều năng lượng, thay vào đó chuyển sang NAND cho nhiều khối lượng công việc đòi hỏi nhiều lưu trữ. Sự trỗi dậy của AI biên càng khuếch đại yếu tố thuận lợi này, khi ngày càng nhiều quá trình xử lý chuyển từ các máy chủ đám mây tập trung sang các thiết bị và hệ thống cục bộ.\n\nĐáng chú ý, để bắt kịp nhu cầu, Sandisk đã tăng cường hợp tác lâu dài với Kioxia (KXIAY). Liên doanh mới được mở rộng bao gồm cam kết của Sandisk sẽ trả cho Kioxia 1,17 tỷ USD cho các dịch vụ sản xuất bổ sung, trải đều qua các đợt thanh toán hàng năm từ năm 2026 đến 2029. Thỏa thuận này đảm bảo năng lực sản xuất mới tăng thêm mà không yêu cầu Sandisk phải gánh chịu toàn bộ gánh nặng xây dựng nhà máy mới.\n\nNhìn về năm 2026, lợi thế cạnh tranh mạnh nhất của Sandisk dường như nằm ở phân khúc dung lượng cực cao, đặc biệt dành cho các trung tâm dữ liệu AI. Trong khi các đối thủ cạnh tranh như Micron (MU) và SK Hyni"
+  },
+  {
+    "title": "Here’s What Expands Prologis’ (PLD) Investment Management Platform",
+    "url": "https://finance.yahoo.com/news/expands-prologis-pld-investment-management-134755503.html",
+    "description": "",
+    "date": "2026-03-09T13:47:55Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": true,
+    "added_at": "2026-03-11T01:48:00.730980",
+    "title_vi": "Đây là những gì mở rộng Prologis (PLD) Nền tảng quản lý đầu tư",
+    "summary_text": "Prologis (PLD) và chiến lược mở rộng nền tảng quản lý đầu tư: Tiết lộ từ Third Avenue Management\n\nThird Avenue Management, một công ty quản lý đầu tư có trụ sở tại Thành phố New York, đã công bố thư gửi nhà đầu tư quý IV năm 2025 của “Third Avenue Real Estate Value Fund”. Quỹ Third Avenue Real Estate Value Fund đã đạt mức lợi nhuận +11,61% (sau phí) trong năm dương lịch, so với mức lợi nhuận +9,86% (trước phí) của Chỉ số Bất động sản Cốt lõi MSCI ACWI IMI. Kể từ khi thành lập vào năm 1998, Quỹ đã tạo ra mức lợi nhuận hàng năm là +8,96% (sau phí). Năm nay đánh dấu kỷ niệm 40 năm thành lập của Third Avenue Management, nhấn mạnh cam kết của công ty đối với các nguyên tắc cốt lõi và khả năng thích ứng trong việc tìm kiếm sự tạo lập tài sản dài hạn cho khách hàng. Quỹ đã đầu tư 40,3% vốn vào các công ty có trụ sở tại Hoa Kỳ, 27,5% vào các công ty có trụ sở tại Bắc Mỹ, 27,6% vào các công ty Bất động sản Quốc tế và 4,6% còn lại vào Tiền mặt, Nợ & Quyền chọn. Quỹ dự đoán rằng năm năm tới có thể tương tự như đầu những năm 2000, một thời kỳ đặc trưng bởi định giá hấp dẫn trong lĩnh vực bất động sản niêm yết tại Hoa Kỳ.\n\nTrong thư gửi nhà đầu tư quý IV năm 2025, Third Avenue Real Estate Value Fund đã nhấn mạnh đến Prologis, Inc. (NYSE:PLD). Prologis, Inc. (NYSE:PLD) là công ty hàng đầu trong lĩnh vực bất động sản logistics, tập trung vào các thị trường có rào cản cao và tăng trưởng mạnh. Vào ngày 06 tháng 3 năm 2026, cổ phiếu của Prologis, Inc. (NYSE:PLD) đóng cửa ở mức 134,54 USD mỗi cổ phiếu. Lợi nhuận một tháng của Prologis, Inc. (NYSE:PLD) là -2,00%, và cổ phiếu của công ty đã tăng 14,14% trong 52 tuần qua. Prologis, Inc. (NYSE:PLD) có vốn hóa thị trường là 125,06 tỷ USD.\n\nThird Avenue Real Estate Value Fund đã nêu những điều sau đây về Prologis, Inc. (NYSE:PLD) trong thư gửi nhà đầu tư quý IV năm 2025 của mình:"
+  },
+  {
+    "title": "Nasdaq Partners With Kraken for Tokenized Stocks, Launching 2027",
+    "url": "https://finance.yahoo.com/news/nasdaq-partners-kraken-tokenized-stocks-134557039.html",
+    "description": "",
+    "date": "2026-03-09T13:45:57Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": true,
+    "added_at": "2026-03-11T01:48:00.730980",
+    "title_vi": "Nasdaq Bắt Tay Kraken Phát Triển Cổ Phiếu Token Hóa, Dự Kiến Ra Mắt Năm 2027",
+    "summary_text": "Nasdaq Bắt Tay Kraken Phát Triển Cổ Phiếu Token Hóa, Dự Kiến Ra Mắt Năm 2027\n\nNasdaq đang hợp tác với Payward, công ty mẹ của sàn giao dịch tiền điện tử Kraken, để phát triển cổ phiếu được token hóa nhằm cho phép sự tương tác có thể lập trình của nhà đầu tư, sàn giao dịch này thông báo hôm thứ Hai.\n\nDự kiến ra mắt vào nửa đầu năm 2027, sáng kiến này nhằm mục đích hiện đại hóa các quy trình bao gồm các hành động của công ty, sự tham gia của cổ đông và bỏ phiếu ủy quyền, Nasdaq cho biết trong một "
+  },
+  {
+    "title": "Third Avenue Real Estate Value Fund’s Updates on Fidelity National Financial (FNF)",
+    "url": "https://finance.yahoo.com/news/third-avenue-real-estate-value-134554351.html",
+    "description": "",
+    "date": "2026-03-09T13:45:54Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T01:48:00.730980",
+    "title_vi": "Cập nhật về Fidelity National Financial (FNF)"
+  },
+  {
+    "title": "Billionaire David Tepper Sold Nvidia Stock and Piled Into This AI Stock That's Up Nearly 200% in the Past 5 Years",
+    "url": "https://finance.yahoo.com/news/billionaire-david-tepper-sold-nvidia-134400336.html",
+    "description": "",
+    "date": "2026-03-09T13:44:00Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T01:48:00.730980",
+    "title_vi": "Tỷ phú David Tepper đã bán cổ phiếu Nvidia và đổ vào cổ phiếu AI này tăng gần 200% trong 5 năm qua"
+  },
+  {
+    "title": "Tax refund delays hit 5 states. Is yours one of them?",
+    "url": "https://finance.yahoo.com/personal-finance/taxes/article/tax-refund-delays-hit-5-states-is-yours-one-of-them-205225811.html",
+    "description": "",
+    "date": "2026-03-05T20:52:25Z",
+    "source": "Yahoo Finance",
+    "icon": "💰",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T01:48:00.730980",
+    "title_vi": "Trì hoãn hoàn thuế chạm 5 tiểu bang. Bạn có phải là một trong số họ?"
+  },
+  {
+    "title": "What’s next for crude-oil prices as wealthy nations consider a release of their reserves",
+    "url": "https://www.marketwatch.com/story/whats-next-for-crude-oil-prices-as-wealthy-nations-consider-a-release-of-their-reserves-d46cba38?mod=mw_rss_topstories",
+    "description": "Panic in the oil market has calmed down, with prices pulling back from the week’s highs near $120 a barrel after a group of wealthy nations said they will consider a coordinated release of emergency g",
+    "date": "11/03/2026 01:13",
+    "source": "MarketWatch",
+    "icon": "📈",
+    "lang": "en",
+    "category": "stocks_international",
+    "audio_cached": false,
+    "added_at": "2026-03-11T01:48:00.730980",
+    "title_vi": "Điều gì sẽ xảy ra tiếp theo đối với giá dầu thô khi các quốc gia giàu có xem xét giải phóng trữ lượng của họ",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+  },
+  {
+    "title": "Microsoft Patches 83 CVEs in March Update",
+    "url": "https://www.darkreading.com/application-security/microsoft-patches-83-cves-march-update",
+    "description": "For a change, there's little in this month's Patch Tuesday that should cause panic, according to security experts.",
+    "date": "11/03/2026 01:08",
+    "source": "Dark Reading",
+    "icon": "💻",
+    "lang": "en",
+    "category": "cybersecurity",
+    "audio_cached": true,
+    "added_at": "2026-03-11T01:47:35.645683",
+    "title_vi": "Microsoft Patches 83 CVEs trong Cập nhật tháng 3",
+    "summary_text": "Microsoft tung bản vá tháng 3: Khắc phục 83 lỗ hổng, cảnh báo 6 lỗ hổng nguy hiểm\n\nTuần này, Microsoft đã phát hành các bản vá cho 83 lỗ hổng CVE trên toàn bộ dải sản phẩm của mình, trong đó có sáu lỗ hổng mà hãng dự đoán kẻ tấn công có nhiều khả năng khai thác hơn vì nhiều lý do khác nhau.\n\nĐợt phát hành bản vá này lớn hơn so với bản cập nhật bảo mật tương đối nhẹ chỉ 63 bản vá của tháng trước và chứa đựng sự kết hợp thông thường của các lỗ hổng leo thang đặc quyền, lỗi thực thi mã từ xa (RCE), các vấn đề từ chối dịch vụ, các lỗ hổng cho phép đánh cắp dữ liệu và các lỗi khác. Tuy nhiên, theo một số chuyên gia bảo mật, có rất ít lỗ hổng trong số này đòi hỏi phản ứng khẩn cấp toàn diện như một số bản cập nhật của Microsoft thường yêu cầu.\n\nPhần lớn, bản phát hành vá lỗi tháng 3 của Microsoft sẽ đặt ra ít thách thức hơn bình thường, Tyler Reguly, phó giám đốc R&D bảo mật tại Fortra, nhận định. Tôi không thấy nhiều lý do để mọi người phải căng thẳng, Reguly cho biết trong một tuyên bố gửi tới Dark Reading. Lỗ hổng duy nhất mà Microsoft gán điểm nghiêm trọng gần tối đa đã được khắc phục và không yêu cầu hành động nào từ người dùng.\n\nÔng nói: Thông điệp tháng này nên là 'Hãy áp dụng các bản vá của bạn sau khi hoàn thành chu kỳ thử nghiệm'. Không có gì yêu cầu phải vội vàng vá lỗi, không có gì yêu cầu phải hoảng loạn… đây chỉ là một Patch Tuesday yên bình, dễ chịu.\n\nMột tháng tương đối nhẹ nhàng\n\nMicrosoft chỉ gán điểm nghiêm trọng CVSS hơn 9 trên 10 cho một lỗ hổng duy nhất trong đợt này — CVE-2027-21536 (CVSS 9.8), một lỗ hổng RCE liên quan đến Chương trình Định giá Thiết bị Microsoft dành cho các đối tác kênh và nhà phân phối.\n\nBen McCarthy, kỹ sư an ninh mạng hàng đầu tại Immersive, mô tả lỗ hổng này đáng chú ý vì là một trong những lỗ hổng đầu tiên được biết đến do một tác nhân AI xác định và có CVE chính thức. Mặc dù Microsoft đã vá và giảm thiểu lỗ hổng này, nhưng nó làm nổi bật sự chuyển dịch sang việc phát hiện các lỗ hổng phức tạp do AI điều khiển với tốc độ ngày càng tăng, ông nói trong một bình luận qua email.\n\nTám trong số các lỗ hổng được tiết lộ tuần này có mức độ nghiêm trọng là critical (nghiêm trọng). Hai lỗ hổng khác đã được công khai trước bản cập nhật vá lỗi tuần này: CVE-2026-26127 (CVSS 7.5), một lỗ hổng từ chối dịch vụ .NET và CVE-2026-21262 (CVSS 8.8), một lỗi leo thang đặc quyền của SQL Server.\n\nCả hai lỗi về mặt kỹ thuật đều là lỗ hổng zero-day, nhưng không gây ra nhiều mối đe dọa, theo Satnam Narang, kỹ sư nghiên cứu cấp cao tại Tenable. Việc chúng được công khai trước hôm nay là đặc điểm mới lạ duy nhất, ông nói trong một tuyên bố. Những lỗi này chỉ là 'sủa nhiều hơn cắn'. Lỗ hổng DoS được đánh giá là khó có khả năng bị khai thác và yêu cầu kẻ tấn công phải được ủy quyền từ trước, trong khi lỗi leo thang đặc quyền được cho là ít có khả năng bị khai thác hơn.\n\nLỗi EoP chiếm ưu thế\n\nCác lỗi leo thang đặc quyền (EoP) đã vượt trội so với tất cả các loại lỗ hổng khác trong Patch Tuesday của Microsoft tháng này và chiếm khoảng 55.4% tổng số CVE được vá theo thống kê của Tenable. Các lỗ hổng RCE, thường — và không phải lúc nào cũng đúng — được cho là nguy hiểm hơn các lỗ hổng EoP, chiếm 20.5%.\n\nTrong số các lỗ hổng EoP mà các nhà cung cấp bảo mật nhấn mạnh có ba lỗ hổng ảnh hưởng đến nhân Windows: CVE-2026-24289 (CVSS 7.8); CVE-2026-26132 (CVSS 7.8); và CVE-2026-24287 (CVSS 7.8). Trong số này, Microsoft đánh giá CVE-2026-24289 và CVE-2026-26132 là những lỗ hổng mà kẻ tấn công có nhiều khả năng khai thác hơn vì chúng liên quan đến độ phức tạp tấn công thấp, không yêu cầu đặc quyền đặc biệt và không cần tương tác người dùng.\n\nAmol Sarwate, trưởng bộ phận nghiên cứu bảo mật tại Cohesity, khuyến nghị các quản trị viên cũng nên chú ý đến hai lỗ hổng EoP khác vì kẻ tấn công sẽ có nhiều khả năng cố gắng khai thác chúng: CVE-2026-24294 (CVSS 7.8) trong SMB Server và CVE-2026-23668 (CVSS 7.0) trong Microsoft Graphics Component. Leo thang đặc quyền là một trong những phương pháp chính của kẻ tấn công để giành quyền truy cập vào mạng và duy trì thời gian ẩn náu, Sarwate cho biết trong các bình luận qua email.\n\nCác lỗi RCE đáng chú ý\n\nCác lỗ hổng RCE mà các chuyên gia bảo mật chỉ ra là đáng chú ý hơn trong đợt này là hai lỗ hổng ảnh hưởng đến Microsoft Office: CVE-2026-26113 (CVSS 8.4) và CVE-2026-26110 (CVSS 8.4). Ngăn xem trước (Preview Pane) là một vector tấn công trong cả hai trường hợp, nghĩa là người dùng có thể bị xâm phạm mà không cần phải mở một tài liệu hoặc tệp độc hại.\n\nJack Bicer, giám đốc nghiên cứu lỗ hổng tại Action1, khuyến nghị trong một tuyên bố: Nếu bản cập nhật bảo mật không thể được áp dụng ngay lập tức, các tổ chức nên tắt Ngăn xem trước trong trình khám phá tệp và hạn chế mở các tệp Office từ các nguồn không đáng tin cậy. Việc triển khai lọc email, quét tệp đính kèm và giám sát bảo vệ điểm cuối cũng có thể giảm nguy cơ phân phối tài liệu độc hại.\n\nCVE-2026-25190 (CVSS 7.8), một lỗ hổng RCE trong GDI, và CVE-2026-25181 (CVSS 7.5), một lỗ hổng tiết lộ thông tin trong GDI+, các API đồ họa trong Windows, là hai lỗ hổng nằm trong danh sách ít có khả năng bị khai thác hơn của Microsoft tháng này. Nhưng khi được kết hợp, hai lỗ hổng này cho phép một cuộc tấn công hai giai đoạn mà kẻ tấn công có thể sử dụng để vượt qua một tính năng bảo mật của Windows và thực thi mã tùy ý. Tuy nhiên, việc thực hiện một cuộc tấn công như vậy sẽ đòi hỏi nhiều công sức, theo Ryan Braunstein, quản lý bảo mật tại Automox.\n\nÔng nói trong một bình luận qua email: Độ chính xác cần thiết để thực hiện điều này cho thấy mức độ đầu tư cấp quốc gia, nhưng phần thưởng tương xứng: thực thi mã từ xa sạch sẽ, đáng tin cậy trên hệ thống mục tiêu.",
+    "tag": "Thể loại tin tức: Công nghệ<|eot_id|>"
+  },
+  {
     "title": "Giá dầu thế giới giảm nhẹ",
     "url": "https://vnexpress.net/gia-dau-the-gioi-giam-nhe-5048947.html",
     "description": "Dầu thô ghi nhận phiên giảm thứ 2 liên tiếp, sau thông tin Cơ quan Năng lượng Quốc tế (IEA) đề xuất các nước xả lượng dầu dự trữ kỷ lục.",
@@ -8,8 +601,11 @@
     "icon": "📰",
     "lang": "vi",
     "category": "stocks_vietnam",
-    "audio_cached": false,
-    "added_at": "2026-03-11T01:04:28.364984"
+    "audio_cached": true,
+    "added_at": "2026-03-11T01:04:28.364984",
+    "title_vi": "Giá dầu thế giới giảm nhẹ",
+    "summary_text": "Giá dầu thế giới giảm nhẹ\n\nDầu thô ghi nhận phiên giảm thứ 2 liên tiếp, sau thông tin Cơ quan Năng lượng Quốc tế (IEA) đề xuất các nước xả lượng dầu dự trữ kỷ lục.\n\nMở cửa phiên giao dịch sáng 11/3, giá dầu thô Mỹ WTI hiện giảm 0,6% xuống 82,9 USD một thùng. Dầu Brent sụt 0,4% về 87,4 USD.\n\nGiá đi xuống sau thông tin từ Wall Street Journal, rằng Cơ quan Năng lượng Quốc tế (IEA) vừa đề xuất các nước thành viên giải phóng lượng dầu kỷ lục từ kho dự trữ, nhằm hạ nhiệt thị trường. Nguồn tin của WSJ cho biết con số này sẽ lớn hơn mức 182 triệu thùng xả ra năm 2022, khi chiến sự Nga - Ukraine bùng phát.\n\nTrước đó, giá dầu thô Mỹ WTI có thời điểm tăng 3,5% lên 86,3 USD một thùng sáng 11/3, do nguồn cung từ Trung Đông vẫn thắt chặt. Phiên 10/3, cả dầu WTI và Brent đều giảm hơn 11% - mạnh nhất kể từ năm 2022, khi Tổng thống Mỹ Donald Trump dự báo chiến sự tại Trung Đông sẽ sớm kết thúc.\n\nNgày 10/3, Mỹ và Israel thực hiện các đợt không kích Iran mà Lầu Năm Góc mô tả là dữ dội nhất kể từ khi xung đột bùng phát. Mỹ cũng thông báo đã phá hủy 16 tàu rải thủy lôi Iran gần eo biển Hormuz - tuyến vận chuyển dầu, khí đang tê liệt vì chiến sự. Ông Trump cảnh báo mọi thủy lôi mà Iran thả tại eo biển này phải được gỡ bỏ ngay lập tức.\n\nÔng nhiều lần tuyên bố Mỹ sẵn sàng hộ tống các tàu chở dầu đi qua eo biển Hormuz khi cần thiết. Tuy nhiên, các nguồn tin của Reuters cho biết Hải quân Mỹ từ chối đề nghị này từ các doanh nghiệp vận tải, do rủi ro bị tấn công hiện quá cao.\n\nChúng tôi dự báo giá dầu tiếp tục biến động mạnh, chịu tác động từ các tin tức mới, và giao dịch trong biên độ rộng, khoảng 75-105 USD một thùng trong các phiên tới, Tony Sycamore -nhà phân tích thị trường tại IG ở Sydney cho biết.\n\nNgày 9/3, giá dầu thô có thời điểm lên sát 120 USD mỗi thùng - cao nhất kể từ tháng 6/2022. Các Bộ trưởng Tài chính nhóm G7 họp trực tuyến để thảo luận khả năng giải phóng dầu từ kho dự trữ khẩn cấp nhằm hạ nhiệt cú sốc cho thị trường. Tuy nhiên, họ chưa đưa ra được quyết định này.\n\nCuộc họp hôm 10/3 của các Bộ trưởng Năng lượng G7 cũng chưa thể thống nhất xả kho dầu. Thay vào đó, họ yêu cầu Cơ quan Năng lượng Quốc tế (IEA) đánh giá tình hình trước khi hành động.\n\nHôm nay, Tổng thống Pháp Emmanuel Macron sẽ tổ chức một cuộc họp trực tuyến với lãnh đạo các nước G7 để thảo luận về tác động của xung đột tại Trung Đông lên ngành năng lượng, đồng thời đưa ra các biện pháp giải quyết.\n\nTheo hãng tư vấn Wood Mackenzie, chiến sự hiện khiến nguồn cung dầu và các sản phẩm dầu từ Vùng Vịnh ra thị trường giảm khoảng 15 triệu thùng mỗi ngày. Việc này có thể đẩy giá dầu lên 150 USD mỗi thùng.\n\nHà Thu (theo Reuters)",
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Giá vàng giữ đà hồi phục nhờ USD giảm giá, SPDR Gold Trust mua ròng trở lại",
@@ -139,7 +735,7 @@
     "audio_cached": false,
     "added_at": "2026-03-11T00:47:26.073129",
     "title_vi": "‘Tôi đang bị mắc kẹt trong một cái bẫy thu nhập thấp: Im một giáo viên và rất tốt trong công việc của tôi. Tôi sẽ bao giờ kiếm được sáu con số?",
-    "tag": "Chọn từ khóa: Lỗ hổng"
+    "tag": "Chọn từ khóa: Chứng khoán"
   },
   {
     "title": "New Social Security whistleblower alleges DOGE worker improperly accessed data and planned to share it",
@@ -181,7 +777,7 @@
     "audio_cached": false,
     "added_at": "2026-03-11T00:47:26.073129",
     "title_vi": "Ford ra mắt AI mới để phát triển doanh nghiệp thương mại Pro trị giá hàng tỷ đô la",
-    "tag": "Thể loại:<|eot_id|>"
+    "tag": "Thể loại tin tức: Công nghệ<|eot_id|>"
   },
   {
     "title": "Nhà đầu tư đang 'rời bỏ' chung cư?",
@@ -241,7 +837,7 @@
     "added_at": "2026-03-11T00:40:19.956674",
     "title_vi": "Giá xăng tăng hơn 2.000 đồng một lít",
     "summary_text": "Giá xăng tăng hơn 2.000 đồng một lít\n\nTừ 23h45 ngày 10/3, giá xăng RON95-III tăng 2.080 đồng lên 29.120 đồng, dầu diesel đắt thêm 480 đồng ở mức 30.710 đồng một lít.\n\nTheo điều chỉnh của Liên bộ Công Thương - Tài chính, giá xăng RON 95-III, loại phổ biến trên thị trường, tăng 2.080 đồng, lên 29.120 đồng một lít. Tương tự, E5 RON 92 cũng đắt thêm 1.350 đồng, có giá mới 26.570 đồng.\n\nCác mặt hàng dầu, trừ dầu hỏa, tăng 480-3.380 đồng một lít hoặc kg tùy loại so với kỳ điều hành trước. Cụ thể, mỗi lít diesel và mazut lần lượt lên mức 30.710 đồng và 24.700 đồng. Riêng dầu hỏa giảm 2.710 đồng, còn 32.380 đồng một lít.\n\nTại kỳ điều hành này, lần đầu sau hơn 3 năm, liên Bộ chi sử dụng Quỹ bình ổn giá với các mặt hàng xăng dầu. Theo đó, xăng RON 95-III, dầu hỏa và mazut cùng có mức chi quỹ là 4.000 đồng, còn dầu diesel 5.000 đồng một lít.\n\nGiá xăng, dầu thay đổi cụ thể như sau: Xăng RON 95-III có giá mới 29.120 đồng, tăng 2.080 đồng. Xăng E5 RON 92 có giá 26.570 đồng, tăng 1.350 đồng. Dầu diesel lên mức 30.710 đồng, tăng 480 đồng. Dầu hỏa có giá 32.380 đồng, giảm 2.710 đồng. Dầu mazut là 24.700 đồng, tăng 3.380 đồng. Các mức giá này được tính theo đơn vị đồng mỗi lít hoặc kg, tùy loại.\n\nSau điều chỉnh lần này, giá xăng RON 95 vẫn ở ngưỡng tương đương với tháng 7/2022. Thời điểm đó, giá xăng dầu biến động mạnh chủ yếu do ảnh hưởng từ xung đột Nga - Ukraine làm đứt gãy chuỗi cung ứng toàn cầu. Trong khi đó, dầu diesel cao nhất từ 2019.\n\nBộ Công Thương cho biết thị trường xăng dầu thế giới từ 7-9/3 chịu ảnh hưởng từ các thông tin như xung đột quân sự giữa Mỹ, Israel với Iran tiếp tục diễn ra. Các quốc gia xuất khẩu dầu ở khu vực Vùng Vịnh đều cắt giảm sản lượng khai thác do xuất khẩu dầu qua eo biển Hormuz bị tắc nghẽn.\n\nBên cạnh đó, tâm lý tích trữ nhiên liệu diễn ra ở hầu hết các quốc gia cũng khiến giá nhiên liệu thế giới có xu hướng tăng mạnh so với kỳ trước. Mỗi thùng xăng RON 95 bình quân tăng 27% lên 147,5 USD. Tương tự, dầu diesel thêm 20%, dầu hỏa 4% và mazut 41%.\n\nGiá xăng dầu hôm nay tiếp tục được điều hành theo Nghị quyết 36 của Chính phủ được ban hành ngày 6/3. Cụ thể, nếu giá thế giới biến động mạnh khiến giá cơ sở tăng từ 7%, giá bán lẻ sẽ được điều chỉnh ngay sau ngày phát sinh mức tăng này.\n\nDù giá xăng dầu thế giới đang hạ nhiệt, giá bán lẻ trong nước tại kỳ điều hành này vẫn tăng do độ trễ của chu kỳ tính giá. Bởi giá cơ sở bán lẻ trong nước được tính neo theo giá thành phẩm trên thị trường Singapore Platts Singapore ngày 7-9/3. Giai đoạn này giá dầu thô và xăng dầu thành phẩm thế giới vẫn ở mức cao, với dầu WTI vượt 114 USD, xăng RON 95 thành phẩm trên 147 USD.\n\nTừ sáng 10/3, giá nhiên liệu thế giới có xu hướng giảm sau tuyên bố xung đột tại Trung Đông sẽ sớm kết thúc của Tổng thống Trump. Hiện mỗi thùng RON 95 và dầu diesel tại thị trường Singapore giảm khoảng 20 USD, xuống còn lần lượt 127,2 USD và 160,4 USD. Các mức giá thấp này sẽ được tính vào giá cơ sở ở kỳ điều hành tiếp theo.\n\nTại cuộc họp với Tổ công tác bảo đảm an ninh năng lượng chiều tối 10/3, Thủ tướng Phạm Minh Chính đồng ý sử dụng Quỹ bình ổn giá xăng dầu, áp dụng ngay ngày 11/3.\n\nTrước đó, Thứ trưởng Công Thương Nguyễn Sinh Nhật Tân cho biết Chính phủ đã huy động khoảng 4 triệu thùng dầu từ các đối tác nhằm đảm bảo nguồn cung trước mắt. Với lượng dầu thô này và bổ sung tới đây, ông ước tính nguồn cung xăng dầu đảm bảo tương đương 30-45 ngày tiêu thụ, tùy thuộc kế hoạch sản xuất của các nhà máy lọc dầu trong nước và nhu cầu thị trường.\n\nNgoài nguồn cung, Chính phủ cũng sử dụng các công cụ thuế, phí để hỗ trợ thị trường. Hiện thuế nhập khẩu ưu đãi MFN với xăng và một số nguyên liệu phối trộn đã hạ về 0%. Đây là giải pháp ổn định nguồn cung, giúp doanh nghiệp đầu mối có thêm động lực tìm kiếm, nhập khẩu xăng dầu từ các thị trường chưa có hiệp định thương mại tự do FTA với Việt Nam.\n\nBộ Tài chính đang trình Chính phủ phương án điều chỉnh thuế bảo vệ môi trường với xăng dầu về 0 đồng trong ngày 12/3. Hiện mức thuế này là 2.000 đồng một lít với xăng trừ ethanol và dầu là 1.000 đồng. Việc đưa thuế này về 0 đồng sẽ giúp giá xăng giảm tương ứng 1.000-2.000 đồng mỗi lít.\n\nTrước biến động thị trường nhiên liệu, Bộ Công Thương cho biết họ sẽ phối hợp với các cơ quan chức năng kiểm tra, giám sát việc bảo đảm nguồn cung xăng dầu của các thương nhân, xử nghiêm các vi phạm. Liên Bộ Công Thương - Tài chính cũng tiếp tục theo dõi sát diễn biến thị trường để thông báo giá xăng dầu phù hợp, đề xuất giải pháp bình ổn.\n\nPhương Dung",
-    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+    "tag": "Tag:<|eot_id|>"
   },
   {
     "title": "'Overly Permissive' Salesforce Cloud Configs in the Crosshairs",
@@ -464,7 +1060,7 @@
     "added_at": "2026-03-10T20:19:19.723274",
     "title_vi": "Giá xăng tăng thêm hơn 2.000 đồng, vượt 29.000 đồng/lít",
     "summary_text": "Giá xăng tăng thêm hơn 2.000 đồng, vượt 29.000 đồng/lít\n\nTừ 23h45 ngày 10/3, giá xăng RON 95 tăng thêm 2.073 đồng mỗi lít lên 29.120 đồng/lít, trong khi dầu diesel cũng tăng thêm 478 đồng lên 30.717 đồng một lít.\n\nTừ 23h45 ngày 10/3, giá xăng RON 95 tăng lên 29.120 đồng một lít.\n\nSau khi thực hiện việc trích lập và chi sử dụng Quỹ bình ổn giá xăng dầu đối với các mặt hàng xăng dầu trong nước, liên Bộ Công Thương - Tài chính vừa có thông báo điều chỉnh giá bán lẻ các mặt hàng xăng dầu trong nước áp dụng từ ngày 11/3.\n\nTrong đó, giá bán lẻ xăng E5 RON 92 tăng 1.344 đồng/lít, tương đương 5,3%, và xăng RON 95 tăng 2.073 đồng/lít, tương đương 7,7%. Sau điều chỉnh, giá bán lẻ tối đa với hai mặt hàng xăng này lần lượt ở mức 26.570 đồng/lít với xăng E5 RON 92 và 29.120 đồng/lít với xăng RON 95.\n\nTương tự, liên Bộ cũng điều chỉnh giá bán lẻ dầu diesel tăng thêm 478 đồng/lít, tương đương 1,6%, lên tối đa không quá 30.717 đồng/lít; giá dầu hỏa giảm 2.706 đồng/lít, tương đương 7,7%, xuống 32.385 đồng/lít; và dầu mazut tăng 3.380 đồng/kg, tương đương 15,8%, lên 24.707 đồng/kg.\n\nCụ thể, sau điều chỉnh, giá xăng E5 RON 92 là 26.570 đồng/lít với mức tăng 5,3%; xăng RON 95 là 29.120 đồng/lít với mức tăng 7,7%; dầu diesel là 30.717 đồng/lít với mức tăng 1,6%; dầu hỏa là 32.385 đồng/lít với mức giảm 7,7%; và dầu mazut là 24.707 đồng/kg với mức tăng 15,8%.\n\nTại kỳ điều hành này, lần đầu sau hơn 3 năm, liên Bộ Công Thương - Tài chính đã quyết định chi sử dụng Quỹ bình ổn giá với các mặt hàng xăng dầu. Theo đó, xăng RON 95, dầu hỏa và mazut cùng có mức chi quỹ là 4.000 đồng, còn dầu diesel được chi 5.000 đồng một lít.\n\nNhư vậy, nếu không chi sử dụng Quỹ bình ổn giá xăng dầu trong kỳ điều hành này, giá xăng E5 RON 92 có thể lên mức 30.570 đồng/lít, còn xăng RON 95 có thể tăng lên 33.120 đồng/lít, trong khi dầu diesel có thể chạm mức 35.717 đồng/lít.\n\nBộ Công Thương cho biết giá xăng dầu hôm nay tiếp tục được điều hành theo Nghị quyết 36 của Chính phủ được ban hành ngày 6/3. Theo đó, nếu giá thế giới biến động mạnh khiến giá xăng dầu cơ sở tăng từ 7%, giá bán lẻ sẽ được điều chỉnh ngay sau ngày phát sinh mức tăng.\n\nSau kỳ điều chỉnh lần này, giá xăng RON 95 đã ở ngưỡng tương đương với tháng 7/2022, thời điểm thị trường xăng dầu biến động mạnh do ảnh hưởng từ xung đột Nga - Ukraine. Trong khi đó, giá dầu diesel hiện đã ở mức cao nhất kể từ năm 2019.\n\nLý giải cho mức tăng trong kỳ điều hành mới nhất, Bộ Công Thương cho biết thị trường xăng dầu thế giới giai đoạn 7-9/3 chịu ảnh hưởng từ các thông tin như xung đột quân sự giữa Mỹ, Israel với Iran; xung đột quân sự giữa Nga với Ukraine vẫn diễn ra. Các quốc gia xuất khẩu dầu ở khu vực vùng Vịnh đều cắt giảm sản lượng khai thác do xuất khẩu dầu qua eo biển Hormuz bị tắc nghẽn.\n\nBên cạnh đó, tâm lý tích trữ nhiên liệu diễn ra ở các quốc gia cũng khiến giá nhiên liệu thế giới có xu hướng tăng mạnh so với kỳ trước.\n\nBình quân giá thành phẩm xăng dầu thế giới giữa kỳ ngày 7/3 và kỳ điều hành ngày 10/3 là 139,3 USD/thùng xăng RON 92 dùng để pha chế xăng E5 RON 92, tăng gần 27%; 147,5 USD/thùng xăng RON 95, tăng 27%; 188,2 USD/thùng dầu hỏa, tăng 4%; 184,43 USD/thùng dầu diesel, tăng 20%; và 882,380 USD/tấn dầu mazut, tăng hơn 41%.\n\nBộ Công Thương cho biết sẽ phối hợp với các cơ quan chức năng kiểm tra, giám sát việc thực hiện trách nhiệm bảo đảm nguồn cung xăng dầu cho thị trường của các thương nhân kinh doanh xăng dầu và sẽ xử lý nghiêm các hành vi vi phạm nếu có.\n\nLiên Bộ cũng đang tiếp tục theo dõi sát diễn biến thị trường để thông báo giá xăng dầu phù hợp, đúng chỉ đạo và kịp thời đề xuất Chính phủ, Thủ tướng về các giải pháp bình ổn giá xăng dầu.",
-    "tag": "Thể loại tin tức này thuộc loại: Ch"
+    "tag": "Thể loại tin tức: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Giá xăng tăng hơn 2.000 đồng một lít",
@@ -490,9 +1086,11 @@
     "icon": "📊",
     "lang": "vi",
     "category": "stocks_vietnam",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T20:19:19.723274",
-    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+    "tag": "Thể loại: Chứng khoán<|eot_id|>",
+    "title_vi": "VN-Index hồi phục mạnh, hướng tới kháng cự 1.740 điểm",
+    "summary_text": "VN-Index hồi phục mạnh, hướng tới kháng cự 1.740 điểm\n\nVnEconomy giới thiệu nhận định và khuyến nghị đầu tư của một số công ty chứng khoán về diễn biến thị trường ngày 11/3/2026\n\nKết phiên ngày 10/3, VN-Index tăng 23,94 điểm, tương đương 1,45% lên mốc 1.676,73 điểm. Cùng chiều, Hnx-Index tăng 4,71 điểm, tương đương 2% lên 240,07 điểm.\n\nVN-Index nhiều khả năng sẽ hướng tới thử thách vùng kháng cự 1.735-1.750 điểm\n\nCông ty Cổ phần Chứng khoán Bảo Việt - BVSC\n\nThị trường có phiên hồi phục tích cực trên diện rộng với số mã tăng điểm áp đảo số mã giảm điểm. Thanh khoản gia tăng đi kèm hoạt động mua ròng mạnh của khối ngoại là những tín hiệu đáng chú ý. Đà hồi phục của chỉ số có thể sẽ còn tiếp diễn trong phiên tới, VN-Index nhiều khả năng sẽ hướng tới thử thách vùng kháng cự 1735-1750 điểm.\n\nNhà đầu tư có tỷ trọng cổ phiếu cao hoặc sử dụng margin có thể tận dụng bán tại các mức giá cao để tái cơ cấu tỷ trọng danh mục về mức hợp lý.\n\nCác hoạt động mua trading có thể xem xét mở vị thế ở các thời điểm thị trường trùng xuống trong phiên. Ưu tiên các vị thế có sẵn và các nhóm cổ phiếu có yếu tố cơ bản tốt, có hoạt động kinh doanh ổn định nhưng giá bị chiết khấu mạnh theo thị trường chung các phiên vừa qua.\n\nVN-Index cần thời gian để tìm điểm cân bằng mới, có thể trong vùng 1.650 - 1.670\n\nCông ty Cổ phần Chứng khoán Ngân hàng Đầu tư và Phát triển Việt Nam - BSC\n\nVN-Index hồi phục lên mốc 1.676,73 điểm, tăng gần 24 điểm so với hôm qua. Độ rộng thị trường nghiêng về phía tích cực với 12/18 ngành tăng điểm, trong đó ngành Tài nguyên cơ bản tăng mạnh nhất, theo sau là ngành Hàng cá nhân & gia dụng. Ở chiều ngược lại, ngành Dầu khí giảm mạnh 6%. Về giao dịch của khối ngoại, hôm nay khối này mua ròng hơn 1 nghìn tỷ đồng trên sàn HSX và bán ròng trên hai sàn còn lại. Nhịp điều chỉnh sâu đã chững lại trong ngày hôm nay, tuy nhiên tâm lý thị trường chưa ổn định và biên độ dao động lớn; nhà đầu tư cần giao dịch cẩn trọng. Trong những phiên tới, VN-Index cần thời gian để tìm điểm cân bằng mới, có thể trong vùng 1.650 - 1.670.\n\nÁp lực cung giá cao có thể gia tăng trở lại khi VN-Index hướng đến vùng kháng cự 1.740 điểm\n\nCông ty Cổ phần Chứng khoán Sài Gòn - Hà Nội - SHS\n\nXu hướng ngắn hạn VN-Index sau giai đoạn giảm điểm và chịu áp lực bán mạnh trong phiên trước đang tích lũy, cân bằng ngắn hạn trở lại trên vùng hỗ trợ quanh 1.630 điểm, tương ứng vùng giá trung bình 200 phiên và giá thấp nhất tháng 12/2025. Kháng cự khá mạnh hiện nay tương ứng vùng giá quanh 1.740 điểm, giá thấp nhất tháng 02/2026. Áp lực cung giá cao có thể gia tăng trở lại khi VN-Index hướng đến vùng kháng cự 1.740 điểm.\n\nSau phiên giảm sốc trong bối cảnh thị trường tài chính thế giới, giá dầu biến động mạnh dẫn đến áp lực bán tháo. Thị trường đang cân bằng trở lại. Thông thường trong lịch sử các năm, sau mỗi nhịp giảm sốc thị trường sẽ xuất hiện cơ hội đầu tư mới. Chúng tôi kỳ vọng đó sẽ là các mã đạt các tiêu chí của FTSE Russell khi được nâng hạng và các cổ phiếu đầu tư công. Tuy nhiên trong bối cảnh xung đột địa chính trị, rủi ro bất định như hiện nay, chúng tôi duy trì quan điểm trung lập, thận trọng và sẽ xem xét các cơ hội đầu tư mới khi thị trường chung ổn định, tăng trưởng trở lại.\n\nNhà đầu tư duy trì tỉ trọng hợp lý. Mục tiêu đầu tư hướng tới các mã có nền tảng cơ bản tốt, đầu ngành trong các ngành chiến lược, tăng trưởng vượt trội của nền kinh tế.\n\nSau phiên giao dịch hôm nay, chỉ số đang dần hình thành một vùng cân bằng quanh mốc 1.650 điểm\n\nCông ty Cổ phần Chứng khoán Thiên Việt - TVS\n\nVN-Index tăng 24 điểm +1.4%, đóng cửa tại 1,676.7 điểm. Sau khi có thông tin chiến sự có thế kết thúc sớm vào rạng sáng nay, thị trưồng tăng mạnh từ đầu phiên và tiến đến vùng 1,700 -1,720 điểm với lực mua chủ yếu ở các cố phiếu VN30 như HPG, DGC và nhóm Ngân hàng. Mặc dù vậy, áp lực bán ở các nhóm cổ phiếu Dầu khí và cổ phiếu VIC khiến cho chỉ số giảm bớt đà tăng trong phiên chiều.\n\nChúng tôi duy trì quan điểm thận trọng vổi diễn biến của VN-Index trong một số phiên tổi. Đà tăng của VN-Index trong phiên hôm nay so vối phiên hôm qua cho thấy sự thận trọng của nhà đầu tư trước các diễn biến khó lường. Sau phiên giao dịch hôm nay, chỉ số đang dần hình thành một vùng cân bằng quanh mốc 1.650 điểm. Chúng tôi cho rằng vùng hỗ trỢ này có thể được kiểm định lại trong các phiên tiếp theo, đặc biệt là khi lượng cổ phiếu của 2 phiên giao dịch gần nhất về tài khoản nhà đầu tư. Nhà đầu tư nên theo dối sát diễn biến chỉ số tại vùng hỗ trỢ này trước khi ra quyết định giải ngân cổ phiếu.\n\nChỉ số VN-Index có thể sẽ kiểm tra vùng hỗ trợ 1.600 - 1.615 đểm\n\nCông ty Chứng khoán Yuanta Việt Nam - YSVN\n\nChúng tôi cho rằng thị trường có thể sẽ quay trở lại đà giảm trong phiên kế tiếp và chỉ số VN-Index có thể sẽ kiểm tra vùng hỗ trợ 1.600 - 1.615 đểm. Đồng thời, thị trường có thể sẽ còn lình xình trong vùng hỗ trợ 1.600 - 1.615 điểm trong vài phiên tới, rủi ro ngắn hạn hiện nay vẫn ở mức cao cho nên các nhà đầu tư chưa nên vội bắt đáy trong giai đoạn này. Ngoài ra, xu hướng ngắn hạn của thị trường chung vẫn duy trì ở mức giảm.\n\nChiến lược ngắn hạn dưới 1 tháng: Chúng tôi khuyến nghị các nhà đầu tư có thể tiếp tục tận dụng nhịp hồi để hạ tỷ trọng cổ phiếu về mức thấp và chưa nên mua vào trong giai đoạn này, đặc biệt các nhà đầu tư nên ưu tiên chiến lược giảm rủi ro danh mục ngắn hạn.\n\nVN-Index được kỳ vọng sẽ vận động tích lũy và hướng tới kiểm tra vùng kháng cự gần nhất quanh 1.740 điểm\n\nCông ty TNHH Chứng khoán Ngân hàng TMCP Ngoại thương Việt Nam - VCBS\n\nVN-Index kết phiên với cây nến Spinning Top cho thấy lực cầu áp đảo tại vùng giá thấp, xác nhận tín hiệu đảo chiều tâm lý sau phiên giảm điểm mạnh.\n\nỞ khung đồ thị ngày, chỉ báo RSI sau khi chạm vùng quá bán đã bật tăng trở lại vượt mức 30, kết hợp với việc khối lượng giao dịch có sự cải thiện nhất định trong phiên hôm nay, cho thấy khả năng chỉ số đang trong quá trình hình thành đáy ngắn hạn và ổn định mặt bằng giá mới.\n\nTại khung đồ thị giờ, các chỉ báo kỹ thuật đồng loạt phát đi tín hiệu tích cực hơn khi RSI và MACD đều đang hướng lên, trong đ"
   },
   {
     "title": "Russian Threat Actor Sednit Resurfaces With Sophisticated Toolkit",
@@ -522,7 +1120,7 @@
     "added_at": "2026-03-10T20:02:14.804779",
     "title_vi": "Microsoft Patches 83 Lỗ hổng",
     "summary_text": "Microsoft vá 83 lỗ hổng bảo mật: Một lỗi nghiêm trọng đã được xử lý\n\nMicrosoft vào thứ Ba đã công bố các bản vá cho 83 lỗ hổng ảnh hưởng đến các sản phẩm của mình.\n\nMặc dù chưa có lỗ hổng nào được ghi nhận là đã bị khai thác, nhưng hai trong số đó đã được công khai, theo các khuyến cáo của Microsoft.\n\nChúng bao gồm CVE-2026-26127, một vấn đề từ chối dịch vụ (DoS) trong .NET, và CVE-2026-21262, một lỗi leo thang đặc quyền trong SQL Server.\n\n“Những lỗ hổng này nghe có vẻ đáng sợ hơn là thực sự nguy hiểm. Lỗ hổng DoS được đánh giá là khó có khả năng bị khai thác và yêu cầu kẻ tấn công phải được ủy quyền từ trước, trong khi lỗi leo thang đặc quyền được cho là ít có khả năng bị khai thác hơn,” nhà nghiên cứu Satnam Narang của Tenable chỉ ra.\n\nCác bản cập nhật Patch Tuesday tháng 3 năm 2026 của Microsoft giải quyết một lỗ hổng duy nhất có mức độ nghiêm trọng cao nhất, cụ thể là CVE-2026-21536 (điểm CVSS 9.8), một điểm yếu thực thi mã từ xa trong Devices Pricing Program mà gã khổng lồ công nghệ này đã khắc phục hoàn toàn.\n\n“Người dùng dịch vụ này không cần thực hiện bất kỳ hành động nào. Mục đích của CVE này là cung cấp thêm sự minh bạch,” công ty lưu ý.\n\nMột lỗ hổng bảo mật đáng chú ý khác là CVE-2026-26118, một vấn đề leo thang đặc quyền trong Azure MCP Server Tools có thể bị khai thác bằng cách gửi đầu vào được tạo đặc biệt đến một công cụ máy chủ chấp nhận các tham số do người dùng cung cấp.\n\n“Nếu kẻ tấn công có thể tương tác với tác nhân được hỗ trợ bởi MCP, chúng có thể gửi một URL độc hại thay cho một định danh tài nguyên Azure thông thường. Máy chủ MCP sau đó sẽ gửi một yêu cầu đi đến URL đó và, khi làm như vậy, có thể bao gồm mã thông báo nhận dạng được quản lý của nó. Điều này cho phép kẻ tấn công chiếm được mã thông báo đó mà không cần quyền truy cập quản trị,” Microsoft lưu ý.\n\nNarang cho biết các lỗi leo thang đặc quyền trong Windows Graphics Component, Windows Accessibility Infrastructure, Windows Kernel, Windows SMB Server và Winlogon có thể cần được chú ý, vì những lỗ hổng như vậy thường bị khai thác sau khi kẻ tấn công có được quyền truy cập ban đầu.\n\nTheo giám đốc liên kết Tyler Reguly của Fortra, người dùng cũng nên chú ý đến năm lỗ hổng bảo mật của Azure đã được xử lý trong tháng này.\n\nChúng bao gồm một vấn đề leo thang đặc quyền trong Azure Linux Virtual Machines (CVE-2026-23665), và một lỗi giả mạo cùng ba lỗ hổng tiết lộ thông tin trong Azure IoT Explorer (CVE-2026-26121, CVE-2026-23661, CVE-2026-23662 và CVE-2026-23664).\n\nReguly chỉ ra rằng những lỗ hổng này yêu cầu các cơ chế vá lỗi không tiêu chuẩn, điều này có thể đòi hỏi nỗ lực bổ sung từ các nhóm IT.\n\n“Các CSOs nên đảm bảo rằng họ có danh mục tài sản vững chắc liên quan đến việc triển khai các hệ thống và công cụ liên quan đến đám mây, để các quản trị viên biết những thứ này tồn tại ở đâu và khi nào cần được khắc phục. Đây là cách tốt nhất để trao quyền cho các quản trị viên hệ thống và đội ngũ bảo mật của bạn trong một tháng yên tĩnh như thế này,” Reguly nói.\n\nMicrosoft cũng công bố các bản sửa lỗi cho 10 CVE không thuộc Microsoft, bao gồm một lỗ hổng trong Microsoft Semantic Kernel Python SDK và chín lỗ hổng trong Microsoft Edge (dựa trên Chromium).\n\nVào thứ Ba, Adobe đã công bố triển khai các bản vá cho 80 lỗ hổng trên các sản phẩm của mình, bao gồm các lỗ hổng nghiêm trọng trong Adobe Commerce.\n\nLiên quan: SAP vá các lỗ hổng nghiêm trọng trong FS-QUO, NetWeaver\nLiên quan: Lỗ hổng Ivanti Endpoint Manager gần đây bị khai thác trong các cuộc tấn công\nLiên quan: CISA cảnh báo về các lỗ hổng SolarWinds, Notepad++, Microsoft bị khai thác\nLiên quan: Microsoft sẽ kích hoạt ‘Windows Baseline Security’ với các biện pháp bảo vệ tính toàn vẹn thời gian chạy mới",
-    "tag": "Thể loại tin tức: Lỗ hổng"
+    "tag": "Thể loại: Chứng khoán<|eot_id|>"
   },
   {
     "title": "Adobe Patches 80 Vulnerabilities Across Eight Products",
@@ -537,7 +1135,7 @@
     "added_at": "2026-03-10T19:07:14.728853",
     "title_vi": "Adobe Patches 80 lỗ hổng trên tám sản phẩm",
     "summary_text": "Adobe Vá 80 Lỗ Hổng Bảo Mật Trên Tám Sản Phẩm\n\nAdobe vào thứ Ba đã công bố các bản vá cho 80 lỗ hổng trên 8 sản phẩm, bao gồm Commerce, Illustrator, Acrobat Reader và Premiere Pro.\n\nCông ty đã triển khai các bản sửa lỗi cho 19 lỗ hổng trong Adobe Commerce và Magento Open Source, đồng thời kêu gọi người dùng áp dụng các bản vá trong vòng 30 ngày tới, do các sản phẩm này là mục tiêu đã biết của các tác nhân đe dọa.\n\nBản cập nhật giải quyết sáu lỗi nghiêm trọng cao, trong đó năm lỗi có thể dẫn đến leo thang đặc quyền: CVE-2026-21290, CVE-2026-21361, CVE-2026-21284, CVE-2026-21311 và CVE-2026-21309. Lỗi thứ sáu, được theo dõi là CVE-2026-21289, dẫn đến việc bỏ qua tính năng bảo mật.\n\nTheo khuyến cáo của Adobe, các lỗi còn lại là các vấn đề có mức độ nghiêm trọng trung bình và thấp, dẫn đến thực thi mã tùy ý, leo thang đặc quyền, bỏ qua tính năng bảo mật và tấn công từ chối dịch vụ (DoS).\n\nCác bản sửa lỗi này đã được phát hành cho Adobe Commerce phiên bản 2.4.4 đến 2.4.9, Adobe Commerce B2B phiên bản 1.3.3 đến 1.5.3 và Magento Open Source phiên bản 2.4.5 đến 2.4.9.\n\nAdobe Illustrator đã nhận được các bản vá cho bảy lỗ hổng, bao gồm năm lỗi có thể dẫn đến thực thi mã tùy ý: CVE-2026-21333, CVE-2026-21362, CVE-2026-27271, CVE-2026-27272 và CVE-2026-27267.\n\nCác lỗi bảo mật nghiêm trọng cao dẫn đến thực thi mã tùy ý cũng đã được khắc phục trong Acrobat Reader, Premiere Pro, Substance 3D Stager và DNG Software Development Kit (SDK).\n\nKhông giống như khuyến cáo của Adobe Commerce có mức độ ưu tiên 2, các khuyến cáo này có mức độ ưu tiên 3, nghĩa là các sản phẩm ít có khả năng bị các tác nhân đe dọa nhắm mục tiêu hơn.\n\nĐợt cập nhật bảo mật mới của Adobe cũng giải quyết các lỗ hổng có mức độ nghiêm trọng trung bình và thấp trong các sản phẩm này, cũng như trong Substance 3D Painter và Experience Manager.\n\nAdobe không đề cập đến bất kỳ lỗi bảo mật nào trong số này đang bị khai thác trong thực tế. Thông tin bổ sung có thể được tìm thấy trên trang PSIRT của công ty.",
-    "tag": "Thời gian: 2023-02-"
+    "tag": "Thể loại tin tức: Lỗ hổng"
   },
   {
     "title": "FortiGate Devices Exploited to Breach Networks and Steal Service Account Credentials",
@@ -552,7 +1150,7 @@
     "added_at": "2026-03-10T18:11:13.870648",
     "title_vi": "Thiết bị FortiGate được khai thác để vi phạm mạng và ăn cắp thông tin đăng nhập tài khoản dịch vụ",
     "summary_text": "Thiết Bị FortiGate Bị Khai Thác, Kẻ Tấn Công Đánh Cắp Thông Tin Mạng và Tài Khoản Dịch Vụ\n\nCác nhà nghiên cứu an ninh mạng đang cảnh báo về một chiến dịch mới, trong đó các tác nhân đe dọa đang lạm dụng các thiết bị Tường lửa Thế hệ Mới (NGFW) FortiGate làm điểm xâm nhập để đột nhập vào mạng lưới của nạn nhân.\n\nHoạt động này liên quan đến việc khai thác các lỗ hổng bảo mật mới được tiết lộ hoặc thông tin đăng nhập yếu để trích xuất các tệp cấu hình chứa thông tin đăng nhập tài khoản dịch vụ và thông tin cấu trúc mạng, SentinelOne cho biết trong một báo cáo được công bố hôm nay. Tổ chức an ninh này cho biết chiến dịch đã nhắm mục tiêu vào các môi trường liên quan đến y tế, chính phủ và các nhà cung cấp dịch vụ được quản lý.\n\nCác thiết bị mạng FortiGate có quyền truy cập đáng kể vào các môi trường mà chúng được cài đặt để bảo vệ, các nhà nghiên cứu bảo mật Alex Delamotte, Stephen Bromfield, Mary Braden Murphy và Amey Patne cho biết. Trong nhiều cấu hình, điều này bao gồm các tài khoản dịch vụ được kết nối với cơ sở hạ tầng xác thực, chẳng hạn như Active Directory (AD) và Lightweight Directory Access Protocol (LDAP).\n\nThiết lập này có thể cho phép thiết bị ánh xạ vai trò tới người dùng cụ thể bằng cách lấy các thuộc tính về kết nối đang được phân tích và đối chiếu với thông tin Thư mục, điều này hữu ích trong các trường hợp chính sách dựa trên vai trò được đặt hoặc để tăng tốc độ phản hồi cho các cảnh báo bảo mật mạng được thiết bị phát hiện.\n\nTuy nhiên, công ty an ninh mạng lưu ý rằng quyền truy cập như vậy có thể bị khai thác bởi những kẻ tấn công đột nhập vào các thiết bị FortiGate thông qua các lỗ hổng đã biết (ví dụ: CVE-2025-59718, CVE-2025-59719 và CVE-2026-24858) hoặc cấu hình sai.\n\nTrong một sự cố, những kẻ tấn công được cho là đã đột nhập vào một thiết bị FortiGate vào tháng 11 năm 2025 để tạo một tài khoản quản trị viên cục bộ mới có tên support và sử dụng nó để thiết lập bốn chính sách tường lửa mới cho phép tài khoản này đi qua tất cả các vùng mà không có bất kỳ hạn chế nào.\n\nSau đó, tác nhân đe dọa liên tục kiểm tra định kỳ để đảm bảo thiết bị có thể truy cập được, một hành động phù hợp với một nhà môi giới truy cập ban đầu (IAB) thiết lập chỗ đứng và bán nó cho các tác nhân tội phạm khác để kiếm lợi. Giai đoạn tiếp theo của hoạt động được phát hiện vào tháng 2 năm 2026 khi một kẻ tấn công có khả năng đã trích xuất tệp cấu hình chứa thông tin đăng nhập LDAP tài khoản dịch vụ được mã hóa.\n\nBằng chứng cho thấy kẻ tấn công đã xác thực vào AD bằng thông tin đăng nhập dạng văn bản rõ ràng từ tài khoản dịch vụ fortidcagent, cho thấy kẻ tấn công đã giải mã tệp cấu hình và trích xuất thông tin đăng nhập tài khoản dịch vụ, SentinelOne cho biết.\n\nKẻ tấn công sau đó đã lợi dụng tài khoản dịch vụ để xác thực vào môi trường của nạn nhân và đăng ký các máy trạm giả mạo vào AD, cho phép chúng truy cập sâu hơn. Sau bước này, quá trình quét mạng đã được khởi động, tại thời điểm đó vụ đột nhập đã được phát hiện và mọi di chuyển ngang tiếp theo đã bị chặn lại.\n\nTrong một trường hợp khác được điều tra vào cuối tháng 1 năm 2026, những kẻ tấn công đã nhanh chóng chuyển từ việc truy cập tường lửa sang triển khai các công cụ truy cập từ xa như Pulseway và MeshAgent. Ngoài ra, tác nhân đe dọa đã tải xuống phần mềm độc hại từ một vùng lưu trữ đám mây thông qua PowerShell từ cơ sở hạ tầng Amazon Web Services (AWS).\n\nPhần mềm độc hại Java, được khởi chạy thông qua DLL side-loading, đã được sử dụng để đánh cắp nội dung của tệp NTDS.dit và khóa đăng ký SYSTEM tới một máy chủ bên ngoài (172.67.196.232) qua cổng 443.\n\nMặc dù tác nhân có thể đã cố gắng bẻ khóa mật khẩu từ dữ liệu, nhưng không có việc sử dụng thông tin đăng nhập nào như vậy được xác định giữa thời điểm thu thập thông tin đăng nhập và việc ngăn chặn sự cố, SentinelOne nói thêm.\n\nCác thiết bị NGFW đã trở nên phổ biến vì chúng cung cấp khả năng giám sát mạng mạnh mẽ cho các tổ chức bằng cách tích hợp các kiểm soát bảo mật của tường lửa với các tính năng quản lý khác, chẳng hạn như AD, báo cáo bổ sung. Tuy nhiên, những thiết bị này là mục tiêu có giá trị cao đối với các tác nhân với nhiều động cơ và trình độ kỹ năng khác nhau, từ các tác nhân được nhà nước hậu thuẫn thực hiện hoạt động gián điệp đến các cuộc tấn công có động cơ tài chính như ransomware.",
-    "tag": "Thể loại tin tức này thuộc loại:<|eot_id|>"
+    "tag": "Thể loại tin tức: Khám phá<|eot_id|>"
   },
   {
     "title": "Jazz Emerges From Stealth With $61M in Funding for AI-Powered DLP",
@@ -567,7 +1165,7 @@
     "added_at": "2026-03-10T18:11:13.870648",
     "title_vi": "Jazz nổi lên từ tàng hình với $ 61M trong tài trợ cho AI-Powered DLP",
     "summary_text": "Jazz Bất Ngờ Lộ Diện, Huy Động 61 Triệu USD Cho Giải Pháp Ngăn Ngừa Mất Dữ Liệu Dùng AI\n\nStartup ngăn ngừa mất dữ liệu (DLP) Jazz vào thứ Ba đã bất ngờ lộ diện với tổng cộng 61 triệu USD trong vòng gọi vốn hạt giống và Series A.\n\nCác vòng đầu tư của công ty được dẫn dắt bởi Glilot Capital Partners và Team8, với sự hỗ trợ bổ sung từ Encoded Ventures, MassMutual Ventures, Merlin Ventures, Ten Eleven Ventures và các nhà đầu tư thiên thần.\n\nĐược thành lập vào năm 2024 bởi các cựu binh tình báo Israel, Jazz có trụ sở tại Tel Aviv đang biến đổi DLP thành một hệ thống hiểu được cách sử dụng dữ liệu và giải thích ý định, ngữ cảnh cũng như rủi ro.\n\nStartup này sử dụng một tác nhân điểm cuối pháp y (forensic endpoint agent) để có cái nhìn rõ ràng về cách dữ liệu được sử dụng và dựa vào một Điều tra viên Tự động (autonomous Agentic Investigator) để tìm hiểu các quy trình kinh doanh, phân tích ngữ cảnh của người dùng, dữ liệu, hệ thống và quy trình nhằm xác định ý định, đồng thời phân biệt giữa các quy trình làm việc hợp pháp và rủi ro.\n\nJazz cho biết, phương pháp này giúp giảm thiểu tối đa tiếng ồn DLP hàng ngày trong các doanh nghiệp lớn, cho phép các đội ngũ bảo mật tập trung vào các sự cố quan trọng.\n\nĐã làm việc với hàng chục khách hàng, Jazz đặt mục tiêu mở rộng quy mô toàn cầu trong phân khúc doanh nghiệp. Khoản đầu tư mới sẽ cho phép công ty mở rộng các đội ngũ kỹ thuật, nghiên cứu và tiếp cận thị trường.\n\nDLP truyền thống được xây dựng dựa trên các quy tắc cứng nhắc không hiểu cách thức làm việc hiện đại thực sự diễn ra, điều này khiến các đội ngũ bị ngập trong 'tiếng ồn' trong khi các rủi ro thực sự lại lọt qua, Ido Livneh, CEO và đồng sáng lập của Jazz, cho biết.\n\nJazz thay đổi điều đó bằng cách hiểu sâu sắc ý định và ngữ cảnh trong mọi sự cố, cuối cùng mang lại sự giảm thiểu rủi ro đáng kể mà không làm chậm hoạt động kinh doanh, Livneh nói thêm.",
-    "tag": "Thể loại: Công nghệ<|eot_id|>"
+    "tag": "Thể loại tin tức này thuộc loại:<|eot_id|>"
   },
   {
     "title": "KadNap Malware Infects 14,000+ Edge Devices to Power Stealth Proxy Botnet",
@@ -582,7 +1180,7 @@
     "added_at": "2026-03-10T16:17:18.972456",
     "title_vi": "KadNap Malware lây nhiễm hơn 14.000 thiết bị cạnh vào Power Stealth Proxy Botnet",
     "summary_text": "Mã độc KadNap lây nhiễm hơn 14.000 thiết bị biên, xây dựng mạng botnet proxy ẩn danh\n\nCác nhà nghiên cứu an ninh mạng đã phát hiện một loại mã độc mới có tên KadNap, chủ yếu nhắm mục tiêu vào các bộ định tuyến Asus để biến chúng thành một mạng botnet nhằm chuyển tiếp lưu lượng truy cập độc hại.\n\nMã độc này, lần đầu tiên được phát hiện trong thực tế vào tháng 8 năm 2025, đã lây lan tới hơn 14.000 thiết bị bị nhiễm, với hơn 60% nạn nhân ở Hoa Kỳ, theo nhóm Black Lotus Labs của Lumen. Một số lượng nhỏ hơn các trường hợp lây nhiễm đã được phát hiện ở Đài Loan, Hồng Kông, Nga, Vương quốc Anh, Úc, Brazil, Pháp, Ý và Tây Ban Nha.\n\nKadNap sử dụng một phiên bản tùy chỉnh của giao thức Bảng băm phân tán Kademlia (DHT), được dùng để che giấu địa chỉ IP của cơ sở hạ tầng của chúng trong một hệ thống ngang hàng nhằm tránh sự giám sát mạng truyền thống, công ty an ninh mạng cho biết trong một báo cáo chia sẻ với The Hacker News.\n\nCác nút bị xâm nhập trong mạng tận dụng giao thức DHT để định vị và kết nối với máy chủ chỉ huy và kiểm soát (C2), từ đó giúp nó chống lại các nỗ lực phát hiện và phá vỡ.\n\nKhi các thiết bị bị xâm nhập thành công, chúng được tiếp thị bởi một dịch vụ proxy có tên Doppelgänger (doppelganger.shop), được đánh giá là một phiên bản đổi tên của Faceless, một dịch vụ proxy khác liên quan đến mã độc TheMoon. Theo trang web của mình, Doppelgänger tuyên bố cung cấp các proxy dân cư tại hơn 50 quốc gia, mang lại khả năng ẩn danh 100%. Dịch vụ này được cho là đã ra mắt vào tháng 5/tháng 6 năm 2025.\n\nMặc dù tập trung vào các bộ định tuyến Asus, những kẻ điều hành KadNap đã được phát hiện triển khai mã độc này chống lại một loạt các thiết bị mạng biên khác nhau.\n\nTrọng tâm của cuộc tấn công là một tập lệnh shell (aic.sh) được tải xuống từ máy chủ C2 (212.104.141.140), chịu trách nhiệm khởi tạo quá trình biến nạn nhân thành một phần của mạng P2P. Tệp này tạo một tác vụ cron để truy xuất tập lệnh shell từ máy chủ vào phút thứ 55 của mỗi giờ, đổi tên thành .asusrouter và chạy nó.\n\nKhi tính bền vững được thiết lập, tập lệnh sẽ kéo một tệp ELF độc hại, đổi tên thành kad và thực thi nó. Điều này, đến lượt nó, dẫn đến việc triển khai KadNap. Mã độc này có khả năng nhắm mục tiêu vào các thiết bị chạy cả bộ xử lý ARM và MIPS.\n\nKadNap cũng được thiết kế để kết nối với máy chủ Giao thức Thời gian Mạng (NTP) để lấy thời gian hiện tại và lưu trữ cùng với thời gian hoạt động của máy chủ. Thông tin này đóng vai trò là cơ sở để tạo một hàm băm được sử dụng để định vị các thiết bị ngang hàng khác trong mạng phi tập trung nhằm nhận lệnh hoặc tải xuống các tệp bổ sung.\n\nCác tệp – fwr.sh và /tmp/.sose – chứa chức năng đóng cổng 22, cổng TCP tiêu chuẩn cho Secure Shell (SSH), trên thiết bị bị nhiễm và trích xuất danh sách các kết hợp địa chỉ IP:cổng C2 để kết nối.\n\nTóm lại, việc sử dụng sáng tạo giao thức DHT cho phép mã độc thiết lập các kênh liên lạc mạnh mẽ, khó bị phá vỡ, bằng cách ẩn mình trong nhiễu của lưu lượng truy cập ngang hàng hợp pháp, Lumen cho biết.\n\nPhân tích sâu hơn đã xác định rằng không phải tất cả các thiết bị bị xâm nhập đều giao tiếp với mọi máy chủ C2, cho thấy cơ sở hạ tầng đang được phân loại dựa trên loại và kiểu thiết bị.\n\nNhóm Black Lotus Labs nói với The Hacker News rằng các bot của Doppelgänger đang bị các tác nhân đe dọa lạm dụng trong thực tế. Một vấn đề là vì các thiết bị Asus (và các thiết bị khác) đôi khi cũng bị lây nhiễm đồng thời với các mã độc khác, nên rất khó để nói chính xác ai chịu trách nhiệm cho một hoạt động độc hại cụ thể, công ty cho biết.\n\nNgười dùng đang sử dụng bộ định tuyến SOHO được khuyên nên cập nhật thiết bị của mình, khởi động lại chúng thường xuyên, thay đổi mật khẩu mặc định, bảo mật giao diện quản lý và thay thế các mẫu đã hết vòng đời và không còn được hỗ trợ.\n\nMạng botnet KadNap nổi bật so với các mạng khác hỗ trợ proxy ẩn danh nhờ việc sử dụng mạng ngang hàng để kiểm soát phi tập trung, Lumen kết luận. Ý định của chúng rất rõ ràng, tránh bị phát hiện và gây khó khăn cho các nhà bảo vệ trong việc chống lại.\n\nMối đe dọa Linux mới ClipXDaemon xuất hiện\n\nThông tin này được đưa ra khi Cyble công bố chi tiết về một mối đe dọa Linux mới có tên ClipXDaemon, được thiết kế để nhắm mục tiêu vào người dùng tiền điện tử bằng cách chặn và thay đổi địa chỉ ví đã sao chép. Mã độc clipper này, được phân phối thông qua khung khai thác sau Linux có tên ShadowHS, đã được mô tả là một công cụ chiếm quyền điều khiển clipboard tiền điện tử tự động nhắm mục tiêu vào môi trường Linux X11.\n\nĐược dàn dựng hoàn toàn trong bộ nhớ, mã độc này sử dụng các kỹ thuật tàng hình, như giả mạo quy trình và tránh phiên Wayland, đồng thời giám sát clipboard cứ sau 200 mili giây và thay thế các địa chỉ tiền điện tử bằng ví do kẻ tấn công kiểm soát. Nó có khả năng nhắm mục tiêu vào các ví Bitcoin, Ethereum, Litecoin, Monero, Tron, Dogecoin, Ripple và TON.\n\nQuyết định tránh thực thi trong các phiên Wayland là có chủ ý, vì kiến trúc bảo mật của giao thức máy chủ hiển thị đặt ra các kiểm soát bổ sung, như yêu cầu tương tác rõ ràng của người dùng, trước khi các ứng dụng có thể truy cập nội dung clipboard. Bằng cách tự vô hiệu hóa trong các tình huống như vậy, mã độc nhằm mục đích loại bỏ nhiễu và tránh lỗi thời gian chạy.\n\nClipXDaemon khác biệt cơ bản so với mã độc Linux truyền thống. Nó không chứa logic chỉ huy và kiểm soát (C2), không thực hiện báo hiệu và không yêu cầu tác vụ từ xa, công ty cho biết. Thay vào đó, nó kiếm tiền trực tiếp từ nạn nhân bằng cách chiếm đoạt địa chỉ ví tiền điện tử được sao chép trong các phiên X11 và thay thế chúng bằng địa chỉ do kẻ tấn công kiểm soát trong thời gian thực.",
-    "tag": "Thể loại tin tức: Khám phá<|eot_id|>"
+    "tag": "Thể loại:<|eot_id|>"
   },
   {
     "title": "106-year-old retail brand operator closing all stores in bankruptcy",
@@ -991,7 +1589,7 @@
     "audio_cached": false,
     "added_at": "2026-03-10T14:48:29.490215",
     "title_vi": "FDA chấp thuận leucovorin là thuốc đầu tiên cho rối loạn di truyền hiếm gặp, sau khi quảng cáo nó là điều trị tự kỷ",
-    "tag": "Thể loại: Lỗ hổng<|eot_id|>"
+    "tag": "Thể loại tin tức: Lỗ hổng"
   },
   {
     "title": "This might be the best way to invest in oil stocks right now",
@@ -1033,7 +1631,7 @@
     "added_at": "2026-03-10T14:48:09.687458",
     "title_vi": "Việt Nam có 8 tỷ phú USD",
     "summary_text": "Việt Nam có 8 tỷ phú USD\n\nForbes vừa công bố danh sách tỷ phú thế giới 2026 với số lượng kỷ lục 3.428 người. Trong đó, Việt Nam có 8 tỷ phú góp mặt với tổng tài sản đạt gần 40 tỷ USD.\n\nTheo danh sách tỷ phú thế giới 2026 (những người sở hữu từ 1 tỷ USD trở lên) do Forbes vừa công bố, nhờ sự bùng nổ của trí tuệ nhân tạo (AI), diễn biến sôi động của thị trường tài chính cùng các chính sách tiền tệ thuận lợi, số lượng tỷ phú sở hữu từ 1 tỷ USD trở lên năm nay đã đạt mức kỷ lục 3.428 người, gồm doanh nhân, nhà đầu tư và người thừa kế, tăng hơn 400 người so với năm 2025.\n\nKhông chỉ đông hơn, các tỷ phú thế giới cũng giàu có hơn. Tổng tài sản của nhóm này đạt mức kỷ lục 20.100 tỷ USD, tăng khoảng 4.000 tỷ USD so với năm trước.\n\nMỹ tiếp tục là quốc gia có nhiều tỷ phú nhất thế giới với 989 người, trong đó 15 người nằm trong top 20 người giàu nhất toàn cầu. Trung Quốc (bao gồm cả Hong Kong) đứng thứ 2 với 610 tỷ phú, trong khi Ấn Độ xếp thứ 3 với 229 người.\n\nĐáng chú ý, Việt Nam cũng có 8 tỷ phú USD góp mặt trong danh sách, với tổng tài sản đạt khoảng 39,8 tỷ USD, tăng 25,1 tỷ USD so với năm ngoái.\n\nDẫn đầu danh sách tỷ phú Việt Nam tiếp tục là ông Phạm Nhật Vượng, Chủ tịch HĐQT Tập đoàn Vingroup. Forbes ghi nhận tổng tài sản ròng của vị doanh nhân này ở mức 27,7 tỷ USD, tăng 21,2 tỷ USD so với năm 2025 và xếp thứ 93 trong danh sách người giàu nhất thế giới. Ông Phạm Nhật Vượng năm nay 57 tuổi.\n\nTrong hệ sinh thái Tập đoàn Vingroup, lần đầu tiên có hai nữ doanh nhân góp mặt trong bảng xếp hạng này là Phó chủ tịch Phạm Thu Hương (vợ ông Phạm Nhật Vượng) với khối tài sản 3 tỷ USD và bà Phạm Thúy Hằng, Phó chủ tịch Vingroup, đồng thời là em gái bà Hương, sở hữu 2,1 tỷ USD. Hai nữ doanh nhân này lần lượt xếp thứ 1.406 và 1.982 thế giới. Bà Phạm Thu Hương 56 tuổi và bà Phạm Thúy Hằng 51 tuổi.\n\nNếu xét riêng trong danh sách tỷ phú Việt Nam, bà Phạm Thu Hương hiện đứng thứ 3, còn bà Phạm Thúy Hằng ở vị trí thứ 6. Như vậy, riêng 3 tỷ phú thuộc hệ sinh thái Vingroup đang nắm tổng tài sản khoảng 32,8 tỷ USD, chiếm khoảng 82% tổng tài sản của các tỷ phú Việt Nam trong bảng xếp hạng.\n\nXếp thứ hai trong danh sách tỷ phú Việt là bà Nguyễn Thị Phương Thảo, Chủ tịch HĐQT Sovico Group, với khối tài sản 4,2 tỷ USD, tăng 1,4 tỷ USD so với năm ngoái và đứng thứ 1.011 toàn cầu. Bà Thảo cũng là nữ tỷ phú USD đầu tiên của Việt Nam, với tài sản chủ yếu đến từ cổ phần tại Vietjet Air và HDBank. Bà Nguyễn Thị Phương Thảo năm nay 55 tuổi.\n\nXếp sau bà Hương, ở vị trí thứ 4, là ông Trần Đình Long, Chủ tịch Tập đoàn Hòa Phát, với khối tài sản ròng khoảng 2,9 tỷ USD, tăng 0,5 tỷ USD. Ông Trần Đình Long 65 tuổi và xếp thứ 1.440 thế giới.\n\nTheo sau là ông Hồ Hùng Anh, Chủ tịch Techcombank, với tài sản ước tính 2,5 tỷ USD, tăng 0,5 tỷ USD. Ông Hồ Hùng Anh 55 tuổi và xếp thứ 1.676 thế giới.\n\nTiếp đến là Chủ tịch VPBank Ngô Chí Dũng, cũng là người lần đầu xuất hiện trên bảng xếp hạng này, và Chủ tịch Masan Nguyễn Đăng Quang, mỗi người sở hữu khoảng 1,2 tỷ USD. Tài sản của ông Quang đã tăng 0,2 tỷ USD so với đợt thống kê của năm ngoái. Ông Ngô Chí Dũng 58 tuổi, ông Nguyễn Đăng Quang 62 tuổi, cả hai đều xếp thứ 3.017 thế giới.\n\nForbes cho biết danh sách tỷ phú thế giới này được xây dựng dựa trên việc tính toán tài sản từ giá cổ phiếu và tỷ giá hối đoái tính đến ngày 1/3/2026.",
-    "tag": "Thời gian: 2022-07-"
+    "tag": "Thời gian: 2022-01-"
   },
   {
     "title": "Nguy cơ hủy nhiều hợp đồng xuất khẩu lao động do chiến sự Trung Đông",
@@ -1089,7 +1687,7 @@
     "category": "stocks_vietnam",
     "audio_cached": true,
     "added_at": "2026-03-10T14:48:09.687458",
-    "tag": "Thời gian: 2022-07-",
+    "tag": "Thời gian: 2022-08-",
     "title_vi": "Việt Nam có 8 tỷ phú trong danh sách thế giới",
     "summary_text": "Việt Nam có 8 tỷ phú trong danh sách thế giới\n\nViệt Nam năm nay có thêm 3 đại diện trong danh sách tỷ phú thường niên của Forbes, nâng tổng số người sở hữu tỷ USD lên cao nhất đến nay.\n\nCác tỷ phú Việt theo danh sách của Forbes năm nay gồm Chủ tịch Vingroup Phạm Nhật Vượng, Chủ tịch VietJet Air Nguyễn Thị Phương Thảo, Chủ tịch Hòa Phát Trần Đình Long, Chủ tịch Techcombank Hồ Hùng Anh, và Chủ tịch Masan Nguyễn Đăng Quang.\n\nBa tỷ phú mới góp mặt trong danh sách là Phó chủ tịch Vingroup Phạm Thu Hương, bà Phạm Thúy Hằng - Phó chủ tịch Vingroup và Chủ tịch VPBank Ngô Chí Dũng.\n\nTrừ 3 đại diện mới, các tỷ phú Việt còn lại đều ghi nhận tài sản tăng trong năm qua.\n\nÔng Phạm Nhật Vượng là người sở hữu tài sản lớn nhất trong 8 tỷ phú Việt, với 27,7 tỷ USD - tăng gấp 4 lần so với năm ngoái. Đây là năm thứ 14 ông góp mặt trong danh sách này. Ông Vượng hiện là người giàu thứ 93 thế giới.\n\nTài sản của bà Nguyễn Thị Phương Thảo cũng tăng gần gấp đôi, lên 4,2 tỷ USD. Bà hiện giữ vai trò Phó chủ tịch HĐQT HDBank, Chủ tịch hãng hàng không VietJet Air.\n\nTỷ phú thép Trần Đình Long có 2,9 tỷ USD, tăng 500 triệu USD so với năm ngoái. Ông Hồ Hùng Anh lần thứ 8 góp mặt trong danh sách, với 2,5 tỷ USD.\n\nChủ tịch Masan Nguyễn Đăng Quang cũng xuất hiện trong danh sách năm thứ 6 liên tiếp. Ông hiện sở hữu 1,2 tỷ USD.\n\nÔng Ngô Chí Dũng, bà Phạm Thúy Hằng và bà Phạm Thu Hương lần lượt có tài sản là 1,2 tỷ USD, 2,1 tỷ USD và 3 tỷ USD.\n\nBà Phạm Thu Hương là vợ tỷ phú Phạm Nhật Vượng. Nữ doanh nhân sinh năm 1969, có bằng Thạc sĩ Luật Quốc tế tại Ukraine. Bà hiện giữ vị trí Phó chủ tịch Vingroup, đồng thời là Chủ tịch Công ty GSM - đơn vị vận hành hãng taxi và gọi xe Xanh SM.\n\nTrong khi đó, bà Phạm Thúy Hằng là em gái bà Hương. Bà sinh năm 1974, tốt nghiệp chuyên ngành Ngôn ngữ Nga, Đại học Hà Nội (trước đây là Đại học Ngoại ngữ Hà Nội).\n\nCòn ông Ngô Chí Dũng sinh năm 1968, tốt nghiệp Đại học Thăm dò địa chất Moskva và Tiến sĩ Kinh tế tại Viện Hàn lâm Khoa học Liên bang Nga.\n\nĐể có tên trong danh sách, phương pháp được Forbes lựa chọn là đánh giá quy mô tài sản của cá nhân dựa vào giá cổ phiếu và tỷ giá hối đoái tại ngày 1/3. Năm nay, thế giới có kỷ lục 3.428 tỷ phú, nhiều hơn 400 người so với năm ngoái. Đây là năm thứ 2 liên tiếp số tỷ phú toàn cầu đạt trên 3.000 cá nhân. Tài sản của họ cũng nhiều nhất đến nay, với tổng 20.100 tỷ USD.\n\nNgười giàu nhất hành tinh vẫn là CEO Tesla Elon Musk với 839 tỷ USD. Theo sau là hai nhà đồng sáng lập Google Larry Page (257 tỷ USD) và Sergey Brin (237 tỷ USD). Nhà sáng lập Amazon Jeff Bezos năm nay tụt một bậc xuống thứ 4, với 224 tỷ USD.\n\nHà Thu (theo Forbes)"
   },
@@ -1130,7 +1728,7 @@
     "category": "stocks_vietnam",
     "audio_cached": true,
     "added_at": "2026-03-10T14:48:09.687458",
-    "tag": "Thể loại tin tức: Khủng hoảng",
+    "tag": "Thể loại tin tức này thuộc loại:<|eot_id|>",
     "title_vi": "CEO Saudi Aramco cảnh báo 'hậu quả thảm khốc' khi eo biển Hormuz tê liệt",
     "summary_text": "CEO Saudi Aramco cảnh báo 'hậu quả thảm khốc' khi eo biển Hormuz tê liệt\nCEO của gã khổng lồ dầu khí Arab Saudi cho rằng thị trường dầu thế giới gánh hậu quả lớn nếu hoạt động vận tải qua Hormuz vẫn gián đoạn.\n\nSẽ có những hậu quả thảm khốc với thị trường dầu toàn cầu. Việc gián đoạn càng kéo dài, hậu quả với kinh tế thế giới càng nghiêm trọng, CEO Saudi Aramco Amin Nasser trả lời báo giới trong cuộc họp công bố kết quả kinh doanh ngày 10/3.\n\nCác tàu dầu hiện gần như không thể đi qua tuyến hàng hải này. Vệ binh Hồi giáo Cách mạng Iran tuyên bố không cho phép một lít dầu nào rời khỏi Trung Đông nếu Mỹ và Israel tiếp tục tấn công. Trước khi xung đột xảy ra, khoảng 20% lượng dầu toàn cầu được vận chuyển qua eo biển Hormuz mỗi ngày.\n\nDù chúng tôi từng trải qua nhiều đợt gián đoạn, đây là cuộc khủng hoảng lớn nhất mà ngành dầu khí trong khu vực từng chứng kiến, Nasser nhận xét.\n\nÔng cho biết cuộc khủng hoảng làm đảo lộn lĩnh vực vận tải biển, bảo hiểm, và có thể tạo ra hiệu ứng dây chuyền lớn với hàng không, nông nghiệp, ôtô và nhiều ngành khác.\n\nTheo tính toán của hãng tư vấn năng lượng Rapidan Energy, xung đột Trung Đông khiến lượng lớn dầu toàn cầu mắc kẹt tại eo biển Hormuz, đẩy thế giới vào tình trạng đứt nguồn cung kỷ lục. Hãng này cho biết việc gián đoạn eo biển Hormuz do xung đột Trung Đông ảnh hưởng gần gấp ba lần so với lệnh cấm vận dầu mỏ Arab năm 1973, vốn làm gián đoạn khoảng 7% nguồn cung toàn cầu.\n\nGiá dầu Brent hôm 9/3 có thời điểm lên sát 120 USD một thùng - cao nhất 4 năm. Hôm nay giá giảm về quanh 90 USD, sau khi Tổng thống Mỹ Donald Trump cho biết chiến sự có thể sớm kết thúc. Ông Trump cũng cảnh báo Mỹ đáp trả Iran mạnh hơn nếu nước này chặn xuất khẩu dầu từ Trung Đông. Ông còn cho biết Hải quân Mỹ có thể hộ tống tàu thuyền tại Vịnh Ba Tư. Tuy nhiên khả năng thực hiện việc này hiện chưa rõ ràng.\n\nNasser cho biết tồn kho dầu toàn cầu hiện ở mức thấp nhất 5 năm và cuộc khủng hoảng có thể khiến nguồn dự trữ này giảm nhanh hơn. Ông nhấn mạnh tầm quan trọng của việc khôi phục tuyến hàng hải qua eo biển Hormuz.\n\nHiện Aramco không xuất khẩu dầu từ Vùng Vịnh, do tàu không thể vào bốc hàng tại đây. Tuy nhiên công ty này cho biết vẫn đáp ứng được phần lớn nhu cầu của khách hàng.\n\nHọ đang sử dụng đường ống East-West để vận chuyển các loại dầu Arab Light và Arab Extra Light tới cảng Yanbu trên Biển Đỏ. Theo Nasser, đường ống này dự kiến đạt công suất tối đa 7 triệu thùng một ngày trong vài ngày tới khi khách hàng chuyển hướng vận chuyển. Ngoài ra, Aramco cũng có thể chuyển một phần sản lượng dầu thô sang phục vụ nhu cầu trong nước.\n\nTuần trước, Ras Tanura - nhà máy lọc dầu lớn nhất của Aramco trong nước - xảy ra vụ cháy nhỏ do bị tấn công. Tuy nhiên, Nasser cho biết đám cháy đã nhanh chóng được dập tắt và kiểm soát. Nhà máy đang trong quá trình khởi động lại.\n\nTrong cuộc họp, Aramco công bố lợi nhuận năm 2025 giảm 12% xuống 93,4 tỷ USD, chủ yếu do giá dầu thô giảm. Công ty cũng thông báo kế hoạch mua lại tối đa 3 tỷ USD cổ phiếu. Đây là lần đầu tiên họ thực hiện việc này."
   },
@@ -1158,9 +1756,11 @@
     "icon": "📊",
     "lang": "vi",
     "category": "stocks_vietnam",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T14:48:09.687458",
-    "tag": "Thể loại tin tức này thuộc loại:<|eot_id|>"
+    "tag": "Thể loại tin tức này thuộc loại: Ch",
+    "title_vi": "Khối ngoại bắt đáy, gom ròng gần 1.200 tỷ, mua nhiều nhất HPG",
+    "summary_text": "Khối ngoại bắt đáy, gom ròng gần 1.200 tỷ, mua nhiều nhất HPG\n\nThanh khoản thị trường hôm nay duy trì ở mức cao với tổng giá trị khớp lệnh gần 46.000 tỷ đồng, cho thấy dòng tiền nội đang tích cực tham gia bắt đáy. Đáng chú ý, khối ngoại cũng quay lại mua ròng gần 1.200 tỷ đồng, tính riêng giao dịch khớp lệnh thì họ mua ròng 1083.0 tỷ đồng.\n\nSau phiên giảm sâu mang tính lịch sử hôm qua, thị trường bước sang phiên giao dịch hôm nay với phản ứng phục hồi khá rõ nét. Dù mức tăng điểm mới chỉ bù lại khoảng một phần năm số điểm đã mất trước đó, sự cải thiện về tâm lý và độ rộng thị trường cho thấy lực cầu bắt đáy đang hoạt động tích cực.\n\nKết thúc phiên, VN-Index lấy lại gần 24 điểm, dừng tại 1.676,73 điểm, tương đương mức tăng 1,45% so với phiên trước. Điểm đáng chú ý nằm ở độ rộng thị trường khi số cổ phiếu tăng áp đảo rõ rệt. Toàn sàn ghi nhận tới 258 mã tăng giá trong khi chỉ còn 88 mã giảm, phản ánh dòng tiền đang quay trở lại khá mạnh sau cú sốc trước đó. Điều này cho thấy lực bán tháo đã phần nào được hấp thụ, đồng thời nhiều cổ phiếu sau nhịp rơi mạnh đã trở nên hấp dẫn hơn về mặt định giá, kích hoạt dòng tiền bắt đáy.\n\nNgoại trừ nhóm dầu khí chịu áp lực mạnh, phần lớn các nhóm ngành còn lại đều hồi phục tích cực, thậm chí xuất hiện nhiều cổ phiếu tăng trần. Các mã như HPG, VNM, STB và MBB đồng loạt bứt phá kịch biên độ, đóng vai trò quan trọng trong việc kéo lại tâm lý thị trường. Nhóm dầu khí là điểm trừ hiếm hoi khi GAS và PLX tiếp tục giảm sàn do giá dầu thế giới đảo chiều giảm mạnh sau phiên tăng sốc trước đó, khiến kỳ vọng ngắn hạn của nhà đầu tư nhanh chóng điều chỉnh.\n\nTrong khi đó, nhóm ngân hàng – trụ cột của thị trường – thể hiện sức bật đáng kể với hàng loạt cổ phiếu tăng mạnh như VCB, BID, CTG, TCB, VPB, ACB và HDB. Sự hồi phục của nhóm vốn hóa lớn này góp phần quan trọng trong việc ổn định chỉ số.\n\nỞ các nhóm ngành khác, cổ phiếu tiêu dùng như MWG và MCH tăng tốt, công nghệ – truyền thông ghi nhận sự tích cực ở VGI, trong khi ngành hàng không cũng có sự cải thiện với ACV và VJC.\n\nTuy vậy, một số lĩnh vực vẫn chịu tác động tiêu cực từ yếu tố bên ngoài. Nhóm cảng biển tiếp tục điều chỉnh khi rủi ro vận chuyển hàng hải gia tăng do căng thẳng tại khu vực Trung Đông, thể hiện qua diễn biến giảm của MVN và GMD. Nhóm cao su với đại diện GVR cũng suy yếu, trong khi các cổ phiếu thuộc hệ sinh thái Vingroup như VIC và VRE quay đầu giảm mạnh sau nhịp hồi trước đó.\n\nThanh khoản thị trường duy trì ở mức cao với tổng giá trị khớp lệnh gần 46.000 tỷ đồng, cho thấy dòng tiền nội đang tích cực tham gia bắt đáy. Đáng chú ý, khối ngoại cũng quay lại mua ròng gần 1.200 tỷ đồng, tính riêng giao dịch khớp lệnh thì họ mua ròng 1083.0 tỷ đồng.\n\nMua ròng khớp lệnh chính của nước ngoài là nhóm Bán lẻ, Tài nguyên Cơ bản. Top mua ròng khớp lệnh của nước ngoài gồm các mã: HPG, MWG, FPT, VNM, BSR, PVD, DCM, TCH, CTG, ACB.\n\nPhía bên bán ròng khớp lệnh của nước ngoài là nhóm Ngân hàng. Top bán ròng khớp lệnh của nước ngoài gồm các mã: STB, VIC, VPB, GEX, VCI, BID, VIX, TPB, VCB.\n\nNhà đầu tư cá nhân mua ròng 590.7 tỷ đồng, trong đó họ mua ròng khớp lệnh là 162.3 tỷ đồng.\n\nTính riêng giao dịch khớp lệnh, họ mua ròng 5/18 ngành, chủ yếu là ngành Ngân hàng. Top mua ròng của nhà đầu tư cá nhân tập trung gồm: VPB, MSN, MBB, SHB, VIC, VIX, TPB, GEX, VCB, ACB.\n\nPhía bán ròng khớp lệnh: họ bán ròng 13/18 ngành chủ yếu là nhóm ngành Tài nguyên Cơ bản, Dịch vụ tài chính. Top bán ròng có: HPG, SSI, VNM, BSR, HDB, GAS, GVR, FPT, KDH.\n\nTự doanh bán ròng 337.4 tỷ đồng tính riêng khớp lệnh họ bán ròng 348.1 tỷ đồng.\n\nTính riêng giao dịch khớp lệnh: Tự doanh mua ròng 3/18 ngành. Nhóm mua ròng mạnh nhất là Bán lẻ, Hàng và Dịch vụ Công nghiệp. Top mua ròng khớp lệnh của tự doanh phiên ngày hôm nay gồm MBB, ACB, FRT, VCB, VIX, VTP, GAS, VCI, NLG, KDH. Top bán ròng là nhóm Thực phẩm và đồ uống. Top cổ phiếu được bán ròng gồm FPT, MSN, VIC, VNM, VCG, HPG, LPB, DGC, SHB, VPB.\n\nNhà đầu tư tổ chức trong nước bán ròng 1382.3 tỷ đồng, tính riêng khớp lệnh thì họ bán ròng 897.1 tỷ đồng.\n\nTính riêng giao dịch khớp lệnh: Tổ chức trong nước bán ròng 10/18 ngành, giá trị lớn nhất là nhóm Bán lẻ Top bán ròng có MWG, HPG, FPT, MBB, ACB, CTG, PVT, DGC, VNM, BSR. Giá trị mua ròng lớn nhất là nhóm Dịch vụ tài chính. Top mua ròng có STB, VIC, SSI, VCI, VHM, BID, GEX, VND, GAS, VHC.\n\nGiá trị giao dịch thỏa thuận hôm nay đạt 3.649,4 tỷ đồng, tăng +18,7% so với phiên liền trước và đóng góp 8,0% tổng giá trị giao dịch.\n\nHôm nay có giao dịch đáng chú ý ở cổ phiếu OCB, với gần 43,5 triệu đơn vị cổ phiếu tương đương 439,2 tỷ đồng được Tổ chức trong nước bán thỏa thuận cho nhà đầu tư cá nhân.\n\nNgoài ra còn có giao dịch giữa các nhà đầu tư cá nhân ở nhóm cổ phiếu ngành Ngân hàng như VPB, STB, MSB, HDB, VIB.\n\nTỷ trọng phân bổ dòng tiền tăng ở Chứng khoán, Xây dựng, Thực phẩm, Bán lẻ, Thiết bị điện, Phần mềm, Nhựa, cao su và sợi, Sản xuất và phân phối điện, trong khi giảm ở Bất động sản, Ngân hàng, Thép, Hóa chất, Dầu khí, Vận tải thủy, Phân phối xăng dầu và khí đốt.\n\nTính riêng khớp lệnh, tỷ trọng phân bổ dòng tiền tăng ở nhóm vốn hóa vừa VNMID và nhỏ VNSML, trong khi giảm ở nhóm vốn hóa lớn VN30."
   },
   {
     "title": "Khủng hoảng ở Trung Đông đảo lộn những giao dịch được ưa chuộng nhất năm 2026",
@@ -1171,9 +1771,11 @@
     "icon": "📊",
     "lang": "vi",
     "category": "stocks_vietnam",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T14:48:09.687458",
-    "tag": "Thể loại tin tức: Khủng hoảng"
+    "tag": "Thể loại tin tức: Khủng hoảng",
+    "title_vi": "Khủng hoảng ở Trung Đông đảo lộn những giao dịch được ưa chuộng nhất năm 2026",
+    "summary_text": "Khủng hoảng ở Trung Đông đảo lộn những giao dịch được ưa chuộng nhất năm 2026\nCuộc xung đột quân sự giữa Mỹ và Iran đang khiến cho một số giao dịch được ưa chuộng nhất năm nay bị nghi ngờ.\n\nTrong hơn 1 tuần chiến sự, thị trường chứng khoán toàn cầu đã giảm điểm mạnh, đồng USD tăng giá, và các nhà giao dịch đang cắt giảm đặt cược vào việc Cục Dự trữ Liên bang Mỹ (Fed) hạ lãi suất.\n\n“Năm nay, nhà đầu tư vốn dĩ đã định vị danh mục của họ cho sự tăng trưởng. Một cú sốc đình lạm không nằm trong kế hoạch của họ. Bây giờ, nhà đầu tư đang quan sát mọi thứ bằng sự thận trọng và sẽ có nhiều giao dịch bị đảo ngược” - trưởng bộ phận thị trường toàn cầu của ngân hàng ING, ông Chris Turner, nói với hãng tin Reuters.\n\nDưới đây là 5 chủ đề giao dịch được ưa chuộng trong năm nay nhưng đã bị đảo lộn bởi cuộc xung đột ở Trung Đông, theo Reuters:\n\nĐỒNG USD\n\nHồi tháng 2, giới đầu tư ở Mỹ nắm giữ vị thế bán khống USD lớn nhát kể từ năm 2021 - theo dữ liệu từ cơ quan giám sát thị trường nước này. Các dự báo cho rằng Fed sẽ hạ lãi suất trong năm nay khiến cho việc mua USD trở nên kém hấp dẫn.\n\nNhưng ngay sau khi xung đột nổ ra, đồng USD tăng lên mức cao nhất kể từ tháng 11 năm ngoái do nhiều nhà đầu tư coi bạc xanh là tài sản an toàn.\n\n“Đồng USD đã nổi lên là tài sản hưởng lợi nhiều nhất từ cuộc xung đột ở Trung Đông. Nền kinh tế Mỹ có thể sẽ trụ vững hơn trước các cú sốc năng lượng”, nhà phân tích cấp cao Ipek Ozkardeskaya của công ty Swissquote nhận xét.\n\nTheo ông Jean-Francois Robin, trưởng bộ phận nghiên cứu toàn cầu tại ngân hàng đầu tư Natixis CIB, Mỹ hiện là một nước xuất khẩu ròng về năng lượng và nhập khẩu năng lượng chỉ đáp ứng 17% nhu cầu của nước này, mức thấp nhất 40 năm.\n\nTHỊ TRƯỜNG CHỨNG KHOÁN TOÀN CẦU NGOÀI MỸ\n\nĐầu năm 2026, mua cổ phiếu là một giao dịch được ưa chuộng toàn cầu, nhưng xung đột bùng nổ đã khiến cổ phiếu bị bán tháo ở khắp các thị trường.\n\nChỉ số MSCI World của chứng khoán thế giới không gồm Mỹ đã sụt mạnh sau khi Mỹ và Israel tấn công Iran. Chứng khoán Mỹ cũng giảm, nhưng mức giảm ít hơn, phản ánh việc nhà đầu tư tin tưởng vào việc nền kinh tế Mỹ ít phụ thuộc hơn và nhập khẩu năng lượng.\n\n“Cuộc khủng hoảng chưa hoàn toàn phá hủy xu hướng đầu cơ giá lên cổ phiếu trong năm nay, nhưng xu hướng này sẽ tùy thuộc nhiều hơn vào diễn biến giá dầu và lãi suất trong thời gian tới”, chiến lược gia Lale Akoner của công ty eToro nhận xét.\n\nTheo nhà phân tích Ozkardeskaya của Swissquote, cú sốc giá dầu có thể thúc đẩy dòng vốn đầu tư cổ phiếu chảy nhiều hơn vào thị trường các quốc gia giàu tài nguyên dầu lửa và ít phụ thuộc vào năng lượng nhập khẩu. Do đó, sự dịch chuyển trước đó của dòng vốn từ Mỹ sang các thị trường châu Âu và châu Á có thể sẽ chững lại.\n\nCỔ PHIẾU VÀ TIỀN TỆ CÁC NỀN KINH TẾ MỚI NỔI\n\nVào đầu năm, chứng khoán và đồng tiền của các thị trường mới nổi tăng giá mạnh, với mức tăng 15% của thị trường chứng khoán và 1,9% tỷ giá đồng tiền các nước này. Tuy nhiên, hai chỉ số này đã ghi nhận mức giảm tương ứng 7% và 1,5% trong tuần trước. Mức giảm mạnh nhất rơi vào những thị trường đã tăng mạnh nhất trước đó, như thị trường Hàn Quốc.\n\n“Những thị trường giảm mạnh nhất trong tuần trước chính là những thị trường nổi bật trong tháng 1 và tháng 2”, một báo cáo của ngân hàng Goldman Sachs nhấn mạnh.\n\nTheo báo cáo, việc bán cổ phiếu và tiền tệ diễn ra mạnh nhất ở các thị trường chịu tác động lớn nhất từ xung đột ở Trung Đông, như Ai Cập, Các tiểu vương quốc Arab thống nhất (UAE) và Thái Lan, và những thị trường đã tăng vượt trội trong năm ngoái như Hàn Quốc, Brazil và Nam Phi.\n\nTRIỂN VỌNG FED HẠ LÃI SUẤT\n\nCú sốc tăng giá năng lượng đẩy cao mối lo lạm phát và khiến các nhà giao dịch giảm kỳ vọng vào việc Fed hạ lãi suất trong năm nay. Trước khi xung đột nổ ra, thị trường đặt cược khả năng 50% Fed hạ lãi suất trong cuộc họp tháng 6 - cuộc họp đầu tiên Fed có chủ tịch mới. Hiện tại, khả năng này chỉ còn 25%.\n\nNgoài ra, thị trường cũng giảm kỳ vọng vào việc Ngân hàng Trung ương Anh (BOE) hạ lãi suất, đồng thời tính đến khả năng Ngân hàng Trung ương châu Âu (ECB) tăng - thay vì giảm - lãi suất trong năm nay.\n\n“Sự dịch chuyển lớn nhất về kỳ vọng lãi suất đối với các ngân hàng trung ương lớn đang diễn ra đối với những ngân hàng trung ương vốn được dự báo sẽ tiếp tục giảm lãi suất trong năm nay”, Goldman Sachs nêu rõ.\n\nCỔ PHIẾU NGÂN HÀNG\n\nSau khi tăng giá vào đầu năm, cổ phiếu ngân hàng ở Mỹ đã quay đầu giảm giá khi nhà đầu tư đánh giá về tác động kinh tế của cú sốc giá dầu.\n\nGiá năng lượng tăng cao đặt ra rủi ro lạm phát trỗi dậy, đồng nghĩa hoạt động cho vay chậm lại và nhu cầu tín dụng suy yếu. Lãi suất cao thường có lợi cho biên lợi nhuận của các ngân hàng, nhưng lạm phát có thể gây suy giảm hoạt động vay nợ và đầu tư.\n\n“Rủi ro chính cần theo dõi là chênh lệch tín dụng (credit spread) và thanh khoản trên thị trường tín dụng tư nhân. Căng thẳng địa chính trị sẽ trở thành vấn đề nếu khiến cho điều kiện tín dụng trở nên thắt chặt”, chiến lược gia Akoner của eToro nhận xét."
   },
   {
     "title": "Tiền điện tử giữ sắc xanh sau phát biểu của ông Trump",
@@ -1184,9 +1786,11 @@
     "icon": "📊",
     "lang": "vi",
     "category": "stocks_vietnam",
-    "audio_cached": false,
+    "audio_cached": true,
     "added_at": "2026-03-10T14:48:09.687458",
-    "tag": "Thể loại: Chứng khoán<|eot_id|>"
+    "tag": "Thể loại: Chứng khoán<|eot_id|>",
+    "title_vi": "Tiền điện tử giữ sắc xanh sau phát biểu của ông Trump",
+    "summary_text": "Tiền điện tử giữ sắc xanh sau phát biểu của ông Trump\n\nTrong một cuộc phỏng vấn qua điện thoại với CBS News hôm thứ Hai, ông Donald Trump cho rằng cuộc xung đột tại Iran đang tiến gần đến hồi kết. Phát biểu này sau đó nhanh chóng tác động đến tâm lý thị trường, khiến loạt tiền điện tử lớn như Bitcoin và Ether bắt đầu tăng giá.\n\nTuy vậy, trong bài đăng mới nhất trên nền tảng Truth Social sáng nay, ông Trump một lần nữa gia tăng cảnh báo đối với Tehran. Ông viết rằng nếu Iran có bất kỳ hành động nào cản trở dòng chảy dầu mỏ qua eo biển Hormuz, nước này sẽ phải hứng chịu đòn tấn công từ Mỹ “mạnh gấp 20 lần so với những lần trừng phạt trước đây”.\n\nTrước những tín hiệu trái chiều này, ghi nhận lúc 14 giờ 20 phút ngày 10/3, thị trường tiền điện tử vẫn duy trì đà tăng ổn định từ hôm qua. Tổng vốn hóa thị trường ước tính tăng khoảng 3,1% trong 24 giờ qua, đạt khoảng 2,38 nghìn tỷ USD, trong khi khối lượng giao dịch vào khoảng 105 tỷ USD.\n\nDòng tiền vẫn tập trung chủ yếu vào hai đồng tiền điện tử dẫn đầu. Giá Bitcoin tăng khoảng 5%, đang giao dịch quanh mốc 70.300 USD. Tổng vốn hóa thị trường của đồng tiền này hiện đạt khoảng 1,4 nghìn tỷ USD, tăng 4,42% so với ngày trước đó. Khối lượng giao dịch trong 24 giờ đạt khoảng 49,64 tỷ USD, tăng mạnh 24,87%. Giá Ethereum hiện cũng tăng khoảng 4%, dao động trên ngưỡng 2.000 USD.\n\nDữ liệu cho thấy nhiều altcoin khác cũng ghi nhận đà tăng, nhưng mức tăng nhìn chung đều dưới 1%.\n\nDữ liệu dòng vốn của các quỹ ETF cũng ghi nhận tín hiệu tích cực, với dòng tiền ròng đạt 114,8 triệu USD trong ngày 9/3. Tuy nhiên, dòng vốn chủ yếu tập trung vào Bitcoin khi các quỹ liên quan thu hút khoảng 167,1 triệu USD, trong khi các quỹ Ethereum lại bị rút khoảng 52,3 triệu USD.\n\nÔng Augustine Fan, Trưởng bộ phận phân tích tại công ty cung cấp phần mềm giao dịch tiền điện tử SignalPlus, nói với Cointelegraph rằng rất khó để xem những phát biểu này là dấu hiệu chắc chắn cho thấy xung đột sắp kết thúc.\n\n“Rất khó để coi những tuyên bố này là thực tế cuối cùng, đặc biệt khi các thành viên khác trong nội các của ông Trump cho rằng xung đột vẫn chỉ đang ở giai đoạn đầu và các lực lượng quân sự Mỹ vẫn tiếp tục được triển khai trong khu vực”, ông nói.\n\nTheo ông Fan, xung đột khó có thể sớm được giải quyết. Dù vậy, ông cho biết: “Chúng tôi kỳ vọng các đợt tăng giá ngắn hạn vẫn có thể xuất hiện và Bitcoin có thể hoạt động tốt hơn như một kênh lưu trữ giá trị trong giai đoạn này”.\n\nTrong khi đó, ông Andri Fauzan Adziima, trưởng nhóm nghiên cứu tại sàn giao dịch Bitrue, cho rằng nếu tuyên bố của ông Trump về việc chiến tranh sắp kết thúc trở thành hiện thực, thị trường tiền điện tử có thể chứng kiến một đợt tăng mạnh.\n\n“Tôi kỳ vọng sẽ có một đợt phục hồi đáng kể của tiền điện tử, được thúc đẩy bởi giá dầu giảm mạnh, qua đó làm dịu lo ngại về lạm phát và căng thẳng địa chính trị, đồng thời khôi phục khẩu vị rủi ro của nhà đầu tư”, ông nói.\n\nTuy vậy, ông cũng nhấn mạnh thị trường vẫn còn nhiều nghi ngờ trước các tín hiệu trái chiều từ Iran và khả năng bất ổn kéo dài.\n\nTrong khi đó, theo các báo cáo, phía Iran đã phản hồi phát biểu của ông Trump, cho rằng những tuyên bố này là “vô nghĩa” và khẳng định “chính chúng tôi mới là bên quyết định khi nào cuộc chiến kết thúc”."
   },
   {
     "title": "SAP Patches Critical FS-QUO, NetWeaver Vulnerabilities",
@@ -1246,7 +1850,7 @@
     "added_at": "2026-03-10T13:23:16.075761",
     "title_vi": "Lỗ hổng \"LeakyLooker\" mới trong Google Looker Studio có thể cho phép truy vấn SQL của người thuê chéo",
     "summary_text": "Lỗ hổng LeakyLooker mới trong Google Looker Studio có thể cho phép truy vấn SQL xuyên thuê bao\n\nCác nhà nghiên cứu bảo mật đã công bố chín lỗ hổng xuyên thuê bao trong Google Looker Studio có thể cho phép kẻ tấn công chạy các truy vấn SQL tùy ý trên cơ sở dữ liệu của nạn nhân và đánh cắp dữ liệu nhạy cảm trong môi trường Google Cloud của tổ chức.\n\nCác khiếm khuyết này đã được Tenable đặt tên chung là LeakyLooker. Hiện chưa có bằng chứng cho thấy các lỗ hổng đã bị khai thác ngoài thực tế. Sau khi được thông báo có trách nhiệm vào tháng 6 năm 2025, Google đã khắc phục các vấn đề này.\n\nDanh sách các lỗ hổng bảo mật bao gồm:\n\nCác lỗ hổng đã phá vỡ các giả định thiết kế cơ bản, tiết lộ một lớp tấn công mới, và có thể cho phép kẻ tấn công đánh cắp, chèn và xóa dữ liệu trong dịch vụ của nạn nhân và môi trường Google Cloud, nhà nghiên cứu bảo mật Liv Matan cho biết trong báo cáo chia sẻ với The Hacker News.\n\nCác lỗ hổng này đã phơi bày dữ liệu nhạy cảm trên các môi trường Google Cloud Platform (GCP), có thể ảnh hưởng đến bất kỳ tổ chức nào sử dụng Google Sheets, BigQuery, Spanner, PostgreSQL, MySQL, Cloud Storage và hầu như bất kỳ dữ liệu kết nối nào khác của Looker Studio.\n\nKhai thác thành công các lỗ hổng xuyên thuê bao có thể cho phép các tác nhân đe dọa truy cập vào toàn bộ tập dữ liệu và dự án trên các thuê bao đám mây khác nhau.\n\nKẻ tấn công có thể quét các báo cáo Looker Studio công khai hoặc truy cập vào các báo cáo riêng tư sử dụng các kết nối này (ví dụ: BigQuery) và chiếm quyền kiểm soát cơ sở dữ liệu, cho phép chúng chạy các truy vấn SQL tùy ý trên toàn bộ dự án GCP của chủ sở hữu.\n\nNgoài ra, nạn nhân tạo báo cáo ở chế độ công khai hoặc chia sẻ với người nhận cụ thể, và sử dụng nguồn dữ liệu kết nối JDBC như PostgreSQL. Trong kịch bản này, kẻ tấn công có thể tận dụng lỗ hổng logic trong tính năng sao chép báo cáo, cho phép sao chép báo cáo trong khi vẫn giữ lại thông tin đăng nhập của chủ sở hữu ban đầu, cho phép chúng xóa hoặc sửa đổi bảng.\n\nMột hướng tấn công tác động cao khác được công ty an ninh mạng chi tiết liên quan đến đánh cắp dữ liệu chỉ với một cú nhấp chuột, trong đó chia sẻ một báo cáo được tạo đặc biệt buộc trình duyệt của nạn nhân thực thi mã độc hại liên hệ với dự án do kẻ tấn công kiểm soát để tái tạo toàn bộ cơ sở dữ liệu từ nhật ký.\n\nCác lỗ hổng đã phá vỡ cam kết cơ bản rằng 'Người xem' không bao giờ có thể kiểm soát dữ liệu họ đang xem, Matan cho biết, đồng thời cho biết thêm chúng có thể cho phép kẻ tấn công đánh cắp hoặc sửa đổi dữ liệu trên các dịch vụ của Google như BigQuery và Google Sheets.",
-    "tag": "Thể loại: Lỗ hổng<|eot_id|>"
+    "tag": "Thể loại tin tức: Lỗ hổng"
   },
   {
     "title": "OpenAI Rolls Out Codex Security Vulnerability Scanner",
@@ -1982,7 +2586,7 @@
     "added_at": "2026-03-10T10:07:35.110420",
     "title_vi": "Chiến lược mạng của Nhà Trắng ưu tiên tội phạm",
     "summary_text": "❌ Lỗi truy cập trang: Article `download()` failed with 403 Client Error:",
-    "tag": "Thể loại:<|eot_id|>"
+    "tag": "Thể loại: Lỗ hổng<|eot_id|>"
   },
   {
     "title": "'InstallFix' Attacks Spread Fake Claude Code Sites",
@@ -1996,7 +2600,7 @@
     "audio_cached": true,
     "added_at": "2026-03-10T10:07:35.110420",
     "title_vi": "'InstallFix' Tấn công lây lan các trang web mã Claude giả",
-    "tag": "Thể loại tin tức này thuộc loại: Kh",
+    "tag": "Thể loại: Lỗ hổng<|eot_id|>",
     "summary_text": "Tiêu đề: Tấn Công 'InstallFix' Lây Lan Trang Web Mã Claude Giả  \n\nNội dung:  \nMột biến thể mới của phương pháp ClickFix đang tận dụng sự phổ biến của công cụ mã hóa AI Claude Code và các công cụ lập trình AI khác. Nhóm nghiên cứu của Push Security phát hiện chiến dịch tấn công này kết hợp quảng cáo độc hại (malvertising) với kỹ thuật xã hội (social engineering).  \n\nNhóm nghiên cứu phát hiện các trang cài đặt giả mạo của Claude Code chỉ lan truyền qua liên kết tài trợ của Google cho các từ khóa như Claude Code, Cài đặt Claude Code và CLI của Claude Code. Các trang cài đặt giả mạo này gần như không thể phân biệt với trang thực của Anthropic, theoJacques Louw, Giám đốc sản phẩm (CPO) và thành lập viên của Push Security, trong bài đăng blog vào thứ Bảy.  \n\nTuy nhiên, khi người dùng sao chép và dán lệnh cài đặt từ các trang giả vào hệ thống, họ vô tình triển khai virus Amatera Stealer, có thể đánh cắp thông tin đăng nhập của nhà phát triển và cho phép kẻ xâm nhập truy cập môi trường phát triển doanh nghiệp.  \n\nMặc dù phương pháp này không đặc biệt mới, Push Security vẫn đặt tên cho nó là InstallFix. Louw giải thích rằng kẻ tấn công đã nhận ra xu hướng ngày càng phổ biến của người dùng chỉ sao chép-gán dán lệnh vào hệ thống và chạy chúng. Những cuộc tấn công này khẳng định một thói quen an toàn không được, trở thành thói quen phổ biến hiện nay.  \n\nĐâu là thời điểm không quá lâu trước đây khi dán lệnh từ trang web vào terminal chỉ là điều bạn thử một lần trước khi một kỹ sư giàu kinh nghiệm đuổi nó ra khỏi thói quen, Louw viết. Bởi vì bạn đang cho trang web một chèque trắng để chạy bất kỳ lệnh nào trên hệ thống của bạn.  \n\nClickFix là kỹ thuật xã hội phổ biến thường sử dụng thông báo lỗi để lừa người dùng chạy lệnh độc hại. Thông thường, thông báo giả mạo cập nhật trình duyệt, nhưng các biến thể khác đã sử dụng từ Blue Screen of Death giả mạo đến lỗi âm thanh cho cuộc phỏng vấn việc làm qua video.  \n\nTuy nhiên, InstallFix có thể là biến thể phù hợp nhất vì nó tập trung vào nhóm người dùng quen với việc sao chép-gán dán lệnh. Như nhiều trợ lý mã hóa AI, Louw giải thích, phương pháp cài đặt được khuyến nghị của Anthropic cho Claude Code là dán và chạy lệnh một dòng trong terminal. Không chỉ công cụ mã hóa AI, Louw ghi nhận hàng trăm công cụ lập trình và CLI phổ biến cũng có hướng dẫn cài đặt giống nhau.  \n\nNạn nhân biết rằng thói quen này trở thành tiêu chuẩn và đang bị tận dụng.  \n\nToàn bộ mô hình bảo mật chỉ dựa trên 'tin tưởng vào tên miền'. Với việc áp dụng AI khuyến khích người dùng không chuyên làm việc với các công cụ chỉ dành cho nhà phát triển, nhóm người dùng rộng lớn nhưng ít ý thức về an toàn này trở thành mục tiêu nguy hiểm, Louw viết.  \n\nTận dụng Claude Code  \n..."
   },
   {

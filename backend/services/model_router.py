@@ -8,6 +8,7 @@ GENERAL_MODEL = os.getenv("MODEL_NAME", "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf"
 ISO_KEYWORDS = [
     "iso 27001", "iso 27002", "iso27001", "iso27002",
     "tcvn 14423", "tcvn14423",
+    "tcvn 11930", "tcvn11930", "cấp độ",
     "annex a", "compliance", "tuân thủ",
     "isms", "gap analysis",
     "điều khoản iso", "biện pháp kiểm soát",

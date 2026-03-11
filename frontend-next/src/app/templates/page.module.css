@@ -1,0 +1,311 @@
+.header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.title {
+    font-size: 1.5rem;
+    color: #CBD5E1;
+    margin-bottom: 0.75rem;
+    font-weight: 700;
+}
+
+.subtitle {
+    color: #64748B;
+    font-size: 0.9rem;
+    max-width: 700px;
+    margin: 0 auto 1.25rem;
+    line-height: 1.6;
+}
+
+.headerActions {
+    display: flex;
+    justify-content: center;
+}
+
+.backBtn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    color: #64748B;
+    border-radius: 7px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: all 0.2s;
+}
+
+.backBtn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #94A3B8;
+}
+
+/* Filter Bar */
+.filterBar {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 2rem;
+}
+
+.filterBtn {
+    padding: 7px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    background: transparent;
+    color: #64748B;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.filterBtn:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: #94A3B8;
+}
+
+.filterActive {
+    background: rgba(51, 109, 198, 0.1);
+    color: #7EB8F0;
+    border-color: rgba(51, 109, 198, 0.2);
+}
+
+/* Template Grid */
+.templateGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 1.25rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.templateCard {
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.25s ease;
+}
+
+.templateCard:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.cardHeader {
+    padding: 1.25rem 1.25rem 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.cardTitle {
+    font-size: 1.05rem;
+    color: #CBD5E1;
+    margin: 0 0 6px;
+    font-weight: 600;
+}
+
+.stdBadge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.stdIso {
+    background: rgba(51, 109, 198, 0.1);
+    color: #7EB8F0;
+    border: 1px solid rgba(51, 109, 198, 0.15);
+}
+
+.stdTcvn {
+    background: rgba(16, 150, 110, 0.1);
+    color: #34D399;
+    border: 1px solid rgba(16, 150, 110, 0.15);
+}
+
+.industryTag {
+    background: rgba(255, 255, 255, 0.04);
+    color: #64748B;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.cardBody {
+    padding: 0.75rem 1.25rem 1rem;
+    flex: 1;
+}
+
+.cardDesc {
+    color: #64748B;
+    font-size: 0.84rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+/* Stats row */
+.statsRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.statBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 4px;
+    background: rgba(126, 184, 240, 0.04);
+    border: 1px solid rgba(126, 184, 240, 0.08);
+    border-radius: 8px;
+}
+
+.statNum {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #CBD5E1;
+}
+
+.statLabel {
+    font-size: 0.68rem;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Meta grid */
+.metaGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 12px;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.metaItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+    padding: 7px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.025);
+}
+
+.metaItem:last-child {
+    border-bottom: none;
+}
+
+.metaLabel {
+    color: #64748B;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.metaValue {
+    color: #94A3B8;
+    font-size: 0.76rem;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 60%;
+}
+
+/* Compliance in card */
+.complianceSection {
+    background: rgba(0, 0, 0, 0.12);
+    padding: 10px 12px;
+    border-radius: 8px;
+}
+
+.complianceHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.complianceTitle {
+    font-size: 0.74rem;
+    color: #475569;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.complianceValue {
+    font-size: 0.78rem;
+    color: #94A3B8;
+    font-weight: 500;
+}
+
+.complianceTrack {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.complianceFill {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(16, 150, 110, 0.5), rgba(52, 211, 153, 0.4));
+    border-radius: 2px;
+    transition: width 0.3s;
+}
+
+.cardFooter {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.useBtn {
+    width: 100%;
+    padding: 10px;
+    background: rgba(16, 150, 110, 0.15);
+    color: #34D399;
+    border: 1px solid rgba(16, 150, 110, 0.2);
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.useBtn:hover {
+    background: rgba(16, 150, 110, 0.25);
+    border-color: rgba(16, 150, 110, 0.35);
+}
+
+@media (max-width: 640px) {
+    .templateGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .filterBar {
+        flex-wrap: wrap;
+    }
+
+    .title {
+        font-size: 1.25rem;
+    }
+}

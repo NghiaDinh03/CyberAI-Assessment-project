@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from services.chat_service import ChatService
@@ -12,7 +12,9 @@ router = APIRouter()
 ASSESSMENTS_DIR = os.getenv("DATA_PATH", "./data") + "/assessments"
 os.makedirs(ASSESSMENTS_DIR, exist_ok=True)
 
+
 class SystemInfo(BaseModel):
+    assessment_standard: str = "iso27001"
     org_name: str = ""
     org_size: str = ""
     industry: str = ""
@@ -24,17 +26,19 @@ class SystemInfo(BaseModel):
     backup_solution: str = ""
     siem: str = ""
     network_diagram: str = ""
-    existing_policies: List[str] = []
+    implemented_controls: List[str] = []
     incidents_12m: int = 0
     employees: int = 0
     it_staff: int = 0
     iso_status: str = ""
     notes: str = ""
 
+
 def save_assessment(assessment_id: str, data: dict):
     filepath = os.path.join(ASSESSMENTS_DIR, f"{assessment_id}.json")
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
 
 def load_assessment(assessment_id: str) -> Optional[dict]:
     filepath = os.path.join(ASSESSMENTS_DIR, f"{assessment_id}.json")
@@ -42,6 +46,7 @@ def load_assessment(assessment_id: str) -> Optional[dict]:
         with open(filepath, "r", encoding="utf-8") as f:
             return json.load(f)
     return None
+
 
 def list_assessments() -> List[dict]:
     results = []
@@ -54,42 +59,45 @@ def list_assessments() -> List[dict]:
                     results.append({
                         "id": data.get("id"),
                         "status": data.get("status"),
+                        "standard": data.get("system_info", {}).get("assessment_standard", "iso27001"),
                         "org_name": data.get("system_info", {}).get("organization", {}).get("name", "Unknown"),
                         "created_at": data.get("created_at"),
                         "updated_at": data.get("updated_at")
                     })
-            except:
+            except Exception:
                 pass
     return sorted(results, key=lambda x: x.get("created_at", ""), reverse=True)
 
+
 def process_assessment_bg(assessment_id: str, system_data: dict):
-    # Load current to update status
     data = load_assessment(assessment_id)
     if not data:
         return
-    
+
     data["status"] = "processing"
     data["updated_at"] = datetime.now(timezone.utc).isoformat()
     save_assessment(assessment_id, data)
-    
+
     try:
         result = ChatService.assess_system(system_data)
-        
+
         data["status"] = "completed"
         data["result"] = result
         data["updated_at"] = datetime.now(timezone.utc).isoformat()
         save_assessment(assessment_id, data)
-        
+
     except Exception as e:
         data["status"] = "failed"
         data["error"] = str(e)
         data["updated_at"] = datetime.now(timezone.utc).isoformat()
         save_assessment(assessment_id, data)
 
+
 @router.post("/iso27001/assess")
 async def assess(data: SystemInfo, background_tasks: BackgroundTasks):
     assessment_id = str(uuid.uuid4())
     system_data = {
+        "assessment_standard": data.assessment_standard,
         "organization": {
             "name": data.org_name,
             "size": data.org_size,
@@ -109,7 +117,7 @@ async def assess(data: SystemInfo, background_tasks: BackgroundTasks):
         },
         "compliance": {
             "iso_status": data.iso_status or "Chưa triển khai",
-            "existing_policies": data.existing_policies or ["Không có"],
+            "implemented_controls": data.implemented_controls or [],
             "incidents_12m": data.incidents_12m
         },
         "notes": data.notes
@@ -117,20 +125,22 @@ async def assess(data: SystemInfo, background_tasks: BackgroundTasks):
 
     assessment_record = {
         "id": assessment_id,
-        "status": "pending", # pending, processing, completed, failed
+        "status": "pending",
         "system_info": system_data,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
-    
+
     save_assessment(assessment_id, assessment_record)
     background_tasks.add_task(process_assessment_bg, assessment_id, system_data)
-    
+
     return {"status": "accepted", "id": assessment_id, "message": "Assessment task started in background"}
+
 
 @router.get("/iso27001/assessments")
 async def get_all_assessments():
     return list_assessments()
+
 
 @router.get("/iso27001/assessments/{assessment_id}")
 async def get_assessment(assessment_id: str):
@@ -138,6 +148,7 @@ async def get_assessment(assessment_id: str):
     if not data:
         return {"error": "Assessment not found", "status": "not_found"}
     return data
+
 
 @router.delete("/iso27001/assessments/{assessment_id}")
 async def delete_assessment(assessment_id: str):
@@ -147,14 +158,16 @@ async def delete_assessment(assessment_id: str):
             os.remove(filepath)
             return {"status": "success", "message": "Assessment deleted successfully"}
         except Exception as e:
-            return {"status": "error", "message": f"Failed to delete file: {str(e)}"}
+            return {"status": "error", "message": f"Failed to delete: {str(e)}"}
     return {"status": "not_found", "message": "Assessment not found"}
+
 
 @router.post("/iso27001/reindex")
 async def reindex():
     vs = ChatService.get_vector_store()
     result = vs.index_documents()
     return result
+
 
 @router.get("/iso27001/chromadb/stats")
 async def chromadb_stats():
@@ -192,6 +205,7 @@ async def chromadb_stats():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+
 @router.post("/iso27001/chromadb/search")
 async def chromadb_search(query: dict):
     try:
@@ -204,4 +218,3 @@ async def chromadb_search(query: dict):
         return {"status": "ok", "query": q, "results": results}
     except Exception as e:
         return {"status": "error", "message": str(e)}
-

@@ -10,6 +10,7 @@ const NAV_ITEMS = [
     { href: '/chatbot', label: 'AI Chat', icon: '💬' },
     { href: '/analytics', label: 'Analytics', icon: '📊' },
     { href: '/form-iso', label: 'Form ISO', icon: '📋' },
+    { href: '/templates', label: 'Kho Mẫu', icon: '📂' },
     { href: '/news', label: 'Tin tức', icon: '📰' }
 ]
 

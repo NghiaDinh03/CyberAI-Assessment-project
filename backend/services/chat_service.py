@@ -1,4 +1,4 @@
-﻿import requests
+import requests
 import os
 import re
 import json
@@ -14,6 +14,10 @@ class ChatService:
     MODEL_NAME = os.getenv("MODEL_NAME", "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf")
     SECURITY_MODEL = os.getenv("SECURITY_MODEL_NAME", "SecurityLLM-7B-Q4_K_M.gguf")
     MAX_TOKENS = int(os.getenv("MAX_TOKENS", "-1"))
+
+    CLOUD_LLM_URL = os.getenv("CLOUD_LLM_API_URL", "")
+    CLOUD_MODEL = os.getenv("CLOUD_MODEL_NAME", "meta-llama/llama-3.1-8b-instruct:free")
+    OPENROUTER_KEYS = os.getenv("OPENROUTER_API_KEYS", "")
 
     SPECIAL_TOKENS = re.compile(
         r'<\|eot_id\|>|<\|start_header_id\|>|<\|end_header_id\|>|'
@@ -38,8 +42,51 @@ class ChatService:
         return cleaned.strip()
 
     @staticmethod
+    def _get_cloud_api_key():
+        keys = ChatService.OPENROUTER_KEYS
+        if not keys:
+            return None
+        key_list = [k.strip() for k in keys.split(",") if k.strip()]
+        return key_list[0] if key_list else None
+
+    @staticmethod
+    def _call_cloud_model(model: str, messages: list, temperature: float = 0.7) -> Dict[str, Any]:
+        api_key = ChatService._get_cloud_api_key()
+        if not api_key or not ChatService.CLOUD_LLM_URL:
+            raise Exception("Cloud LLM not configured")
+
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "stream": False
+        }
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        response = requests.post(
+            f"{ChatService.CLOUD_LLM_URL}/chat/completions",
+            json=payload,
+            headers=headers,
+            timeout=120
+        )
+
+        if response.status_code == 200:
+            data = response.json()
+            content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+            return {
+                "content": ChatService.clean_response(content) if content else "",
+                "usage": data.get("usage", {})
+            }
+        else:
+            raise Exception(f"Cloud LLM error ({response.status_code}): {response.text[:200]}")
+
+    @staticmethod
     def _call_model(model: str, messages: list, temperature: float = 0.7) -> Dict[str, Any]:
-        # Tránh xung đột tài nguyên: Nếu API News đang chiếm dụng LocalAI, từ chối Chat Request ngay
+        # Block if news background worker is using LocalAI
         try:
             from services.news_service import get_ai_status
             ai_status = get_ai_status()
@@ -76,6 +123,18 @@ class ChatService:
             }
         else:
             raise Exception(f"LocalAI error ({response.status_code}): {response.text[:200]}")
+
+    @staticmethod
+    def _call_best_model(model: str, messages: list, temperature: float = 0.7) -> Dict[str, Any]:
+        """Try cloud first, fallback to local."""
+        if ChatService.CLOUD_LLM_URL and ChatService._get_cloud_api_key():
+            try:
+                return ChatService._call_cloud_model(
+                    ChatService.CLOUD_MODEL, messages, temperature
+                )
+            except Exception:
+                pass
+        return ChatService._call_model(model, messages, temperature)
 
     @staticmethod
     def _build_messages(message: str, routing: dict, context: str = "", search_context: str = ""):
@@ -152,7 +211,7 @@ class ChatService:
                     web_sources = [{"title": r["title"], "url": r["url"]} for r in search_results]
 
             messages = ChatService._build_messages(message, routing, context, search_context)
-            result = ChatService._call_model(model_name, messages)
+            result = ChatService._call_best_model(model_name, messages)
 
             return {
                 "response": result["content"] or "Model không trả về response. Vui lòng thử lại.",
@@ -197,7 +256,7 @@ class ChatService:
     @staticmethod
     def generate_response_stream(message: str, session_id: str = "default") -> Generator:
         try:
-            # Kiểm tra tài nguyên hệ thống trước (cùng logic với non-stream)
+            # Block if AI is busy with background tasks
             try:
                 from services.news_service import get_ai_status
                 ai_status = get_ai_status()
@@ -219,7 +278,7 @@ class ChatService:
                     return
             except ImportError:
                 pass
-                
+
             yield {"step": "routing", "message": "Đang phân tích câu hỏi..."}
 
             routing = route_model(message)
@@ -251,7 +310,7 @@ class ChatService:
             yield {"step": "thinking", "message": "🤖 Đang tạo câu trả lời..."}
 
             messages = ChatService._build_messages(message, routing, context, search_context)
-            result = ChatService._call_model(model_name, messages)
+            result = ChatService._call_best_model(model_name, messages)
 
             yield {
                 "step": "done",
@@ -287,57 +346,87 @@ class ChatService:
     def assess_system(system_data: Dict[str, Any]) -> Dict[str, Any]:
         vs = ChatService.get_vector_store()
 
-        search_query = "A.5 Tổ chức nội bộ chính sách, A.6 Nhân sự đào tạo, A.7 Vật lý hệ thống camera quản lý, A.8 Công nghệ mạng firewall mã hóa backup"
+        standard = system_data.get("assessment_standard", "iso27001")
+        search_query = "A.5 Tổ chức, A.6 Nhân sự, A.7 Vật lý, A.8 Công nghệ"
+        if standard == "tcvn11930":
+            search_query = "TCVN 11930 hệ thống thông tin cấp độ bảo đảm an toàn"
+        elif standard == "nd13":
+            search_query = "Nghị định 13 bảo vệ dữ liệu cá nhân"
+
         context_results = vs.search(search_query, top_k=6)
         context = "\n---\n".join([r["text"] for r in context_results])
 
-        system_info = ""
+        # Calculate compliance score
+        implemented = system_data.get("compliance", {}).get("implemented_controls", [])
+        score = len(implemented)
+        max_score = 93
+        std_name = "ISO 27001:2022"
+
+        if standard == "tcvn11930":
+            max_score = 34
+            std_name = "TCVN 11930:2017 (Yêu cầu kỹ thuật theo 5 cấp độ)"
+
+        percentage = round((score / max_score) * 100, 1)
+
+        # Build system info text for LLM
+        system_info_txt = f"Tiêu chuẩn đánh giá: {std_name}\n"
+        system_info_txt += f"Mức độ tuân thủ: {score}/{max_score} Controls đạt yêu cầu ({percentage}%).\n"
+        system_info_txt += f"Các Controls đã đạt: {', '.join(implemented)}\n\n"
+        system_info_txt += "CHI TIẾT HẠ TẦNG HỆ THỐNG:\n"
+
         for key, value in system_data.items():
-            system_info += f"### {key.upper()}\n"
+            if key in ["compliance", "assessment_standard", "implemented_controls"]:
+                continue
             if isinstance(value, dict):
                 for k, v in value.items():
-                    system_info += f"- {k}: {v}\n"
+                    system_info_txt += f"- {k}: {v}\n"
             elif isinstance(value, list):
-                system_info += f"- {key}: {', '.join(str(v) for v in value)}\n"
+                system_info_txt += f"- {key}: {', '.join(str(v) for v in value)}\n"
             else:
-                system_info += f"- {key}: {value}\n"
+                system_info_txt += f"- {key}: {value}\n"
 
-        messages = [
-            {
-                "role": "system",
-                "content": (
-                    "Bạn là chuyên gia Auditor ISO 27001:2022. Đánh giá TỔNG THỂ hệ thống.\n"
-                    "Trả lời bằng tiếng Việt chuyên nghiệp, theo format sau:\n\n"
-                    "1. ĐIỂM TỔNG THỂ: [số từ 0-100] (Xếp hạng A/B/C/D/F)\n"
-                    "2. ĐÁNH GIÁ CHUNG: [Tuân thủ xuất sắc / Đạt yêu cầu cơ bản / Còn nhiều lỗ hổng]\n"
-                    "3. PHÂN TÍCH THEO NHÓM:\n"
-                    "   - Tổ chức (A.5): [Phát hiện & Nhận xét]\n"
-                    "   - Nhân sự (A.6): [Phát hiện & Nhận xét]\n"
-                    "   - Vật lý (A.7): [Phát hiện & Nhận xét]\n"
-                    "   - Công nghệ (A.8): [Phát hiện & Nhận xét]\n"
-                    "4. KHUYẾN NGHỊ ƯU TIÊN: [Danh sách ít nhất 3 hành động khắc phục cấp thiết nhất theo chuẩn ISO]"
-                )
-            },
-            {
-                "role": "user",
-                "content": (
-                    f"Tiêu chuẩn ISO tham chiếu:\n{context}\n\n"
-                    f"Thông tin hệ thống cần đánh giá:\n{system_info}"
-                )
-            }
+        # Phase 1: Security analysis
+        security_prompt = f"""
+Bạn là chuyên gia Auditor về {std_name}. Hệ thống đang chấm điểm sơ bộ đạt {percentage}% tuân thủ ({score}/{max_score} Controls).
+Dựa vào các Controls ĐÃ ĐẠT và THÔNG TIN HỆ THỐNG được cung cấp, hãy chỉ ra những RỦI RO, lỗ hổng (GAPs) họ ĐANG GẶP PHẢI.
+Nếu là TCVN 11930, hãy đánh giá họ đang đạt cấp độ mấy trong 5 cấp độ kỹ thuật và chỉ ra những điểm còn thiếu để lên cấp độ cao hơn.
+Chỉ trả về danh sách phát hiện kỹ thuật thô.
+"""
+        messages_phase_1 = [
+            {"role": "system", "content": security_prompt},
+            {"role": "user", "content": f"Dữ liệu tài liệu {std_name}:\n{context}\n\nBiên bản khảo sát hệ thống:\n{system_info_txt}"}
         ]
 
         security_model = os.getenv("SECURITY_MODEL_NAME", ChatService.MODEL_NAME)
-        
+
         try:
-            result = ChatService._call_model(security_model, messages, temperature=0.3)
-            report_text = result["content"]
-            
+            # Phase 1: Run security analysis
+            result_phase_1 = ChatService._call_best_model(security_model, messages_phase_1, temperature=0.3)
+            raw_analysis = result_phase_1.get("content", "")
+
+            # Phase 2: Format report
+            formatting_prompt = f"""
+Bạn là chuyên gia trình bày Báo cáo Đánh giá ATTT chuyên nghiệp. Dưới đây là phân tích kỹ thuật thô từ Security Auditor.
+Nhiệm vụ của bạn là trình bày lại Báo cáo này thật chuyên nghiệp bằng định dạng Markdown tiếng Việt, bao gồm các mục:
+1. ĐÁNH GIÁ TỔNG QUAN: (Tóm tắt mức tuân thủ {percentage}% và tình trạng hiện tại)
+2. PHÂN TÍCH LỖ HỔNG (GAP ANALYSIS): (Dàn ý rõ ràng rủi ro do thiết kế kiến trúc và thiếu controls)
+3. KHUYẾN NGHỊ ƯU TIÊN (ACTION PLAN): (Đề xuất thực tế để vá lỗ hổng)
+
+Dữ liệu thô từ Security Auditor:
+{raw_analysis}
+            """
+
+            general_model = os.getenv("MODEL_NAME", ChatService.MODEL_NAME)
+            messages_phase_2 = [{"role": "user", "content": formatting_prompt}]
+
+            result_phase_2 = ChatService._call_best_model(general_model, messages_phase_2, temperature=0.5)
+            report_text = result_phase_2.get("content", "")
+
             return {
                 "report": report_text,
                 "details": [],
                 "model_used": {
-                    "analysis_and_summary": security_model
+                    "analysis_and_summary": f"Phase 1: {security_model} -> Phase 2: {general_model}"
                 }
             }
         except Exception as e:
@@ -359,9 +448,11 @@ class ChatService:
                 return {
                     "status": "healthy",
                     "localai_url": ChatService.LOCALAI_URL,
+                    "cloud_url": ChatService.CLOUD_LLM_URL or "not configured",
                     "models": {
                         "general": ChatService.MODEL_NAME,
-                        "security": ChatService.SECURITY_MODEL
+                        "security": ChatService.SECURITY_MODEL,
+                        "cloud": ChatService.CLOUD_MODEL
                     }
                 }
             else:

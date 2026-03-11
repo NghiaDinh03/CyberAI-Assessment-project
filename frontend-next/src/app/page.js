@@ -5,9 +5,11 @@ import SystemStats from '@/components/SystemStats'
 import styles from './page.module.css'
 
 const FEATURES = [
-    { icon: '💬', title: 'AI Chat', desc: 'Trợ lý AI tra cứu ISO 27001 và TCVN 14423', tag: 'Streaming', color: '#3B82F6', href: '/chatbot' },
-    { icon: '📋', title: 'ISO Assessment', desc: 'Form đánh giá tuân thủ Annex A', tag: 'Auto Report', color: '#8B5CF6', href: '/form-iso' },
+    { icon: '💬', title: 'AI Chat', desc: 'Trợ lý AI tra cứu ISO 27001 và TCVN 11930', tag: 'Streaming', color: '#3B82F6', href: '/chatbot' },
+    { icon: '📋', title: 'Đánh giá ATTT', desc: 'Form đánh giá đa tiêu chuẩn với RAG Auditor', tag: 'Multi-LLM', color: '#8B5CF6', href: '/form-iso' },
+    { icon: '📂', title: 'Kho Mẫu Thực tế', desc: 'Templates hệ thống mạng thực tế để trải nghiệm', tag: 'Templates', color: '#10B981', href: '/templates' },
     { icon: '📊', title: 'Analytics', desc: 'Giám sát hiệu năng và trạng thái dịch vụ', tag: 'Real-time', color: '#06B6D4', href: '/analytics' },
+    { icon: '📰', title: 'Tin tức ATTT', desc: 'Tổng hợp tin tức an toàn thông tin', tag: 'AI Summary', color: '#F59E0B', href: '/news' },
 ]
 
 export default function HomePage() {
@@ -16,8 +18,8 @@ export default function HomePage() {
             <div className={styles.hero}>
                 <h1 className={styles.heroTitle}>CyberAI Assessment Platform</h1>
                 <p className={styles.heroSub}>
-                    Nền tảng AI đánh giá tuân thủ <strong>ISO 27001:2022</strong> và <strong>TCVN 14423</strong>.
-                    Tích hợp <strong>VinAI Translate</strong> + <strong>Llama 3.1 8B</strong>.
+                    Nền tảng AI đánh giá tuân thủ <strong>ISO 27001:2022</strong> và <strong>TCVN 11930:2017</strong>.
+                    Tích hợp <strong>Multi-LLM Pipeline</strong> + <strong>RAG Semantic Search</strong>.
                 </p>
             </div>
 

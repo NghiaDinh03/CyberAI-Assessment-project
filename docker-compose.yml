@@ -17,6 +17,8 @@ services:
       - GEMINI_API_KEYS=${GEMINI_API_KEYS}
       - HF_HOME=/data/models/huggingface
       - OPENROUTER_API_KEYS=${OPENROUTER_API_KEYS}
+      - CLOUD_LLM_API_URL=${CLOUD_LLM_API_URL:-https://openrouter.ai/api/v1}
+      - CLOUD_MODEL_NAME=${CLOUD_MODEL_NAME:-meta-llama/llama-3.1-8b-instruct:free}
       - LLM_API_URL=http://phobert-localai:8080/v1
     networks:
       - phobert-network

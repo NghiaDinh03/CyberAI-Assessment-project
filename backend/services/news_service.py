@@ -68,7 +68,7 @@ class NewsService:
             now = datetime.now()
             for a in articles:
                 url = a["url"]
-                # Đảm bảo bài báo có title_vi trước khi lưu nếu có trong cache
+                # Ensure title_vi is set from translation cache before saving
                 if a.get("lang") == "en" and not a.get("title_vi"):
                     from services.translation_service import TranslationService
                     cache = TranslationService._load_cache(a.get("category", "cybersecurity"))
@@ -85,7 +85,7 @@ class NewsService:
                     for key in ["title_vi", "tag", "audio_cached", "summary_text", "category", "lang"]:
                         if key in a:
                             curr[key] = a[key]
-                        # Fallback title_vi từ cache nếu curr chưa có
+                        # Fallback: get title_vi from cache if missing
                         if key == "title_vi" and not curr.get("title_vi") and a.get("lang") == "en":
                              from services.translation_service import TranslationService
                              cache = TranslationService._load_cache(a.get("category", "cybersecurity"))
@@ -226,7 +226,7 @@ class NewsService:
 
     @staticmethod
     def _translation_worker():
-        """Worker xử lý ưu tiên việc dịch Title bằng VinAI (nhẹ và nhanh)"""
+        """Worker for VinAI title translation (lightweight, fast)"""
         while True:
             try:
                 task = _translation_queue.get()
@@ -241,7 +241,7 @@ class NewsService:
                 if en_titles:
                     TranslationService.translate_batch(en_titles, category)
                 
-                # Cập nhật title_vi vào list articles ngay sau khi dịch
+                # Apply translated titles immediately
                 NewsService._apply_translations(articles, category)
                 NewsService._update_history(articles)
                 _translation_queue_cats.discard(category)
@@ -255,7 +255,7 @@ class NewsService:
 
     @staticmethod
     def _llama_worker():
-        """Worker xử lý tuần tự Tagging & Summarization bằng LocalAI (tránh quá tải)"""
+        """Worker for sequential LLM tagging & summarization (CPU-intensive)"""
         while True:
             try:
                 task = _llama_queue.get()
@@ -266,18 +266,18 @@ class NewsService:
                 category = task.get("category")
                 articles = task.get("articles")
                 
-                # 1. Cập nhật lại bản dịch mới nhất trước khi xử lý (đề phòng translation worker vừa chạy xong)
+                # 1. Refresh translations before processing
                 NewsService._apply_translations(articles, category)
                 
 
-                # 2. Tóm tắt & Voice (Edge-TTS) - Xử lý từng bài, cập nhật Frontend liền
+                # 2. Summarize & Voice (Edge-TTS) - process per article, update frontend immediately
                 from services.summary_service import SummaryService
                 to_process = [a for a in articles if not a.get("audio_cached") and a.get("audio_cached") != "error"][:3]
                 for idx, a in enumerate(to_process):
                     title = a.get("title_vi") or a.get("title")
                     set_ai_status(f"AI tóm tắt & đọc bài ({idx+1}/{len(to_process)}): {title[:40]}...")
                     SummaryService.process_article(a["url"], a.get("lang", "en"), title)
-                    # Lấy lại trạng thái sau khi cập nhật
+                    # Refresh status after processing
                     cached_sum = SummaryService._get_cache(a["url"])
                     if cached_sum:
                         if "error" in cached_sum:
@@ -288,15 +288,15 @@ class NewsService:
                             a["summary_text"] = cached_sum.get("summary_vi", "")
                     NewsService._update_history([a])
                     
-                    # Invalidate API cache ngay để Frontend thấy nút Play liền
+                    # Invalidate API cache so frontend sees Play button immediately
                     keys_to_delete = [k for k in _cache.keys() if k.startswith(f"{category}_")]
                     for k in keys_to_delete:
                         del _cache[k]
                         
                     logger.info(f"Bài {idx+1}/{len(to_process)} xong - đã cập nhật cache")
-                    time.sleep(2)  # Hãm CPU/RAM sau khi xong 1 bài TTS
+                    time.sleep(2)  # Throttle CPU/RAM after each TTS
 
-                # 3. Phân loại tin tức (Llama) - Làm sau khi tóm tắt xong
+                # 3. Tag articles (Llama) - runs after summarization
                 import httpx
                 import os
                 
@@ -342,7 +342,7 @@ class NewsService:
                     except Exception:
                         a["tag"] = "Tin tức"
                     NewsService._update_history([a])
-                    time.sleep(2)  # Hãm CPU sau mỗi lần gọi API tag
+                    time.sleep(2)  # Throttle CPU between tag API calls
                 
                 set_ai_status("Đang rảnh")
                 _llama_queue_cats.discard(category)
@@ -357,7 +357,7 @@ class NewsService:
 
     @staticmethod
     def get_news(category: str, limit: int = 15) -> Dict:
-        # Khởi động worker chung nếu chưa chạy (gọi function module level)
+        # Start background workers if not running
         start_bg_worker()
         
         cache_key = f"{category}_{limit}"
@@ -402,22 +402,22 @@ class NewsService:
                     article["audio_cached"] = False
                     needs_processing = True
             
-            # Cập nhật history sau khi load xong từ RSS
+            # Update history after loading from RSS
             NewsService._update_history(all_articles)
 
             has_untranslated = any(a.get("lang") == "en" and "title_vi" not in a for a in all_articles)
             has_untagged = any("tag" not in a for a in all_articles)
             
-            # Khởi tạo set để theo dõi category đang xử lý nếu chưa có
+            # Init set to track categories being processed
             if not hasattr(NewsService, '_processing_cats'):
                 NewsService._processing_cats = set()
 
-            # Gửi task dịch title sang luồng Translation riêng biệt (nhanh)
+            # Queue translation task to VinAI worker (fast)
             if has_untranslated and category not in _translation_queue_cats:
                 _translation_queue_cats.add(category)
                 _translation_queue.put({"category": category, "articles": all_articles})
             
-            # Gửi task xử lý Llama sang luồng Llama (chậm)
+            # Queue LLM task to Llama worker (slow)
             if (has_untagged or needs_processing) and category not in _llama_queue_cats:
                 _llama_queue_cats.add(category)
                 _llama_queue.put({"category": category, "articles": all_articles})
@@ -438,7 +438,7 @@ class NewsService:
         results = []
         query_lower = query.lower()
 
-        # Bước 1: Tìm trong RSS cục bộ trước
+        # Step 1: Search local RSS cache first
         for category in RSS_SOURCES:
             news = NewsService.get_news(category, limit=30)
             for article in news.get("articles", []):
@@ -453,7 +453,7 @@ class NewsService:
                     article_copy["category"] = category
                     results.append(article_copy)
 
-        # Bước 2: Bổ sung từ DuckDuckGo nếu kết quả còn mỏng
+        # Step 2: Supplement from DuckDuckGo if results are thin
         remaining_limit = limit - len(results)
         if remaining_limit > 0:
             try:
@@ -508,7 +508,7 @@ class NewsService:
 def _auto_translate_worker():
     time.sleep(30)
     while True:
-        # Ưu tiên An ninh mạng và Chứng khoán VN trước
+        # Process cybersecurity and Vietnam stocks first
         for cat in ("cybersecurity", "stocks_vietnam", "stocks_international"):
             try:
                 news = NewsService.get_news(cat, limit=20)
@@ -518,18 +518,18 @@ def _auto_translate_worker():
                 logger.warning(f"Auto-translate [{cat}] lỗi: {e}")
             time.sleep(10)
             
-        # Dọn dẹp cache thừa sau 1 vòng lặp (2h)
+        # Clean up stale cache after each cycle
         try:
             from services.summary_service import CACHE_DIR, AUDIO_DIR, SummaryService
             import os
-            # Gom tất cả url đang hiển thị ở 3 categories (top 20)
+            # Collect all URLs currently displayed in top 20 per category
             active_hashes = set()
             for cat in ("cybersecurity", "stocks_international", "stocks_vietnam"):
                 recent = NewsService.get_news(cat, limit=20)
                 for a in recent.get("articles", []):
                     active_hashes.add(SummaryService._generate_hash(a["url"]))
             
-            # Quét và xoá file json, mp3 không nằm trong active_hashes
+            # Delete json/mp3 files not in active_hashes
             if os.path.exists(CACHE_DIR):
                 for f in os.listdir(CACHE_DIR):
                     if f.endswith(".json"):
@@ -555,7 +555,7 @@ def start_bg_worker():
     if not _bg_started:
         _bg_started = True
         
-        # Worker Dịch thuật (VinAI) - Mượt, chạy độc lập
+        # Translation worker (VinAI) - lightweight, runs independently
         t_trans = threading.Thread(target=NewsService._translation_worker, daemon=True)
         t_trans.start()
         
@@ -563,7 +563,7 @@ def start_bg_worker():
         t_llama = threading.Thread(target=NewsService._llama_worker, daemon=True)
         t_llama.start()
         
-        # Worker tự động quét RSS định kỳ
+        # Auto RSS scan worker (periodic)
         t_cron = threading.Thread(target=_auto_translate_worker, daemon=True)
         t_cron.start()
         logger.info("Parallel Workers (Translation & Llama) & Cron started")

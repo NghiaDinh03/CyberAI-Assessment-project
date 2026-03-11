@@ -1,5 +1,5 @@
 {
-  "timestamp": 1773179541.4856799,
+  "timestamp": 1773195115.318092,
   "translations": {
     "8aa6f4be328a": "Mối đe doạ Actors Mass-Scan Salesforce Experience Cloud thông qua Công cụ AuraInspector đã sửa đổi",
     "6befd798f0b6": "Cờ CISA SolarWinds, Ivanti và Không gian làm việc Một lỗ hổng được khai thác tích cực",
@@ -46,6 +46,8 @@
     "cc2f8961ca70": "Adobe Patches 80 lỗ hổng trên tám sản phẩm",
     "0c13338683cb": "Microsoft Patches 83 Lỗ hổng",
     "505e33dba719": "Diễn viên đe doạ Nga Sednit xuất hiện trở lại với bộ công cụ tinh vi",
-    "aafa2652a750": "'Quá cho phép' Lực lượng bán hàng đám mây Configs trong Crosshairs"
+    "aafa2652a750": "'Quá cho phép' Lực lượng bán hàng đám mây Configs trong Crosshairs",
+    "c80c27c608d9": "Microsoft Patches 83 CVEs trong Cập nhật tháng 3",
+    "df976f893abd": "Xung đột Trung Đông nổi bật khoảng trống khả năng phục hồi đám mây"
   }
 }
