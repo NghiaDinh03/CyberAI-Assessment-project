@@ -27,6 +27,8 @@ export default function NewsPage() {
     const [historyTab, setHistoryTab] = useState('all')
     const [historyLoading, setHistoryLoading] = useState(false)
     const [reprocessing, setReprocessing] = useState({}) // { [url]: boolean }
+    const [playingHistoryId, setPlayingHistoryId] = useState(null)
+    const historyAudioRef = useRef(null)
 
     const fetchHistory = useCallback(async (cat = 'all') => {
         setHistoryLoading(true)
@@ -121,10 +123,20 @@ export default function NewsPage() {
             })
             playNext()
         }
+
+        historyAudioRef.current = new Audio()
+        historyAudioRef.current.onended = () => setPlayingHistoryId(null)
     }, [playNext])
 
     const togglePlay = async (e, article, forcePlay = false) => {
         if (e) e.preventDefault()
+
+        // PAUSE HISTORY AUDIO IF PLAYING
+        if (historyAudioRef.current && !historyAudioRef.current.paused) {
+            historyAudioRef.current.pause()
+            setPlayingHistoryId(null)
+        }
+
         const data = audioData[article.url]
 
         if (data?.status === 'playing' && !forcePlay) {
@@ -566,18 +578,30 @@ export default function NewsPage() {
                                         <button
                                             className={styles.historyPlayBtn}
                                             onClick={() => {
+                                                if (audioRef.current && !audioRef.current.paused) {
+                                                    audioRef.current.pause()
+                                                    setAudioData(prev => {
+                                                        const next = { ...prev }
+                                                        for (let k in next) { if (next[k]?.status === 'playing') next[k].status = 'ready' }
+                                                        return next
+                                                    })
+                                                    playStateRef.current.currentUrl = null
+                                                }
+
                                                 const audioUrl = `/api/news/audio/${hItem.hash}.mp3`
-                                                const existing = document.getElementById(`history-audio-${idx}`)
-                                                if (existing) {
-                                                    if (existing.paused) existing.play()
-                                                    else existing.pause()
+                                                if (playingHistoryId === hItem.hash) {
+                                                    if (historyAudioRef.current.paused) historyAudioRef.current.play()
+                                                    else historyAudioRef.current.pause()
+                                                    setPlayingHistoryId(historyAudioRef.current.paused ? null : hItem.hash)
                                                     return
                                                 }
-                                                const audio = new Audio(audioUrl)
-                                                audio.id = `history-audio-${idx}`
-                                                audio.play()
+                                                historyAudioRef.current.src = audioUrl
+                                                historyAudioRef.current.play()
+                                                setPlayingHistoryId(hItem.hash)
                                             }}
-                                        >🔊 Nghe</button>
+                                        >
+                                            {playingHistoryId === hItem.hash && historyAudioRef.current && !historyAudioRef.current.paused ? '⏸️ Dừng' : '🔊 Nghe'}
+                                        </button>
                                     )}
                                     {hItem.audio_cached !== true && (
                                         <span style={{ fontSize: '11px', color: '#64748b' }}>⏳ Chờ</span>
