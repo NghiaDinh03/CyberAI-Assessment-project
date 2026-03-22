@@ -1,19 +1,39 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
-pydantic-settings==2.1.0
-python-multipart==0.0.6
-requests==2.31.0
-python-dotenv==1.0.0
-numpy==1.26.0
-chromadb==0.4.24
+# ======= Core Framework =======
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.9.0
+pydantic-settings>=2.1.0
+python-multipart>=0.0.6
+python-dotenv>=1.0.0
+
+# ======= HTTP Clients =======
+requests>=2.31.0
+httpx>=0.27.0
+
+# ======= AI/ML (CPU Optimized) =======
+transformers>=4.44.0
+torch>=2.4.0
+sentencepiece>=0.1.99
+numpy>=1.26.0
+
+# ======= Vector Store (RAG) =======
+chromadb>=0.5.0
+
+# ======= Web Search =======
 duckduckgo-search>=6.2.0
-sse-starlette>=1.8.0
-transformers==4.35.2
-torch==2.1.2
-sentencepiece==0.1.99
-newspaper3k==0.2.8
-edge-tts
+
+# ======= News Aggregator =======
+newspaper4k>=0.9.0
 lxml_html_clean
-httpx
-google-generativeai
+
+# ======= Text-to-Speech =======
+edge-tts
+
+# ======= Streaming =======
+sse-starlette>=1.8.0
+
+# ======= Security & Rate Limiting =======
+slowapi>=0.1.9
+
+# ======= Logging =======
+# (uses stdlib logging, no extra deps)

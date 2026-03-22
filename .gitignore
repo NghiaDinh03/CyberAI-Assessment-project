@@ -41,6 +41,15 @@ node_modules/
 frontend-next/.next/
 frontend-next/node_modules/
 
+# Sensitive files
+*.key
+*.pem
+*.cert
+*.secret
+
+# Cline / AI assistants
+.claude/
+
 # Misc
 hash.txt
 .vs/

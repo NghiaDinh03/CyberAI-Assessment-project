@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { useTheme } from './ThemeProvider'
 import styles from './Navbar.module.css'
 
 const NAV_ITEMS = [
@@ -23,6 +24,7 @@ const TIMEZONES = [
 
 export default function Navbar() {
     const pathname = usePathname()
+    const { theme, toggle } = useTheme()
     const [time, setTime] = useState(null)
     const [tzIndex, setTzIndex] = useState(0)
 
@@ -86,6 +88,13 @@ export default function Navbar() {
                 </div>
 
                 <div className={styles.rightSection}>
+                    <button
+                        className={styles.themeToggle}
+                        onClick={toggle}
+                        title={theme === 'dark' ? 'Chuyển sang Light Mode' : 'Chuyển sang Dark Mode'}
+                    >
+                        {theme === 'dark' ? '☀️' : '🌙'}
+                    </button>
                     <div className={styles.status}>
                         <span className={styles.dot} />
                         <span>Online</span>

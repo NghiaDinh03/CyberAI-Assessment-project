@@ -1,13 +1,13 @@
+"""Summary Service — Full-content article processing with Cloud LLM translation & Edge-TTS."""
+
 import os
 import json
 import hashlib
 import logging
 import asyncio
 import edge_tts
+import re
 import time
-import google.generativeai as genai
-from newspaper import Article
-import httpx
 import threading
 import traceback
 from typing import Dict, Optional
@@ -19,9 +19,9 @@ _process_lock = threading.Semaphore(1)
 CACHE_DIR = "/data/summaries"
 AUDIO_DIR = os.path.join(CACHE_DIR, "audio")
 
-# Ensure directories exist
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(AUDIO_DIR, exist_ok=True)
+
 
 class SummaryService:
     @staticmethod
@@ -37,7 +37,7 @@ class SummaryService:
                 with open(cache_path, "r", encoding="utf-8") as f:
                     return json.load(f)
             except Exception as e:
-                logger.warning(f"Failed to read cache {cache_path}: {e}")
+                logger.warning(f"Cache read failed {cache_path}: {e}")
         return None
 
     @staticmethod
@@ -48,7 +48,7 @@ class SummaryService:
             with open(cache_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False)
         except Exception as e:
-            logger.warning(f"Failed to save cache {cache_path}: {e}")
+            logger.warning(f"Cache save failed {cache_path}: {e}")
 
     @staticmethod
     def process_article(url: str, lang: str = "en", title: str = "") -> Dict:
@@ -61,9 +61,6 @@ class SummaryService:
 
     @staticmethod
     def _process_article_internal(url: str, lang: str = "en", title: str = "") -> Dict:
-        """
-        Core article processing logic, protected by Semaphore.
-        """
         cached = SummaryService._get_cache(url)
         if cached:
             return cached
@@ -72,271 +69,125 @@ class SummaryService:
         audio_filename = f"{url_hash}.mp3"
         audio_path = os.path.join(AUDIO_DIR, audio_filename)
 
-        # 1. Crawl text
+        # Step 1: Crawl full article text
         try:
+            from newspaper import Article
             article_scraper = Article(url)
             article_scraper.download()
             article_scraper.parse()
             text = article_scraper.text
-            if not text or len(text) < 500:
-                logger.warning(f"Bỏ qua bài báo do nội dung quá ngắn ({len(text) if text else 0} ký tự): {url}")
+
+            if not text or len(text) < 300:
+                logger.warning(f"Article too short ({len(text) if text else 0} chars): {url}")
                 raise Exception("Not enough text extracted")
-            
-            logger.info(f"[AI] Đã cào được {len(text)} ký tự từ: {url}")
-            text = text[:6000]
+
+            logger.info(f"Crawled {len(text)} chars from: {url}")
+            # No hard truncation — send full text to Cloud API for maximum accuracy
+            # Only soft limit at 12000 chars to stay within token limits
+            if len(text) > 12000:
+                text = text[:12000]
+
         except Exception as e:
             logger.error(f"Failed to parse article {url}: {e}")
-            err_msg = str(e)
-            if "Not enough text" in err_msg:
-                err_msg = "Nội dung bài báo quá ngắn hoặc bị chặn cào bot."
-            else:
-                err_msg = f"Lỗi truy cập trang: {err_msg[:50]}"
+            err_msg = "Nội dung bài báo quá ngắn hoặc bị chặn bot." if "Not enough text" in str(e) else f"Lỗi truy cập: {str(e)[:80]}"
             res = {"error": f"❌ {err_msg}", "url": url, "hash": url_hash}
             SummaryService._save_cache(url, res)
             return res
 
-        # 2. Summarize via AI
+        # Step 2: Cloud LLM — Translate (if EN) + Rewrite to broadcast-quality Vietnamese
         try:
-            
-            prompt = ""
+            from services.cloud_llm_service import CloudLLMService
+
             if lang == "en":
                 prompt = (
-                    "Dịch TOÀN BỘ bài báo sau sang Tiếng Việt. "
-                    "Quy tắc:\n"
-                    "- Dòng đầu tiên là tiêu đề tiếng Việt hấp dẫn.\n"
-                    "- Giữ nguyên toàn bộ thông tin, thông số kỹ thuật, số liệu, tên tổ chức.\n"
-                    "- Lược bỏ menu, quảng cáo, nút bấm, sơ đồ code.\n"
-                    "- Văn phong báo chí, mạch lạc, phù hợp đọc bằng giọng nói.\n"
-                    "- Không dùng ký tự đặc biệt (*, #, ngoặc vuông).\n"
-                    "- CHỈ VIẾT NỘI DUNG BÀI BÁO. TUYỆT ĐỐI KHÔNG thêm bất kỳ lời giải thích, ghi chú, nhận xét hay bình luận nào của bản thân.\n"
-                    f"\nTiêu đề gốc: {title}\nNội dung báo: {text}"
+                    "Bạn là biên dịch viên báo chí chuyên nghiệp. "
+                    "Hãy dịch TOÀN BỘ bài báo tiếng Anh sau sang Tiếng Việt hoàn chỉnh.\n\n"
+                    "QUY TẮC BẮT BUỘC:\n"
+                    "1. Dòng đầu tiên là tiêu đề tiếng Việt hấp dẫn, sát nghĩa gốc.\n"
+                    "2. GIỮ NGUYÊN 100% mọi thông tin: tên người, tên tổ chức, số liệu thống kê, "
+                    "thông số kỹ thuật, ngày tháng, mã CVE, địa chỉ IP, tên phần mềm, tên quốc gia. "
+                    "KHÔNG được bỏ sót hay thay đổi bất kỳ dữ kiện nào.\n"
+                    "3. KHÔNG rút gọn, KHÔNG tóm tắt, KHÔNG lược bỏ đoạn nào. Dịch ĐẦY ĐỦ từ đầu đến cuối.\n"
+                    "4. Lược bỏ: menu điều hướng, quảng cáo, nút bấm, link đăng ký, footer website.\n"
+                    "5. Văn phong báo chí chuyên nghiệp, mạch lạc, phù hợp đọc bằng giọng nói trên radio.\n"
+                    "6. KHÔNG dùng ký tự đặc biệt: *, #, [], (), **. Chỉ dùng văn bản thuần.\n"
+                    "7. TUYỆT ĐỐI KHÔNG thêm bất kỳ bình luận, ghi chú, lời giải thích nào của bạn. "
+                    "Chỉ xuất ra nội dung bài báo đã dịch.\n\n"
+                    f"TIÊU ĐỀ GỐC: {title}\n\n"
+                    f"NỘI DUNG BÀI BÁO:\n{text}"
                 )
             else:
                 prompt = (
-                    "Lọc bài báo Tiếng Việt sau thành bài thuần text chuẩn báo chí. "
-                    "Quy tắc:\n"
-                    "- Dòng đầu tiên là tiêu đề bài báo.\n"
-                    "- Giữ nguyên toàn bộ thông tin, số liệu, chi tiết.\n"
-                    "- Lược bỏ HTML, sơ đồ, code dư thừa, quảng cáo, menu.\n"
-                    "- Văn phong tự nhiên, trôi chảy, phù hợp đọc bằng giọng nói.\n"
-                    "- Không dùng ký tự đặc biệt (*, #, ngoặc).\n"
-                    "- CHỈ VIẾT NỘI DUNG BÀI BÁO. TUYỆT ĐỐI KHÔNG thêm bất kỳ lời giải thích, ghi chú, nhận xét hay bình luận nào của bản thân.\n"
-                    f"\nTiêu đề: {title}\nNội dung báo: {text}"
+                    "Bạn là biên tập viên báo chí chuyên nghiệp. "
+                    "Hãy biên tập lại bài báo Tiếng Việt sau thành bài viết hoàn chỉnh, chuẩn phát thanh.\n\n"
+                    "QUY TẮC BẮT BUỘC:\n"
+                    "1. Dòng đầu tiên là tiêu đề bài báo.\n"
+                    "2. GIỮ NGUYÊN 100% mọi thông tin: tên người, tổ chức, số liệu, ngày tháng, "
+                    "thông số kỹ thuật, dẫn chứng. KHÔNG được bỏ sót hay thay đổi bất kỳ dữ kiện nào.\n"
+                    "3. KHÔNG rút gọn, KHÔNG tóm tắt. Giữ ĐẦY ĐỦ nội dung từ đầu đến cuối.\n"
+                    "4. Lược bỏ: HTML, sơ đồ code, quảng cáo, menu, footer, link rác.\n"
+                    "5. Văn phong tự nhiên, trôi chảy, phù hợp đọc bằng giọng nói trên radio.\n"
+                    "6. KHÔNG dùng ký tự đặc biệt: *, #, [], (), **. Chỉ văn bản thuần.\n"
+                    "7. TUYỆT ĐỐI KHÔNG thêm bất kỳ bình luận, ghi chú, lời giải thích nào của bạn.\n\n"
+                    f"TIÊU ĐỀ: {title}\n\n"
+                    f"NỘI DUNG BÀI BÁO:\n{text}"
                 )
 
-            summary_vi = ""
-            # Priority 1: Gemini with round-robin key rotation
-            gemini_keys_env = os.getenv("GEMINI_API_KEYS", "").strip()
-            if gemini_keys_env:
-                gemini_keys = [k.strip() for k in gemini_keys_env.split(",") if k.strip()]
-                if gemini_keys:
-                    if not hasattr(SummaryService, '_gemini_key_index'):
-                        SummaryService._gemini_key_index = 0
-                    if not hasattr(SummaryService, '_gemini_cooldowns'):
-                        SummaryService._gemini_cooldowns = {} # {key_index: timestamp}
-                    
-                    if not hasattr(SummaryService, '_openrouter_key_index'):
-                        SummaryService._openrouter_key_index = 0
-                    if not hasattr(SummaryService, '_openrouter_cooldowns'):
-                        SummaryService._openrouter_cooldowns = {} # {key_index: timestamp}
-                    
-                    success = False
-                    for _ in range(len(gemini_keys)):
-                        idx = SummaryService._gemini_key_index % len(gemini_keys)
-                        SummaryService._gemini_key_index += 1
-                        
-                        # Check cooldown for this key
-                        last_429 = SummaryService._gemini_cooldowns.get(idx, 0)
-                        if time.time() - last_429 < 60:
-                            continue
-
-                        current_key = gemini_keys[idx]
-                        try:
-                            genai.configure(api_key=current_key)
-                            model = genai.GenerativeModel('gemini-2.5-flash')
-                            response = model.generate_content(
-                                prompt,
-                                generation_config=genai.GenerationConfig(
-                                    temperature=0.2,
-                                    max_output_tokens=8000,
-                                )
-                            )
-                            summary_vi = response.text.strip()
-                            success = True
-                            logger.info(f"Đã tóm tắt bằng Gemini Flash (Key index {idx})")
-                            break
-                        except Exception as e:
-                            err_str = str(e)
-                            if "429" in err_str or "ResourceExhausted" in err_str:
-                                SummaryService._gemini_cooldowns[idx] = time.time()
-                                logger.error(f"Gemini Key index {idx} bị kịch hạn mức (429). Kích hoạt Cooldown 60s.")
-                            else:
-                                logger.warning(f"Gemini Key index {idx} lỗi ({e}). Thử key tiếp theo...")
-                            time.sleep(0.5) 
-            
-            # Priority 2: Fallback to OpenRouter with round-robin keys
-            if not summary_vi:
-                or_keys_env = os.getenv("OPENROUTER_API_KEYS", "").strip()
-                if not or_keys_env:
-                    # Fallback to legacy single-key env var
-                    or_keys_env = os.getenv("OPENROUTER_API_KEY", "").strip()
-                
-                if or_keys_env:
-                    or_keys = [k.strip() for k in or_keys_env.split(",") if k.strip()]
-                    if or_keys:
-                        logger.info(f"Tất cả Gemini Keys thất bại. Đang thử xoay vòng {len(or_keys)} OpenRouter Keys...")
-                        
-                        for _ in range(len(or_keys)):
-                            idx = SummaryService._openrouter_key_index % len(or_keys)
-                            SummaryService._openrouter_key_index += 1
-                            
-                            # Check cooldown for this key
-                            last_429 = SummaryService._openrouter_cooldowns.get(idx, 0)
-                            if time.time() - last_429 < 60:
-                                continue
-
-                            current_or_key = or_keys[idx]
-                            try:
-                                headers = {
-                                    "Authorization": f"Bearer {current_or_key}",
-                                    "HTTP-Referer": "http://localhost:3000",
-                                    "X-Title": "PhoBert Chatbot"
-                                }
-                                payload = {
-                                    "model": "openrouter/free",
-                                    "messages": [{"role": "user", "content": prompt}],
-                                    "temperature": 0.2,
-                                    "max_tokens": 8000
-                                }
-                                res = httpx.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=60.0)
-                                
-                                if res.status_code == 429:
-                                    SummaryService._openrouter_cooldowns[idx] = time.time()
-                                    logger.error(f"OpenRouter Key index {idx} báo lỗi 429. Kích hoạt Cooldown 60s.")
-                                    continue
-                                    
-                                res.raise_for_status()
-                                summary_vi = res.json()["choices"][0]["message"]["content"].strip()
-                                logger.info(f"Đã tóm tắt bằng OpenRouter (Key index {idx})")
-                                break
-                            except Exception as e:
-                                logger.warning(f"OpenRouter Key index {idx} lỗi ({e}). Thử key tiếp theo...")
-                                time.sleep(0.5)
-            
-            # Priority 3: LocalAI fallback
-            if not summary_vi:
-                localai_url = os.getenv("LLM_API_URL", "http://phobert-localai:8080/v1")
-                try:
-                    logger.info("Cloud APIs đều thất bại. Dùng LocalAI dự phòng...")
-                    payload = {
-                        "model": os.getenv("MODEL_NAME", "default"),
-                        "messages": [{"role": "user", "content": prompt}],
-                        "temperature": 0.2,
-                        "max_tokens": 4000
-                    }
-                    res = httpx.post(f"{localai_url}/chat/completions", json=payload, timeout=120.0)
-                    res.raise_for_status()
-                    summary_vi = res.json()["choices"][0]["message"]["content"].strip()
-                    logger.info("Đã tóm tắt bằng LocalAI")
-                except Exception as e:
-                    logger.warning(f"LocalAI cũng thất bại ({e}). Không còn phương án nào.")
+            result = CloudLLMService.chat_completion(
+                messages=[
+                    {"role": "system", "content": "Bạn là biên dịch viên/biên tập viên báo chí chuyên nghiệp. "
+                     "Nhiệm vụ duy nhất: dịch/biên tập bài báo. Không giải thích, không bình luận."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.15,
+                max_tokens=16000,
+            )
+            summary_vi = result.get("content", "").strip()
+            provider = result.get("provider", "unknown")
+            logger.info(f"Processed by {provider} (model: {result.get('model', '')}), output: {len(summary_vi)} chars")
 
             if not summary_vi:
-                raise Exception("Tất cả các API đang lỗi hoặc cạn Quota. Xin chờ 5 phút.")
-            
+                raise Exception("AI returned empty result")
+
             # Post-process: strip special chars and AI meta-commentary
-            if summary_vi:
-                summary_vi = summary_vi.replace("*", "").replace("#", "").replace('"', "")
-                summary_vi = summary_vi.replace("<|eot_id|>", "").replace("<|end_header_id|>", "").replace("assistant", "").strip()
-                if summary_vi.lower().startswith("assistant"):
-                    summary_vi = summary_vi[len("assistant"):].strip()
-                
-                import re
-                summary_vi = re.sub(r'\(Đoạn văn tiếp theo.*$', '', summary_vi, flags=re.DOTALL).strip()
-                summary_vi = re.sub(r'\(Lưu ý:.*$', '', summary_vi, flags=re.DOTALL).strip()
-                summary_vi = re.sub(r'\(Ghi chú:.*$', '', summary_vi, flags=re.DOTALL).strip()
-                summary_vi = re.sub(r'\(Chú thích:.*$', '', summary_vi, flags=re.DOTALL).strip()
-                summary_vi = re.sub(r'---.*$', '', summary_vi, flags=re.DOTALL).strip()
+            summary_vi = summary_vi.replace("*", "").replace("#", "").replace('"', "")
+            summary_vi = summary_vi.replace("<|eot_id|>", "").replace("<|end_header_id|>", "")
+            if summary_vi.lower().startswith("assistant"):
+                summary_vi = summary_vi[len("assistant"):].strip()
 
-                # Extract title (first line) and sync with history
-                lines = [l.strip() for l in summary_vi.split("\n") if l.strip()]
-                final_title_vi = title
-                if lines:
-                    final_title_vi = lines[0]
-                
-                # Update history immediately
-                try:
-                    from services.news_service import NewsService
-                    NewsService._update_history([{
-                        "url": url,
-                        "title_vi": final_title_vi,
-                        "summary_text": summary_vi[:500],
-                        "audio_cached": True
-                    }])
-                except Exception as e:
-                    logger.warning(f"Cập nhật lịch sử đồng bộ từ SummaryService thất bại: {e}")
-            else:
-                summary_vi = "AI đang bận hoặc cạn tài nguyên. Vui lòng thử lại sau."
+            # Remove AI self-commentary patterns
+            for pattern in [r'\(Đoạn văn tiếp theo.*$', r'\(Lưu ý:.*$', r'\(Ghi chú:.*$',
+                            r'\(Chú thích:.*$', r'\(Dịch giả:.*$', r'\(Biên tập:.*$', r'---.*$']:
+                summary_vi = re.sub(pattern, '', summary_vi, flags=re.DOTALL).strip()
+
+            # Extract Vietnamese title for history sync
+            lines = [l.strip() for l in summary_vi.split("\n") if l.strip()]
+            final_title_vi = lines[0] if lines else title
+
+            try:
+                from services.news_service import NewsService
+                NewsService._update_history([{
+                    "url": url, "title_vi": final_title_vi,
+                    "summary_text": summary_vi[:500], "audio_cached": True
+                }])
+            except Exception as e:
+                logger.warning(f"History sync failed: {e}")
+
         except Exception as e:
-            logger.error(f"Failed to summarize article {url}: {e}")
-            err_msg = str(e)
-            if "timeout" in err_msg.lower():
-                err_msg = "AI đang quá tải (Timeout). Vui lòng thử lại sau."
-            else:
-                err_msg = f"AI từ chối xử lý: {err_msg[:50]}"
+            logger.error(f"Failed to process article {url}: {e}")
+            err_msg = "AI timeout. Vui lòng thử lại sau." if "timeout" in str(e).lower() else f"AI error: {str(e)[:100]}"
             res = {"error": f"❌ {err_msg}", "url": url, "hash": url_hash}
             SummaryService._save_cache(url, res)
             return res
 
-        # 3. Text to Speech (edge-tts)
+        # Step 3: Text-to-Speech (Edge-TTS)
         try:
-            import re
-            
-            def fix_pronunciation(text: str) -> str:
-                # Pronunciation dictionary for abbreviations
-                replacements = {
-                    r'\bRAT\b': 'Rát',
-                    r'\bAI\b': 'Ây ai',
-                    r'\bFBI\b': 'Ép bi ai',
-                    r'\bCIA\b': 'Xi ai ây',
-                    r'\bAPT\b': 'Ê pi ti',
-                    r'\bAPI\b': 'Ê pi ai',
-                    r'\bCEO\b': 'Xi y âu',
-                    r'\bIT\b': 'Ai ti',
-                    r'\bCISA\b': 'Xi sa',
-                    r'\bUS\b': 'Mỹ',
-                    r'\bUSA\b': 'Mỹ',
-                    r'\biOS\b': 'Ai âu ét',
-                    r'\bIP\b': 'Ai pi',
-                    r'\bIoT\b': 'Ai âu ti',
-                    r'\bAWS\b': 'Ây đắp liu ét',
-                    r'\bURL\b': 'U rờ lờ',
-                    r'(?i)\bcybersecurity\b': 'An ninh mạng',
-                    r'(?i)\bhacker\b': 'Hắc cờ',
-                    r'(?i)\bmalware\b': 'Mã độc',
-                    r'(?i)\bphishing\b': 'Lừa đảo qua mạng',
-                    r'(?i)\bvinaconex\b': 'Vi na cô nếch',
-                    r'(?i)\bvietstock\b': 'Việt xtốc',
-                    r'(?i)\bvneconomy\b': 'Vi en i cô nô mi',
-                    r'(?i)\bpost\b': 'Pốt',
-                    r'(?i)\btrading\b': 'Tra đing',
-                    r'(?i)\betfs\b': 'Ê tê ép',
-                    r'(?i)\btech\b': 'Tếch'
-                }
-                for pattern, replacement in replacements.items():
-                    text = re.sub(pattern, replacement, text)
-                
-                # Remaining uppercase words (e.g. IBM, HTTP) are read letter-by-letter by edge-tts Vietnamese voice - acceptable.
-                return text
-
-            voice = "vi-VN-HoaiMyNeural" 
-            text_to_read = fix_pronunciation(summary_vi)
-            
-            communicate = edge_tts.Communicate(text_to_read, voice)
+            text_to_read = SummaryService._fix_pronunciation(summary_vi)
+            communicate = edge_tts.Communicate(text_to_read, "vi-VN-HoaiMyNeural")
             asyncio.run(communicate.save(audio_path))
         except Exception as e:
-            logger.error(f"edge-tts error for {url}: {e}")
-            res = {"error": "Lỗi AI tạo giọng nói.", "url": url, "hash": url_hash}
+            logger.error(f"Edge-TTS error for {url}: {e}")
+            res = {"error": "Lỗi tạo giọng nói.", "url": url, "hash": url_hash}
             SummaryService._save_cache(url, res)
             return res
 
@@ -346,3 +197,27 @@ class SummaryService:
         }
         SummaryService._save_cache(url, result)
         return result
+
+    @staticmethod
+    def _fix_pronunciation(text: str) -> str:
+        replacements = {
+            r'\bRAT\b': 'Rát', r'\bAI\b': 'Ây ai', r'\bFBI\b': 'Ép bi ai',
+            r'\bCIA\b': 'Xi ai ây', r'\bAPT\b': 'Ê pi ti', r'\bAPI\b': 'Ê pi ai',
+            r'\bCEO\b': 'Xi y âu', r'\bIT\b': 'Ai ti', r'\bCISA\b': 'Xi sa',
+            r'\bUS\b': 'Mỹ', r'\bUSA\b': 'Mỹ', r'\biOS\b': 'Ai âu ét',
+            r'\bIP\b': 'Ai pi', r'\bIoT\b': 'Ai âu ti', r'\bAWS\b': 'Ây đắp liu ét',
+            r'\bURL\b': 'U rờ lờ', r'\bHTTPS?\b': 'Ếch ti ti pi',
+            r'\bDDoS\b': 'Đi đốt', r'\bVPN\b': 'Vi pi en',
+            r'\bSSL\b': 'Ét ét eo', r'\bTLS\b': 'Ti eo ét',
+            r'(?i)\bcybersecurity\b': 'An ninh mạng', r'(?i)\bhacker\b': 'Hắc cờ',
+            r'(?i)\bmalware\b': 'Mã độc', r'(?i)\bphishing\b': 'Lừa đảo qua mạng',
+            r'(?i)\bransomware\b': 'Mã độc tống tiền',
+            r'(?i)\bvinaconex\b': 'Vi na cô nếch', r'(?i)\bvietstock\b': 'Việt xtốc',
+            r'(?i)\bvneconomy\b': 'Vi en i cô nô mi',
+            r'(?i)\bpost\b': 'Pốt', r'(?i)\btrading\b': 'Tra đing',
+            r'(?i)\betfs?\b': 'Ê tê ép', r'(?i)\btech\b': 'Tếch',
+            r'(?i)\bblockchain\b': 'Bờ lốc chên', r'(?i)\bcrypto\b': 'Cờ ríp tô',
+        }
+        for pattern, replacement in replacements.items():
+            text = re.sub(pattern, replacement, text)
+        return text

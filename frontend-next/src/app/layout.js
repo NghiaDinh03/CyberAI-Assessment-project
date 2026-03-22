@@ -1,5 +1,6 @@
 import './globals.css'
 import Navbar from '@/components/Navbar'
+import ThemeProvider from '@/components/ThemeProvider'
 
 export const metadata = {
     title: 'CyberAI Assessment Platform - Enterprise Edition',
@@ -11,8 +12,10 @@ export default function RootLayout({ children }) {
     return (
         <html lang="vi">
             <body>
-                <Navbar />
-                <main>{children}</main>
+                <ThemeProvider>
+                    <Navbar />
+                    <main>{children}</main>
+                </ThemeProvider>
             </body>
         </html>
     )
