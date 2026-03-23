@@ -1,4 +1,4 @@
-"""News Service — RSS aggregation with translation, tagging & summarization."""
+"""News Service — RSS aggregation with Vietnamese translation & article summarization."""
 
 import logging
 import re
@@ -31,7 +31,7 @@ RSS_SOURCES = {
         {"name": "Znews Kinh doanh", "url": "https://znews.vn/rss/kinh-doanh-tai-chinh.rss", "icon": "💹", "lang": "vi"},
         {"name": "VnExpress Kinh doanh", "url": "https://vnexpress.net/rss/kinh-doanh.rss", "icon": "📰", "lang": "vi"},
         {"name": "VnEconomy", "url": "https://vneconomy.vn/chung-khoan.rss", "icon": "📊", "lang": "vi"},
-    ]
+    ],
 }
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
@@ -54,7 +54,7 @@ def set_ai_status(status: str):
     with _status_lock:
         _current_status = status
         if status != "Đang rảnh":
-            logger.info(f"[AI MONITOR] {status}")
+            logger.info(f"[AI Status] {status}")
 
 
 def get_ai_status():
@@ -68,16 +68,20 @@ class NewsService:
         with _history_lock:
             history = NewsService.get_history_no_lock()
             history_dict = {a["url"]: a for a in history}
-
             now = datetime.now()
+
             for a in articles:
                 url = a["url"]
+
                 if a.get("lang") == "en" and not a.get("title_vi"):
-                    from services.translation_service import TranslationService
-                    cache = TranslationService._load_cache(a.get("category", "cybersecurity"))
-                    vi = TranslationService.get_translation(a["title"], cache)
-                    if vi:
-                        a["title_vi"] = vi
+                    try:
+                        from services.translation_service import TranslationService
+                        cache = TranslationService._load_cache(a.get("category", "cybersecurity"))
+                        vi = TranslationService.get_translation(a["title"], cache)
+                        if vi:
+                            a["title_vi"] = vi
+                    except Exception as e:
+                        logger.warning(f"[History] Translation lookup failed for '{a.get('title','')[:40]}': {e}")
 
                 if url not in history_dict:
                     a_copy = a.copy()
@@ -85,15 +89,18 @@ class NewsService:
                     history_dict[url] = a_copy
                 else:
                     curr = history_dict[url]
-                    for key in ["title_vi", "tag", "audio_cached", "summary_text", "category", "lang"]:
+                    for key in ["title_vi", "audio_cached", "summary_text", "category", "lang"]:
                         if key in a:
                             curr[key] = a[key]
-                        if key == "title_vi" and not curr.get("title_vi") and a.get("lang") == "en":
+                    if not curr.get("title_vi") and a.get("lang") == "en":
+                        try:
                             from services.translation_service import TranslationService
                             cache = TranslationService._load_cache(a.get("category", "cybersecurity"))
                             vi = TranslationService.get_translation(a.get("title", ""), cache)
                             if vi:
                                 curr["title_vi"] = vi
+                        except Exception as e:
+                            logger.warning(f"[History] Translation fallback failed: {e}")
 
             cutoff = now - timedelta(days=7)
             new_history = []
@@ -103,7 +110,7 @@ class NewsService:
                     try:
                         if datetime.fromisoformat(added) >= cutoff:
                             new_history.append(a)
-                    except:
+                    except Exception:
                         new_history.append(a)
                 else:
                     a["added_at"] = now.isoformat()
@@ -114,7 +121,7 @@ class NewsService:
                 with open(HISTORY_FILE, "w", encoding="utf-8") as f:
                     json.dump(new_history, f, ensure_ascii=False, indent=2)
             except Exception as e:
-                logger.error(f"Failed to save history: {e}")
+                logger.error(f"[History] Failed to save to {HISTORY_FILE}: {e}")
 
     @staticmethod
     def get_history_no_lock() -> List[Dict]:
@@ -123,7 +130,8 @@ class NewsService:
         try:
             with open(HISTORY_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except:
+        except Exception as e:
+            logger.warning(f"[History] Failed to read {HISTORY_FILE}: {e}")
             return []
 
     @staticmethod
@@ -146,19 +154,20 @@ class NewsService:
 
         from services.summary_service import SummaryService, CACHE_DIR, AUDIO_DIR
         url_hash = SummaryService._generate_hash(url)
-        try:
-            os.remove(os.path.join(CACHE_DIR, f"{url_hash}.json"))
-        except:
-            pass
-        try:
-            os.remove(os.path.join(AUDIO_DIR, f"{url_hash}.mp3"))
-        except:
-            pass
+
+        for path in [os.path.join(CACHE_DIR, f"{url_hash}.json"),
+                     os.path.join(AUDIO_DIR, f"{url_hash}.mp3")]:
+            try:
+                os.remove(path)
+                logger.info(f"[Reprocess] Deleted cache: {path}")
+            except FileNotFoundError:
+                pass
+            except Exception as e:
+                logger.warning(f"[Reprocess] Could not delete {path}: {e}")
 
         article.pop("title_vi", None)
         article.pop("summary_text", None)
         article.pop("audio_cached", None)
-        article.pop("tag", None)
         NewsService._update_history([article])
 
         cat = article.get("category", "cybersecurity")
@@ -171,22 +180,24 @@ class NewsService:
         _llama_queue.put({"category": cat, "articles": [article]})
         _llama_queue_cats.add(cat)
 
+        logger.info(f"[Reprocess] Article queued for reprocessing: {url}")
         return {"success": True, "message": "Đã xóa bản dịch cũ và đưa vào hàng chờ xử lý lại."}
 
     @staticmethod
     def _parse_rss(url: str, source_name: str, icon: str, lang: str, limit: int = 10) -> List[Dict]:
+        logger.debug(f"[RSS] Fetching {source_name}: {url}")
         try:
             resp = requests.get(url, headers=HEADERS, timeout=15)
             resp.raise_for_status()
             root = ET.fromstring(resp.content)
-            items = root.findall('.//item')[:limit]
+            items = root.findall(".//item")[:limit]
 
             articles = []
             for item in items:
-                title = item.findtext('title', '').strip()
-                link = item.findtext('link', '').strip()
-                description = item.findtext('description', '').strip()
-                pub_date_raw = item.findtext('pubDate', '')
+                title = item.findtext("title", "").strip()
+                link = item.findtext("link", "").strip()
+                description = item.findtext("description", "").strip()
+                pub_date_raw = item.findtext("pubDate", "")
 
                 pub_date = ""
                 if pub_date_raw:
@@ -197,18 +208,24 @@ class NewsService:
                         pub_date = pub_date_raw[:25]
 
                 if description:
-                    description = description.replace('<![CDATA[', '').replace(']]>', '')
-                    description = re.sub(r'<[^>]+>', '', description)[:200]
+                    description = description.replace("<![CDATA[", "").replace("]]>", "")
+                    description = re.sub(r"<[^>]+>", "", description)[:200]
 
                 if title and link:
                     articles.append({
-                        "title": title, "url": link, "description": description,
-                        "date": pub_date, "source": source_name, "icon": icon, "lang": lang
+                        "title": title,
+                        "url": link,
+                        "description": description,
+                        "date": pub_date,
+                        "source": source_name,
+                        "icon": icon,
+                        "lang": lang,
                     })
 
+            logger.debug(f"[RSS] {source_name}: fetched {len(articles)} articles")
             return articles
         except Exception as e:
-            logger.warning(f"RSS fetch thất bại [{source_name}]: {e}")
+            logger.warning(f"[RSS] Fetch failed [{source_name}] {url}: {e}")
             return []
 
     @staticmethod
@@ -218,45 +235,56 @@ class NewsService:
             cache = TranslationService._load_cache(category)
             if not cache:
                 return
+            applied = 0
             for article in articles:
-                if article.get("lang") == "en":
+                if article.get("lang") == "en" and not article.get("title_vi"):
                     vi = TranslationService.get_translation(article["title"], cache)
                     if vi:
                         article["title_vi"] = vi
-        except Exception:
-            pass
+                        applied += 1
+            if applied:
+                logger.debug(f"[Translation] Applied {applied} cached translations for category={category}")
+        except Exception as e:
+            logger.warning(f"[Translation] _apply_translations error: {e}")
 
     @staticmethod
     def _translation_worker():
-        """Worker for VinAI title translation (lightweight, fast)"""
+        """Background worker: translates EN article titles via VinAI."""
         while True:
             try:
                 task = _translation_queue.get()
                 if task is None:
                     _translation_queue.task_done()
                     break
-                category = task.get("category")
-                articles = task.get("articles")
-                from services.translation_service import TranslationService
 
+                category = task.get("category")
+                articles = task.get("articles", [])
+
+                logger.info(f"[TranslationWorker] Processing {len(articles)} articles for category={category}")
+
+                from services.translation_service import TranslationService
                 en_titles = [a["title"] for a in articles if a.get("lang") == "en" and "title_vi" not in a]
+
                 if en_titles:
+                    logger.info(f"[TranslationWorker] Translating {len(en_titles)} EN titles")
                     TranslationService.translate_batch(en_titles, category)
+                    logger.info(f"[TranslationWorker] Translation complete for {len(en_titles)} titles")
 
                 NewsService._apply_translations(articles, category)
                 NewsService._update_history(articles)
                 _translation_queue_cats.discard(category)
                 _translation_queue.task_done()
+
             except Exception as e:
-                logger.error(f"Translation Worker error: {e}")
-                if 'category' in locals():
+                logger.error(f"[TranslationWorker] Error: {e}")
+                if "category" in locals():
                     _translation_queue_cats.discard(category)
                 _translation_queue.task_done()
                 time.sleep(2)
 
     @staticmethod
     def _llama_worker():
-        """Worker for LLM tagging & summarization using CloudLLMService."""
+        """Background worker: scrapes articles, translates via Open Claude, generates TTS audio."""
         while True:
             try:
                 task = _llama_queue.get()
@@ -265,64 +293,55 @@ class NewsService:
                     break
 
                 category = task.get("category")
-                articles = task.get("articles")
+                articles = task.get("articles", [])
 
                 NewsService._apply_translations(articles, category)
 
                 from services.summary_service import SummaryService
-                to_process = [a for a in articles if not a.get("audio_cached") and a.get("audio_cached") != "error"]
+
+                to_process = [
+                    a for a in articles
+                    if not a.get("audio_cached") and a.get("audio_cached") != "error"
+                ]
+                logger.info(f"[LlamaWorker] category={category}, articles_to_process={len(to_process)}")
+
                 for idx, a in enumerate(to_process):
                     title = a.get("title_vi") or a.get("title")
-                    set_ai_status(f"AI tóm tắt & đọc bài ({idx+1}/{len(to_process)}): {title[:40]}...")
-                    SummaryService._get_cache(a["url"], skip_retryable=True)
-                    SummaryService.process_article(a["url"], a.get("lang", "en"), title)
-                    cached_sum = SummaryService._get_cache(a["url"])
-                    if cached_sum:
-                        if "error" in cached_sum:
-                            a["audio_cached"] = "error"
-                            a["summary_text"] = cached_sum.get("error", "")
-                        else:
-                            a["audio_cached"] = True
-                            a["summary_text"] = cached_sum.get("summary_vi", "")
+                    url = a.get("url", "")
+                    set_ai_status(f"AI tóm tắt & dịch bài ({idx+1}/{len(to_process)}): {title[:40]}...")
+
+                    logger.info(f"[LlamaWorker] Step 1 — clearing retryable cache for: {url}")
+                    SummaryService._get_cache(url, skip_retryable=True)
+
+                    logger.info(f"[LlamaWorker] Step 2 — processing article [{idx+1}/{len(to_process)}]: {url}")
+                    result = SummaryService.process_article(url, a.get("lang", "en"), title)
+
+                    if result.get("error"):
+                        logger.error(f"[LlamaWorker] Step 2 FAILED for {url}: {result['error']}")
+                        a["audio_cached"] = "error"
+                        a["summary_text"] = result.get("error", "")
+                    else:
+                        logger.info(f"[LlamaWorker] Step 2 OK — audio_url={result.get('audio_url','?')}, summary_len={len(result.get('summary_vi',''))}")
+                        a["audio_cached"] = True
+                        a["summary_text"] = result.get("summary_vi", "")
+
+                    logger.info(f"[LlamaWorker] Step 3 — updating history for: {url}")
                     NewsService._update_history([a])
 
                     keys_to_delete = [k for k in _cache.keys() if k.startswith(f"{category}_")]
                     for k in keys_to_delete:
                         del _cache[k]
 
-                    logger.info(f"Bài {idx+1}/{len(to_process)} xong - đã cập nhật cache")
+                    logger.info(f"[LlamaWorker] Article {idx+1}/{len(to_process)} done — cache invalidated for category={category}")
                     time.sleep(3)
-
-                # Tag articles using CloudLLMService
-                from services.cloud_llm_service import CloudLLMService
-
-                untagged_articles = [a for a in articles if "tag" not in a]
-                for idx, a in enumerate(untagged_articles):
-                    check_title = a.get("title_vi") or a.get("title")
-                    set_ai_status(f"AI đang phân loại tin ({idx+1}/{len(untagged_articles)}): {check_title[:40]}...")
-                    try:
-                        tag_ai = CloudLLMService.quick_completion(
-                            prompt=(
-                                "Hãy gán đúng 1 từ khóa (tag) ngắn gọn nhất (1-2 từ) miêu tả thể loại tin tức. "
-                                "Ví dụ: 'Thị trường', 'Chiến sự', 'Lỗ hổng', 'Khám phá', 'Công nghệ', 'Chứng khoán'. "
-                                "Chỉ được in ra đúng 1 từ khóa đó, không giải thích gì thêm."
-                                f"\n\nTiêu đề: {check_title}"
-                            ),
-                            temperature=0.1,
-                            max_tokens=10,
-                        )
-                        a["tag"] = tag_ai.replace(".", "").replace('"', "").replace("'", "") if tag_ai else "Tin tức"
-                    except Exception:
-                        a["tag"] = "Tin tức"
-                    NewsService._update_history([a])
-                    time.sleep(1)
 
                 set_ai_status("Đang rảnh")
                 _llama_queue_cats.discard(category)
                 _llama_queue.task_done()
+
             except Exception as e:
-                logger.error(f"Llama Worker error: {e}")
-                if 'category' in locals():
+                logger.error(f"[LlamaWorker] Unhandled error: {e}")
+                if "category" in locals():
                     _llama_queue_cats.discard(category)
                 set_ai_status("Đang rảnh")
                 _llama_queue.task_done()
@@ -342,56 +361,57 @@ class NewsService:
 
         sources = RSS_SOURCES.get(category, [])
         if not sources:
+            logger.warning(f"[GetNews] Unknown category: {category}")
             return {"articles": [], "error": f"Danh mục '{category}' không tồn tại"}
 
         all_articles = []
         per_source = max(5, limit // len(sources))
         for src in sources:
-            all_articles.extend(NewsService._parse_rss(
-                src["url"], src["name"], src["icon"], src["lang"], per_source
-            ))
+            fetched = NewsService._parse_rss(src["url"], src["name"], src["icon"], src["lang"], per_source)
+            all_articles.extend(fetched)
 
         all_articles.sort(key=lambda x: x.get("date", ""), reverse=True)
         all_articles = all_articles[:limit]
+        logger.info(f"[GetNews] category={category}, total_articles={len(all_articles)}")
 
-        if category in ("cybersecurity", "stocks_international", "stocks_vietnam"):
-            NewsService._apply_translations(all_articles, category)
+        from services.summary_service import SummaryService
+        needs_processing = False
 
-            from services.summary_service import SummaryService
-            needs_processing = False
-            for article in all_articles:
-                article["category"] = category
-                cached_sum = SummaryService._get_cache(article["url"])
-                if cached_sum:
-                    if "error" in cached_sum:
-                        article["audio_cached"] = "error"
-                        article["summary_text"] = cached_sum.get("error", "")
-                    elif "audio_url" in cached_sum:
-                        article["audio_cached"] = True
-                        article["summary_text"] = cached_sum.get("summary_vi", "")
-                else:
-                    article["audio_cached"] = False
-                    needs_processing = True
+        for article in all_articles:
+            article["category"] = category
+            cached_sum = SummaryService._get_cache(article["url"])
+            if cached_sum:
+                if "error" in cached_sum:
+                    article["audio_cached"] = "error"
+                    article["summary_text"] = cached_sum.get("error", "")
+                elif "audio_url" in cached_sum:
+                    article["audio_cached"] = True
+                    article["summary_text"] = cached_sum.get("summary_vi", "")
+            else:
+                article["audio_cached"] = False
+                needs_processing = True
 
-            NewsService._update_history(all_articles)
+        NewsService._apply_translations(all_articles, category)
+        NewsService._update_history(all_articles)
 
-            has_untranslated = any(a.get("lang") == "en" and "title_vi" not in a for a in all_articles)
-            has_untagged = any("tag" not in a for a in all_articles)
+        has_untranslated = any(a.get("lang") == "en" and "title_vi" not in a for a in all_articles)
 
-            if has_untranslated and category not in _translation_queue_cats:
-                _translation_queue_cats.add(category)
-                _translation_queue.put({"category": category, "articles": all_articles})
+        if has_untranslated and category not in _translation_queue_cats:
+            logger.info(f"[GetNews] Queuing translation for {category}")
+            _translation_queue_cats.add(category)
+            _translation_queue.put({"category": category, "articles": all_articles})
 
-            if (has_untagged or needs_processing) and category not in _llama_queue_cats:
-                _llama_queue_cats.add(category)
-                _llama_queue.put({"category": category, "articles": all_articles})
+        if needs_processing and category not in _llama_queue_cats:
+            logger.info(f"[GetNews] Queuing LLM processing for {category} ({sum(1 for a in all_articles if not a.get('audio_cached'))} articles pending)")
+            _llama_queue_cats.add(category)
+            _llama_queue.put({"category": category, "articles": all_articles})
 
         result = {
             "articles": all_articles,
             "category": category,
             "count": len(all_articles),
             "sources": [s["name"] for s in sources],
-            "cached_at": datetime.now().strftime("%H:%M:%S %d/%m/%Y")
+            "cached_at": datetime.now().strftime("%H:%M:%S %d/%m/%Y"),
         }
 
         _cache[cache_key] = {"data": result, "timestamp": now}
@@ -401,6 +421,7 @@ class NewsService:
     def search_news(query: str, limit: int = 20) -> Dict:
         results = []
         query_lower = query.lower()
+        logger.info(f"[Search] query='{query}', limit={limit}")
 
         for category in RSS_SOURCES:
             news = NewsService.get_news(category, limit=30)
@@ -409,9 +430,7 @@ class NewsService:
                 title_vi = article.get("title_vi", "").lower()
                 desc = article.get("description", "").lower()
                 source = article.get("source", "").lower()
-
-                if (query_lower in title or query_lower in title_vi
-                        or query_lower in desc or query_lower in source):
+                if query_lower in title or query_lower in title_vi or query_lower in desc or query_lower in source:
                     article_copy = dict(article)
                     article_copy["category"] = category
                     results.append(article_copy)
@@ -420,19 +439,19 @@ class NewsService:
         if remaining_limit > 0:
             try:
                 from duckduckgo_search import DDGS
+                logger.info(f"[Search] DuckDuckGo fallback for '{query}', need {remaining_limit} more results")
                 with DDGS() as ddgs:
                     ddgs_results = []
                     for item in ddgs.news(query, max_results=remaining_limit):
-                        title = item.get("title", "")
-                        url = item.get("url", "")
-                        body = item.get("body", "")[:200]
-                        date_raw = item.get("date", "")[:25]
-                        source = item.get("source", "Web")
-
                         ddgs_results.append({
-                            "title": title, "url": url, "description": body,
-                            "date": date_raw, "source": source, "icon": "🌐",
-                            "lang": "en", "category": "cybersecurity"
+                            "title": item.get("title", ""),
+                            "url": item.get("url", ""),
+                            "description": item.get("body", "")[:200],
+                            "date": item.get("date", "")[:25],
+                            "source": item.get("source", "Web"),
+                            "icon": "🌐",
+                            "lang": "en",
+                            "category": "cybersecurity",
                         })
 
                 if ddgs_results:
@@ -442,29 +461,25 @@ class NewsService:
                         threading.Thread(
                             target=NewsService._bg_translate,
                             args=(ddgs_results, "cybersecurity"),
-                            daemon=True
+                            daemon=True,
                         ).start()
                     results.extend(ddgs_results)
+                    logger.info(f"[Search] DuckDuckGo returned {len(ddgs_results)} results")
             except Exception as e:
-                logger.warning(f"DuckDuckGo search error: {e}")
+                logger.warning(f"[Search] DuckDuckGo error: {e}")
 
         results = results[:limit]
-        return {
-            "articles": results,
-            "query": query,
-            "count": len(results)
-        }
+        return {"articles": results, "query": query, "count": len(results)}
 
     @staticmethod
     def _bg_translate(articles, category):
-        """Background translate for search results."""
         try:
             from services.translation_service import TranslationService
             en_titles = [a["title"] for a in articles if a.get("lang") == "en" and "title_vi" not in a]
             if en_titles:
                 TranslationService.translate_batch(en_titles, category)
         except Exception as e:
-            logger.warning(f"Background translate error: {e}")
+            logger.warning(f"[BgTranslate] Error: {e}")
 
     @staticmethod
     def get_all_categories() -> List[Dict]:
@@ -484,12 +499,11 @@ def _auto_translate_worker():
         for cat in ("cybersecurity", "stocks_vietnam", "stocks_international"):
             try:
                 NewsService.get_news(cat, limit=20)
-                logger.info(f"Auto-translate [{cat}] triggered")
+                logger.info(f"[AutoWorker] Refresh triggered for category={cat}")
             except Exception as e:
-                logger.warning(f"Auto-translate [{cat}] lỗi: {e}")
+                logger.warning(f"[AutoWorker] Refresh failed for {cat}: {e}")
             time.sleep(10)
 
-        # Clean up stale cache
         try:
             from services.summary_service import CACHE_DIR, AUDIO_DIR, SummaryService
             active_hashes = set()
@@ -498,22 +512,22 @@ def _auto_translate_worker():
                 for a in recent.get("articles", []):
                     active_hashes.add(SummaryService._generate_hash(a["url"]))
 
-            if os.path.exists(CACHE_DIR):
-                for f in os.listdir(CACHE_DIR):
-                    if f.endswith(".json"):
-                        fname = f.replace(".json", "")
-                        if fname not in active_hashes:
-                            os.remove(os.path.join(CACHE_DIR, f))
-
-            if os.path.exists(AUDIO_DIR):
-                for f in os.listdir(AUDIO_DIR):
-                    if f.endswith(".mp3"):
-                        fname = f.replace(".mp3", "")
-                        if fname not in active_hashes:
-                            os.remove(os.path.join(AUDIO_DIR, f))
-            logger.info("Cleared old audio cache")
+            removed = 0
+            for directory, ext in [(CACHE_DIR, ".json"), (AUDIO_DIR, ".mp3")]:
+                if os.path.exists(directory):
+                    for f in os.listdir(directory):
+                        if f.endswith(ext):
+                            fname = f.replace(ext, "")
+                            if fname not in active_hashes:
+                                try:
+                                    os.remove(os.path.join(directory, f))
+                                    removed += 1
+                                except Exception as e:
+                                    logger.warning(f"[AutoWorker] Failed to remove {f}: {e}")
+            if removed:
+                logger.info(f"[AutoWorker] Cleaned {removed} stale cache files")
         except Exception as e:
-            logger.warning(f"Failed to clear old cache: {e}")
+            logger.warning(f"[AutoWorker] Cache cleanup failed: {e}")
 
         time.sleep(18000)
 
@@ -531,4 +545,5 @@ def start_bg_worker():
 
         t_cron = threading.Thread(target=_auto_translate_worker, daemon=True)
         t_cron.start()
-        logger.info("Parallel Workers (Translation & LLM) & Cron started")
+
+        logger.info("[Workers] Translation, LLM & AutoRefresh workers started")

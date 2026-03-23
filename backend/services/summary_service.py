@@ -1,4 +1,4 @@
-"""Summary Service — Article processing with Cloud LLM translation & Edge-TTS."""
+"""Summary Service — Article scraping, Open Claude translation, Edge-TTS audio generation."""
 
 import os
 import json
@@ -23,7 +23,6 @@ AUDIO_DIR = os.path.join(CACHE_DIR, "audio")
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
-# Rotating User-Agents to avoid bot detection
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15",
@@ -32,22 +31,19 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
 ]
 
-# Sites known to block bots aggressively — use special handling
 BOT_BLOCKING_DOMAINS = {
-    "darkreading.com": {"strategy": "requests_bs4", "needs_cookies": True},
-    "marketwatch.com": {"strategy": "requests_bs4", "needs_cookies": True},
-    "thehackernews.com": {"strategy": "requests_bs4", "needs_cookies": False},
-    "securityweek.com": {"strategy": "newspaper", "needs_cookies": False},
-    "cnbc.com": {"strategy": "requests_bs4", "needs_cookies": False},
-    "yahoo.com": {"strategy": "requests_bs4", "needs_cookies": False},
+    "darkreading.com": "requests_bs4",
+    "marketwatch.com": "requests_bs4",
+    "thehackernews.com": "requests_bs4",
+    "securityweek.com": "newspaper",
+    "cnbc.com": "requests_bs4",
+    "yahoo.com": "requests_bs4",
 }
 
 
 def _get_random_headers() -> Dict[str, str]:
-    """Generate realistic browser headers to bypass anti-bot detection."""
-    ua = random.choice(USER_AGENTS)
     return {
-        "User-Agent": ua,
+        "User-Agent": random.choice(USER_AGENTS),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9,vi;q=0.8",
         "Accept-Encoding": "gzip, deflate, br",
@@ -63,134 +59,110 @@ def _get_random_headers() -> Dict[str, str]:
 
 
 def _get_domain(url: str) -> str:
-    """Extract domain from URL."""
     try:
         from urllib.parse import urlparse
-        parsed = urlparse(url)
-        domain = parsed.netloc.replace("www.", "")
-        return domain
+        return urlparse(url).netloc.replace("www.", "")
     except Exception:
         return ""
 
 
 def _scrape_with_requests_bs4(url: str) -> Optional[str]:
-    """Scrape article using requests + BeautifulSoup (bypasses many anti-bot measures)."""
     try:
         import requests
         from bs4 import BeautifulSoup
 
         session = requests.Session()
         headers = _get_random_headers()
-
-        # First request to get cookies
         resp = session.get(url, headers=headers, timeout=20, allow_redirects=True)
 
         if resp.status_code == 403:
-            # Retry with different UA
+            logger.debug(f"[Scrape/BS4] 403 for {url} — retrying with different UA")
             headers["User-Agent"] = random.choice(USER_AGENTS)
             time.sleep(2)
             resp = session.get(url, headers=headers, timeout=20, allow_redirects=True)
 
         if resp.status_code == 401:
-            # Some sites need a Referer
+            logger.debug(f"[Scrape/BS4] 401 for {url} — adding Referer and retrying")
             headers["Referer"] = f"https://www.google.com/search?q={url}"
             time.sleep(1)
             resp = session.get(url, headers=headers, timeout=20, allow_redirects=True)
 
         if resp.status_code not in (200, 206):
-            logger.warning(f"requests_bs4 got status {resp.status_code} for {url}")
+            logger.warning(f"[Scrape/BS4] HTTP {resp.status_code} for {url}")
             return None
 
         soup = BeautifulSoup(resp.content, "html.parser")
-
-        # Remove unwanted elements
         for tag in soup.find_all(["script", "style", "nav", "footer", "header",
-                                   "aside", "form", "iframe", "noscript",
-                                   "button", "input", "select"]):
+                                   "aside", "form", "iframe", "noscript", "button", "input", "select"]):
             tag.decompose()
 
-        # Try common article selectors
         article_selectors = [
-            "article",
-            '[role="article"]',
-            ".article-body",
-            ".article-content",
-            ".post-content",
-            ".entry-content",
-            ".story-body",
-            "#article-body",
-            ".article__body",
-            ".article-text",
-            ".caas-body",           # Yahoo
-            ".articleBody",
-            "#js-article-text",     # DarkReading
-            ".ContentModule",       # DarkReading
-            "#main-content",
-            ".article__content",
-            ".paywall",
+            "article", '[role="article"]', ".article-body", ".article-content",
+            ".post-content", ".entry-content", ".story-body", "#article-body",
+            ".article__body", ".article-text", ".caas-body", ".articleBody",
+            "#js-article-text", ".ContentModule", "#main-content", ".article__content",
         ]
 
         text = None
         for selector in article_selectors:
             elements = soup.select(selector)
             if elements:
-                paragraphs = []
-                for el in elements:
-                    for p in el.find_all(["p", "li", "h2", "h3", "blockquote"]):
-                        t = p.get_text(strip=True)
-                        if t and len(t) > 20:
-                            paragraphs.append(t)
+                paragraphs = [
+                    p.get_text(strip=True)
+                    for el in elements
+                    for p in el.find_all(["p", "li", "h2", "h3", "blockquote"])
+                    if p.get_text(strip=True) and len(p.get_text(strip=True)) > 20
+                ]
                 if paragraphs:
                     text = "\n\n".join(paragraphs)
                     if len(text) > 300:
                         break
 
-        # Fallback: grab all paragraphs from the body
         if not text or len(text) < 300:
-            paragraphs = []
-            for p in soup.find_all("p"):
-                t = p.get_text(strip=True)
-                if t and len(t) > 30:
-                    paragraphs.append(t)
+            paragraphs = [
+                p.get_text(strip=True)
+                for p in soup.find_all("p")
+                if p.get_text(strip=True) and len(p.get_text(strip=True)) > 30
+            ]
             if paragraphs:
                 text = "\n\n".join(paragraphs)
 
         if text and len(text) > 300:
-            logger.info(f"requests_bs4 extracted {len(text)} chars from: {url}")
+            logger.info(f"[Scrape/BS4] Extracted {len(text)} chars from {url}")
             return text
 
+        logger.warning(f"[Scrape/BS4] Insufficient content ({len(text) if text else 0} chars) for {url}")
         return None
     except Exception as e:
-        logger.warning(f"requests_bs4 failed for {url}: {e}")
+        logger.warning(f"[Scrape/BS4] Exception for {url}: {e}")
         return None
 
 
 def _scrape_with_trafilatura(url: str) -> Optional[str]:
-    """Scrape article using trafilatura (excellent for news articles)."""
     try:
         import trafilatura
-        headers = _get_random_headers()
         downloaded = trafilatura.fetch_url(url)
-        if downloaded:
-            text = trafilatura.extract(downloaded, include_comments=False,
-                                        include_tables=False, favor_recall=True)
-            if text and len(text) > 300:
-                logger.info(f"trafilatura extracted {len(text)} chars from: {url}")
-                return text
+        if not downloaded:
+            logger.warning(f"[Scrape/Trafilatura] fetch_url returned nothing for {url}")
+            return None
+        text = trafilatura.extract(downloaded, include_comments=False,
+                                    include_tables=False, favor_recall=True)
+        if text and len(text) > 300:
+            logger.info(f"[Scrape/Trafilatura] Extracted {len(text)} chars from {url}")
+            return text
+        logger.warning(f"[Scrape/Trafilatura] Insufficient content ({len(text) if text else 0} chars) for {url}")
         return None
     except ImportError:
-        logger.debug("trafilatura not installed, skipping")
+        logger.debug("[Scrape/Trafilatura] Not installed, skipping")
         return None
     except Exception as e:
-        logger.warning(f"trafilatura failed for {url}: {e}")
+        logger.warning(f"[Scrape/Trafilatura] Exception for {url}: {e}")
         return None
 
 
 def _scrape_with_newspaper(url: str) -> Optional[str]:
-    """Scrape article using newspaper3k with enhanced headers."""
     try:
         from newspaper import Article, Config
-
         config = Config()
         config.browser_user_agent = random.choice(USER_AGENTS)
         config.request_timeout = 20
@@ -202,40 +174,32 @@ def _scrape_with_newspaper(url: str) -> Optional[str]:
         text = article.text
 
         if text and len(text) > 300:
-            logger.info(f"newspaper extracted {len(text)} chars from: {url}")
+            logger.info(f"[Scrape/Newspaper] Extracted {len(text)} chars from {url}")
             return text
+        logger.warning(f"[Scrape/Newspaper] Insufficient content ({len(text) if text else 0} chars) for {url}")
         return None
     except Exception as e:
-        logger.warning(f"newspaper failed for {url}: {e}")
+        logger.warning(f"[Scrape/Newspaper] Exception for {url}: {e}")
         return None
 
 
 def scrape_article(url: str) -> Optional[str]:
-    """Multi-strategy article scraper with anti-bot bypass.
-    
-    Strategy order depends on the domain:
-    1. Check domain-specific strategy
-    2. Try newspaper3k first (fastest)
-    3. Fall back to requests+BS4 (most robust)
-    4. Fall back to trafilatura (best extraction quality)
-    """
+    """Multi-strategy scraper: tries each method in order until content is obtained."""
     domain = _get_domain(url)
-    domain_config = None
-    for blocked_domain, config in BOT_BLOCKING_DOMAINS.items():
+    primary_strategy = None
+    for blocked_domain, strategy in BOT_BLOCKING_DOMAINS.items():
         if blocked_domain in domain:
-            domain_config = config
+            primary_strategy = strategy
             break
 
-    strategies = []
-    if domain_config:
-        primary = domain_config.get("strategy", "requests_bs4")
-        if primary == "requests_bs4":
-            strategies = [_scrape_with_requests_bs4, _scrape_with_trafilatura, _scrape_with_newspaper]
-        else:
-            strategies = [_scrape_with_newspaper, _scrape_with_requests_bs4, _scrape_with_trafilatura]
-    else:
-        # Default order: newspaper → requests_bs4 → trafilatura
+    if primary_strategy == "requests_bs4":
+        strategies = [_scrape_with_requests_bs4, _scrape_with_trafilatura, _scrape_with_newspaper]
+    elif primary_strategy == "newspaper":
         strategies = [_scrape_with_newspaper, _scrape_with_requests_bs4, _scrape_with_trafilatura]
+    else:
+        strategies = [_scrape_with_newspaper, _scrape_with_requests_bs4, _scrape_with_trafilatura]
+
+    logger.info(f"[Scrape] Starting for {url} (domain={domain}, primary_strategy={primary_strategy or 'default'})")
 
     for i, strategy in enumerate(strategies):
         try:
@@ -243,10 +207,12 @@ def scrape_article(url: str) -> Optional[str]:
             if text and len(text) > 300:
                 return text
             if i < len(strategies) - 1:
-                time.sleep(1)  # Small delay between strategies
+                logger.debug(f"[Scrape] Strategy {strategy.__name__} insufficient, trying next")
+                time.sleep(1)
         except Exception as e:
-            logger.warning(f"Strategy {strategy.__name__} failed for {url}: {e}")
+            logger.warning(f"[Scrape] Strategy {strategy.__name__} raised exception for {url}: {e}")
 
+    logger.error(f"[Scrape] All strategies failed for {url}")
     return None
 
 
@@ -259,26 +225,28 @@ class SummaryService:
     def _get_cache(url: str, skip_retryable: bool = False) -> Optional[Dict]:
         url_hash = SummaryService._generate_hash(url)
         cache_path = os.path.join(CACHE_DIR, f"{url_hash}.json")
-        if os.path.exists(cache_path):
-            try:
-                with open(cache_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                # Auto-clean error caches that are retryable
-                if skip_retryable and data.get("retryable"):
+        if not os.path.exists(cache_path):
+            return None
+        try:
+            with open(cache_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            if skip_retryable and data.get("retryable"):
+                os.remove(cache_path)
+                logger.info(f"[Cache] Removed retryable error cache for {url}")
+                return None
+
+            if "error" in data and skip_retryable:
+                cache_age = time.time() - os.path.getmtime(cache_path)
+                if cache_age > 7200:
                     os.remove(cache_path)
-                    logger.info(f"Removed retryable error cache for: {url}")
+                    logger.info(f"[Cache] Removed stale error cache ({cache_age/3600:.1f}h old) for {url}")
                     return None
-                # Also auto-clean old error caches (older than 2 hours)
-                if "error" in data and skip_retryable:
-                    cache_time = os.path.getmtime(cache_path)
-                    if time.time() - cache_time > 7200:  # 2 hours
-                        os.remove(cache_path)
-                        logger.info(f"Removed stale error cache (>2h) for: {url}")
-                        return None
-                return data
-            except Exception as e:
-                logger.warning(f"Cache read failed {cache_path}: {e}")
-        return None
+
+            return data
+        except Exception as e:
+            logger.warning(f"[Cache] Read failed for {cache_path}: {e}")
+            return None
 
     @staticmethod
     def _save_cache(url: str, data: Dict):
@@ -287,8 +255,9 @@ class SummaryService:
         try:
             with open(cache_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False)
+            logger.debug(f"[Cache] Saved to {cache_path}")
         except Exception as e:
-            logger.warning(f"Cache save failed {cache_path}: {e}")
+            logger.warning(f"[Cache] Save failed for {cache_path}: {e}")
 
     @staticmethod
     def process_article(url: str, lang: str = "en", title: str = "") -> Dict:
@@ -296,64 +265,63 @@ class SummaryService:
             try:
                 return SummaryService._process_article_internal(url, lang, title)
             except Exception as e:
-                logger.error(f"Critical error in process_article: {e}\n{traceback.format_exc()}")
+                logger.error(f"[ProcessArticle] Critical error for {url}: {e}\n{traceback.format_exc()}")
                 return {"error": f"Lỗi hệ thống: {str(e)}"}
 
     @staticmethod
     def _process_article_internal(url: str, lang: str = "en", title: str = "") -> Dict:
+        logger.info(f"[ProcessArticle] Starting — url={url}, lang={lang}, title='{title[:60]}'")
+
         cached = SummaryService._get_cache(url)
         if cached:
+            logger.info(f"[ProcessArticle] Cache HIT for {url}")
             return cached
 
         url_hash = SummaryService._generate_hash(url)
         audio_filename = f"{url_hash}.mp3"
         audio_path = os.path.join(AUDIO_DIR, audio_filename)
 
-        # Step 1: Crawl full article text with multi-strategy scraper
+        # ── Step 1: Scrape article content ──────────────────────────────────────
+        logger.info(f"[ProcessArticle] Step 1 — Scraping article content from {url}")
         text = None
-        max_retries = 2
-        for attempt in range(max_retries):
+        for attempt in range(2):
             try:
                 text = scrape_article(url)
-
-                if not text or len(text) < 300:
-                    logger.warning(f"All scrape strategies insufficient ({len(text) if text else 0} chars), "
-                                   f"attempt {attempt+1}: {url}")
-                    if attempt < max_retries - 1:
-                        time.sleep(3 * (attempt + 1))
-                        continue
-
-                    # Last resort: use the RSS description/title as minimal content
-                    if title:
-                        text = f"{title}\n\n{text or ''}"
-                        if len(text) > 100:
-                            logger.info(f"Using title+partial text ({len(text)} chars) for: {url}")
-                            break
-
-                    raise Exception("Not enough text extracted from any strategy")
-
-                logger.info(f"Successfully scraped {len(text)} chars from: {url}")
-                if len(text) > 30000:
-                    text = text[:30000]
-                break
-
-            except Exception as e:
-                logger.warning(f"Scrape attempt {attempt+1}/{max_retries} failed for {url}: {e}")
-                if attempt < max_retries - 1:
-                    time.sleep(3 * (attempt + 1))
+                if text and len(text) >= 300:
+                    logger.info(f"[ProcessArticle] Step 1 OK — scraped {len(text)} chars (attempt {attempt+1})")
+                    if len(text) > 30000:
+                        logger.info(f"[ProcessArticle] Step 1 — truncating from {len(text)} to 30000 chars")
+                        text = text[:30000]
+                    break
                 else:
-                    err_str = str(e)
-                    is_blocked = any(k in err_str for k in ["401", "403", "429", "blocked", "Not enough text"])
+                    logger.warning(f"[ProcessArticle] Step 1 — insufficient content ({len(text) if text else 0} chars), attempt {attempt+1}/2")
+                    if attempt == 0:
+                        time.sleep(3)
+                    else:
+                        if title:
+                            text = f"{title}\n\n{text or ''}"
+                            logger.warning(f"[ProcessArticle] Step 1 — using title+partial text ({len(text)} chars) as fallback")
+                            if len(text) >= 100:
+                                break
+                        raise Exception("Insufficient content from all scraping strategies")
+            except Exception as e:
+                logger.error(f"[ProcessArticle] Step 1 FAILED attempt {attempt+1}/2: {e}")
+                if attempt == 0:
+                    time.sleep(3)
+                else:
                     domain = _get_domain(url)
+                    err_str = str(e)
+                    is_blocked = any(k in err_str for k in ["401", "403", "429", "blocked", "Insufficient"])
                     if is_blocked:
                         err_msg = f"Trang {domain} chặn truy cập bot. Sẽ tự động thử lại sau."
                     else:
-                        err_msg = f"Lỗi truy cập: {err_str[:80]}"
+                        err_msg = f"Lỗi truy cập trang: {err_str[:80]}"
                     res = {"error": f"❌ {err_msg}", "url": url, "hash": url_hash, "retryable": True}
                     SummaryService._save_cache(url, res)
                     return res
 
-        # Step 2: Cloud LLM — Translate (if EN) + Rewrite to broadcast-quality Vietnamese
+        # ── Step 2: Open Claude — translate/rewrite to broadcast Vietnamese ─────
+        logger.info(f"[ProcessArticle] Step 2 — Sending {len(text)} chars to Open Claude (lang={lang})")
         try:
             from services.cloud_llm_service import CloudLLMService
 
@@ -370,8 +338,7 @@ class SummaryService:
                     "4. Lược bỏ: menu điều hướng, quảng cáo, nút bấm, link đăng ký, footer website.\n"
                     "5. Văn phong báo chí chuyên nghiệp, mạch lạc, phù hợp đọc bằng giọng nói trên radio.\n"
                     "6. KHÔNG dùng ký tự đặc biệt: *, #, [], (), **. Chỉ dùng văn bản thuần.\n"
-                    "7. TUYỆT ĐỐI KHÔNG thêm bất kỳ bình luận, ghi chú, lời giải thích nào của bạn. "
-                    "Chỉ xuất ra nội dung bài báo đã dịch.\n\n"
+                    "7. TUYỆT ĐỐI KHÔNG thêm bình luận, ghi chú, lời giải thích nào của bạn.\n\n"
                     f"TIÊU ĐỀ GỐC: {title}\n\n"
                     f"NỘI DUNG BÀI BÁO:\n{text}"
                 )
@@ -387,96 +354,123 @@ class SummaryService:
                     "4. Lược bỏ: HTML, sơ đồ code, quảng cáo, menu, footer, link rác.\n"
                     "5. Văn phong tự nhiên, trôi chảy, phù hợp đọc bằng giọng nói trên radio.\n"
                     "6. KHÔNG dùng ký tự đặc biệt: *, #, [], (), **. Chỉ văn bản thuần.\n"
-                    "7. TUYỆT ĐỐI KHÔNG thêm bất kỳ bình luận, ghi chú, lời giải thích nào của bạn.\n\n"
+                    "7. TUYỆT ĐỐI KHÔNG thêm bình luận, ghi chú, lời giải thích nào của bạn.\n\n"
                     f"TIÊU ĐỀ: {title}\n\n"
                     f"NỘI DUNG BÀI BÁO:\n{text}"
                 )
 
-            result = CloudLLMService.chat_completion(
+            ai_result = CloudLLMService.chat_completion(
                 messages=[
-                    {"role": "system", "content": "Bạn là biên dịch viên/biên tập viên báo chí chuyên nghiệp. "
-                     "Nhiệm vụ duy nhất: dịch/biên tập bài báo. Không giải thích, không bình luận."},
-                    {"role": "user", "content": prompt}
+                    {
+                        "role": "system",
+                        "content": "Bạn là biên dịch viên/biên tập viên báo chí chuyên nghiệp. "
+                                   "Nhiệm vụ duy nhất: dịch/biên tập bài báo. Không giải thích, không bình luận.",
+                    },
+                    {"role": "user", "content": prompt},
                 ],
                 temperature=0.15,
                 max_tokens=32000,
-                task_type="complex",  # Intelligent routing: translation is a complex task
+                task_type="complex",
             )
-            summary_vi = result.get("content", "").strip()
-            provider = result.get("provider", "unknown")
-            logger.info(f"Processed by {provider} (model: {result.get('model', '')}), output: {len(summary_vi)} chars")
+
+            summary_vi = ai_result.get("content", "").strip()
+            provider = ai_result.get("provider", "unknown")
+            model = ai_result.get("model", "?")
+            usage = ai_result.get("usage", {})
+
+            logger.info(
+                f"[ProcessArticle] Step 2 OK — provider={provider}, model={model}, "
+                f"prompt_tokens={usage.get('prompt_tokens','?')}, "
+                f"completion_tokens={usage.get('completion_tokens','?')}, "
+                f"output_len={len(summary_vi)}"
+            )
 
             if not summary_vi:
-                raise Exception("AI returned empty result")
+                raise Exception("AI returned empty content")
 
-            # Post-process: strip special chars and AI meta-commentary
             summary_vi = summary_vi.replace("*", "").replace("#", "").replace('"', "")
             summary_vi = summary_vi.replace("<|eot_id|>", "").replace("<|end_header_id|>", "")
             if summary_vi.lower().startswith("assistant"):
                 summary_vi = summary_vi[len("assistant"):].strip()
 
-            # Remove AI self-commentary patterns
-            for pattern in [r'\(Đoạn văn tiếp theo.*$', r'\(Lưu ý:.*$', r'\(Ghi chú:.*$',
-                            r'\(Chú thích:.*$', r'\(Dịch giả:.*$', r'\(Biên tập:.*$', r'---.*$']:
-                summary_vi = re.sub(pattern, '', summary_vi, flags=re.DOTALL).strip()
+            for pattern in [
+                r"\(Đoạn văn tiếp theo.*$", r"\(Lưu ý:.*$", r"\(Ghi chú:.*$",
+                r"\(Chú thích:.*$", r"\(Dịch giả:.*$", r"\(Biên tập:.*$", r"---.*$",
+            ]:
+                summary_vi = re.sub(pattern, "", summary_vi, flags=re.DOTALL).strip()
 
-            # Extract Vietnamese title for history sync
             lines = [l.strip() for l in summary_vi.split("\n") if l.strip()]
             final_title_vi = lines[0] if lines else title
 
             try:
                 from services.news_service import NewsService
                 NewsService._update_history([{
-                    "url": url, "title_vi": final_title_vi,
-                    "summary_text": summary_vi[:500], "audio_cached": True
+                    "url": url,
+                    "title_vi": final_title_vi,
+                    "summary_text": summary_vi[:500],
+                    "audio_cached": True,
                 }])
+                logger.info(f"[ProcessArticle] Step 2 — history updated with title_vi='{final_title_vi[:60]}'")
             except Exception as e:
-                logger.warning(f"History sync failed: {e}")
+                logger.warning(f"[ProcessArticle] Step 2 — history sync failed: {e}")
 
         except Exception as e:
-            logger.error(f"Failed to process article {url}: {e}")
-            err_msg = "AI timeout. Vui lòng thử lại sau." if "timeout" in str(e).lower() else f"AI error: {str(e)[:100]}"
-            res = {"error": f"❌ {err_msg}", "url": url, "hash": url_hash, "retryable": True}
+            logger.error(f"[ProcessArticle] Step 2 FAILED for {url}: {e}")
+            if "timeout" in str(e).lower():
+                err_msg = "AI timeout. Vui lòng thử lại sau."
+            elif "401" in str(e):
+                err_msg = "Lỗi xác thực API AI. Kiểm tra lại API key."
+            elif "empty" in str(e).lower():
+                err_msg = "AI trả về kết quả rỗng. Vui lòng thử lại."
+            else:
+                err_msg = f"❌ AI error: {str(e)[:120]}"
+            res = {"error": err_msg, "url": url, "hash": url_hash, "retryable": True}
             SummaryService._save_cache(url, res)
             return res
 
-        # Step 3: Text-to-Speech (Edge-TTS)
+        # ── Step 3: Edge-TTS — generate Vietnamese audio ────────────────────────
+        logger.info(f"[ProcessArticle] Step 3 — Generating TTS audio (text_len={len(summary_vi)})")
         try:
             text_to_read = SummaryService._fix_pronunciation(summary_vi)
             communicate = edge_tts.Communicate(text_to_read, "vi-VN-HoaiMyNeural")
             asyncio.run(communicate.save(audio_path))
+            logger.info(f"[ProcessArticle] Step 3 OK — audio saved to {audio_path}")
         except Exception as e:
-            logger.error(f"Edge-TTS error for {url}: {e}")
+            logger.error(f"[ProcessArticle] Step 3 FAILED (TTS) for {url}: {e}")
             res = {"error": "Lỗi tạo giọng nói.", "url": url, "hash": url_hash}
             SummaryService._save_cache(url, res)
             return res
 
         result = {
-            "url": url, "original_lang": lang, "summary_vi": summary_vi,
-            "audio_url": f"/api/news/audio/{audio_filename}", "hash": url_hash
+            "url": url,
+            "original_lang": lang,
+            "summary_vi": summary_vi,
+            "audio_url": f"/api/news/audio/{audio_filename}",
+            "hash": url_hash,
         }
         SummaryService._save_cache(url, result)
+        logger.info(f"[ProcessArticle] Complete — url={url}, audio={audio_filename}")
         return result
 
     @staticmethod
     def _fix_pronunciation(text: str) -> str:
         replacements = {
-            r'\bRAT\b': 'Rát', r'\bAI\b': 'Ây ai', r'\bFBI\b': 'Ép bi ai',
-            r'\bCIA\b': 'Xi ai ây', r'\bAPT\b': 'Ê pi ti', r'\bAPI\b': 'Ê pi ai',
-            r'\bCEO\b': 'Xi y âu', r'\bIT\b': 'Ai ti', r'\bCISA\b': 'Xi sa',
-            r'\bUS\b': 'Mỹ', r'\bUSA\b': 'Mỹ', r'\biOS\b': 'Ai âu ét',
-            r'\bIP\b': 'Ai pi', r'\bIoT\b': 'Ai âu ti', r'\bAWS\b': 'Ây đắp liu ét',
-            r'\bURL\b': 'U rờ lờ', r'\bHTTPS?\b': 'Ếch ti ti pi',
-            r'\bDDoS\b': 'Đi đốt', r'\bVPN\b': 'Vi pi en',
-            r'\bSSL\b': 'Ét ét eo', r'\bTLS\b': 'Ti eo ét',
-            r'(?i)\bcybersecurity\b': 'An ninh mạng', r'(?i)\bhacker\b': 'Hắc cờ',
-            r'(?i)\bmalware\b': 'Mã độc', r'(?i)\bphishing\b': 'Lừa đảo qua mạng',
-            r'(?i)\bransomware\b': 'Mã độc tống tiền',
-            r'(?i)\bvinaconex\b': 'Vi na cô nếch', r'(?i)\bvietstock\b': 'Việt xtốc',
-            r'(?i)\bvneconomy\b': 'Vi en i cô nô mi',
-            r'(?i)\bpost\b': 'Pốt', r'(?i)\btrading\b': 'Tra đing',
-            r'(?i)\betfs?\b': 'Ê tê ép', r'(?i)\btech\b': 'Tếch',
-            r'(?i)\bblockchain\b': 'Bờ lốc chên', r'(?i)\bcrypto\b': 'Cờ ríp tô',
+            r"\bRAT\b": "Rát", r"\bAI\b": "Ây ai", r"\bFBI\b": "Ép bi ai",
+            r"\bCIA\b": "Xi ai ây", r"\bAPT\b": "Ê pi ti", r"\bAPI\b": "Ê pi ai",
+            r"\bCEO\b": "Xi y âu", r"\bIT\b": "Ai ti", r"\bCISA\b": "Xi sa",
+            r"\bUS\b": "Mỹ", r"\bUSA\b": "Mỹ", r"\biOS\b": "Ai âu ét",
+            r"\bIP\b": "Ai pi", r"\bIoT\b": "Ai âu ti", r"\bAWS\b": "Ây đắp liu ét",
+            r"\bURL\b": "U rờ lờ", r"\bHTTPS?\b": "Ếch ti ti pi",
+            r"\bDDoS\b": "Đi đốt", r"\bVPN\b": "Vi pi en",
+            r"\bSSL\b": "Ét ét eo", r"\bTLS\b": "Ti eo ét",
+            r"(?i)\bcybersecurity\b": "An ninh mạng", r"(?i)\bhacker\b": "Hắc cờ",
+            r"(?i)\bmalware\b": "Mã độc", r"(?i)\bphishing\b": "Lừa đảo qua mạng",
+            r"(?i)\bransomware\b": "Mã độc tống tiền",
+            r"(?i)\bvinaconex\b": "Vi na cô nếch", r"(?i)\bvietstock\b": "Việt xtốc",
+            r"(?i)\bvneconomy\b": "Vi en i cô nô mi",
+            r"(?i)\bpost\b": "Pốt", r"(?i)\btrading\b": "Tra đing",
+            r"(?i)\betfs?\b": "Ê tê ép", r"(?i)\btech\b": "Tếch",
+            r"(?i)\bblockchain\b": "Bờ lốc chên", r"(?i)\bcrypto\b": "Cờ ríp tô",
         }
         for pattern, replacement in replacements.items():
             text = re.sub(pattern, replacement, text)
