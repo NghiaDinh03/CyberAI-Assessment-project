@@ -13,7 +13,7 @@ class Settings:
     MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "-1"))
 
     CLOUD_LLM_API_URL: str = os.getenv("CLOUD_LLM_API_URL", "https://open-claude.com/v1")
-    CLOUD_MODEL_NAME: str = os.getenv("CLOUD_MODEL_NAME", "claude-opus-4.6")
+    CLOUD_MODEL_NAME: str = os.getenv("CLOUD_MODEL_NAME", "gemini-3-pro-preview")
     CLOUD_API_KEYS: str = os.getenv("CLOUD_API_KEYS", "")
 
     OPENROUTER_API_KEYS: str = os.getenv("OPENROUTER_API_KEYS", "")
