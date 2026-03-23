@@ -101,7 +101,7 @@ def on_startup():
 def root():
     return {
         "status": "running", "service": settings.APP_NAME, "version": settings.APP_VERSION,
-        "ai_model": settings.CLOUD_MODEL_NAME, "ai_provider": "Open Claude (gemini-3-pro-preview)",
+        "ai_model": settings.CLOUD_MODEL_NAME, "ai_provider": f"Open Claude ({settings.CLOUD_MODEL_NAME})",
         "docs": "/docs",
     }
 
