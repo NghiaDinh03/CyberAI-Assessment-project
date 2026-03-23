@@ -1,4 +1,4 @@
-Luônservices:
+services:
   backend:
     build:
       context: ./backend
@@ -12,10 +12,10 @@ Luônservices:
       - MODEL_NAME=${MODEL_NAME}
       - SECURITY_MODEL_NAME=${SECURITY_MODEL_NAME:-${MODEL_NAME}}
       - MAX_TOKENS=-1
-      # Cloud LLM (Open Claude - gemini-3-pro-preview)
+      # Cloud LLM (Open Claude)
       - CLOUD_LLM_API_URL=${CLOUD_LLM_API_URL:-https://open-claude.com/v1}
-      - CLOUD_MODEL_NAME=${CLOUD_MODEL_NAME:-gemini-3-pro-preview}
-      - CLOUD_API_KEYS=${CLOUD_API_KEYS:-${OPENROUTER_API_KEYS}}
+      - CLOUD_MODEL_NAME=${CLOUD_MODEL_NAME:-claude-opus-4.6}
+      - CLOUD_API_KEYS=${CLOUD_API_KEYS}
       # OpenRouter (Fallback)
       - OPENROUTER_API_KEYS=${OPENROUTER_API_KEYS}
       - OPENROUTER_MODEL=${OPENROUTER_MODEL:-meta-llama/llama-3.1-8b-instruct:free}

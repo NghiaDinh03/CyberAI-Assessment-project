@@ -25,6 +25,8 @@ duckduckgo-search>=6.2.0
 # ======= News Aggregator =======
 newspaper4k>=0.9.0
 lxml_html_clean
+beautifulsoup4>=4.12.0
+trafilatura>=1.8.0
 
 # ======= Text-to-Speech =======
 edge-tts

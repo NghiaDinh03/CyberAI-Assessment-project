@@ -1,1 +1,1 @@
-{"error": "❌ Lỗi truy cập: Article `download()` failed with Status code 403 for url None on URL https://www", "url": "https://www.darkreading.com/vulnerabilities-threats/patch-oracle-fusion-middleware-rce-flaw", "hash": "1ad9ee0f0c577e4b9c819ed4a2e25a8d"}
+{"error": "❌ AI error: All AI providers failed: Open Claude: Open Claude failed: None | OpenRouter: OpenRouter failed: all ", "url": "https://www.darkreading.com/vulnerabilities-threats/patch-oracle-fusion-middleware-rce-flaw", "hash": "1ad9ee0f0c577e4b9c819ed4a2e25a8d", "retryable": true}

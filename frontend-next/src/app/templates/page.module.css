@@ -1,23 +1,24 @@
 .header {
     text-align: center;
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border);
 }
 
 .title {
-    font-size: 1.5rem;
-    color: #CBD5E1;
-    margin-bottom: 0.75rem;
-    font-weight: 700;
+    font-size: 1.6rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
 }
 
 .subtitle {
-    color: #64748B;
+    color: var(--text-muted);
     font-size: 0.9rem;
-    max-width: 700px;
-    margin: 0 auto 1.25rem;
-    line-height: 1.6;
+    max-width: 600px;
+    margin: 0 auto 1.5rem;
+    line-height: 1.65;
 }
 
 .headerActions {
@@ -26,23 +27,26 @@
 }
 
 .backBtn {
-    display: inline-block;
-    padding: 0.5rem 1rem;
-    background: rgba(255, 255, 255, 0.03);
-    color: #64748B;
-    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.5rem 1.15rem;
+    background: var(--bg-subtle);
+    color: var(--text-muted);
+    border-radius: 8px;
     text-decoration: none;
     font-size: 0.85rem;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    font-weight: 500;
+    border: 1px solid var(--border);
     transition: all 0.2s;
 }
 
 .backBtn:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #94A3B8;
+    background: var(--bg-muted);
+    color: var(--text-primary);
+    border-color: var(--border-active);
 }
 
-/* Filter Bar */
 .filterBar {
     display: flex;
     justify-content: center;
@@ -51,11 +55,11 @@
 }
 
 .filterBtn {
-    padding: 7px 16px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
+    padding: 8px 18px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
     background: transparent;
-    color: #64748B;
+    color: var(--text-dim);
     font-size: 0.82rem;
     font-weight: 500;
     cursor: pointer;
@@ -64,20 +68,21 @@
 }
 
 .filterBtn:hover {
-    background: rgba(255, 255, 255, 0.03);
-    color: #94A3B8;
+    background: var(--bg-muted);
+    color: var(--text-secondary);
+    border-color: var(--border-light);
 }
 
 .filterActive {
-    background: rgba(51, 109, 198, 0.1);
-    color: #7EB8F0;
-    border-color: rgba(51, 109, 198, 0.2);
+    background: var(--blue-subtle);
+    color: var(--accent-blue);
+    border-color: var(--accent-blue);
+    font-weight: 600;
 }
 
-/* Template Grid */
 .templateGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(370px, 1fr));
     gap: 1.25rem;
     max-width: 1200px;
     margin: 0 auto;
@@ -85,18 +90,19 @@
 
 .templateCard {
     background: var(--bg-card);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 14px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     transition: all 0.25s ease;
+    box-shadow: var(--shadow-sm);
 }
 
 .templateCard:hover {
-    transform: translateY(-3px);
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    transform: translateY(-4px);
+    border-color: var(--border-active);
+    box-shadow: var(--shadow-card-hover);
 }
 
 .cardHeader {
@@ -108,95 +114,104 @@
 }
 
 .cardTitle {
-    font-size: 1.05rem;
-    color: #CBD5E1;
-    margin: 0 0 6px;
-    font-weight: 600;
+    font-size: 1.02rem;
+    color: var(--text-primary);
+    margin: 0 0 8px;
+    font-weight: 700;
+    line-height: 1.35;
 }
 
 .stdBadge {
     display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
+    padding: 3px 10px;
+    border-radius: 6px;
     font-size: 0.68rem;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.3px;
 }
 
 .stdIso {
-    background: rgba(51, 109, 198, 0.1);
-    color: #7EB8F0;
-    border: 1px solid rgba(51, 109, 198, 0.15);
+    background: var(--blue-subtle);
+    color: var(--accent-blue);
+    border: 1px solid rgba(59, 130, 246, 0.15);
 }
 
 .stdTcvn {
-    background: rgba(16, 150, 110, 0.1);
-    color: #34D399;
-    border: 1px solid rgba(16, 150, 110, 0.15);
+    background: var(--green-subtle);
+    color: var(--accent-green);
+    border: 1px solid rgba(16, 185, 129, 0.15);
 }
 
 .industryTag {
-    background: rgba(255, 255, 255, 0.04);
-    color: #64748B;
-    padding: 3px 9px;
+    background: var(--bg-muted);
+    color: var(--text-muted);
+    padding: 4px 10px;
     border-radius: 12px;
     font-size: 0.72rem;
     font-weight: 500;
     white-space: nowrap;
+    border: 1px solid var(--border);
 }
 
 .cardBody {
-    padding: 0.75rem 1.25rem 1rem;
+    padding: 0.5rem 1.25rem 1rem;
     flex: 1;
 }
 
 .cardDesc {
-    color: #64748B;
+    color: var(--text-muted);
     font-size: 0.84rem;
     margin-bottom: 1rem;
-    line-height: 1.5;
+    line-height: 1.55;
 }
 
-/* Stats row */
 .statsRow {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .statBox {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 8px 4px;
-    background: rgba(126, 184, 240, 0.04);
-    border: 1px solid rgba(126, 184, 240, 0.08);
-    border-radius: 8px;
+    gap: 3px;
+    padding: 10px 4px;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: all 0.2s;
+}
+
+.statBox:hover {
+    border-color: var(--border-active);
+    background: var(--blue-subtle);
 }
 
 .statNum {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #CBD5E1;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1;
 }
 
 .statLabel {
-    font-size: 0.68rem;
-    color: #64748B;
+    font-size: 0.65rem;
+    color: var(--text-dim);
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
+    font-weight: 600;
 }
 
-/* Meta grid */
 .metaGrid {
     display: flex;
     flex-direction: column;
     gap: 0;
-    margin-bottom: 12px;
-    background: rgba(0, 0, 0, 0.08);
-    border-radius: 8px;
+    margin-bottom: 14px;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: 10px;
     overflow: hidden;
 }
 
@@ -205,95 +220,103 @@
     justify-content: space-between;
     align-items: center;
     font-size: 0.78rem;
-    padding: 7px 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.025);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
 }
 
 .metaItem:last-child {
     border-bottom: none;
 }
 
+.metaItem:hover {
+    background: var(--bg-muted);
+}
+
 .metaLabel {
-    color: #64748B;
+    color: var(--text-muted);
     font-weight: 500;
     white-space: nowrap;
     flex-shrink: 0;
 }
 
 .metaValue {
-    color: #94A3B8;
+    color: var(--text-secondary);
     font-size: 0.76rem;
     text-align: right;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 60%;
+    font-weight: 500;
 }
 
-/* Compliance in card */
 .complianceSection {
-    background: rgba(0, 0, 0, 0.12);
-    padding: 10px 12px;
-    border-radius: 8px;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+    border-radius: 10px;
 }
 
 .complianceHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
 .complianceTitle {
-    font-size: 0.74rem;
-    color: #475569;
-    font-weight: 500;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
 }
 
 .complianceValue {
-    font-size: 0.78rem;
-    color: #94A3B8;
-    font-weight: 500;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 600;
 }
 
 .complianceTrack {
-    height: 4px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 2px;
+    height: 6px;
+    background: var(--bg-muted);
+    border-radius: 3px;
     overflow: hidden;
 }
 
 .complianceFill {
     height: 100%;
-    background: linear-gradient(90deg, rgba(16, 150, 110, 0.5), rgba(52, 211, 153, 0.4));
-    border-radius: 2px;
-    transition: width 0.3s;
+    background: linear-gradient(90deg, var(--accent-green), #34D399);
+    border-radius: 3px;
+    transition: width 0.4s ease;
 }
 
 .cardFooter {
     padding: 1rem 1.25rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    border-top: 1px solid var(--border);
 }
 
 .useBtn {
     width: 100%;
-    padding: 10px;
-    background: rgba(16, 150, 110, 0.15);
-    color: #34D399;
-    border: 1px solid rgba(16, 150, 110, 0.2);
-    border-radius: 8px;
+    padding: 11px;
+    background: var(--green-subtle);
+    color: var(--accent-green);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: 10px;
     font-size: 0.88rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
     font-family: inherit;
 }
 
 .useBtn:hover {
-    background: rgba(16, 150, 110, 0.25);
-    border-color: rgba(16, 150, 110, 0.35);
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
 }
 
 @media (max-width: 640px) {
@@ -306,6 +329,10 @@
     }
 
     .title {
-        font-size: 1.25rem;
+        font-size: 1.3rem;
+    }
+
+    .subtitle {
+        font-size: 0.84rem;
     }
 }

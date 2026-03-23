@@ -28,7 +28,7 @@
 
 .subtitle {
     font-size: 0.72rem;
-    color: var(--text-dim, #64748B);
+    color: var(--text-dim);
     font-weight: 400;
 }
 
@@ -41,7 +41,7 @@
 
 .lastUpdate {
     font-size: 0.65rem;
-    color: var(--text-dim, #64748B);
+    color: var(--text-dim);
     opacity: 0.7;
 }
 
@@ -49,7 +49,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(16, 185, 129, 0.1);
+    background: var(--green-subtle);
     border: 1px solid rgba(16, 185, 129, 0.2);
     padding: 4px 12px;
     border-radius: 20px;
@@ -59,7 +59,7 @@
 .pulse {
     width: 6px;
     height: 6px;
-    background: #10b981;
+    background: var(--accent-green);
     border-radius: 50%;
     box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
     animation: pulse 2s infinite;
@@ -68,7 +68,7 @@
 .statusText {
     font-size: 0.72rem;
     font-weight: 600;
-    color: #10b981;
+    color: var(--accent-green);
 }
 
 @keyframes pulse {
@@ -102,9 +102,9 @@
     border-radius: 8px;
     font-size: 0.72rem;
     font-weight: 600;
-    background: rgba(59, 130, 246, 0.08);
+    background: var(--blue-subtle);
     border: 1px solid rgba(59, 130, 246, 0.15);
-    color: var(--accent-blue, #3B82F6);
+    color: var(--accent-blue);
     cursor: pointer;
     font-family: inherit;
     transition: all 0.15s;
@@ -131,15 +131,15 @@
     align-items: center;
     flex: 1;
     max-width: 420px;
-    background: rgba(15, 23, 42, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
     border-radius: 10px;
     padding: 0 12px;
     transition: border-color 0.15s;
 }
 
 .searchBox:focus-within {
-    border-color: rgba(59, 130, 246, 0.3);
+    border-color: var(--border-active);
 }
 
 .searchIcon {
@@ -153,20 +153,20 @@
     background: none;
     border: none;
     outline: none;
-    color: var(--text-primary, #F1F5F9);
+    color: var(--text-primary);
     font-size: 0.78rem;
     font-family: inherit;
     padding: 8px 0;
 }
 
 .searchInput::placeholder {
-    color: var(--text-dim, #64748B);
+    color: var(--text-dim);
 }
 
 .searchClear {
     background: none;
     border: none;
-    color: var(--text-dim, #64748B);
+    color: var(--text-dim);
     cursor: pointer;
     font-size: 0.72rem;
     padding: 4px;
@@ -174,19 +174,19 @@
 }
 
 .searchClear:hover {
-    color: var(--text-primary, #F1F5F9);
+    color: var(--text-primary);
 }
 
 .searchStatus {
     font-size: 0.68rem;
-    color: var(--text-dim, #64748B);
+    color: var(--text-dim);
     white-space: nowrap;
 }
 
 .cardCategory {
     font-size: 0.6rem;
-    color: var(--accent-blue, #60A5FA);
-    background: rgba(59, 130, 246, 0.08);
+    color: var(--accent-blue);
+    background: var(--blue-subtle);
     padding: 1px 6px;
     border-radius: 4px;
 }
@@ -196,7 +196,7 @@
     justify-content: space-between;
     align-items: flex-end;
     margin-bottom: 1.25rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid var(--border);
 }
 
 .tabs {
@@ -206,8 +206,8 @@
 }
 
 .playAllBtn {
-    background: rgba(16, 185, 129, 0.15);
-    color: #10b981;
+    background: var(--green-subtle);
+    color: var(--accent-green);
     border: 1px solid rgba(16, 185, 129, 0.3);
     padding: 6px 12px;
     border-radius: 6px;
@@ -226,7 +226,7 @@
 .expandBtn {
     background: transparent;
     border: none;
-    color: var(--accent-blue, #60A5FA);
+    color: var(--accent-blue);
     font-size: 0.7rem;
     font-weight: 600;
     cursor: pointer;
@@ -239,7 +239,7 @@
 }
 
 .expandBtn:hover {
-    color: #93C5FD;
+    opacity: 0.8;
 }
 
 .tab {
@@ -252,7 +252,7 @@
     background: none;
     border: none;
     border-bottom: 2px solid transparent;
-    color: var(--text-dim, #64748B);
+    color: var(--text-dim);
     cursor: pointer;
     transition: all 0.15s;
     font-family: inherit;
@@ -260,12 +260,12 @@
 }
 
 .tab:hover {
-    color: var(--text-primary, #F1F5F9);
+    color: var(--text-primary);
 }
 
 .tabActive {
-    color: var(--accent-blue, #3B82F6) !important;
-    border-bottom-color: var(--accent-blue, #3B82F6) !important;
+    color: var(--accent-blue) !important;
+    border-bottom-color: var(--accent-blue) !important;
 }
 
 .tabIcon {
@@ -288,7 +288,7 @@
     align-items: center;
     justify-content: center;
     padding: 4rem 1rem;
-    color: var(--text-dim, #64748B);
+    color: var(--text-dim);
     gap: 0.75rem;
     font-size: 0.82rem;
 }
@@ -296,8 +296,8 @@
 .spinner {
     width: 24px;
     height: 24px;
-    border: 2.5px solid rgba(59, 130, 246, 0.12);
-    border-top-color: var(--accent-blue, #3B82F6);
+    border: 2.5px solid var(--blue-subtle);
+    border-top-color: var(--accent-blue);
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
 }
@@ -313,9 +313,9 @@
     border-radius: 8px;
     font-size: 0.76rem;
     font-weight: 600;
-    background: rgba(59, 130, 246, 0.1);
+    background: var(--blue-subtle);
     border: 1px solid rgba(59, 130, 246, 0.2);
-    color: var(--accent-blue, #3B82F6);
+    color: var(--accent-blue);
     cursor: pointer;
     font-family: inherit;
 }
@@ -333,8 +333,8 @@
     gap: 12px;
     padding: 14px 16px;
     border-radius: 10px;
-    background: rgba(15, 23, 42, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.03);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     text-decoration: none;
     color: inherit;
     transition: all 0.15s;
@@ -346,9 +346,9 @@
 .reprocessBtnCorner {
     position: absolute;
     top: 8px;
-    right: 35px; /* Giữ bên trái của icon link và lang */
-    background: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
+    right: 35px;
+    background: var(--amber-subtle);
+    color: var(--accent-amber);
     border: 1px solid rgba(245, 158, 11, 0.2);
     border-radius: 4px;
     width: 24px;
@@ -373,8 +373,8 @@
 }
 
 .card:hover {
-    background: rgba(30, 41, 59, 0.6);
-    border-color: rgba(59, 130, 246, 0.12);
+    background: var(--bg-card-hover);
+    border-color: var(--border-active);
 }
 
 .cardBody {
@@ -388,7 +388,7 @@
     font-size: 0.84rem;
     font-weight: 700;
     line-height: 1.45;
-    color: var(--text-primary, #F1F5F9);
+    color: var(--text-primary);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
@@ -400,7 +400,7 @@
     font-size: 0.76rem;
     font-weight: 500;
     line-height: 1.4;
-    color: var(--accent-blue, #60A5FA);
+    color: var(--accent-blue);
     margin-top: 1px;
     display: -webkit-box;
     -webkit-line-clamp: 1;
@@ -419,17 +419,17 @@
 .cardSource {
     font-size: 0.65rem;
     font-weight: 600;
-    color: var(--accent-blue, #3B82F6);
+    color: var(--accent-blue);
 }
 
 .cardDate {
     font-size: 0.62rem;
-    color: var(--text-dim, #64748B);
+    color: var(--text-dim);
 }
 
 .cardDesc {
     font-size: 0.72rem;
-    color: var(--text-dim, #94A3B8);
+    color: var(--text-muted);
     line-height: 1.45;
     display: -webkit-box;
     -webkit-line-clamp: 1;
@@ -450,13 +450,13 @@
 
 .cardLang {
     font-size: 0.6rem;
-    color: var(--text-dim, #64748B);
+    color: var(--text-dim);
     white-space: nowrap;
 }
 
 .cardLink {
     font-size: 0.68rem;
-    color: var(--accent-blue, #3B82F6);
+    color: var(--accent-blue);
     font-weight: 600;
     opacity: 0;
     transition: opacity 0.15s;
@@ -502,9 +502,9 @@
     right: 0;
     width: 380px;
     height: 100vh;
-    background: #0f172a;
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-light);
+    box-shadow: var(--shadow-lg);
     z-index: 1000;
     transform: translateX(100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -522,13 +522,13 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0,0,0,0.4);
+    background: var(--bg-overlay);
     z-index: 999;
 }
 
 .historyHeader {
     padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -537,19 +537,19 @@
 .historyHeader h2 {
     font-size: 1.1rem;
     margin: 0;
-    color: #f1f5f9;
+    color: var(--text-primary);
 }
 
 .historyClose {
     background: transparent;
     border: none;
-    color: #94a3b8;
+    color: var(--text-muted);
     font-size: 1.2rem;
     cursor: pointer;
 }
 
 .historyClose:hover {
-    color: #f1f5f9;
+    color: var(--text-primary);
 }
 
 .historyContent {
@@ -562,8 +562,8 @@
 }
 
 .historyItem {
-    background: rgba(30, 41, 59, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 12px;
 }
@@ -571,7 +571,7 @@
 .historyItemTitle {
     font-size: 0.8rem;
     font-weight: 600;
-    color: #e2e8f0;
+    color: var(--text-secondary);
     margin-bottom: 4px;
     display: block;
     text-decoration: none;
@@ -583,15 +583,15 @@
 
 .historyItemMeta {
     font-size: 0.65rem;
-    color: #64748b;
+    color: var(--text-dim);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .historyPlayBtn {
-    background: rgba(96, 165, 250, 0.15);
-    color: #60a5fa;
+    background: var(--blue-subtle);
+    color: var(--accent-blue);
     border: 1px solid rgba(96, 165, 250, 0.3);
     border-radius: 4px;
     padding: 2px 8px;
@@ -608,13 +608,13 @@
     display: flex;
     gap: 10px;
     padding: 0 1.5rem;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid var(--border);
 }
 
 .htab {
     background: none;
     border: none;
-    color: #64748b;
+    color: var(--text-dim);
     padding: 10px 0;
     font-size: 0.75rem;
     cursor: pointer;
@@ -623,13 +623,13 @@
 }
 
 .htab.active {
-    color: #3b82f6;
-    border-bottom-color: #3b82f6;
+    color: var(--accent-blue);
+    border-bottom-color: var(--accent-blue);
 }
 
 .reprocessBtn {
-    background: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
+    background: var(--amber-subtle);
+    color: var(--accent-amber);
     border: 1px solid rgba(245, 158, 11, 0.2);
     border-radius: 4px;
     padding: 2px 8px;

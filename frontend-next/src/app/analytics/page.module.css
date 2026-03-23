@@ -21,16 +21,17 @@
 }
 
 .serviceCard {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    background: var(--bg-card);
+    border: 1px solid var(--border-active);
     border-radius: 16px;
     padding: 1.25rem 1.5rem;
     transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
 }
 
 .serviceCard:hover {
     border-color: rgba(59, 130, 246, 0.4);
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
+    box-shadow: var(--shadow-md);
 }
 
 .serviceHeader {
@@ -52,17 +53,19 @@
 }
 
 .configCard {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    background: var(--bg-card);
+    border: 1px solid var(--border-active);
     border-radius: 16px;
     padding: 1.5rem;
     text-align: center;
     transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
 }
 
 .configCard:hover {
     border-color: rgba(59, 130, 246, 0.4);
     transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .configLabel {
@@ -88,9 +91,10 @@
 .tableContainer {
     width: 100%;
     overflow-x: auto;
-    background: rgba(30, 41, 59, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
     border-radius: 12px;
+    box-shadow: var(--shadow-sm);
 }
 
 .table {
@@ -103,11 +107,11 @@
 .table td {
     padding: 1rem 1.25rem;
     text-align: left;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--border);
 }
 
 .table th {
-    background: rgba(15, 23, 42, 0.6);
+    background: var(--bg-subtle);
     font-weight: 600;
     color: var(--text-secondary);
     text-transform: uppercase;
@@ -120,7 +124,7 @@
 }
 
 .codeId {
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--code-bg);
     padding: 3px 6px;
     border-radius: 4px;
     font-family: monospace;
@@ -133,17 +137,16 @@
 }
 
 .tableRowRef:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-muted);
 }
 
-/* Modal CSS */
 .modalOverlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--bg-overlay);
     backdrop-filter: blur(4px);
     display: flex;
     justify-content: center;
@@ -165,14 +168,14 @@
 
 .modalContent {
     background: var(--bg-card);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-light);
     border-radius: 16px;
     width: 100%;
     max-width: 750px;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-lg);
     animation: slideUp 0.3s ease;
 }
 
@@ -193,7 +196,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--border);
 }
 
 .modalTitle {
@@ -213,7 +216,7 @@
 }
 
 .closeBtn:hover {
-    color: white;
+    color: var(--text-primary);
 }
 
 .modalBody {
@@ -227,12 +230,13 @@
 }
 
 .modalBody::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: var(--text-dim);
     border-radius: 4px;
+    opacity: 0.3;
 }
 
 .systemSummary {
-    background: rgba(59, 130, 246, 0.08);
+    background: var(--blue-subtle);
     border-left: 3px solid var(--accent-blue);
     padding: 1rem;
     border-radius: 4px;
@@ -250,7 +254,7 @@
     color: var(--accent-red);
     text-align: center;
     padding: 2rem;
-    background: rgba(239, 68, 68, 0.1);
+    background: var(--red-subtle);
     border-radius: 8px;
 }
 
@@ -290,7 +294,7 @@
 
 .modalFooter {
     padding: 1rem 1.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
@@ -309,17 +313,16 @@
 
 .btnSecondary {
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--border-light);
     color: var(--text-primary);
 }
 
 .btnSecondary:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-muted);
 }
 
 .btnPrimary {
     background: linear-gradient(135deg, #10B981, #059669);
-    /* Green for reuse */
     color: white;
     border: none;
     display: flex;
@@ -386,10 +389,11 @@
 }
 
 .chromaPanel {
-    background: linear-gradient(145deg, rgba(20, 24, 40, 0.7), rgba(10, 15, 30, 0.85));
+    background: var(--bg-card);
     border: 1px solid rgba(139, 92, 246, 0.15);
     border-radius: 16px;
     padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
 }
 
 .chromaHeader {
@@ -419,7 +423,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(139, 92, 246, 0.06);
+    background: var(--purple-subtle);
     border: 1px solid rgba(139, 92, 246, 0.12);
     border-radius: 10px;
     padding: 0.6rem 0.85rem;
@@ -434,7 +438,7 @@
 .chromaStatValue {
     font-size: 1.35rem;
     font-weight: 800;
-    color: #c4b5fd;
+    color: var(--accent-purple);
     line-height: 1.1;
     display: block;
 }
@@ -464,13 +468,13 @@
 }
 
 .dotOk {
-    background: #10B981;
+    background: var(--accent-green);
     box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
     animation: pulse-dot 2s infinite;
 }
 
 .dotErr {
-    background: #EF4444;
+    background: var(--accent-red);
     box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
 }
 
@@ -500,14 +504,14 @@
     cursor: pointer;
     transition: all 0.2s;
     font-family: inherit;
-    background: rgba(139, 92, 246, 0.15);
-    color: #c4b5fd;
+    background: var(--purple-subtle);
+    color: var(--accent-purple);
     border: 1px solid rgba(139, 92, 246, 0.25);
     white-space: nowrap;
 }
 
 .btnReindex:hover:not(:disabled) {
-    background: rgba(139, 92, 246, 0.25);
+    background: rgba(139, 92, 246, 0.2);
     border-color: rgba(139, 92, 246, 0.4);
 }
 
@@ -523,8 +527,8 @@
 
 .searchInput {
     flex: 1;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--input-bg);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     padding: 9px 12px;
     color: var(--text-primary);
@@ -549,8 +553,8 @@
     cursor: pointer;
     transition: all 0.15s;
     font-family: inherit;
-    background: rgba(139, 92, 246, 0.12);
-    color: #c4b5fd;
+    background: var(--purple-subtle);
+    color: var(--accent-purple);
     border: 1px solid rgba(139, 92, 246, 0.2);
     line-height: 1;
 }
@@ -573,7 +577,7 @@
 }
 
 .searchResultItem {
-    background: rgba(16, 185, 129, 0.04);
+    background: var(--green-subtle);
     border: 1px solid rgba(16, 185, 129, 0.1);
     border-radius: 8px;
     padding: 0.65rem;
@@ -588,7 +592,7 @@
 
 .searchResultSource {
     font-weight: 600;
-    color: #a78bfa;
+    color: var(--accent-purple);
     font-size: 0.75rem;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -600,8 +604,8 @@
     font-family: monospace;
     font-size: 0.72rem;
     font-weight: 700;
-    color: #10B981;
-    background: rgba(16, 185, 129, 0.1);
+    color: var(--accent-green);
+    background: var(--green-subtle);
     padding: 2px 7px;
     border-radius: 10px;
     flex-shrink: 0;
@@ -620,7 +624,7 @@
 
 .chromaFiles {
     margin-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--border);
     padding-top: 0.75rem;
 }
 
@@ -659,7 +663,7 @@
     align-items: center;
     padding: 5px 10px;
     border-radius: 6px;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--bg-subtle);
     font-size: 0.78rem;
 }
 

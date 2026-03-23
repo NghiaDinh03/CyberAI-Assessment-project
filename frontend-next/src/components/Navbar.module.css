@@ -2,9 +2,9 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgba(10, 14, 26, 0.75);
+    background: var(--navbar-bg);
     backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--border);
     height: 56px;
 }
 
@@ -30,7 +30,7 @@
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #3B82F6, #7C3AED);
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -41,7 +41,7 @@
 .brandName {
     font-size: 1.05rem;
     font-weight: 700;
-    color: #F1F5F9;
+    color: var(--text-primary);
     letter-spacing: -0.3px;
 }
 
@@ -49,8 +49,8 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 3px;
 }
@@ -63,19 +63,19 @@
     border-radius: 9px;
     font-size: 0.82rem;
     font-weight: 500;
-    color: #64748B;
+    color: var(--text-dim);
     text-decoration: none;
     transition: color 0.15s, background 0.15s;
 }
 
 .link:hover {
-    color: #CBD5E1;
-    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    background: var(--bg-muted);
 }
 
 .linkActive {
-    color: #F1F5F9 !important;
-    background: rgba(59, 130, 246, 0.15) !important;
+    color: var(--text-primary) !important;
+    background: var(--blue-subtle) !important;
     font-weight: 600;
 }
 
@@ -85,10 +85,10 @@
     gap: 6px;
     font-size: 0.72rem;
     font-weight: 600;
-    color: #10B981;
+    color: var(--accent-green);
     padding: 4px 10px;
     border-radius: 16px;
-    background: rgba(16, 185, 129, 0.08);
+    background: var(--green-subtle);
     border: 1px solid rgba(16, 185, 129, 0.15);
     flex-shrink: 0;
     height: 28px;
@@ -99,7 +99,7 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #10B981;
+    background: var(--accent-green);
     box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
     animation: blink 2s ease-in-out infinite;
 }
@@ -120,8 +120,8 @@
     width: 32px;
     height: 32px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-light);
+    background: var(--bg-muted);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -132,8 +132,8 @@
 }
 
 .themeToggle:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--blue-subtle);
+    border-color: var(--border-active);
     transform: scale(1.05);
 }
 
@@ -150,11 +150,11 @@
     gap: 8px;
     font-size: 0.85rem;
     font-weight: 600;
-    color: #cbd5e1;
+    color: var(--text-secondary);
     padding: 4px 10px;
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--bg-muted);
+    border: 1px solid var(--border-light);
     cursor: pointer;
     transition: all 0.2s ease;
     user-select: none;
@@ -163,9 +163,9 @@
 }
 
 .clock:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: #f8fafc;
+    background: var(--blue-subtle);
+    border-color: var(--border-active);
+    color: var(--text-primary);
 }
 
 .clockIcon {
@@ -184,13 +184,13 @@
     font-family: monospace;
     font-size: 0.85rem;
     font-weight: 600;
-    color: #f1f5f9;
+    color: var(--text-primary);
     letter-spacing: 0.5px;
 }
 
 .dateText {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: var(--text-muted);
     font-weight: 500;
 }
 
@@ -198,9 +198,9 @@
     font-size: 0.65rem;
     padding: 2px 6px;
     border-radius: 10px;
-    background: rgba(59, 130, 246, 0.15);
+    background: var(--blue-subtle);
     border: 1px solid rgba(59, 130, 246, 0.3);
-    color: #60a5fa;
+    color: var(--accent-blue);
     font-weight: 700;
     letter-spacing: 0.5px;
     display: flex;

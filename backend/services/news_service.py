@@ -1,9 +1,4 @@
-"""
-News Service v2.0 — Upgraded with:
-- CloudLLMService for tagging (gemini-3-pro-preview)
-- CPU throttling improvements
-- Better error handling
-"""
+"""News Service — RSS aggregation with translation, tagging & summarization."""
 
 import logging
 import re

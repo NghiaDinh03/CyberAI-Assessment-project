@@ -1,4 +1,4 @@
-toàn bộ """Summary Service — Full-content article processing with Cloud LLM translation & Edge-TTS."""
+"""Summary Service — Article processing with Cloud LLM translation & Edge-TTS."""
 
 import os
 import json
@@ -10,6 +10,7 @@ import re
 import time
 import threading
 import traceback
+import random
 from typing import Dict, Optional
 from datetime import datetime
 
@@ -21,6 +22,232 @@ AUDIO_DIR = os.path.join(CACHE_DIR, "audio")
 
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(AUDIO_DIR, exist_ok=True)
+
+# Rotating User-Agents to avoid bot detection
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+]
+
+# Sites known to block bots aggressively — use special handling
+BOT_BLOCKING_DOMAINS = {
+    "darkreading.com": {"strategy": "requests_bs4", "needs_cookies": True},
+    "marketwatch.com": {"strategy": "requests_bs4", "needs_cookies": True},
+    "thehackernews.com": {"strategy": "requests_bs4", "needs_cookies": False},
+    "securityweek.com": {"strategy": "newspaper", "needs_cookies": False},
+    "cnbc.com": {"strategy": "requests_bs4", "needs_cookies": False},
+    "yahoo.com": {"strategy": "requests_bs4", "needs_cookies": False},
+}
+
+
+def _get_random_headers() -> Dict[str, str]:
+    """Generate realistic browser headers to bypass anti-bot detection."""
+    ua = random.choice(USER_AGENTS)
+    return {
+        "User-Agent": ua,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9,vi;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Cache-Control": "max-age=0",
+    }
+
+
+def _get_domain(url: str) -> str:
+    """Extract domain from URL."""
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        domain = parsed.netloc.replace("www.", "")
+        return domain
+    except Exception:
+        return ""
+
+
+def _scrape_with_requests_bs4(url: str) -> Optional[str]:
+    """Scrape article using requests + BeautifulSoup (bypasses many anti-bot measures)."""
+    try:
+        import requests
+        from bs4 import BeautifulSoup
+
+        session = requests.Session()
+        headers = _get_random_headers()
+
+        # First request to get cookies
+        resp = session.get(url, headers=headers, timeout=20, allow_redirects=True)
+
+        if resp.status_code == 403:
+            # Retry with different UA
+            headers["User-Agent"] = random.choice(USER_AGENTS)
+            time.sleep(2)
+            resp = session.get(url, headers=headers, timeout=20, allow_redirects=True)
+
+        if resp.status_code == 401:
+            # Some sites need a Referer
+            headers["Referer"] = f"https://www.google.com/search?q={url}"
+            time.sleep(1)
+            resp = session.get(url, headers=headers, timeout=20, allow_redirects=True)
+
+        if resp.status_code not in (200, 206):
+            logger.warning(f"requests_bs4 got status {resp.status_code} for {url}")
+            return None
+
+        soup = BeautifulSoup(resp.content, "html.parser")
+
+        # Remove unwanted elements
+        for tag in soup.find_all(["script", "style", "nav", "footer", "header",
+                                   "aside", "form", "iframe", "noscript",
+                                   "button", "input", "select"]):
+            tag.decompose()
+
+        # Try common article selectors
+        article_selectors = [
+            "article",
+            '[role="article"]',
+            ".article-body",
+            ".article-content",
+            ".post-content",
+            ".entry-content",
+            ".story-body",
+            "#article-body",
+            ".article__body",
+            ".article-text",
+            ".caas-body",           # Yahoo
+            ".articleBody",
+            "#js-article-text",     # DarkReading
+            ".ContentModule",       # DarkReading
+            "#main-content",
+            ".article__content",
+            ".paywall",
+        ]
+
+        text = None
+        for selector in article_selectors:
+            elements = soup.select(selector)
+            if elements:
+                paragraphs = []
+                for el in elements:
+                    for p in el.find_all(["p", "li", "h2", "h3", "blockquote"]):
+                        t = p.get_text(strip=True)
+                        if t and len(t) > 20:
+                            paragraphs.append(t)
+                if paragraphs:
+                    text = "\n\n".join(paragraphs)
+                    if len(text) > 300:
+                        break
+
+        # Fallback: grab all paragraphs from the body
+        if not text or len(text) < 300:
+            paragraphs = []
+            for p in soup.find_all("p"):
+                t = p.get_text(strip=True)
+                if t and len(t) > 30:
+                    paragraphs.append(t)
+            if paragraphs:
+                text = "\n\n".join(paragraphs)
+
+        if text and len(text) > 300:
+            logger.info(f"requests_bs4 extracted {len(text)} chars from: {url}")
+            return text
+
+        return None
+    except Exception as e:
+        logger.warning(f"requests_bs4 failed for {url}: {e}")
+        return None
+
+
+def _scrape_with_trafilatura(url: str) -> Optional[str]:
+    """Scrape article using trafilatura (excellent for news articles)."""
+    try:
+        import trafilatura
+        headers = _get_random_headers()
+        downloaded = trafilatura.fetch_url(url)
+        if downloaded:
+            text = trafilatura.extract(downloaded, include_comments=False,
+                                        include_tables=False, favor_recall=True)
+            if text and len(text) > 300:
+                logger.info(f"trafilatura extracted {len(text)} chars from: {url}")
+                return text
+        return None
+    except ImportError:
+        logger.debug("trafilatura not installed, skipping")
+        return None
+    except Exception as e:
+        logger.warning(f"trafilatura failed for {url}: {e}")
+        return None
+
+
+def _scrape_with_newspaper(url: str) -> Optional[str]:
+    """Scrape article using newspaper3k with enhanced headers."""
+    try:
+        from newspaper import Article, Config
+
+        config = Config()
+        config.browser_user_agent = random.choice(USER_AGENTS)
+        config.request_timeout = 20
+        config.fetch_images = False
+
+        article = Article(url, config=config)
+        article.download()
+        article.parse()
+        text = article.text
+
+        if text and len(text) > 300:
+            logger.info(f"newspaper extracted {len(text)} chars from: {url}")
+            return text
+        return None
+    except Exception as e:
+        logger.warning(f"newspaper failed for {url}: {e}")
+        return None
+
+
+def scrape_article(url: str) -> Optional[str]:
+    """Multi-strategy article scraper with anti-bot bypass.
+    
+    Strategy order depends on the domain:
+    1. Check domain-specific strategy
+    2. Try newspaper3k first (fastest)
+    3. Fall back to requests+BS4 (most robust)
+    4. Fall back to trafilatura (best extraction quality)
+    """
+    domain = _get_domain(url)
+    domain_config = None
+    for blocked_domain, config in BOT_BLOCKING_DOMAINS.items():
+        if blocked_domain in domain:
+            domain_config = config
+            break
+
+    strategies = []
+    if domain_config:
+        primary = domain_config.get("strategy", "requests_bs4")
+        if primary == "requests_bs4":
+            strategies = [_scrape_with_requests_bs4, _scrape_with_trafilatura, _scrape_with_newspaper]
+        else:
+            strategies = [_scrape_with_newspaper, _scrape_with_requests_bs4, _scrape_with_trafilatura]
+    else:
+        # Default order: newspaper → requests_bs4 → trafilatura
+        strategies = [_scrape_with_newspaper, _scrape_with_requests_bs4, _scrape_with_trafilatura]
+
+    for i, strategy in enumerate(strategies):
+        try:
+            text = strategy(url)
+            if text and len(text) > 300:
+                return text
+            if i < len(strategies) - 1:
+                time.sleep(1)  # Small delay between strategies
+        except Exception as e:
+            logger.warning(f"Strategy {strategy.__name__} failed for {url}: {e}")
+
+    return None
 
 
 class SummaryService:
@@ -36,10 +263,18 @@ class SummaryService:
             try:
                 with open(cache_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
+                # Auto-clean error caches that are retryable
                 if skip_retryable and data.get("retryable"):
                     os.remove(cache_path)
                     logger.info(f"Removed retryable error cache for: {url}")
                     return None
+                # Also auto-clean old error caches (older than 2 hours)
+                if "error" in data and skip_retryable:
+                    cache_time = os.path.getmtime(cache_path)
+                    if time.time() - cache_time > 7200:  # 2 hours
+                        os.remove(cache_path)
+                        logger.info(f"Removed stale error cache (>2h) for: {url}")
+                        return None
                 return data
             except Exception as e:
                 logger.warning(f"Cache read failed {cache_path}: {e}")
@@ -74,29 +309,30 @@ class SummaryService:
         audio_filename = f"{url_hash}.mp3"
         audio_path = os.path.join(AUDIO_DIR, audio_filename)
 
-        # Step 1: Crawl full article text with retry
+        # Step 1: Crawl full article text with multi-strategy scraper
         text = None
-        max_retries = 3
+        max_retries = 2
         for attempt in range(max_retries):
             try:
-                from newspaper import Article
-                article_scraper = Article(url, browser_user_agent=(
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/120.0.0.0 Safari/537.36"
-                ))
-                article_scraper.download()
-                article_scraper.parse()
-                text = article_scraper.text
+                text = scrape_article(url)
 
                 if not text or len(text) < 300:
-                    logger.warning(f"Article too short ({len(text) if text else 0} chars), attempt {attempt+1}: {url}")
+                    logger.warning(f"All scrape strategies insufficient ({len(text) if text else 0} chars), "
+                                   f"attempt {attempt+1}: {url}")
                     if attempt < max_retries - 1:
                         time.sleep(3 * (attempt + 1))
                         continue
-                    raise Exception("Not enough text extracted")
 
-                logger.info(f"Crawled {len(text)} chars from: {url}")
+                    # Last resort: use the RSS description/title as minimal content
+                    if title:
+                        text = f"{title}\n\n{text or ''}"
+                        if len(text) > 100:
+                            logger.info(f"Using title+partial text ({len(text)} chars) for: {url}")
+                            break
+
+                    raise Exception("Not enough text extracted from any strategy")
+
+                logger.info(f"Successfully scraped {len(text)} chars from: {url}")
                 if len(text) > 12000:
                     text = text[:12000]
                 break
@@ -108,7 +344,11 @@ class SummaryService:
                 else:
                     err_str = str(e)
                     is_blocked = any(k in err_str for k in ["401", "403", "429", "blocked", "Not enough text"])
-                    err_msg = "Bài báo bị chặn bot hoặc quá ngắn." if is_blocked else f"Lỗi truy cập: {err_str[:80]}"
+                    domain = _get_domain(url)
+                    if is_blocked:
+                        err_msg = f"Trang {domain} chặn truy cập bot. Sẽ tự động thử lại sau."
+                    else:
+                        err_msg = f"Lỗi truy cập: {err_str[:80]}"
                     res = {"error": f"❌ {err_msg}", "url": url, "hash": url_hash, "retryable": True}
                     SummaryService._save_cache(url, res)
                     return res
@@ -160,6 +400,7 @@ class SummaryService:
                 ],
                 temperature=0.15,
                 max_tokens=16000,
+                task_type="complex",  # Intelligent routing: translation is a complex task
             )
             summary_vi = result.get("content", "").strip()
             provider = result.get("provider", "unknown")
@@ -195,7 +436,7 @@ class SummaryService:
         except Exception as e:
             logger.error(f"Failed to process article {url}: {e}")
             err_msg = "AI timeout. Vui lòng thử lại sau." if "timeout" in str(e).lower() else f"AI error: {str(e)[:100]}"
-            res = {"error": f"❌ {err_msg}", "url": url, "hash": url_hash}
+            res = {"error": f"❌ {err_msg}", "url": url, "hash": url_hash, "retryable": True}
             SummaryService._save_cache(url, res)
             return res
 

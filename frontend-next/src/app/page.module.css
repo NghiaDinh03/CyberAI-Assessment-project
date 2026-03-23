@@ -3,11 +3,25 @@
     padding: 3rem 0 2.5rem;
 }
 
+.heroLabel {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--accent-blue);
+    background: var(--blue-subtle);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 1rem;
+    letter-spacing: 0.3px;
+}
+
 .heroTitle {
     font-size: 2.2rem;
     font-weight: 800;
     letter-spacing: -1px;
     margin-bottom: 0.75rem;
+    color: var(--text-primary);
 }
 
 .heroSub {
@@ -33,16 +47,18 @@
     align-items: center;
     gap: 1.25rem;
     background: var(--bg-card);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
     border-radius: 14px;
     padding: 1.25rem 1.5rem;
     transition: all 0.2s;
     cursor: pointer;
+    box-shadow: var(--shadow-sm);
 }
 
 .card:hover {
-    border-color: rgba(59, 130, 246, 0.2);
+    border-color: var(--border-active);
     transform: translateX(4px);
+    box-shadow: var(--shadow-md);
 }
 
 .cardIcon {
@@ -60,6 +76,7 @@
     font-size: 1rem;
     font-weight: 700;
     margin-bottom: 0.25rem;
+    color: var(--text-primary);
 }
 
 .cardBody p {
