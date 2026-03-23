@@ -1,14 +1,17 @@
-"""Cloud LLM Service — Open Claude API with multi-tier fallback."""
+"""Cloud LLM Service — Open Claude API (primary) with Gemini & LocalAI fallback."""
 
 import time
 import logging
 import requests
 import httpx
 import re
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from core.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Minimum tokens to send — open-claude.com rejects requests with very low max_tokens
+MIN_MAX_TOKENS = 10000
 
 
 def classify_task_complexity(messages: List[Dict], max_tokens: int = 8192) -> str:
@@ -44,13 +47,18 @@ def classify_task_complexity(messages: List[Dict], max_tokens: int = 8192) -> st
 
 class CloudLLMService:
     _key_index: int = 0
-    _cooldowns: Dict[int, float] = {}
-    COOLDOWN_SECONDS: int = 60
+    # Cooldown only for rate-limit (429), NOT for auth errors
+    _rate_limit_cooldowns: Dict[int, float] = {}
+    RATE_LIMIT_COOLDOWN: int = 60
+
+    @classmethod
+    def _is_rate_limited(cls, key_idx: int) -> bool:
+        return time.time() - cls._rate_limit_cooldowns.get(key_idx, 0) < cls.RATE_LIMIT_COOLDOWN
 
     @classmethod
     def _mark_rate_limited(cls, key_idx: int):
-        cls._cooldowns[key_idx] = time.time()
-        logger.warning(f"API key {key_idx} rate limited, cooldown {cls.COOLDOWN_SECONDS}s")
+        cls._rate_limit_cooldowns[key_idx] = time.time()
+        logger.warning(f"Open Claude key {key_idx} rate limited (429), cooldown {cls.RATE_LIMIT_COOLDOWN}s")
 
     @classmethod
     def _call_open_claude(cls, messages: List[Dict], temperature: float = 0.7,
@@ -60,13 +68,18 @@ class CloudLLMService:
         if not keys:
             raise Exception("Cloud API key not configured")
 
+        # Enforce minimum max_tokens — API rejects very small values
+        effective_max_tokens = max(max_tokens, MIN_MAX_TOKENS)
+
         last_error = None
         for _ in range(len(keys)):
             idx = cls._key_index % len(keys)
             current_key = keys[idx]
             cls._key_index += 1
 
-            if time.time() - cls._cooldowns.get(idx, 0) < cls.COOLDOWN_SECONDS:
+            # Skip only if rate limited (429), NOT for auth errors
+            if cls._is_rate_limited(idx):
+                last_error = f"Key {idx} in cooldown"
                 continue
 
             try:
@@ -80,7 +93,7 @@ class CloudLLMService:
                         "model": model,
                         "messages": messages,
                         "temperature": temperature,
-                        "max_tokens": max_tokens,
+                        "max_tokens": effective_max_tokens,
                         "stream": False,
                     },
                     timeout=settings.CLOUD_TIMEOUT,
@@ -92,17 +105,22 @@ class CloudLLMService:
                     continue
 
                 if response.status_code == 401:
-                    logger.warning(f"Open Claude auth failed (401) for key index {idx}")
-                    cls._mark_rate_limited(idx)
+                    logger.warning(f"Open Claude 401 Unauthorized for key {idx} — key may be invalid")
                     last_error = "Auth failed (401)"
+                    # Do NOT put in cooldown for 401 — it's a permanent key error, not temporary
                     continue
 
                 if response.status_code == 200:
                     data = response.json()
                     content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    if not content:
+                        logger.warning(f"Open Claude 200 but empty content. model={model}, max_tokens={effective_max_tokens}, response={str(data)[:300]}")
+                        last_error = "Empty content"
+                        continue
                     usage = data.get("usage", {})
+                    logger.info(f"Open Claude OK — model={model}, tokens={usage.get('total_tokens', '?')}")
                     return {
-                        "content": content.strip() if content else "",
+                        "content": content.strip(),
                         "usage": {
                             "prompt_tokens": usage.get("prompt_tokens", 0),
                             "completion_tokens": usage.get("completion_tokens", 0),
@@ -112,12 +130,15 @@ class CloudLLMService:
                         "provider": "open-claude",
                     }
 
-                logger.warning(f"Open Claude error ({response.status_code}): {response.text[:300]}")
+                logger.warning(f"Open Claude HTTP {response.status_code}: {response.text[:300]}")
                 last_error = f"HTTP {response.status_code}"
+
             except httpx.TimeoutException:
-                last_error = f"Timeout {settings.CLOUD_TIMEOUT}s"
+                last_error = f"Timeout after {settings.CLOUD_TIMEOUT}s"
+                logger.warning(f"Open Claude timeout after {settings.CLOUD_TIMEOUT}s")
             except Exception as e:
                 last_error = str(e)
+                logger.warning(f"Open Claude exception: {e}")
 
         raise Exception(f"Open Claude failed: {last_error}")
 
@@ -125,7 +146,7 @@ class CloudLLMService:
     def _call_gemini_direct(cls, messages: List[Dict], temperature: float = 0.7,
                             max_tokens: int = 8192) -> Dict[str, Any]:
         gemini_keys = [k.strip() for k in settings.GEMINI_API_KEYS.split(",")
-                       if k.strip() and k.strip() != "your_gemini_api_key_here"]
+                       if k.strip() and k.strip() not in ("your_gemini_api_key_here", "")]
         if not gemini_keys:
             raise Exception("Gemini API key not configured")
 
@@ -148,7 +169,7 @@ class CloudLLMService:
                     "contents": gemini_contents,
                     "generationConfig": {
                         "temperature": temperature,
-                        "maxOutputTokens": max_tokens,
+                        "maxOutputTokens": max(max_tokens, MIN_MAX_TOKENS),
                     },
                 }
                 if system_instruction:
@@ -161,85 +182,31 @@ class CloudLLMService:
                     candidates = data.get("candidates", [])
                     if candidates:
                         content = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                        usage = data.get("usageMetadata", {})
-                        return {
-                            "content": content.strip() if content else "",
-                            "usage": {
-                                "prompt_tokens": usage.get("promptTokenCount", 0),
-                                "completion_tokens": usage.get("candidatesTokenCount", 0),
-                                "total_tokens": usage.get("totalTokenCount", 0),
-                            },
-                            "model": "gemini-2.0-flash",
-                            "provider": "gemini-direct",
-                        }
+                        if content:
+                            usage = data.get("usageMetadata", {})
+                            logger.info(f"Gemini Direct OK — tokens={usage.get('totalTokenCount', '?')}")
+                            return {
+                                "content": content.strip(),
+                                "usage": {
+                                    "prompt_tokens": usage.get("promptTokenCount", 0),
+                                    "completion_tokens": usage.get("candidatesTokenCount", 0),
+                                    "total_tokens": usage.get("totalTokenCount", 0),
+                                },
+                                "model": "gemini-2.0-flash",
+                                "provider": "gemini-direct",
+                            }
 
                 if response.status_code == 429:
                     logger.warning("Gemini rate limited (429)")
                     continue
 
-                logger.warning(f"Gemini Direct error ({response.status_code}): {response.text[:200]}")
+                logger.warning(f"Gemini HTTP {response.status_code}: {response.text[:200]}")
             except httpx.TimeoutException:
                 logger.warning("Gemini Direct timeout")
             except Exception as e:
                 logger.warning(f"Gemini Direct exception: {e}")
 
         raise Exception("Gemini Direct failed")
-
-    @classmethod
-    def _call_openrouter(cls, messages: List[Dict], temperature: float = 0.7,
-                         max_tokens: int = 8192) -> Dict[str, Any]:
-        keys = settings.openrouter_api_key_list
-        if not keys:
-            raise Exception("OpenRouter API key not configured")
-
-        model = settings.OPENROUTER_MODEL
-
-        for key in keys:
-            try:
-                response = httpx.post(
-                    f"{settings.OPENROUTER_API_URL}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {key}",
-                        "Content-Type": "application/json",
-                        "HTTP-Referer": "https://cyberai-assessment.local",
-                        "X-Title": "CyberAI Assessment",
-                    },
-                    json={
-                        "model": model,
-                        "messages": messages,
-                        "temperature": temperature,
-                        "max_tokens": max_tokens,
-                    },
-                    timeout=settings.CLOUD_TIMEOUT,
-                )
-
-                if response.status_code == 200:
-                    data = response.json()
-                    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                    usage = data.get("usage", {})
-                    if content:
-                        return {
-                            "content": content.strip(),
-                            "usage": {
-                                "prompt_tokens": usage.get("prompt_tokens", 0),
-                                "completion_tokens": usage.get("completion_tokens", 0),
-                                "total_tokens": usage.get("total_tokens", 0),
-                            },
-                            "model": model,
-                            "provider": "openrouter",
-                        }
-
-                if response.status_code == 429:
-                    logger.warning(f"OpenRouter rate limited for model: {model}")
-                    continue
-
-                logger.warning(f"OpenRouter error ({response.status_code}): {response.text[:200]}")
-            except httpx.TimeoutException:
-                logger.warning(f"OpenRouter timeout with model: {model}")
-            except Exception as e:
-                logger.warning(f"OpenRouter exception: {e}")
-
-        raise Exception("OpenRouter failed")
 
     @classmethod
     def _call_localai(cls, model: str, messages: List[Dict], temperature: float = 0.7) -> Dict[str, Any]:
@@ -273,7 +240,7 @@ class CloudLLMService:
     def chat_completion(cls, messages: List[Dict], temperature: float = 0.7, max_tokens: int = 8192,
                         prefer_cloud: bool = True, local_model: str = None,
                         task_type: str = None) -> Dict[str, Any]:
-        """Multi-tier fallback: Open Claude → Gemini Direct → OpenRouter → LocalAI."""
+        """Fallback chain: Open Claude → Gemini Direct → LocalAI."""
         local_model = local_model or settings.MODEL_NAME
         errors = []
 
@@ -299,15 +266,6 @@ class CloudLLMService:
                 except Exception as e:
                     errors.append(f"Gemini Direct: {e}")
                     logger.warning(f"Gemini Direct failed: {e}")
-
-            if settings.openrouter_api_key_list:
-                try:
-                    result = cls._call_openrouter(messages, temperature, max_tokens)
-                    if result["content"]:
-                        return result
-                except Exception as e:
-                    errors.append(f"OpenRouter: {e}")
-                    logger.warning(f"OpenRouter failed: {e}")
 
         try:
             result = cls._call_localai(local_model, messages, temperature)
@@ -335,9 +293,8 @@ class CloudLLMService:
 
     @classmethod
     def is_cloud_available(cls) -> bool:
-        return (bool(settings.cloud_api_key_list) or
-                bool(settings.openrouter_api_key_list) or
-                bool(settings.GEMINI_API_KEYS and settings.GEMINI_API_KEYS.strip()))
+        return bool(settings.cloud_api_key_list) or bool(
+            settings.GEMINI_API_KEYS and settings.GEMINI_API_KEYS.strip())
 
     @classmethod
     def health_check(cls) -> Dict[str, Any]:
@@ -352,12 +309,6 @@ class CloudLLMService:
                 "configured": bool(settings.GEMINI_API_KEYS and settings.GEMINI_API_KEYS.strip()),
                 "model": "gemini-2.0-flash",
             },
-            "openrouter": {
-                "configured": bool(settings.openrouter_api_key_list),
-                "url": settings.OPENROUTER_API_URL,
-                "model": settings.OPENROUTER_MODEL,
-                "keys": len(settings.openrouter_api_key_list),
-            },
             "localai": {
                 "configured": True,
                 "url": settings.LOCALAI_URL,
@@ -367,7 +318,7 @@ class CloudLLMService:
 
         if status["open_claude"]["configured"]:
             try:
-                cls._call_open_claude([{"role": "user", "content": "ping"}], max_tokens=5)
+                cls._call_open_claude([{"role": "user", "content": "Say OK"}], max_tokens=MIN_MAX_TOKENS)
                 status["open_claude"]["status"] = "healthy"
             except Exception as e:
                 status["open_claude"]["status"] = f"error: {str(e)[:100]}"

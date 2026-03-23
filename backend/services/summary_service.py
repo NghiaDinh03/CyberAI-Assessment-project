@@ -333,8 +333,8 @@ class SummaryService:
                     raise Exception("Not enough text extracted from any strategy")
 
                 logger.info(f"Successfully scraped {len(text)} chars from: {url}")
-                if len(text) > 12000:
-                    text = text[:12000]
+                if len(text) > 30000:
+                    text = text[:30000]
                 break
 
             except Exception as e:
@@ -399,7 +399,7 @@ class SummaryService:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.15,
-                max_tokens=16000,
+                max_tokens=32000,
                 task_type="complex",  # Intelligent routing: translation is a complex task
             )
             summary_vi = result.get("content", "").strip()
