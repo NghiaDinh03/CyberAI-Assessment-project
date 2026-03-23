@@ -16,12 +16,6 @@ class Settings:
     CLOUD_MODEL_NAME: str = os.getenv("CLOUD_MODEL_NAME", "gemini-3-pro-preview")
     CLOUD_API_KEYS: str = os.getenv("CLOUD_API_KEYS", "")
 
-    OPENROUTER_API_KEYS: str = os.getenv("OPENROUTER_API_KEYS", "")
-    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct:free")
-    OPENROUTER_API_URL: str = os.getenv("OPENROUTER_API_URL", "https://openrouter.ai/api/v1")
-
-    GEMINI_API_KEYS: str = os.getenv("GEMINI_API_KEYS", os.getenv("GEMINI_API_KEY", ""))
-
     ISO_DOCS_PATH: str = os.getenv("ISO_DOCS_PATH", "/data/iso_documents")
     VECTOR_STORE_PATH: str = os.getenv("VECTOR_STORE_PATH", "/data/vector_store")
     DATA_PATH: str = os.getenv("DATA_PATH", "/data")
@@ -52,10 +46,6 @@ class Settings:
                 if k and k not in keys and k != "your_open_claude_api_key_here":
                     keys.append(k)
         return keys
-
-    @property
-    def openrouter_api_key_list(self) -> List[str]:
-        return [k.strip() for k in self.OPENROUTER_API_KEYS.split(",") if k.strip()]
 
     def validate(self):
         warnings = []
