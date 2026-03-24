@@ -622,44 +622,119 @@ export default function FormISOPage() {
                 <div className={styles.resultWrap}>
                     {result.status === 'failed' || result.error ? (
                         <div className={styles.errorBox}>
-                            <h3>Đã có lỗi xảy ra</h3>
-                            <p>{result.report || 'Timeout hoặc lỗi phân tích.'}</p>
+                            <h3>❌ Đã có lỗi xảy ra</h3>
+                            <p>{result.report || 'Timeout hoặc lỗi phân tích. Vui lòng thử lại.'}</p>
                             <button className={styles.btnSecondary} onClick={() => setActiveTab('form')} style={{ marginTop: '1rem' }}>
-                                Sửa thông tin & thử lại
+                                ← Sửa thông tin & thử lại
                             </button>
+                        </div>
+                    ) : result.status === 'processing' ? (
+                        <div className={styles.processingCard}>
+                            <div className={styles.processingSpinner}>
+                                <div className={styles.spinnerRing} />
+                                <span className={styles.spinnerIcon}>🤖</span>
+                            </div>
+                            <h3 className={styles.processingTitle}>AI đang phân tích hệ thống...</h3>
+                            <p className={styles.processingDesc}>
+                                Model đang đánh giá <strong>{form.implemented_controls.length}/{totalControls} controls</strong> ({compliancePercent}%) và tạo báo cáo chuyên sâu.
+                                <br />Quá trình thường mất <strong>30–90 giây</strong>.
+                            </p>
+                            <div className={styles.processingSteps}>
+                                <div className={styles.procStep}>
+                                    <span className={styles.procStepDot} style={{ background: 'var(--accent-green)' }} />
+                                    <span>Truy xuất kiến thức ISO từ ChromaDB</span>
+                                </div>
+                                <div className={styles.procStep}>
+                                    <span className={`${styles.procStepDot} ${styles.procStepAnim}`} />
+                                    <span>Phân tích GAP với AI Auditor (Phase 1)</span>
+                                </div>
+                                <div className={styles.procStep}>
+                                    <span className={styles.procStepDot} style={{ opacity: 0.3 }} />
+                                    <span>Định dạng báo cáo chuyên nghiệp (Phase 2)</span>
+                                </div>
+                            </div>
+                            <div className={styles.pollingInfo} style={{ justifyContent: 'center', marginTop: '1rem' }}>
+                                <span className={styles.pollingDot} />
+                                <span>Tự động cập nhật mỗi 10 giây</span>
+                            </div>
                         </div>
                     ) : (
                         <>
-                            <div className={styles.reportSection}>
-                                <div className={styles.resultHeader}>
-                                    <h2 className={styles.sectionTitle}>
-                                        {result.status === 'processing' ? '⏳ AI đang phân tích...' : '📊 Báo cáo AI Auditor'}
-                                    </h2>
-                                    {result.status === 'processing' && (
-                                        <div className={styles.pollingInfo}>
-                                            <span className={styles.pollingDot} />
-                                            <span>Tự động cập nhật</span>
+                            {/* ── Score Hero Card ─────────────────────────── */}
+                            <div className={styles.scoreHero}>
+                                <div className={styles.scoreHeroLeft}>
+                                    <div className={`${styles.scoreGauge} ${
+                                        parseFloat(compliancePercent) >= 80 ? styles.scoreGaugeFull :
+                                        parseFloat(compliancePercent) >= 50 ? styles.scoreGaugeMostly :
+                                        parseFloat(compliancePercent) >= 25 ? styles.scoreGaugePartial :
+                                        styles.scoreGaugeLow
+                                    }`}>
+                                        <span className={styles.scoreNum}>{compliancePercent}%</span>
+                                        <span className={styles.scoreUnit}>Tuân thủ</span>
+                                    </div>
+                                </div>
+                                <div className={styles.scoreHeroRight}>
+                                    <div className={styles.scoreOrg}>{form.org_name || 'Tổ chức chưa đặt tên'}</div>
+                                    <div className={styles.scoreStd}>{currentStandard.name}</div>
+                                    <div className={`${styles.complianceBadge} ${
+                                        parseFloat(compliancePercent) >= 80 ? styles.badgeFull :
+                                        parseFloat(compliancePercent) >= 50 ? styles.badgeMostly :
+                                        parseFloat(compliancePercent) >= 25 ? styles.badgePartial :
+                                        styles.badgeLow
+                                    }`}>
+                                        {parseFloat(compliancePercent) >= 80 ? '✅ Tuân thủ cao' :
+                                         parseFloat(compliancePercent) >= 50 ? '🟡 Tuân thủ một phần' :
+                                         parseFloat(compliancePercent) >= 25 ? '🟠 Tuân thủ thấp' :
+                                         '🔴 Không tuân thủ'}
+                                    </div>
+                                    <div className={styles.scoreStats}>
+                                        <div className={styles.scoreStat}>
+                                            <span className={styles.scoreStatNum}>{form.implemented_controls.length}</span>
+                                            <span className={styles.scoreStatLabel}>Controls đạt</span>
+                                        </div>
+                                        <div className={styles.scoreStatDivider} />
+                                        <div className={styles.scoreStat}>
+                                            <span className={styles.scoreStatNum}>{totalControls - form.implemented_controls.length}</span>
+                                            <span className={styles.scoreStatLabel}>Còn thiếu</span>
+                                        </div>
+                                        <div className={styles.scoreStatDivider} />
+                                        <div className={styles.scoreStat}>
+                                            <span className={styles.scoreStatNum}>{totalControls}</span>
+                                            <span className={styles.scoreStatLabel}>Tổng controls</span>
+                                        </div>
+                                    </div>
+                                    {result.model_used && (
+                                        <div className={styles.modelChips}>
+                                            <span className={styles.modelChip}>🤖 {result.model_used.phase1?.split(':')[1] || 'AI'}</span>
+                                            <span className={styles.modelChip}>📝 Semantic RAG</span>
                                         </div>
                                     )}
                                 </div>
-                                <div className={styles.md}>
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                        {result.report || 'Model đang xử lý dữ liệu, vui lòng chờ 1-2 phút...'}
-                                    </ReactMarkdown>
-                                </div>
                             </div>
 
-                            {result.model_used && (
-                                <div className={styles.modelInfo}>
-                                    <div className={styles.modelTag}>🧠 Model: <strong>{result.model_used.analysis_and_summary}</strong></div>
-                                    <div className={styles.modelTag}>🚀 Strategy: <strong>Semantic RAG Assessment</strong></div>
-                                </div>
-                            )}
-
-                            <div className={styles.actionsCenter}>
-                                <button className={styles.btnSecondary} onClick={() => setActiveTab('form')}>
-                                    ← Tạo đánh giá mới
+                            {/* ── Report Action Bar ────────────────────────── */}
+                            <div className={styles.reportActions}>
+                                <button className={styles.reportActionBtn} onClick={() => {
+                                    navigator.clipboard?.writeText(result.report || '')
+                                    .catch(() => {})
+                                }}>
+                                    📋 Sao chép báo cáo
                                 </button>
+                                <button className={styles.reportActionBtn} onClick={() => window.print()}>
+                                    🖨️ In báo cáo
+                                </button>
+                                <button className={styles.reportActionBtnSecondary} onClick={() => setActiveTab('form')}>
+                                    ← Đánh giá mới
+                                </button>
+                            </div>
+
+                            {/* ── Report Body ──────────────────────────────── */}
+                            <div className={styles.reportSection}>
+                                <div className={styles.md}>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {result.report || ''}
+                                    </ReactMarkdown>
+                                </div>
                             </div>
                         </>
                     )}

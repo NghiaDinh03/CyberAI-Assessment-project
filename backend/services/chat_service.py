@@ -291,12 +291,19 @@ class ChatService:
             raw_analysis = result_p1.get("content", "")
 
             # Phase 2: Format report
+            today = datetime.now(timezone.utc).strftime("%d/%m/%Y")
+            org_name = system_data.get("organization", {}).get("name", "Tổ chức")
             formatting_prompt = (
                 f"Bạn là chuyên gia trình bày Báo cáo Đánh giá ATTT chuyên nghiệp. "
                 f"Trình bày lại báo cáo bằng Markdown tiếng Việt gồm:\n"
-                f"1. ĐÁNH GIÁ TỔNG QUAN (tóm tắt {percentage}%)\n"
+                f"1. ĐÁNH GIÁ TỔNG QUAN (tóm tắt {percentage}% — {score}/{max_score} Controls)\n"
                 f"2. PHÂN TÍCH LỖ HỔNG (GAP ANALYSIS)\n"
                 f"3. KHUYẾN NGHỊ ƯU TIÊN (ACTION PLAN)\n\n"
+                f"Thông tin bắt buộc điền vào báo cáo:\n"
+                f"- Đối tượng đánh giá: {org_name}\n"
+                f"- Tiêu chuẩn tham chiếu: {std_name}\n"
+                f"- Ngày lập báo cáo: {today}\n"
+                f"- KHÔNG dùng placeholder như [Ngày hiện tại] hay [tên tổ chức] — dùng thông tin thực ở trên.\n\n"
                 f"Dữ liệu thô từ Security Auditor:\n{raw_analysis}"
             )
             result_p2 = CloudLLMService.chat_completion(
