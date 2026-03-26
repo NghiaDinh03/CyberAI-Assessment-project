@@ -237,41 +237,34 @@ class ChatService:
 
     @staticmethod
     def assess_system(system_data: Dict[str, Any], model_mode: str = "hybrid") -> Dict[str, Any]:
-        """
-        Đánh giá hệ thống với 3 chế độ model:
-          - "hybrid"  (mặc định): Phase1=SecurityLM(LocalAI) + Phase2=OpenClaude (RAG)
-          - "local"  : Cả hai Phase dùng LocalAI — bảo mật tối đa, dữ liệu không rời server
-          - "cloud"  : Cả hai Phase dùng OpenClaude — chất lượng cao nhất
-        model_mode có thể được truyền qua system_data["model_mode"] hoặc tham số trực tiếp.
-        """
-        # Ưu tiên giá trị trực tiếp; fallback sang system_data nếu có
+        from services.controls_catalog import get_categories, get_flat_controls, calc_compliance, build_weight_breakdown, BUILTIN_CONTROLS
+        from services.assessment_helpers import (
+            build_chunk_prompt, validate_chunk_output, gap_items_to_markdown,
+            build_full_prompt, build_weight_breakdown_txt, compress_for_phase2, build_sys_summary
+        )
+
         effective_mode = model_mode or system_data.get("model_mode", "hybrid")
-
         vs = ChatService.get_vector_store()
-
         standard = system_data.get("assessment_standard", "iso27001")
-        search_query = "A.5 Tổ chức, A.6 Nhân sự, A.7 Vật lý, A.8 Công nghệ"
+
         if standard == "tcvn11930":
             search_query = "TCVN 11930 hệ thống thông tin cấp độ bảo đảm an toàn"
         elif standard == "nd13":
             search_query = "Nghị định 13 bảo vệ dữ liệu cá nhân"
+        else:
+            search_query = "A.5 Tổ chức, A.6 Nhân sự, A.7 Vật lý, A.8 Công nghệ"
 
-        # Try to load custom standard for dynamic metadata
         custom_std = None
         try:
-            from services.standard_service import load_standard, WEIGHT_SCORE as WS
+            from services.standard_service import load_standard
             custom_std = load_standard(standard)
         except Exception:
             pass
 
         if custom_std:
-            # Custom standard — dynamic search query and scoring
             std_name = custom_std.get("name", standard)
             search_query = f"{std_name} compliance security controls"
-            all_ctrls = []
             for cat in custom_std.get("controls", []):
-                all_ctrls.extend(cat.get("controls", []))
-                # Add category names to search query for better RAG retrieval
                 search_query += f", {cat.get('category', '')}"
         else:
             std_name = "ISO 27001:2022" if standard != "tcvn11930" else "TCVN 11930:2017 (Yêu cầu kỹ thuật theo 5 cấp độ)"
@@ -280,95 +273,28 @@ class ChatService:
         context = "\n---\n".join([r["text"] for r in context_results])
 
         implemented = system_data.get("compliance", {}).get("implemented_controls", [])
-        score = len(implemented)
-        max_score = 93
-        percentage = 0
+        compliance = calc_compliance(implemented, standard, custom_std)
+        score = compliance["score"]
+        max_score = compliance["max_score"]
+        percentage = compliance["percentage"]
 
-        if custom_std:
-            max_score = len(all_ctrls) if all_ctrls else 1
-            # Use weighted scoring for custom standards
-            weight_map = {c["id"]: WS.get(c.get("weight", "medium"), 1) for c in all_ctrls}
-            max_weighted = sum(weight_map.values())
-            achieved_weighted = sum(weight_map.get(cid, 0) for cid in implemented)
-            percentage = round((achieved_weighted / max_weighted) * 100, 1) if max_weighted > 0 else 0
-        elif standard == "tcvn11930":
-            max_score = 34
-            percentage = round((score / max_score) * 100, 1)
-        else:
-            percentage = round((score / max_score) * 100, 1)
+        # Load control catalog from controls_catalog module (ISO 27001, TCVN 11930, or custom)
+        builtin_std_categories = get_categories(standard, custom_std)
+        all_controls_flat = get_flat_controls(standard, custom_std)
+        weight_breakdown, missing_controls_by_weight = build_weight_breakdown(implemented, all_controls_flat)
+        weight_breakdown_txt = build_weight_breakdown_txt(weight_breakdown, missing_controls_by_weight)
+        sys_summary_short = build_sys_summary(system_data)
 
-        # ── Build weight breakdown for AI prompt ────────────────────────
-        weight_labels = {"critical": "Tối quan trọng", "high": "Quan trọng", "medium": "Trung bình", "low": "Thấp"}
-        weight_scores = {"critical": 4, "high": 3, "medium": 2, "low": 1}
+        system_info_txt = (
+            f"Tiêu chuẩn đánh giá: {std_name}\n"
+            f"Mức độ tuân thủ: {score}/{max_score} Controls đạt yêu cầu ({percentage}%).\n"
+            f"Các Controls đã đạt: {', '.join(implemented)}\n"
+            f"{weight_breakdown_txt}\n"
+            f"\nCHI TIẾT HẠ TẦNG HỆ THỐNG:\n{sys_summary_short}"
+        )
 
-        # Collect all controls with weights for breakdown
-        all_controls_flat = []
-        if custom_std:
-            for cat in custom_std.get("controls", []):
-                for ctrl in cat.get("controls", []):
-                    all_controls_flat.append(ctrl)
-        else:
-            # Built-in standards — build from implemented list & known totals
-            # We don't have weight data server-side for built-in, so use simple breakdown
-            pass
 
-        # Calculate weight breakdown
-        weight_breakdown = {"critical": {"total": 0, "implemented": 0}, "high": {"total": 0, "implemented": 0},
-                           "medium": {"total": 0, "implemented": 0}, "low": {"total": 0, "implemented": 0}}
-        missing_controls_by_weight = {"critical": [], "high": [], "medium": [], "low": []}
-
-        if all_controls_flat:
-            for ctrl in all_controls_flat:
-                w = ctrl.get("weight", "medium")
-                weight_breakdown[w]["total"] += 1
-                if ctrl["id"] in implemented:
-                    weight_breakdown[w]["implemented"] += 1
-                else:
-                    missing_controls_by_weight[w].append(f"{ctrl['id']} ({ctrl.get('label', '')})")
-
-        weight_breakdown_txt = ""
-        if all_controls_flat:
-            weight_breakdown_txt = "\n\nPHÂN BỔ TRỌNG SỐ CONTROLS:\n"
-            for w in ["critical", "high", "medium", "low"]:
-                bd = weight_breakdown[w]
-                if bd["total"] > 0:
-                    pct = round((bd["implemented"] / bd["total"]) * 100, 1)
-                    weight_breakdown_txt += (
-                        f"- {weight_labels[w]} ({weight_scores[w]} điểm): "
-                        f"{bd['implemented']}/{bd['total']} đạt ({pct}%)\n"
-                    )
-
-            # List missing critical & high controls for AI focus
-            critical_missing = missing_controls_by_weight["critical"]
-            high_missing = missing_controls_by_weight["high"]
-            if critical_missing:
-                weight_breakdown_txt += f"\n⚠️ CONTROLS TỐI QUAN TRỌNG CHƯA ĐẠT ({len(critical_missing)}):\n"
-                for m in critical_missing[:15]:
-                    weight_breakdown_txt += f"  🔴 {m}\n"
-            if high_missing:
-                weight_breakdown_txt += f"\n⚠️ CONTROLS QUAN TRỌNG CHƯA ĐẠT ({len(high_missing)}):\n"
-                for m in high_missing[:15]:
-                    weight_breakdown_txt += f"  🟠 {m}\n"
-
-        system_info_txt = f"Tiêu chuẩn đánh giá: {std_name}\n"
-        system_info_txt += f"Mức độ tuân thủ: {score}/{max_score} Controls đạt yêu cầu ({percentage}%).\n"
-        system_info_txt += f"Các Controls đã đạt: {', '.join(implemented)}\n"
-        system_info_txt += weight_breakdown_txt
-        system_info_txt += "\nCHI TIẾT HẠ TẦNG HỆ THỐNG:\n"
-
-        for key, value in system_data.items():
-            if key in ["compliance", "assessment_standard", "implemented_controls", "model_mode"]:
-                continue
-            if isinstance(value, dict):
-                for k, v in value.items():
-                    system_info_txt += f"- {k}: {v}\n"
-            elif isinstance(value, list):
-                system_info_txt += f"- {key}: {', '.join(str(v) for v in value)}\n"
-            else:
-                system_info_txt += f"- {key}: {value}\n"
-
-        # ── Health check LocalAI trước khi dùng local mode ─────────────────
-        # Nếu model fail load (OOM/RPC), tự động chuyển sang hybrid (Phase2=cloud) hoặc cloud
+        # ── Health check LocalAI before local mode ──────────────────────────
         local_available = False
         if effective_mode in ("local", "hybrid"):
             local_available = CloudLLMService.localai_health_check(
@@ -414,133 +340,12 @@ class ChatService:
             p2_model = None  # OpenClaude for report
             logger.info(f"[Assessment] hybrid — P1={p1_model} (LocalAI), P2=OpenClaude")
 
-        # ── Phase 1: Chunked per-category analysis for LocalAI ─────────────
-
-        def _build_category_chunk_prompt(cat_name: str, cat_controls: list, impl: list,
-                                          pct: float, sc: int, mx: int,
-                                          sys_summary: str, rag_ctx: str = "") -> str:
-            missing = [c for c in cat_controls if c["id"] not in impl]
-            present = [c for c in cat_controls if c["id"] in impl]
-            missing_str = "\n".join(
-                f"  ❌ {c['id']} [{c.get('weight','medium').upper()}] {c.get('label','')}"
-                for c in missing[:20]
-            )
-            present_str = ", ".join(c["id"] for c in present[:15])
-            rag_section = f"\nTÀI LIỆU THAM CHIẾU {std_name}:\n{rag_ctx[:600]}\n" if rag_ctx else ""
-            return (
-                f"Auditor {std_name} — Category: {cat_name}\n"
-                f"Tuân thủ tổng: {pct}% ({sc}/{mx})\n"
-                f"{rag_section}\n"
-                f"CONTROLS ĐÃ ĐẠT: {present_str or 'Không có'}\n"
-                f"CONTROLS CHƯA ĐẠT:\n{missing_str or 'Tất cả đã đạt'}\n\n"
-                f"THÔNG TIN HỆ THỐNG:\n{sys_summary[:700]}\n\n"
-                f"NHIỆM VỤ: Với mỗi control CHƯA ĐẠT trong nhóm '{cat_name}', "
-                f"trả về JSON array (chỉ JSON, không text thêm):\n"
-                f'[{{"id":"CTL.XX","severity":"critical|high|medium|low",'
-                f'"likelihood":1-5,"impact":1-5,"risk":1-25,'
-                f'"gap":"mô tả GAP ngắn","recommendation":"1 câu khuyến nghị"}}]\n'
-                f"Nếu tất cả đã đạt, trả về: []"
-            )
-
-        def _validate_chunk_output(content: str, cat_name: str) -> list:
-            """Parse and validate JSON output from SecurityLM chunk."""
-            import json, re as _re
-            content = content.strip()
-            # Extract JSON array — handle model wrapping in ```json ... ```
-            match = _re.search(r'\[.*?\]', content, _re.DOTALL)
-            if not match:
-                return None  # invalid, needs retry
-            try:
-                data = json.loads(match.group())
-                if not isinstance(data, list):
-                    return None
-                validated = []
-                for item in data:
-                    if not isinstance(item, dict):
-                        continue
-                    ctrl_id = item.get("id", "")
-                    if not ctrl_id:
-                        continue
-                    validated.append({
-                        "id": ctrl_id,
-                        "category": cat_name,
-                        "severity": item.get("severity", "medium"),
-                        "likelihood": max(1, min(5, int(item.get("likelihood", 3)))),
-                        "impact": max(1, min(5, int(item.get("impact", 3)))),
-                        "risk": max(1, min(25, int(item.get("risk", 9)))),
-                        "gap": str(item.get("gap", ""))[:200],
-                        "recommendation": str(item.get("recommendation", ""))[:200],
-                    })
-                return validated
-            except Exception:
-                return None
-
-        def _chunk_results_to_markdown(all_gap_items: list) -> str:
-            """Convert structured JSON gap items to markdown for Phase 2."""
-            if not all_gap_items:
-                return "✅ Không phát hiện GAP đáng kể nào.\n"
-            sev_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
-            sorted_items = sorted(all_gap_items, key=lambda x: (sev_order.get(x["severity"], 2), -x["risk"]))
-            lines = [
-                "## RISK REGISTER\n",
-                "| # | Control | Category | GAP | Severity | L | I | Risk | Khuyến nghị |",
-                "|---|---------|----------|-----|----------|---|---|------|-------------|",
-            ]
-            sev_emoji = {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "⚪"}
-            for i, item in enumerate(sorted_items, 1):
-                sev = item["severity"]
-                lines.append(
-                    f"| {i} | {item['id']} | {item['category'][:20]} | {item['gap'][:60]} "
-                    f"| {sev_emoji.get(sev,'')} {sev} | {item['likelihood']} | {item['impact']} "
-                    f"| {item['risk']} | {item['recommendation'][:60]} |"
-                )
-            counts = {s: sum(1 for x in all_gap_items if x["severity"] == s) for s in sev_order}
-            lines.append(f"\n## TÓM TẮT: 🔴 Critical={counts['critical']} 🟠 High={counts['high']} "
-                         f"🟡 Medium={counts['medium']} ⚪ Low={counts['low']}")
-            return "\n".join(lines)
-
-        def _build_single_full_prompt(pct: float, sc: int, mx: int, sys_info: str, ctx: str) -> tuple:
-            sp = (
-                f"Bạn là chuyên gia Auditor về {std_name}. Tuân thủ: {pct}% ({sc}/{mx} Controls).\n\n"
-                f"NHIỆM VỤ:\n"
-                f"1. Phân loại GAP theo rủi ro: 🔴 Critical, 🟠 High, 🟡 Medium, ⚪ Low\n"
-                f"2. Đánh giá Likelihood + Impact cho mỗi GAP\n"
-                f"3. Risk Score = L × I; sắp xếp giảm dần\n"
-                f"4. RISK REGISTER dạng bảng: Control | GAP | Severity | L | I | Risk | Khuyến nghị\n\n"
-                f"## DANH SÁCH PHÁT HIỆN\n[GAP với severity]\n\n"
-                f"## RISK REGISTER\n"
-                f"| Control | GAP | Severity | L | I | Risk | Khuyến nghị |\n"
-                f"|---------|-----|----------|---|---|------|-------------|\n[data]\n\n"
-                f"## TÓM TẮT RỦI RO\n[Tổng: Critical/High/Medium/Low]"
-            )
-            um = f"Tài liệu {std_name}:\n{ctx}\n\nBiên bản khảo sát:\n{sys_info}"
-            return sp, um
-
-        # Build concise system summary for chunks (avoid repeating 3000 chars 4 times)
-        sys_summary_short = (
-            f"Tổ chức: {system_data.get('organization', {}).get('name', '')} | "
-            f"Ngành: {system_data.get('organization', {}).get('industry', '')} | "
-            f"Nhân sự: {system_data.get('organization', {}).get('employees', 0)} | "
-            f"IT: {system_data.get('organization', {}).get('it_staff', 0)}\n"
-            f"Firewall: {system_data.get('infrastructure', {}).get('firewalls', '')[:80]}\n"
-            f"AV/EDR: {system_data.get('infrastructure', {}).get('antivirus', '')[:60]}\n"
-            f"SIEM: {system_data.get('infrastructure', {}).get('siem', '')[:60]}\n"
-            f"Cloud: {system_data.get('infrastructure', {}).get('cloud', '')[:60]}\n"
-            f"Backup: {system_data.get('infrastructure', {}).get('backup', '')[:60]}\n"
-            f"VPN: {system_data.get('infrastructure', {}).get('vpn', '')}\n"
-            f"Sự cố 12T: {system_data.get('compliance', {}).get('incidents_12m', 0)}\n"
-            f"Ghi chú: {(system_data.get('notes') or '')[:300]}"
-        )
-
         try:
             raw_analysis = ""
             result_p1 = None
 
             if p1_task_type == "iso_local" and all_controls_flat:
-                # ── Chunked mode: SecurityLM per-category, JSON output, RAG, retry, validate ─
-                std_categories = (custom_std.get("controls", []) if custom_std else [])
-                if not std_categories:
-                    std_categories = [{"category": "Tất cả Controls", "controls": all_controls_flat}]
+                std_categories = builtin_std_categories or [{"category": "Tất cả Controls", "controls": all_controls_flat}]
 
                 all_gap_items = []  # accumulated structured gap items
                 logger.info(f"[Assessment] Chunked mode: {len(std_categories)} categories")
@@ -562,14 +367,13 @@ class ChatService:
                     except Exception:
                         cat_rag_ctx = ""
 
-                    chunk_prompt = _build_category_chunk_prompt(
+                    chunk_prompt = build_chunk_prompt(
                         cat_name, cat_controls, implemented,
                         percentage, score, max_score,
-                        sys_summary_short, cat_rag_ctx
+                        sys_summary_short, std_name, cat_rag_ctx
                     )
                     chunk_messages = [{"role": "user", "content": chunk_prompt}]
 
-                    # Retry × 2 with validation
                     chunk_gap_items = None
                     for attempt in range(3):
                         try:
@@ -582,27 +386,22 @@ class ChatService:
                             if result_p1 is None:
                                 result_p1 = chunk_result
                             chunk_content = chunk_result.get("content", "").strip()
-                            chunk_gap_items = _validate_chunk_output(chunk_content, cat_name)
+                            chunk_gap_items = validate_chunk_output(chunk_content, cat_name)
                             if chunk_gap_items is not None:
-                                logger.info(f"[Assessment] Chunk '{cat_name}' OK attempt {attempt+1}: {len(chunk_gap_items)} gaps")
+                                logger.info(f"[Assessment] Chunk '{cat_name}' attempt {attempt+1}: {len(chunk_gap_items)} gaps")
                                 break
-                            logger.warning(f"[Assessment] Chunk '{cat_name}' invalid JSON attempt {attempt+1}, retrying")
+                            logger.warning(f"[Assessment] Chunk '{cat_name}' invalid JSON attempt {attempt+1}")
                         except Exception as chunk_err:
-                            logger.warning(f"[Assessment] Chunk '{cat_name}' error attempt {attempt+1}: {chunk_err}")
-                            if attempt == 2:
-                                logger.error(f"[Assessment] Chunk '{cat_name}' failed all attempts")
+                            logger.warning(f"[Assessment] Chunk '{cat_name}' attempt {attempt+1}: {chunk_err}")
 
                     if chunk_gap_items:
                         all_gap_items.extend(chunk_gap_items)
 
-                raw_analysis = _chunk_results_to_markdown(all_gap_items)
+                raw_analysis = gap_items_to_markdown(all_gap_items)
                 logger.info(f"[Assessment] All chunks complete — {len(all_gap_items)} total gaps, raw: {len(raw_analysis)} chars")
 
             else:
-                # ── Single full prompt mode: Cloud or no controls flat list ─
-                security_prompt, user_msg = _build_single_full_prompt(
-                    percentage, score, max_score, system_info_txt, context
-                )
+                security_prompt, user_msg = build_full_prompt(std_name, percentage, score, max_score, system_info_txt, context)
                 messages_p1 = [
                     {"role": "system", "content": security_prompt},
                     {"role": "user", "content": user_msg},
@@ -615,20 +414,7 @@ class ChatService:
                 )
                 raw_analysis = result_p1.get("content", "")
 
-            # Phase 2: Compress raw_analysis if too large for Llama 8B context window
-            MAX_P2_INPUT = 2500  # chars — Llama 8B safe limit ~3000 tokens
-            if len(raw_analysis) > MAX_P2_INPUT:
-                # Keep Risk Register table rows + summary, drop verbose narrative
-                import re as _re2
-                lines = raw_analysis.split("\n")
-                table_lines = [l for l in lines if l.startswith("|") or l.startswith("##") or "Critical" in l or "High" in l or "TÓM TẮT" in l]
-                compressed = "\n".join(table_lines)
-                if len(compressed) < 200:
-                    compressed = raw_analysis[:MAX_P2_INPUT] + "\n...[truncated for context window]"
-                raw_analysis_p2 = compressed[:MAX_P2_INPUT]
-                logger.info(f"[Assessment] P2 input compressed: {len(raw_analysis)} → {len(raw_analysis_p2)} chars")
-            else:
-                raw_analysis_p2 = raw_analysis
+            raw_analysis_p2 = compress_for_phase2(raw_analysis)
 
             # Phase 2: Format report with Risk Register + Structured JSON output
             today = datetime.now(timezone.utc).strftime("%d/%m/%Y")

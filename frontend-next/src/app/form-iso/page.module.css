@@ -1857,9 +1857,10 @@
 .procStep {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     font-size: 0.82rem;
     color: var(--text-dim);
+    padding: 0.35rem 0;
 }
 
 .procStepDot {
@@ -3089,6 +3090,53 @@
     .stepWizard {
         padding: 0 4px;
     }
+}
+
+/* ── Processing Step Redesign ────────────────────────────── */
+
+.procStepNum {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--bg-muted);
+    border: 1.5px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.procStepNumAnim {
+    background: color-mix(in srgb, var(--accent-blue) 15%, transparent);
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+    animation: stepPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes stepPulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-blue) 30%, transparent); }
+    50% { box-shadow: 0 0 0 6px transparent; }
+}
+
+.procStepText {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+}
+
+.procStepLabel {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.procStepDesc {
+    font-size: 0.72rem;
+    color: var(--text-dim);
 }
 
 /* ── Error Guidance Box ──────────────────────────────────── */

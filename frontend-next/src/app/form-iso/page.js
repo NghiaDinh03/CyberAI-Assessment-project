@@ -1184,21 +1184,30 @@ export default function FormISOPage() {
                             </p>
                             <div className={styles.processingSteps}>
                                 <div className={styles.procStep}>
-                                    <span className={styles.procStepDot} style={{ background: 'var(--accent-green)' }} />
-                                    <span>RAG lookup — ChromaDB tài liệu ISO</span>
+                                    <span className={styles.procStepNum} style={{ background: 'var(--accent-green)', color: '#fff' }}>✓</span>
+                                    <div className={styles.procStepText}>
+                                        <span className={styles.procStepLabel}>RAG Lookup</span>
+                                        <span className={styles.procStepDesc}>ChromaDB — {currentStandard.name.split('(')[0].trim()}</span>
+                                    </div>
                                 </div>
                                 <div className={styles.procStep}>
-                                    <span className={`${styles.procStepDot} ${styles.procStepAnim}`} />
-                                    <span>Phase 1 — SecurityLM phân tích GAP từng category</span>
+                                    <span className={`${styles.procStepNum} ${styles.procStepNumAnim}`}>2</span>
+                                    <div className={styles.procStepText}>
+                                        <span className={styles.procStepLabel}>Phase 1 — SecurityLM</span>
+                                        <span className={styles.procStepDesc}>Phân tích GAP theo từng category controls</span>
+                                    </div>
                                 </div>
-                                <div className={styles.procStep}>
-                                    <span className={styles.procStepDot} style={{ opacity: 0.3 }} />
-                                    <span>Phase 2 — {form.model_mode === 'local' ? 'Meta-Llama' : 'OpenClaude'} format báo cáo</span>
+                                <div className={styles.procStep} style={{ opacity: 0.4 }}>
+                                    <span className={styles.procStepNum}>3</span>
+                                    <div className={styles.procStepText}>
+                                        <span className={styles.procStepLabel}>Phase 2 — {form.model_mode === 'local' ? 'Meta-Llama 8B' : 'OpenClaude'}</span>
+                                        <span className={styles.procStepDesc}>Định dạng báo cáo Markdown + Risk Register</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div className={styles.pollingInfo} style={{ justifyContent: 'center', marginTop: '1rem' }}>
+                            <div className={styles.pollingInfo} style={{ justifyContent: 'center', marginTop: '0.75rem' }}>
                                 <span className={styles.pollingDot} />
-                                <span>Tự động kiểm tra mỗi 10 giây · ID: {result.id?.slice(0,8)}</span>
+                                <span>Tự động kiểm tra mỗi 10 giây · ID: <code style={{fontSize:'0.72rem',opacity:0.7}}>{result.id?.slice(0,8)}</code></span>
                             </div>
                         </div>
                     ) : (
