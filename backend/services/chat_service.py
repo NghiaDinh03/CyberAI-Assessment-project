@@ -415,34 +415,89 @@ class ChatService:
             logger.info(f"[Assessment] hybrid — P1={p1_model} (LocalAI), P2=OpenClaude")
 
         # ── Phase 1: Chunked per-category analysis for LocalAI ─────────────
-        # When using LocalAI (iso_local), split by category to avoid context window overflow.
-        # Each chunk: 1 category (~8-37 controls) + system summary + lightweight prompt.
-        # Cloud mode: single full prompt (larger context window).
 
         def _build_category_chunk_prompt(cat_name: str, cat_controls: list, impl: list,
-                                          pct: float, sc: int, mx: int, sys_summary: str) -> str:
+                                          pct: float, sc: int, mx: int,
+                                          sys_summary: str, rag_ctx: str = "") -> str:
             missing = [c for c in cat_controls if c["id"] not in impl]
             present = [c for c in cat_controls if c["id"] in impl]
             missing_str = "\n".join(
                 f"  ❌ {c['id']} [{c.get('weight','medium').upper()}] {c.get('label','')}"
-                for c in missing[:20]  # cap at 20 to avoid overflow
+                for c in missing[:20]
             )
             present_str = ", ".join(c["id"] for c in present[:15])
+            rag_section = f"\nTÀI LIỆU THAM CHIẾU {std_name}:\n{rag_ctx[:600]}\n" if rag_ctx else ""
             return (
                 f"Auditor {std_name} — Category: {cat_name}\n"
-                f"Tổng tuân thủ toàn hệ thống: {pct}% ({sc}/{mx})\n\n"
-                f"CONTROLS ĐÃ ĐẠT trong nhóm này: {present_str or 'Không có'}\n"
+                f"Tuân thủ tổng: {pct}% ({sc}/{mx})\n"
+                f"{rag_section}\n"
+                f"CONTROLS ĐÃ ĐẠT: {present_str or 'Không có'}\n"
                 f"CONTROLS CHƯA ĐẠT:\n{missing_str or 'Tất cả đã đạt'}\n\n"
-                f"THÔNG TIN HỆ THỐNG (tóm tắt):\n{sys_summary[:800]}\n\n"
-                f"NHIỆM VỤ: Với mỗi control CHƯA ĐẠT trong nhóm '{cat_name}':\n"
-                f"- Phân loại rủi ro: 🔴 Critical | 🟠 High | 🟡 Medium | ⚪ Low\n"
-                f"- Ước tính Likelihood (1-5) và Impact (1-5)\n"
-                f"- 1 câu khuyến nghị ngắn gọn\n\n"
-                f"OUTPUT FORMAT (bảng markdown ngắn gọn):\n"
-                f"| Control | Severity | L | I | Risk | Khuyến nghị |\n"
-                f"|---------|----------|---|---|------|-------------|\n"
-                f"[Điền data — chỉ controls CHƯA ĐẠT]"
+                f"THÔNG TIN HỆ THỐNG:\n{sys_summary[:700]}\n\n"
+                f"NHIỆM VỤ: Với mỗi control CHƯA ĐẠT trong nhóm '{cat_name}', "
+                f"trả về JSON array (chỉ JSON, không text thêm):\n"
+                f'[{{"id":"CTL.XX","severity":"critical|high|medium|low",'
+                f'"likelihood":1-5,"impact":1-5,"risk":1-25,'
+                f'"gap":"mô tả GAP ngắn","recommendation":"1 câu khuyến nghị"}}]\n'
+                f"Nếu tất cả đã đạt, trả về: []"
             )
+
+        def _validate_chunk_output(content: str, cat_name: str) -> list:
+            """Parse and validate JSON output from SecurityLM chunk."""
+            import json, re as _re
+            content = content.strip()
+            # Extract JSON array — handle model wrapping in ```json ... ```
+            match = _re.search(r'\[.*?\]', content, _re.DOTALL)
+            if not match:
+                return None  # invalid, needs retry
+            try:
+                data = json.loads(match.group())
+                if not isinstance(data, list):
+                    return None
+                validated = []
+                for item in data:
+                    if not isinstance(item, dict):
+                        continue
+                    ctrl_id = item.get("id", "")
+                    if not ctrl_id:
+                        continue
+                    validated.append({
+                        "id": ctrl_id,
+                        "category": cat_name,
+                        "severity": item.get("severity", "medium"),
+                        "likelihood": max(1, min(5, int(item.get("likelihood", 3)))),
+                        "impact": max(1, min(5, int(item.get("impact", 3)))),
+                        "risk": max(1, min(25, int(item.get("risk", 9)))),
+                        "gap": str(item.get("gap", ""))[:200],
+                        "recommendation": str(item.get("recommendation", ""))[:200],
+                    })
+                return validated
+            except Exception:
+                return None
+
+        def _chunk_results_to_markdown(all_gap_items: list) -> str:
+            """Convert structured JSON gap items to markdown for Phase 2."""
+            if not all_gap_items:
+                return "✅ Không phát hiện GAP đáng kể nào.\n"
+            sev_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+            sorted_items = sorted(all_gap_items, key=lambda x: (sev_order.get(x["severity"], 2), -x["risk"]))
+            lines = [
+                "## RISK REGISTER\n",
+                "| # | Control | Category | GAP | Severity | L | I | Risk | Khuyến nghị |",
+                "|---|---------|----------|-----|----------|---|---|------|-------------|",
+            ]
+            sev_emoji = {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "⚪"}
+            for i, item in enumerate(sorted_items, 1):
+                sev = item["severity"]
+                lines.append(
+                    f"| {i} | {item['id']} | {item['category'][:20]} | {item['gap'][:60]} "
+                    f"| {sev_emoji.get(sev,'')} {sev} | {item['likelihood']} | {item['impact']} "
+                    f"| {item['risk']} | {item['recommendation'][:60]} |"
+                )
+            counts = {s: sum(1 for x in all_gap_items if x["severity"] == s) for s in sev_order}
+            lines.append(f"\n## TÓM TẮT: 🔴 Critical={counts['critical']} 🟠 High={counts['high']} "
+                         f"🟡 Medium={counts['medium']} ⚪ Low={counts['low']}")
+            return "\n".join(lines)
 
         def _build_single_full_prompt(pct: float, sc: int, mx: int, sys_info: str, ctx: str) -> tuple:
             sp = (
@@ -482,16 +537,13 @@ class ChatService:
             result_p1 = None
 
             if p1_task_type == "iso_local" and all_controls_flat:
-                # ── Chunked mode: analyze per category for LocalAI ───────────
-                # Get categories from standard
-                std_categories = custom_std.get("controls", []) if custom_std else []
-
-                # Fallback: build categories from all_controls_flat if no custom_std
-                if not std_categories and all_controls_flat:
+                # ── Chunked mode: SecurityLM per-category, JSON output, RAG, retry, validate ─
+                std_categories = (custom_std.get("controls", []) if custom_std else [])
+                if not std_categories:
                     std_categories = [{"category": "Tất cả Controls", "controls": all_controls_flat}]
 
-                chunk_results = []
-                logger.info(f"[Assessment] Chunked mode: {len(std_categories)} categories for LocalAI")
+                all_gap_items = []  # accumulated structured gap items
+                logger.info(f"[Assessment] Chunked mode: {len(std_categories)} categories")
 
                 for cat_idx, category in enumerate(std_categories):
                     cat_name = category.get("category", f"Category {cat_idx+1}")
@@ -499,38 +551,52 @@ class ChatService:
                     missing_in_cat = [c for c in cat_controls if c["id"] not in implemented]
 
                     if not missing_in_cat:
-                        # All controls in this category implemented — skip
-                        chunk_results.append(
-                            f"### {cat_name}\n✅ Tất cả controls đã đạt — không có GAP.\n"
-                        )
-                        logger.info(f"[Assessment] Category '{cat_name}' — all implemented, skipping chunk")
+                        logger.info(f"[Assessment] '{cat_name}' — all implemented, skip")
                         continue
+
+                    # RAG: get category-specific context from ChromaDB
+                    cat_rag_query = f"{cat_name} {std_name} controls requirements"
+                    try:
+                        cat_rag = vs.search(cat_rag_query, top_k=2)
+                        cat_rag_ctx = "\n---\n".join(r["text"][:300] for r in cat_rag)
+                    except Exception:
+                        cat_rag_ctx = ""
 
                     chunk_prompt = _build_category_chunk_prompt(
                         cat_name, cat_controls, implemented,
-                        percentage, score, max_score, sys_summary_short
+                        percentage, score, max_score,
+                        sys_summary_short, cat_rag_ctx
                     )
                     chunk_messages = [{"role": "user", "content": chunk_prompt}]
 
-                    try:
-                        chunk_result = CloudLLMService.chat_completion(
-                            messages=chunk_messages,
-                            temperature=0.3,
-                            local_model=p1_model or settings.SECURITY_MODEL_NAME,
-                            task_type=p1_task_type
-                        )
-                        chunk_content = chunk_result.get("content", "").strip()
-                        if chunk_content:
-                            chunk_results.append(f"### {cat_name}\n{chunk_content}")
-                            logger.info(f"[Assessment] Chunk {cat_idx+1}/{len(std_categories)} '{cat_name}' OK ({len(chunk_content)} chars)")
-                        if result_p1 is None:
-                            result_p1 = chunk_result
-                    except Exception as chunk_err:
-                        logger.warning(f"[Assessment] Chunk '{cat_name}' failed: {chunk_err}")
-                        chunk_results.append(f"### {cat_name}\n⚠️ Không phân tích được chunk này: {chunk_err}")
+                    # Retry × 2 with validation
+                    chunk_gap_items = None
+                    for attempt in range(3):
+                        try:
+                            chunk_result = CloudLLMService.chat_completion(
+                                messages=chunk_messages,
+                                temperature=0.2,
+                                local_model=p1_model or settings.SECURITY_MODEL_NAME,
+                                task_type=p1_task_type
+                            )
+                            if result_p1 is None:
+                                result_p1 = chunk_result
+                            chunk_content = chunk_result.get("content", "").strip()
+                            chunk_gap_items = _validate_chunk_output(chunk_content, cat_name)
+                            if chunk_gap_items is not None:
+                                logger.info(f"[Assessment] Chunk '{cat_name}' OK attempt {attempt+1}: {len(chunk_gap_items)} gaps")
+                                break
+                            logger.warning(f"[Assessment] Chunk '{cat_name}' invalid JSON attempt {attempt+1}, retrying")
+                        except Exception as chunk_err:
+                            logger.warning(f"[Assessment] Chunk '{cat_name}' error attempt {attempt+1}: {chunk_err}")
+                            if attempt == 2:
+                                logger.error(f"[Assessment] Chunk '{cat_name}' failed all attempts")
 
-                raw_analysis = "\n\n".join(chunk_results)
-                logger.info(f"[Assessment] All chunks complete — total raw: {len(raw_analysis)} chars")
+                    if chunk_gap_items:
+                        all_gap_items.extend(chunk_gap_items)
+
+                raw_analysis = _chunk_results_to_markdown(all_gap_items)
+                logger.info(f"[Assessment] All chunks complete — {len(all_gap_items)} total gaps, raw: {len(raw_analysis)} chars")
 
             else:
                 # ── Single full prompt mode: Cloud or no controls flat list ─
@@ -548,6 +614,21 @@ class ChatService:
                     task_type=p1_task_type
                 )
                 raw_analysis = result_p1.get("content", "")
+
+            # Phase 2: Compress raw_analysis if too large for Llama 8B context window
+            MAX_P2_INPUT = 2500  # chars — Llama 8B safe limit ~3000 tokens
+            if len(raw_analysis) > MAX_P2_INPUT:
+                # Keep Risk Register table rows + summary, drop verbose narrative
+                import re as _re2
+                lines = raw_analysis.split("\n")
+                table_lines = [l for l in lines if l.startswith("|") or l.startswith("##") or "Critical" in l or "High" in l or "TÓM TẮT" in l]
+                compressed = "\n".join(table_lines)
+                if len(compressed) < 200:
+                    compressed = raw_analysis[:MAX_P2_INPUT] + "\n...[truncated for context window]"
+                raw_analysis_p2 = compressed[:MAX_P2_INPUT]
+                logger.info(f"[Assessment] P2 input compressed: {len(raw_analysis)} → {len(raw_analysis_p2)} chars")
+            else:
+                raw_analysis_p2 = raw_analysis
 
             # Phase 2: Format report with Risk Register + Structured JSON output
             today = datetime.now(timezone.utc).strftime("%d/%m/%Y")
@@ -582,7 +663,7 @@ class ChatService:
                 f"b) Top 3 rủi ro + ngân sách khắc phục ước tính (VND)\n"
                 f"c) Next Steps: 3 hành động ưu tiên trong 30 ngày\n\n"
                 f"Tổ chức: {org_name} | Ngành: {industry} | Tiêu chuẩn: {std_name} | {today}\n\n"
-                f"--- DỮ LIỆU ĐẦU VÀO ---\n{raw_analysis}{weight_summary}"
+                f"--- DỮ LIỆU ĐẦU VÀO ---\n{raw_analysis_p2}{weight_summary}"
             )
             result_p2 = CloudLLMService.chat_completion(
                 messages=[{"role": "user", "content": formatting_prompt}],
