@@ -367,19 +367,52 @@ class ChatService:
             else:
                 system_info_txt += f"- {key}: {value}\n"
 
-        # ── Xác định task_type cho từng Phase theo model_mode ──────────────
+        # ── Health check LocalAI trước khi dùng local mode ─────────────────
+        # Nếu model fail load (OOM/RPC), tự động chuyển sang hybrid (Phase2=cloud) hoặc cloud
+        local_available = False
+        if effective_mode in ("local", "hybrid"):
+            local_available = CloudLLMService.localai_health_check(
+                model=settings.SECURITY_MODEL_NAME, timeout=15
+            )
+            if not local_available:
+                logger.warning(
+                    f"[Assessment] LocalAI health check FAILED (model={settings.SECURITY_MODEL_NAME}) — "
+                    f"auto-upgrade mode: local→hybrid, hybrid→cloud"
+                )
+                if effective_mode == "local":
+                    if settings.cloud_api_key_list:
+                        effective_mode = "hybrid"
+                        logger.warning("[Assessment] local→hybrid fallback")
+                    else:
+                        raise Exception(
+                            "LocalAI không khởi động được và không có Cloud API key. "
+                            "Kiểm tra RAM và model GGUF trong LocalAI container."
+                        )
+                elif effective_mode == "hybrid":
+                    effective_mode = "cloud"
+                    logger.warning("[Assessment] hybrid→cloud fallback (LocalAI unavailable)")
+
+        # ── Xác định task_type + model_name cho từng Phase ──────────────────
+        # Phase 1: SecurityLM — phân tích GAP kỹ thuật (domain-specific)
+        # Phase 2: Meta-Llama — format báo cáo (general language model)
         if effective_mode == "local":
             p1_task_type = "iso_local"
+            p1_model = settings.SECURITY_MODEL_NAME
             p2_task_type = "iso_local"
-            logger.info("[Assessment] model_mode=local — cả hai Phase dùng LocalAI")
+            p2_model = settings.MODEL_NAME  # Meta-Llama cho report formatting
+            logger.info(f"[Assessment] local — P1={p1_model}, P2={p2_model}")
         elif effective_mode == "cloud":
             p1_task_type = "iso_analysis"
+            p1_model = None  # resolved by CloudLLMService
             p2_task_type = "iso_analysis"
-            logger.info("[Assessment] model_mode=cloud — cả hai Phase dùng OpenClaude")
-        else:
+            p2_model = None
+            logger.info("[Assessment] cloud — both phases OpenClaude")
+        else:  # hybrid
             p1_task_type = "iso_local"
+            p1_model = settings.SECURITY_MODEL_NAME
             p2_task_type = "iso_analysis"
-            logger.info("[Assessment] model_mode=hybrid — Phase1 LocalAI, Phase2 OpenClaude")
+            p2_model = None  # OpenClaude for report
+            logger.info(f"[Assessment] hybrid — P1={p1_model} (LocalAI), P2=OpenClaude")
 
         # ── Phase 1: Chunked per-category analysis for LocalAI ─────────────
         # When using LocalAI (iso_local), split by category to avoid context window overflow.
@@ -483,7 +516,7 @@ class ChatService:
                         chunk_result = CloudLLMService.chat_completion(
                             messages=chunk_messages,
                             temperature=0.3,
-                            local_model=settings.SECURITY_MODEL_NAME,
+                            local_model=p1_model or settings.SECURITY_MODEL_NAME,
                             task_type=p1_task_type
                         )
                         chunk_content = chunk_result.get("content", "").strip()
@@ -511,7 +544,7 @@ class ChatService:
                 result_p1 = CloudLLMService.chat_completion(
                     messages=messages_p1,
                     temperature=0.3,
-                    local_model=settings.SECURITY_MODEL_NAME,
+                    local_model=p1_model or settings.SECURITY_MODEL_NAME,
                     task_type=p1_task_type
                 )
                 raw_analysis = result_p1.get("content", "")
@@ -523,40 +556,38 @@ class ChatService:
             org_size = system_data.get("organization", {}).get("size", "")
             employees = system_data.get("organization", {}).get("employees", 0)
             mode_label = {
-                "local": "LocalAI only (SecurityLM)",
+                "local": f"LocalAI: SecurityLM (Phase 1) + Meta-Llama (Phase 2)",
                 "cloud": "Cloud only (OpenClaude)",
-                "hybrid": "Hybrid (SecurityLM + OpenClaude)"
+                "hybrid": f"Hybrid: SecurityLM local (Phase 1) + OpenClaude (Phase 2)"
             }
 
             weight_summary = f"\n\nDữ liệu trọng số:\n{weight_breakdown_txt}" if weight_breakdown_txt else ""
 
             formatting_prompt = (
-                f"Bạn là chuyên gia trình bày Báo cáo Đánh giá ATTT chuyên nghiệp. "
-                f"Trình bày lại báo cáo bằng Markdown tiếng Việt với CẤU TRÚC BẮT BUỘC sau:\n\n"
+                f"Bạn là chuyên gia trình bày Báo cáo Đánh giá An toàn Thông tin chuyên nghiệp.\n"
+                f"Trình bày báo cáo bằng Markdown tiếng Việt, CẤU TRÚC BẮT BUỘC:\n\n"
                 f"## 1. ĐÁNH GIÁ TỔNG QUAN\n"
-                f"- Tóm tắt: {percentage}% tuân thủ — {score}/{max_score} Controls đạt\n"
-                f"- Bảng phân bổ trọng số (Critical/High/Medium/Low đạt bao nhiêu %)\n\n"
-                f"## 2. RISK REGISTER (BẢNG RỦI RO)\n"
-                f"Bảng markdown BẮT BUỘC có các cột:\n"
-                f"| # | Control ID | Mô tả GAP | Severity | Likelihood | Impact | Risk Score | Khuyến nghị | Timeline |\n"
-                f"Severity: 🔴 Critical, 🟠 High, 🟡 Medium, ⚪ Low. Risk Score = L×I giảm dần.\n\n"
-                f"## 3. PHÂN TÍCH LỖ HỔNG CHI TIẾT (GAP Analysis)\n"
-                f"Phân nhóm theo severity: Critical trước, Low sau.\n\n"
-                f"## 4. KHUYẾN NGHỊ ƯU TIÊN (Action Plan)\n"
-                f"Lộ trình: Ngắn hạn (0-30 ngày), Trung hạn (1-3 tháng), Dài hạn (3-12 tháng).\n\n"
-                f"## 5. TÓM TẮT ĐIỀU HÀNH (Executive Summary)\n"
-                f"Dành cho C-level:\n"
-                f"  a) Key Metrics: compliance %, controls đạt/thiếu, phân bổ critical/high/medium/low\n"
-                f"  b) Top 3 rủi ro + ước tính ngân sách khắc phục (VD: triển khai EDR ~50-150M VND/năm)\n"
-                f"  c) Next Steps: 3 hành động ưu tiên trong 30 ngày\n\n"
-                f"---\n"
-                f"Đối tượng: {org_name} | Ngành: {industry} | Tiêu chuẩn: {std_name} | Ngày: {today}\n"
-                f"Chế độ AI: {mode_label.get(effective_mode, effective_mode)}\n\n"
-                f"Dữ liệu từ Security Auditor:\n{raw_analysis}{weight_summary}"
+                f"Tuân thủ: {percentage}% — {score}/{max_score} Controls đạt\n"
+                f"Bảng phân bổ: Critical/High/Medium/Low đạt bao nhiêu %\n\n"
+                f"## 2. RISK REGISTER\n"
+                f"| # | Control | GAP | Severity | L | I | Risk | Khuyến nghị | Timeline |\n"
+                f"|---|---------|-----|----------|---|---|------|-------------|----------|\n"
+                f"Severity: 🔴 Critical 🟠 High 🟡 Medium ⚪ Low | Risk=L×I giảm dần\n\n"
+                f"## 3. GAP ANALYSIS\n"
+                f"Phân nhóm theo severity, Critical trước.\n\n"
+                f"## 4. ACTION PLAN\n"
+                f"Ngắn hạn (0-30 ngày) | Trung hạn (1-3 tháng) | Dài hạn (3-12 tháng)\n\n"
+                f"## 5. EXECUTIVE SUMMARY\n"
+                f"a) Metrics: compliance%, controls đạt/thiếu, risk breakdown\n"
+                f"b) Top 3 rủi ro + ngân sách khắc phục ước tính (VND)\n"
+                f"c) Next Steps: 3 hành động ưu tiên trong 30 ngày\n\n"
+                f"Tổ chức: {org_name} | Ngành: {industry} | Tiêu chuẩn: {std_name} | {today}\n\n"
+                f"--- DỮ LIỆU ĐẦU VÀO ---\n{raw_analysis}{weight_summary}"
             )
             result_p2 = CloudLLMService.chat_completion(
                 messages=[{"role": "user", "content": formatting_prompt}],
                 temperature=0.5,
+                local_model=p2_model or settings.MODEL_NAME,
                 task_type=p2_task_type
             )
             markdown_report = result_p2.get("content", "")

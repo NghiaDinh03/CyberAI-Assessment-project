@@ -167,14 +167,37 @@ class CloudLLMService:
         raise Exception(f"[OpenClaude] All keys failed. Last error: {last_error}")
 
     @classmethod
+    def localai_health_check(cls, model: str = None, timeout: int = 10) -> bool:
+        """Quick health check — verify LocalAI is up and model is loadable.
+        Returns True if healthy, False otherwise.
+        """
+        check_model = model or settings.SECURITY_MODEL_NAME
+        try:
+            response = requests.post(
+                f"{settings.LOCALAI_URL}/v1/chat/completions",
+                json={
+                    "model": check_model,
+                    "messages": [{"role": "user", "content": "hi"}],
+                    "max_tokens": 5,
+                    "temperature": 0,
+                    "stream": False,
+                },
+                timeout=timeout,
+            )
+            if response.status_code == 200:
+                content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                logger.info(f"[LocalAI] Health check OK — model={check_model}, response='{content[:20]}'")
+                return True
+            logger.warning(f"[LocalAI] Health check HTTP {response.status_code}: {response.text[:150]}")
+            return False
+        except Exception as e:
+            logger.warning(f"[LocalAI] Health check failed: {e}")
+            return False
+
+    @classmethod
     def _call_localai(cls, model: str, messages: List[Dict], temperature: float = 0.7,
                       priority: bool = False) -> Dict[str, Any]:
-        """Call LocalAI.
-        
-        Args:
-            priority: If True (ISO assessment), bypass news-busy check and pause news
-                      summarization so the assessment can proceed immediately.
-        """
+        """Call LocalAI. priority=True: bypass news-busy check, used for ISO assessments."""
         logger.info(f"[LocalAI] Requesting model={model}, messages={len(messages)}, priority={priority}")
 
         try:
@@ -182,14 +205,8 @@ class CloudLLMService:
             ai_status = get_ai_status()
             if "Đang rảnh" not in ai_status:
                 if priority:
-                    # ISO assessment takes priority — pause news summarization
-                    logger.warning(
-                        f"[LocalAI] News busy ({ai_status[:60]}) — "
-                        f"ISO assessment has priority, pausing news & proceeding"
-                    )
-                    # Signal news worker to pause after current item
+                    logger.warning(f"[LocalAI] News busy ({ai_status[:60]}) — ISO priority, pausing")
                     set_ai_status("⏸️ Tạm dừng (ISO assessment ưu tiên)")
-                    # Brief wait for in-flight news request to complete
                     import time as _time
                     _time.sleep(1.5)
                 else:
@@ -197,15 +214,18 @@ class CloudLLMService:
         except ImportError:
             pass
 
+        # Cap max_tokens for small models to avoid OOM
+        effective_max_tokens = settings.MAX_TOKENS if settings.MAX_TOKENS > 0 else 2048
+
         payload = {
             "model": model,
             "messages": messages,
             "temperature": temperature,
+            "max_tokens": effective_max_tokens,
             "stream": False,
         }
-        if settings.MAX_TOKENS > 0:
-            payload["max_tokens"] = settings.MAX_TOKENS
 
+        response = None
         try:
             response = requests.post(
                 f"{settings.LOCALAI_URL}/v1/chat/completions",
@@ -217,7 +237,6 @@ class CloudLLMService:
         except Exception as e:
             raise Exception(f"[LocalAI] Connection error: {e}")
         finally:
-            # Restore idle status so news can resume
             if priority:
                 try:
                     from services.news_service import get_ai_status, set_ai_status
@@ -227,13 +246,16 @@ class CloudLLMService:
                     pass
 
         if response.status_code != 200:
-            raise Exception(f"[LocalAI] HTTP {response.status_code}: {response.text[:200]}")
+            err_text = response.text[:300]
+            # Detect model-load failures specifically
+            if "could not load model" in err_text or "rpc error" in err_text or "Canceled" in err_text:
+                raise Exception(f"[LocalAI] Model load failed (OOM/RPC): {err_text[:150]}")
+            raise Exception(f"[LocalAI] HTTP {response.status_code}: {err_text}")
 
         data = response.json()
         content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-
         if not content:
-            logger.warning(f"[LocalAI] Empty content in response: {str(data)[:200]}")
+            logger.warning(f"[LocalAI] Empty content: {str(data)[:200]}")
 
         logger.info(f"[LocalAI] OK — model={model}, output_len={len(content)}")
         return {
@@ -251,17 +273,37 @@ class CloudLLMService:
         local_model = local_model or settings.MODEL_NAME
         errors = []
 
-        # ISO local pre-processing: LocalAI only, skip cloud — always runs with priority=True
+        # ISO local: try LocalAI first; if model fails to load, auto-fallback to cloud
         if task_type in LOCAL_ONLY_TASKS:
-            logger.info(f"[ChatCompletion] task_type={task_type} → LocalAI only (priority)")
+            logger.info(f"[ChatCompletion] task_type={task_type} → LocalAI (priority), cloud fallback on load-fail")
             try:
                 result = cls._call_localai(local_model, messages, temperature, priority=True)
                 if result["content"]:
                     return result
                 errors.append("LocalAI: empty content")
             except Exception as e:
-                errors.append(f"LocalAI: {e}")
-                logger.warning(f"[ChatCompletion] LocalAI failed: {e}")
+                err_str = str(e)
+                errors.append(f"LocalAI: {err_str}")
+                logger.warning(f"[ChatCompletion] LocalAI failed: {err_str}")
+
+                # If model couldn't load (OOM/RPC error) AND cloud keys exist → fallback gracefully
+                is_load_error = any(kw in err_str for kw in [
+                    "Model load failed", "could not load model", "rpc error", "Canceled",
+                    "HTTP 500", "Connection error"
+                ])
+                if is_load_error and settings.cloud_api_key_list:
+                    logger.warning("[ChatCompletion] LocalAI model load error → auto-fallback to cloud for this request")
+                    try:
+                        cloud_model = cls._resolve_model("iso_analysis")
+                        result = cls._call_open_claude(messages, temperature, max_tokens,
+                                                       model=cloud_model, task_type="iso_analysis")
+                        if result["content"]:
+                            result["provider"] = f"cloud-fallback(localai-failed)"
+                            return result
+                    except Exception as ce:
+                        errors.append(f"Cloud fallback: {ce}")
+                        logger.error(f"[ChatCompletion] Cloud fallback also failed: {ce}")
+
             raise Exception(f"LocalAI failed for local-only task: {' | '.join(errors)}")
 
         model = cls._resolve_model(task_type)

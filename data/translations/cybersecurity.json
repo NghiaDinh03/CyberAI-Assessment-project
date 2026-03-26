@@ -1,5 +1,5 @@
 {
-  "timestamp": 1774442826.655149,
+  "timestamp": 1774480823.68108,
   "translations": {
     "220ed4d967f5": "Chúng tôi đã tìm thấy tám vectơ tấn công bên trong nền tảng AWS. Đây là những gì kẻ tấn công có thể làm với chúng",
     "0225e7355a19": "Microsoft Cảnh báo Lừa đảo IRS Lượt truy cập 29.000 Người dùng, Triển khai Phần mềm độc hại RMM",
@@ -68,6 +68,17 @@
     "80eedb181702": "CSA ra mắt CSAI Foundation cho an ninh AI",
     "63e8f95d80e6": "Bảo mật gốc AI là điều bắt buộc để chống lại các cuộc tấn công dựa trên AI",
     "3b798ba6670b": "FCC cấm các bộ định tuyến tiêu dùng nước ngoài mới do rủi ro an ninh quốc gia",
-    "cd3841a33d27": "FCC cấm các bộ định tuyến mới được sản xuất bên ngoài Hoa Kỳ vì rủi ro an ninh quốc gia"
+    "cd3841a33d27": "FCC cấm các bộ định tuyến mới được sản xuất bên ngoài Hoa Kỳ vì rủi ro an ninh quốc gia",
+    "33bd193f3012": "Quản trị viên LeakBase bị bắt ở Nga vì thị trường chứng chỉ bị đánh cắp lớn",
+    "aad9548f29aa": "GlassWorm Malware sử dụng Solana Dead Drops để cung cấp RAT và ăn cắp trình duyệt, dữ liệu tiền điện tử",
+    "123946c1128f": "Trò chơi đổ lỗi: Tại sao Ghi công trên mạng công cộng mang rủi ro",
+    "cb382e332270": "Onit Security tăng 11 triệu đô la cho nền tảng quản lý phơi sáng",
+    "eb845ab7c55c": "Những kẻ lừa đảo đặt ra vai trò là nhà tuyển dụng của Palo Alto Networks trong nhiều tháng trong công việc lừa đảo",
+    "30f5f81fcab8": "SANS: Top 5 kỹ thuật tấn công mới nguy hiểm nhất để xem",
+    "7f46786cecba": "Tội phạm mạng Nga nhận án tù 2 năm ở Mỹ",
+    "325b903ca4e5": "AI tăng tốc tấn công, nhưng danh tính vẫn là an ninh mạng Liên kết yếu nhất",
+    "cea7298deded": "Tại sao cơ sở dữ liệu 'Gần bỏ lỡ' là chìa khoá để cải thiện việc chia sẻ thông tin",
+    "bfba43a14ad7": "iOS, macOS 26.4 ra mắt với các bản vá bảo mật mới",
+    "90887713696f": "Tại RSAC, EU dẫn đầu trong khi các quan chức Mỹ đứng bên lề"
   }
 }

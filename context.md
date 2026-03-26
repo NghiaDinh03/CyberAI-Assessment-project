@@ -20,24 +20,57 @@
 | `summarization` | Cloud | Tóm tắt bài viết |
 | `general` | Llama 3.1 8B | Chat general |
 
-**LOCAL_ONLY_TASKS**: `iso_local`, `security` → không fallback cloud dù lỗi
+**LOCAL_ONLY_TASKS**: `iso_local` → smart fallback cloud nếu model load fail. `security` → không fallback.
+
+### Model RAM Requirements (LocalAI container limit: 12GB)
+| Model | RAM cần | Có chạy được? | Vai trò |
+|-------|---------|---------------|---------|
+| `SecurityLLM-7B-Q4_K_M.gguf` | ~4GB | ✅ OK | Phase 1 — GAP analysis |
+| `Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf` | ~5GB | ✅ OK (khuyên dùng) | Phase 2 — report formatting |
+| `Meta-Llama-3.2-3B-Instruct-Q4_K_M.gguf` | ~2GB | ✅ OK (nhanh nhất) | Phase 2 fallback |
+| `Meta-Llama-3.1-70B-Instruct-Q4_K_M.gguf` | ~40GB | ❌ OOM (cần 48GB+) | KHÔNG dùng được |
+
+**Kết luận:** Đổi `MODEL_NAME` từ 70B → 8B trong `.env`. Cả SecurityLM 7B + Llama 8B = ~9GB tổng → vừa trong 12GB container.
 
 ---
 
 ## ISO Assessment — 2-Phase AI Report
-```
-Phase 1: LocalAI (SecurityLLM) — task_type="iso_local"
-  Input: system_info (server, firewall, SIEM, controls đã tick...)
-  Output: raw_analysis (danh sách GAP kỹ thuật, không chứa infra details)
 
-Phase 2: Cloud (Open Claude) — task_type="iso_analysis"
-  Input: raw_analysis + org_name + std_name + today date
-  Output: Markdown report hoàn chỉnh (ĐÁNH GIÁ / GAP ANALYSIS / ACTION PLAN)
+### Model Routing (cập nhật 26/03/2026)
+
+| Mode | Phase 1 | Phase 2 |
+|------|---------|---------|
+| **Local Only** | `SECURITY_MODEL_NAME` (SecurityLM) — GAP analysis | `MODEL_NAME` (Meta-Llama) — report formatting |
+| **Hybrid** | `SECURITY_MODEL_NAME` (SecurityLM) — local | Cloud (OpenClaude) — report |
+| **Cloud Only** | Cloud (OpenClaude) | Cloud (OpenClaude) |
+
+```
+Phase 1: SecurityLM (iso_local) — domain-specific GAP analysis per category
+  Input: chunked per-category (~1000 tokens/chunk), system summary compact
+  Output: raw GAP tables per category (markdown bảng Risk Register)
+
+Phase 2: Meta-Llama (local) / OpenClaude (cloud|hybrid) — report formatting
+  Input: aggregated raw_analysis + scoring data
+  Output: Full Markdown report (Tổng quan / Risk Register / GAP / Action Plan / Executive Summary)
 ```
 
-**Fix bugs đã hoàn thành:**
-- `[Ngày hiện tại]` placeholder → inject `today = datetime.now().strftime("%d/%m/%Y")` vào Phase 2 prompt
-- Phase 1 gửi infra data lên cloud → sửa bằng `task_type="iso_local"`
+### Health Check + Auto-Fallback (26/03/2026)
+```
+localai_health_check(model=SECURITY_MODEL_NAME, timeout=15s)
+  OK  → dùng local như bình thường
+  FAIL (OOM/RPC Canceled) →
+    local mode:  fallback → hybrid (nếu có cloud key)
+    hybrid mode: fallback → cloud
+    local + no cloud key: raise Exception + hướng dẫn
+```
+
+**LOCAL_ONLY_TASKS** đã update: `iso_local` giờ có smart fallback thay vì hard fail.
+
+**Bugs đã fix (26/03/2026):**
+- `HTTP 500 rpc error: Canceled` (70B model OOM) → health check + auto-fallback mode
+- Phase 2 local dùng nhầm model → giờ dùng `MODEL_NAME` (Meta-Llama) đúng role
+- `[Ngày hiện tại]` placeholder → inject `today = datetime.now().strftime("%d/%m/%Y")`
+- Phase 1 gửi infra data lên cloud → `task_type="iso_local"`
 
 ---
 
