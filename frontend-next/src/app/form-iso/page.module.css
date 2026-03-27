@@ -3092,6 +3092,42 @@
     }
 }
 
+/* ── Processing Progress Bar ────────────────────────── */
+
+.processingProgressWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    width: 100%;
+    max-width: 420px;
+    margin: 0.5rem auto;
+}
+
+.processingProgressBar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.processingProgressFill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+    border-radius: 3px;
+    transition: width 0.8s ease;
+}
+
+.processingProgressMsg {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-align: center;
+}
+
+.processingProgressPct {
+    color: var(--accent-blue);
+    font-weight: 600;
+}
+
 /* ── Processing Step Redesign ────────────────────────────── */
 
 .procStepNum {

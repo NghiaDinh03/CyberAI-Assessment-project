@@ -181,22 +181,33 @@ def list_assessments() -> List[dict]:
     return sorted(results, key=lambda x: x.get("created_at", ""), reverse=True)
 
 
+def update_assessment_progress(assessment_id: str, message: str, pct: int):
+    """Update progress field in assessment record for frontend polling."""
+    data = load_assessment(assessment_id)
+    if data:
+        data["progress"] = {"message": message, "percent": pct, "updated_at": datetime.now(timezone.utc).isoformat()}
+        save_assessment(assessment_id, data)
+
+
 def process_assessment_bg(assessment_id: str, system_data: dict, model_mode: str = "hybrid", evidence_context: str = ""):
     data = load_assessment(assessment_id)
     if not data:
         return
 
     data["status"] = "processing"
+    data["progress"] = {"message": "Khởi động phân tích...", "percent": 0}
     data["updated_at"] = datetime.now(timezone.utc).isoformat()
     save_assessment(assessment_id, data)
 
     try:
-        # Append evidence context to notes for AI processing
         if evidence_context:
             system_data["notes"] = (system_data.get("notes", "") or "") + evidence_context
-            logger.info(f"[Assessment {assessment_id[:8]}] Evidence context appended ({len(evidence_context)} chars)")
 
-        result = ChatService.assess_system(system_data, model_mode=model_mode)
+        update_assessment_progress(assessment_id, "Kiểm tra LocalAI...", 5)
+        result = ChatService.assess_system(
+            system_data, model_mode=model_mode,
+            progress_callback=lambda msg, pct: update_assessment_progress(assessment_id, msg, pct)
+        )
 
         data["status"] = "completed"
         data["result"] = result

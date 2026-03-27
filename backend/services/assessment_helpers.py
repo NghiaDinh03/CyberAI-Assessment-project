@@ -134,6 +134,37 @@ def gap_items_to_markdown(all_gap_items: list) -> str:
     return "\n".join(lines)
 
 
+def normalize_severity_distribution(gap_items: list) -> list:
+    """Prevent all-critical output from 7B model — redistribute if > 70% critical.
+    
+    Real-world ISO assessments: ~20% critical, 35% high, 30% medium, 15% low.
+    If SecurityLM marks > 70% as critical, scale down proportionally using risk scores.
+    """
+    if not gap_items or len(gap_items) < 3:
+        return gap_items
+    critical_count = sum(1 for g in gap_items if g["severity"] == "critical")
+    if critical_count / len(gap_items) <= 0.7:
+        return gap_items
+    logger.debug(f"[SeverityNorm] {critical_count}/{len(gap_items)} critical — normalizing")
+    sorted_items = sorted(gap_items, key=lambda x: -x["risk"])
+    n = len(sorted_items)
+    critical_cutoff = max(1, int(n * 0.25))
+    high_cutoff = max(1, int(n * 0.50))
+    normalized = []
+    for i, item in enumerate(sorted_items):
+        new_item = dict(item)
+        if i < critical_cutoff:
+            new_item["severity"] = "critical"
+        elif i < high_cutoff:
+            new_item["severity"] = "high"
+        elif i < int(n * 0.80):
+            new_item["severity"] = "medium"
+        else:
+            new_item["severity"] = "low"
+        normalized.append(new_item)
+    return normalized
+
+
 def build_full_prompt(std_name: str, pct: float, sc: int, mx: int,
                       sys_info: str, ctx: str) -> tuple:
     sp = (

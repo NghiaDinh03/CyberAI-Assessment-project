@@ -296,12 +296,14 @@ class ChatService:
         }
 
     @staticmethod
-    def assess_system(system_data: Dict[str, Any], model_mode: str = "hybrid") -> Dict[str, Any]:
+    def assess_system(system_data: Dict[str, Any], model_mode: str = "hybrid",
+                      progress_callback=None) -> Dict[str, Any]:
+        """progress_callback(message: str, percent: int) — optional, called per chunk."""
         from services.controls_catalog import get_categories, get_flat_controls, calc_compliance, build_weight_breakdown
         from services.assessment_helpers import (
             build_chunk_prompt, validate_chunk_output, gap_items_to_markdown,
             build_full_prompt, build_weight_breakdown_txt, compress_for_phase2,
-            build_sys_summary, infer_gap_from_control
+            build_sys_summary, infer_gap_from_control, normalize_severity_distribution
         )
 
         effective_mode = model_mode or system_data.get("model_mode", "hybrid")
@@ -439,13 +441,21 @@ class ChatService:
             if p1_task_type == "iso_local" and all_controls_flat:
                 std_categories = builtin_std_categories or [{"category": "Tất cả Controls", "controls": all_controls_flat}]
 
-                all_gap_items = []  # accumulated structured gap items
-                logger.info(f"[Assessment] Chunked mode: {len(std_categories)} categories")
+                all_gap_items = []
+                n_cats = len(std_categories)
+                logger.info(f"[Assessment] Chunked mode: {n_cats} categories")
+
+                if progress_callback:
+                    progress_callback("Bắt đầu phân tích từng nhóm controls...", 10)
 
                 for cat_idx, category in enumerate(std_categories):
                     cat_name = category.get("category", f"Category {cat_idx+1}")
                     cat_controls = category.get("controls", [])
                     missing_in_cat = [c for c in cat_controls if c["id"] not in implemented]
+
+                    if progress_callback:
+                        pct = 10 + int((cat_idx / n_cats) * 70)
+                        progress_callback(f"Đang phân tích {cat_name}... ({cat_idx+1}/{n_cats})", pct)
 
                     if not missing_in_cat:
                         logger.info(f"[Assessment] '{cat_name}' — all implemented, skip")
@@ -471,7 +481,7 @@ class ChatService:
                         try:
                             chunk_result = _try_phase(
                                 messages=chunk_messages,
-                                temperature=0.2,
+                                temperature=0.1,
                                 local_model=p1_model or settings.SECURITY_MODEL_NAME,
                                 task_type=p1_task_type,
                                 priority=True,
@@ -496,6 +506,8 @@ class ChatService:
                         for ctrl in missing_in_cat[:10]:
                             all_gap_items.append(infer_gap_from_control(ctrl, cat_name))
 
+                # Normalize severity if model marks too many as critical
+                all_gap_items = normalize_severity_distribution(all_gap_items)
                 raw_analysis = gap_items_to_markdown(all_gap_items)
                 logger.info(f"[Assessment] All chunks complete — {len(all_gap_items)} total gaps, raw: {len(raw_analysis)} chars")
 

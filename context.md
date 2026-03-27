@@ -55,17 +55,29 @@ Container limit: 12GB. Tổng 2 models = ~9GB → vừa đủ.
 [json_data] _build_structured_json() → dashboard: risk_summary, weight_breakdown, top_gaps
 ```
 
-### Điểm yếu LocalAI SecurityLM 7B (honest assessment)
-- Không fine-tune cho ISO 27001 → JSON output hay bị malformed
-- Hallucinate control IDs không có trong tiêu chuẩn
-- Severity classification không nhất quán (critical/high nhầm lẫn)
-- **Fallback**: `infer_gap_from_control()` suy ra từ weight metadata khi LLM fail
+### Điểm yếu LocalAI SecurityLM 7B — Nguyên nhân và Giải pháp
 
-### Fix đã áp dụng để cải thiện LocalAI output:
-1. Few-shot example trực tiếp trong prompt (`[{"id":"XX","severity":"..."}]`)
-2. Compact prompt < 800 tokens/chunk → giảm context confusion
-3. Retry × 2 với validation strict (JSON parse + control ID check)
-4. Fallback tự động từ control metadata
+**Vấn đề cốt lõi:**
+1. **Input quá lớn** — SecurityLM 7B context window = 4096 tokens. Prompt cũ > 2000 tokens → model "cắt đầu" input, quên system context
+2. **Model không "khôn"** — 7B Q4 quantized: 4-bit precision, knowledge bị nén mạnh → reasoning về ISO 27001 kém
+3. **Format mismatch** — Model không được fine-tune cho JSON output → hay trả markdown bảng thay vì JSON array
+4. **Severity hallucination** — Mọi GAP đều "critical" vì model không hiểu risk scoring
+
+**Đã fix:**
+- Compact prompt < 800 tokens/chunk (sys_summary[:400] + RAG[:350] + 15 controls max)
+- Few-shot examples: 2 JSON mẫu đúng format trực tiếp trong prompt
+- Control ID whitelist: loại bỏ IDs không thuộc tiêu chuẩn
+- Retry × 2 + validate_chunk_output() + infer_gap_from_control() fallback
+
+**Giải pháp tiếp theo để tăng output quality:**
+
+| Giải pháp | Cách làm | Khả thi? | Lợi ích |
+|-----------|---------|---------|---------|
+| **Fine-tune với sample_training_pairs.jsonl** | QLoRA Llama-3-8B, 10 pairs mẫu + generated pairs | ✅ Có dataset sẵn | Output chuẩn format, đúng control IDs |
+| **Prompt engineering nâng cao** | Chain-of-thought: "Think step by step before outputting JSON" | ✅ Ngay bây giờ | Tăng reasoning 20-30% |
+| **Temperature thấp hơn** | 0.1 thay vì 0.2 → ít creative, nhiều deterministic | ✅ Ngay bây giờ | Ít hallucinate hơn |
+| **2-pass approach** | Pass 1: list control IDs → Pass 2: analyze từng ID riêng | ⚠️ 2× API calls | Chính xác hơn nhưng 2× thời gian |
+| **Rule-based fallback** | Nếu severity=critical rate > 80% → normalize distribution | ✅ Backend code | Realistic risk distribution |
 
 ---
 

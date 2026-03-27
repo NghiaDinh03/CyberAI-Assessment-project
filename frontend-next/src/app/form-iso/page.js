@@ -448,6 +448,12 @@ export default function FormISOPage() {
                 })
                 setActiveTab('result')
                 fetchHistory()
+            } else if (data.status === 'processing' && data.progress) {
+                // Update progress info without changing tab
+                setResult(prev => prev?.id === data.id
+                    ? { ...prev, progress: data.progress }
+                    : prev
+                )
             }
         } catch (e) {
             console.error('Failed to refresh status:', e)
@@ -1174,6 +1180,20 @@ export default function FormISOPage() {
                                     tự động cập nhật khi xong. Quay lại tab <strong>Lịch sử</strong> để xem kết quả.
                                 </span>
                             </div>
+                            {result.progress && (
+                                <div className={styles.processingProgressWrap}>
+                                    <div className={styles.processingProgressBar}>
+                                        <div
+                                            className={styles.processingProgressFill}
+                                            style={{ width: `${result.progress.percent || 0}%` }}
+                                        />
+                                    </div>
+                                    <span className={styles.processingProgressMsg}>
+                                        {result.progress.message || 'Đang xử lý...'}
+                                        <span className={styles.processingProgressPct}> {result.progress.percent || 0}%</span>
+                                    </span>
+                                </div>
+                            )}
                             <p className={styles.processingDesc}>
                                 Đang đánh giá <strong>{form.implemented_controls.length}/{totalControls} controls</strong> ({compliancePercent}%).
                                 {form.model_mode === 'local'
