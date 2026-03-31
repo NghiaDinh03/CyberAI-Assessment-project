@@ -1,7 +1,9 @@
 """Dataset Generator — Auto-create fine-tuning dataset for SecurityLM from:
-1. Cybersecurity news articles → ISO control mapping pairs
-2. Completed assessments → Phase 1 training pairs
-3. Synthetic assessment pairs (Cloud AI generated)
+1. Completed assessments → Phase 1 training pairs (primary source)
+2. Synthetic assessment pairs (Cloud AI generated)
+
+Note: news-based dataset generation has been removed.
+The news aggregator is now a separate project.
 """
 
 import json
@@ -15,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 DATASET_DIR = os.path.join(os.getenv("DATA_PATH", "./data"), "knowledge_base")
 ASSESSMENTS_DIR = os.path.join(os.getenv("DATA_PATH", "./data"), "assessments")
-HISTORY_FILE = os.path.join(os.getenv("DATA_PATH", "./data"), "articles_history.json")
 OUTPUT_JSONL = os.path.join(DATASET_DIR, "finetune_iso27001.jsonl")
 
 ISO_CONTROLS_FLAT = [
@@ -51,70 +52,6 @@ def _cloud_generate(prompt: str, max_tokens: int = 1000) -> Optional[str]:
     except Exception as e:
         logger.error(f"[DatasetGen] Cloud AI failed: {e}")
         return None
-
-
-def generate_from_news(limit: int = 50) -> List[Dict]:
-    """Extract news articles → ISO control mapping pairs."""
-    pairs = []
-    try:
-        if not os.path.exists(HISTORY_FILE):
-            logger.warning("[DatasetGen] No articles_history.json found")
-            return pairs
-        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-            history = json.load(f)
-    except Exception as e:
-        logger.error(f"[DatasetGen] Failed to read history: {e}")
-        return pairs
-
-    cybersec_articles = [
-        a for a in history
-        if a.get("category") == "cybersecurity"
-        and a.get("summary_text") and len(a.get("summary_text", "")) > 100
-    ][:limit]
-
-    logger.info(f"[DatasetGen] Processing {len(cybersec_articles)} cybersecurity articles")
-
-    for article in cybersec_articles:
-        title = article.get("title_vi") or article.get("title", "")
-        summary = article.get("summary_text", "")
-
-        prompt = (
-            f"Bài báo an ninh mạng:\nTiêu đề: {title}\nNội dung: {summary[:1000]}\n\n"
-            f"Xác định các control ISO 27001:2022 liên quan. Danh sách control hợp lệ:\n"
-            f"{', '.join(ISO_CONTROLS_FLAT[:40])}...\n\n"
-            f"Trả về JSON (chỉ JSON):\n"
-            f'[{{"id":"A.X.Y","role":"prevent|detect|respond","reason":"lý do ngắn gọn"}}]\n'
-            f"Chỉ liệt kê controls THỰC SỰ liên quan (3-7 controls)."
-        )
-
-        content = _cloud_generate(prompt, max_tokens=500)
-        if not content:
-            continue
-
-        import re
-        match = re.search(r'\[.*?\]', content, re.DOTALL)
-        if not match:
-            continue
-        try:
-            mappings = json.loads(match.group())
-            if not isinstance(mappings, list) or len(mappings) == 0:
-                continue
-            valid = [m for m in mappings if isinstance(m, dict) and m.get("id") in ISO_CONTROLS_FLAT]
-            if not valid:
-                continue
-            pairs.append({
-                "type": "news_control_mapping",
-                "source": article.get("source", ""),
-                "title": title,
-                "instruction": "Từ bài báo an ninh mạng sau, xác định các control ISO 27001 liên quan:",
-                "input": f"Tiêu đề: {title}\nNội dung: {summary[:500]}",
-                "output": json.dumps(valid, ensure_ascii=False),
-            })
-            logger.info(f"[DatasetGen] News pair created: {title[:50]} → {len(valid)} controls")
-        except Exception:
-            continue
-
-    return pairs
 
 
 def generate_from_assessments() -> List[Dict]:
@@ -156,7 +93,6 @@ def generate_from_assessments() -> List[Dict]:
             f"VPN: {infra.get('vpn','')}\n"
         )
 
-        # For each category, create a training pair using cloud output as ground truth
         from services.controls_catalog import BUILTIN_CONTROLS
         categories = BUILTIN_CONTROLS.get(standard, BUILTIN_CONTROLS.get("iso27001", []))
 
@@ -173,7 +109,6 @@ def generate_from_assessments() -> List[Dict]:
             )
             present_ids = [c["id"] for c in cat_controls if c["id"] in implemented]
 
-            # Generate ideal output using Cloud AI
             gen_prompt = (
                 f"ISO Auditor — {standard} | {cat_name} | Đánh giá GAP\n"
                 f"HỆ THỐNG:{sys_summary}\n"
@@ -275,17 +210,17 @@ def export_to_jsonl(all_pairs: List[Dict], output_path: str = OUTPUT_JSONL) -> i
     return count
 
 
-def run_full_pipeline(news_limit: int = 30, synthetic_count: int = 10) -> Dict:
-    """Run full dataset generation pipeline."""
-    results = {"news": 0, "assessments": 0, "synthetic": 0, "total": 0, "output": OUTPUT_JSONL}
+def run_full_pipeline(synthetic_count: int = 10) -> Dict:
+    """Run full dataset generation pipeline.
+
+    Sources:
+    - Completed assessments in /data/assessments/
+    - Synthetic Cloud AI generated scenarios
+    """
+    results = {"assessments": 0, "synthetic": 0, "total": 0, "output": OUTPUT_JSONL}
     all_pairs = []
 
     logger.info("[DatasetGen] === Starting full pipeline ===")
-
-    news_pairs = generate_from_news(limit=news_limit)
-    results["news"] = len(news_pairs)
-    all_pairs.extend(news_pairs)
-    logger.info(f"[DatasetGen] News pairs: {len(news_pairs)}")
 
     assessment_pairs = generate_from_assessments()
     results["assessments"] = len(assessment_pairs)
@@ -300,7 +235,6 @@ def run_full_pipeline(news_limit: int = 30, synthetic_count: int = 10) -> Dict:
     total = export_to_jsonl(all_pairs)
     results["total"] = total
 
-    # Save metadata
     meta_path = os.path.join(DATASET_DIR, "finetune_metadata.json")
     meta = {
         "generated_at": datetime.now(timezone.utc).isoformat(),

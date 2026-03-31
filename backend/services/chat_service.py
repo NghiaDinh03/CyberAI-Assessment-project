@@ -85,13 +85,14 @@ class ChatService:
         return messages
 
     @staticmethod
-    def generate_response(message: str, session_id: str = "default") -> Dict[str, Any]:
+    def generate_response(message: str, session_id: str = "default",
+                          model_override: str = None, prefer_cloud: bool = True) -> Dict[str, Any]:
         guard_error = ChatService._local_only_guard()
         if guard_error:
             return guard_error
         try:
             routing = route_model(message)
-            model_name = routing["model"]
+            model_name = model_override or routing["model"]
             use_rag = routing["use_rag"]
             use_search = routing.get("use_search", False)
 
@@ -119,7 +120,8 @@ class ChatService:
                 messages=messages,
                 temperature=0.7,
                 local_model=model_name,
-                prefer_cloud=False,  # ưu tiên LocalAI để giữ dữ liệu on-prem
+                prefer_cloud=prefer_cloud,
+                cloud_model=model_override,
             )
             response_text = ChatService.clean_response(result["content"]) if result.get("content") else ""
 
@@ -151,36 +153,17 @@ class ChatService:
             }
 
     @staticmethod
-    def generate_response_stream(message: str, session_id: str = "default") -> Generator:
+    def generate_response_stream(message: str, session_id: str = "default",
+                                  model_override: str = None, prefer_cloud: bool = True) -> Generator:
         guard_error = ChatService._local_only_guard(stream=True, session_id=session_id)
         if guard_error:
             yield guard_error
             return
         try:
-            # Check if AI is busy
-            try:
-                from services.news_service import get_ai_status
-                ai_status = get_ai_status()
-                if "Đang rảnh" not in ai_status:
-                    yield {
-                        "step": "done",
-                        "data": {
-                            "response": f"⚠️ Hệ thống AI hiện đang bận ({ai_status}). Vui lòng chờ rồi thử lại!",
-                            "model": settings.MODEL_NAME, "provider": "blocked",
-                            "route": "blocked_by_queue", "session_id": session_id,
-                            "rag_used": False, "search_used": False,
-                            "sources": [], "web_sources": [],
-                            "tokens": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
-                        },
-                    }
-                    return
-            except ImportError:
-                pass
-
             yield {"step": "routing", "message": "Đang phân tích câu hỏi..."}
 
             routing = route_model(message)
-            model_name = routing["model"]
+            model_name = model_override or routing["model"]
             use_rag = routing["use_rag"]
             use_search = routing.get("use_search", False)
 
@@ -203,7 +186,8 @@ class ChatService:
                     web_sources = [{"title": r["title"], "url": r["url"]} for r in search_results]
                     yield {"step": "search_done", "message": f"✅ Tìm thấy {len(search_results)} kết quả, đang phân tích..."}
 
-            yield {"step": "thinking", "message": f"🤖 Đang tạo câu trả lời ({settings.CLOUD_MODEL_NAME})..."}
+            display_model = model_name if model_name else settings.CLOUD_MODEL_NAME
+            yield {"step": "thinking", "message": f"🤖 Đang tạo câu trả lời ({display_model})..."}
 
             ss = ChatService.get_session_store()
             history = ss.get_context_messages(session_id, max_messages=10)
@@ -213,7 +197,8 @@ class ChatService:
                 messages=messages,
                 temperature=0.7,
                 local_model=model_name,
-                prefer_cloud=False,
+                prefer_cloud=prefer_cloud,
+                cloud_model=model_override,
             )
             response_text = ChatService.clean_response(result["content"]) if result.get("content") else ""
 
@@ -310,6 +295,19 @@ class ChatService:
         vs = ChatService.get_vector_store()
         standard = system_data.get("assessment_standard", "iso27001")
 
+        # Map assessment standard to its dedicated ChromaDB collection
+        STANDARD_DOMAIN_MAP = {
+            "iso27001": "iso27001",
+            "tcvn11930": "tcvn11930",
+            "nd13": "nd13",
+            "nist_csf": "nist_csf",
+            "pci_dss": "pci_dss",
+            "hipaa": "hipaa",
+            "gdpr": "gdpr",
+            "soc2": "soc2",
+        }
+        rag_domain = STANDARD_DOMAIN_MAP.get(standard, "iso_documents")
+
         if standard == "tcvn11930":
             search_query = "TCVN 11930 hệ thống thông tin cấp độ bảo đảm an toàn"
         elif standard == "nd13":
@@ -332,7 +330,7 @@ class ChatService:
         else:
             std_name = "ISO 27001:2022" if standard != "tcvn11930" else "TCVN 11930:2017 (Yêu cầu kỹ thuật theo 5 cấp độ)"
 
-        context_results = vs.search(search_query, top_k=6)
+        context_results = vs.search(search_query, top_k=6, domain=rag_domain)
         context = "\n---\n".join([r["text"] for r in context_results])
 
         implemented = system_data.get("compliance", {}).get("implemented_controls", [])
@@ -461,10 +459,10 @@ class ChatService:
                         logger.info(f"[Assessment] '{cat_name}' — all implemented, skip")
                         continue
 
-                    # RAG: get category-specific context from ChromaDB
+                    # RAG: get category-specific context from ChromaDB (domain-scoped)
                     cat_rag_query = f"{cat_name} {std_name} controls requirements"
                     try:
-                        cat_rag = vs.search(cat_rag_query, top_k=2)
+                        cat_rag = vs.search(cat_rag_query, top_k=2, domain=rag_domain)
                         cat_rag_ctx = "\n---\n".join(r["text"][:300] for r in cat_rag)
                     except Exception:
                         cat_rag_ctx = ""
@@ -519,7 +517,7 @@ class ChatService:
                 ]
                 result_p1 = _try_phase(
                     messages=messages_p1,
-                    temperature=0.3,
+                    temperature=0.1,
                     local_model=p1_model or settings.SECURITY_MODEL_NAME,
                     task_type=p1_task_type,
                     priority=True,

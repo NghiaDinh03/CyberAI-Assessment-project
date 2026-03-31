@@ -7,11 +7,11 @@ import { useTheme } from './ThemeProvider'
 import styles from './Navbar.module.css'
 
 const NAV_ITEMS = [
-    { href: '/', label: 'Trang chủ', icon: '🏠' },
-    { href: '/chatbot', label: 'AI Chat', icon: '💬' },
-    { href: '/form-iso', label: 'Đánh giá', icon: '📋' },
-    { href: '/news', label: 'Tin tức', icon: '📰' },
-    { href: '/analytics', label: 'Analytics', icon: '📊' },
+    { href: '/', label: 'Home' },
+    { href: '/chatbot', label: 'AI Chat' },
+    { href: '/form-iso', label: 'Assessment' },
+    { href: '/standards', label: 'Standards' },
+    { href: '/analytics', label: 'Analytics' },
 ]
 
 const TIMEZONES = [
@@ -71,7 +71,7 @@ export default function Navbar() {
         <nav className={styles.navbar}>
             <div className={styles.inner}>
                 <Link href="/" className={styles.brand}>
-                    <span className={styles.logo}>🛡️</span>
+                    <span className={styles.brandMark}>CA</span>
                     <span className={styles.brandText}>CyberAI</span>
                 </Link>
 
@@ -90,14 +90,13 @@ export default function Navbar() {
                             href={item.href}
                             className={`${styles.navLink} ${pathname === item.href ? styles.navLinkActive : ''}`}
                         >
-                            <span className={styles.navIcon}>{item.icon}</span>
                             {item.label}
                         </Link>
                     ))}
                 </div>
 
                 <div className={styles.controls}>
-                    <div className={styles.clock} onClick={handleTzClick} title="Click để đổi múi giờ">
+                    <div className={styles.clock} onClick={handleTzClick} title="Click to switch timezone">
                         <span className={styles.clockTime}>{mounted ? time : '--:--:--'}</span>
                         <span className={styles.clockMeta}>
                             {mounted ? date : '--/--/----'} · {TIMEZONES[tzIdx].label}
@@ -113,10 +112,10 @@ export default function Navbar() {
                             className={styles.themeToggle}
                             onClick={toggle}
                             aria-label="Toggle theme"
-                            title={theme === 'dark' ? 'Chuyển sang Light Mode' : 'Chuyển sang Dark Mode'}
+                            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                         >
-                            <span className={`${styles.themeIcon} ${theme === 'dark' ? styles.themeDark : styles.themeLight}`}>
-                                {theme === 'dark' ? '🌙' : '☀️'}
+                            <span className={styles.themeLabel}>
+                                {theme === 'dark' ? 'Light' : 'Dark'}
                             </span>
                         </button>
                     )}

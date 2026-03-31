@@ -136,14 +136,12 @@ export default function FormISOPage() {
         } catch (e) { console.error('Evidence delete failed:', e) }
     }
 
-    // ── Auto-save draft to localStorage on every form change ──────────────
     useEffect(() => {
         try {
             localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(form))
         } catch (_) {}
     }, [form])
 
-    // Fetch custom standards from backend on mount
     useEffect(() => {
         const fetchCustomStandards = async () => {
             try {
@@ -152,7 +150,6 @@ export default function FormISOPage() {
                 if (!res.ok) return
                 const data = await res.json()
                 if (data.custom && data.custom.length > 0) {
-                    // For each custom standard, fetch full data and merge
                     for (const std of data.custom) {
                         try {
                             const detailRes = await fetch(`/api/standards/${std.id}`)
@@ -160,7 +157,6 @@ export default function FormISOPage() {
                                 const detail = await detailRes.json()
                                 if (detail.controls) {
                                     mergeCustomStandard(detail)
-                                    // Merge custom control descriptions
                                     if (detail.controlDescriptions) {
                                         setCustomDescriptions(prev => ({ ...prev, ...detail.controlDescriptions }))
                                     }
@@ -181,7 +177,6 @@ export default function FormISOPage() {
         fetchCustomStandards()
     }, [])
 
-    // Merge CONTROL_DESCRIPTIONS with custom descriptions
     const allDescriptions = useMemo(() => {
         return { ...CONTROL_DESCRIPTIONS, ...customDescriptions }
     }, [customDescriptions])
@@ -194,21 +189,16 @@ export default function FormISOPage() {
         return currentStandard.controls.reduce((acc, cat) => acc + cat.controls.length, 0)
     }, [currentStandard])
 
-    // Weighted score (dùng trọng số Critical/High/Medium/Low)
     const weightedScore = useMemo(() => {
         return calcWeightedScore(form.implemented_controls, currentStandard.controls)
     }, [form.implemented_controls, currentStandard.controls])
 
-    // Category-level breakdown for scoring panel
     const categoryBreakdown = useMemo(() => {
         return calcCategoryBreakdown(form.implemented_controls, currentStandard.controls)
     }, [form.implemented_controls, currentStandard.controls])
 
-    // Backward compat: compliancePercent vẫn dùng weighted
     const compliancePercent = weightedScore.percent
 
-    // ── Parse template/reuse data into flat form shape ───────────────────
-    // currentModelMode must be passed explicitly to avoid stale closure on `form`
     const applyTemplateData = (parsed, keepModelMode = false, currentModelMode = 'hybrid') => {
         return {
             assessment_standard: parsed.assessment_standard || 'iso27001',
@@ -235,9 +225,7 @@ export default function FormISOPage() {
         }
     }
 
-    // Load template data from localStorage & fetch server history
     useEffect(() => {
-        // Priority 1: template reuse (from /templates page)
         const reuseData = localStorage.getItem('reuse_iso_form')
         if (reuseData) {
             try {
@@ -256,12 +244,10 @@ export default function FormISOPage() {
             }
         }
 
-        // Priority 2: restore auto-saved draft
         const draft = localStorage.getItem(FORM_DRAFT_KEY)
         if (draft) {
             try {
                 const parsed = JSON.parse(draft)
-                // Only restore if there's meaningful data (org_name filled)
                 if (parsed.org_name) {
                     setForm(prev => ({ ...prev, ...parsed }))
                 }
@@ -287,7 +273,6 @@ export default function FormISOPage() {
                 setAssessmentHistory(mapped)
             }
         } catch (e) {
-            // Fallback to localStorage
             const saved = localStorage.getItem('assessment_history')
             if (saved) {
                 try { setAssessmentHistory(JSON.parse(saved)) } catch (_) { }
@@ -295,14 +280,12 @@ export default function FormISOPage() {
         }
     }
 
-    // Auto-poll when result is processing
     useEffect(() => {
         if (!result || result.status !== 'processing') return
         const timer = setInterval(() => refreshStatus(), POLL_INTERVAL)
         return () => clearInterval(timer)
     }, [result])
 
-    // When user switches back to 'result' tab, auto-check if still processing
     useEffect(() => {
         if (activeTab === 'result' && result?.id && result?.status === 'processing') {
             refreshStatus(result.id)
@@ -312,7 +295,6 @@ export default function FormISOPage() {
         }
     }, [activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Poll history tab if any assessment is processing
     useEffect(() => {
         if (activeTab !== 'history') return
         const hasProcessing = assessmentHistory.some(h => h.status === 'processing' || h.status === 'pending')
@@ -411,7 +393,6 @@ export default function FormISOPage() {
             })
             const data = await res.json()
             if (data.status === 'accepted') {
-                // Clear draft on successful submission
                 clearDraft()
                 setResult({
                     id: data.id,
@@ -449,7 +430,6 @@ export default function FormISOPage() {
                 setActiveTab('result')
                 fetchHistory()
             } else if (data.status === 'processing' && data.progress) {
-                // Update progress info without changing tab
                 setResult(prev => prev?.id === data.id
                     ? { ...prev, progress: data.progress }
                     : prev
@@ -466,7 +446,6 @@ export default function FormISOPage() {
                 return (
                     <div className={styles.stepContent}>
                         <h2 className={styles.sectionTitle}>
-                            <span className={styles.sectionIcon}>🏢</span>
                             Thông tin Tổ chức & Tiêu chuẩn
                         </h2>
                         <div className={styles.grid}>
@@ -480,9 +459,9 @@ export default function FormISOPage() {
                                     onChange={e => handleStandardChange(e.target.value)}
                                 >
                                     {availableStandards.map(s => (
-                                        <option key={s.id} value={s.id}>{s.name}{s.source === 'custom' ? ' ⬆️' : ''}</option>
+                                        <option key={s.id} value={s.id}>{s.name}{s.source === 'custom' ? ' (custom)' : ''}</option>
                                     ))}
-                                    {standardsLoading && <option disabled>⏳ Đang tải tiêu chuẩn...</option>}
+                                    {standardsLoading && <option disabled>Loading standards...</option>}
                                 </select>
                                 <small className={styles.helperText}>
                                     Tiêu chuẩn được chọn sẽ quyết định <strong>bộ câu hỏi Checklists</strong> ở Bước 3.
@@ -524,7 +503,6 @@ export default function FormISOPage() {
                                 <input type="number" value={form.it_staff || ''} onChange={e => set('it_staff', parseInt(e.target.value) || 0)} placeholder="0" />
                             </div>
 
-                            {/* ── Scope Definition ──────────────────────── */}
                             <div className={styles.fieldFull}>
                                 <div className={styles.scopeSection}>
                                     <div className={styles.labelWithInfo}>
@@ -638,7 +616,6 @@ export default function FormISOPage() {
                 return (
                     <div className={styles.stepContent}>
                         <h2 className={styles.sectionTitle}>
-                            <span className={styles.sectionIcon}>🖥️</span>
                             Hạ tầng & Kỹ thuật mạng
                         </h2>
                         <div className={styles.grid}>
@@ -685,7 +662,6 @@ export default function FormISOPage() {
                         <div className={styles.controlHeader}>
                             <div>
                                 <h2 className={styles.sectionTitle}>
-                                    <span className={styles.sectionIcon}>🛡️</span>
                                     Biện pháp kiểm soát (Controls)
                                 </h2>
                                 <p className={styles.helperText}>Tiêu chuẩn: <strong>{currentStandard.name}</strong></p>
@@ -790,7 +766,6 @@ export default function FormISOPage() {
                 return (
                     <div className={styles.stepContent}>
                         <h2 className={styles.sectionTitle}>
-                            <span className={styles.sectionIcon}>📐</span>
                             Mô tả hệ thống & Tổng kết
                         </h2>
                         <p className={styles.helperText}>Diễn giải kiến trúc mạng hoặc đặc thù hệ thống để AI đưa ra đánh giá chính xác nhất:</p>
@@ -899,10 +874,8 @@ export default function FormISOPage() {
                             />
                         </div>
 
-                        {/* ── Model Selector (Compact) ──────────────────── */}
                         <div className={styles.modelSelectorWrap}>
                             <div className={styles.modelSelectorHeader}>
-                                <span className={styles.modelSelectorIcon}>🤖</span>
                                 <h4 className={styles.modelSelectorTitle}>Chế độ AI</h4>
                                 <button
                                     type="button"
@@ -932,7 +905,6 @@ export default function FormISOPage() {
                                 ))}
                             </div>
 
-                            {/* Expandable detail tooltip */}
                             {activeTooltip === 'model_info' && (
                                 <div className={styles.modelDetailPanel}>
                                     <div className={styles.tooltipHeader}>
@@ -1027,13 +999,11 @@ export default function FormISOPage() {
         }
     }
 
-    // Templates helpers
     const filteredTemplates = useMemo(() => {
         if (tplFilter === 'all') return ASSESSMENT_TEMPLATES
         return ASSESSMENT_TEMPLATES.filter(t => t.standard === tplFilter)
     }, [tplFilter])
 
-    // ── Template selection: direct state update, no reload ───────────────
     const selectTemplate = (tpl) => {
         const newForm = applyTemplateData(tpl.data, false, form.model_mode)
         setForm(newForm)
@@ -1077,7 +1047,6 @@ export default function FormISOPage() {
 
             {activeTab === 'form' && (
                 <div className={styles.formWrap}>
-                    {/* ── Auto-save draft indicator ───────────────────── */}
                     {form.org_name && (
                         <div className={styles.draftBanner}>
                             <span className={styles.draftBannerDot} />
@@ -1139,9 +1108,8 @@ export default function FormISOPage() {
                 <div className={styles.resultWrap}>
                     {result.status === 'failed' || result.error ? (
                         <div className={styles.errorBox}>
-                            <h3>❌ Đã có lỗi xảy ra</h3>
+                            <h3>Đã có lỗi xảy ra</h3>
                             <p className={styles.errorDetail}>{result.report || 'Timeout hoặc lỗi phân tích.'}</p>
-                            {/* Smart error guidance */}
                             {(result.report || '').includes('could not load model') || (result.report || '').includes('rpc error') ? (
                                 <div className={styles.errorGuidance}>
                                     <strong>🔧 Nguyên nhân:</strong> LocalAI không load được model (thiếu RAM hoặc model file chưa tải).
@@ -1232,7 +1200,6 @@ export default function FormISOPage() {
                         </div>
                     ) : (
                         <>
-                            {/* ── Score Hero Card ─────────────────────────── */}
                             <div className={styles.scoreHero}>
                                 <div className={styles.scoreHeroLeft}>
                                     <div className={styles.svgGaugeWrap}>
@@ -1296,9 +1263,8 @@ export default function FormISOPage() {
                                 </div>
                             </div>
 
-                            {/* ── Scoring Breakdown Panel ───────────────────── */}
                             <div className={styles.breakdownPanel}>
-                                <h4 className={styles.breakdownTitle}>📊 Phân tích theo Category (Weighted)</h4>
+                                <h4 className={styles.breakdownTitle}>Phân tích theo Category (Weighted)</h4>
                                 <div className={styles.breakdownGrid}>
                                     {categoryBreakdown.map((cat, idx) => (
                                         <div key={idx} className={styles.breakdownItem}>
@@ -1332,14 +1298,12 @@ export default function FormISOPage() {
                                 </div>
                             </div>
 
-                            {/* ── Structured JSON Dashboard ───────────────── */}
                             {result.json_data && (
                                 <div className={styles.jsonDashboard}>
-                                    <h4 className={styles.jsonDashTitle}>📊 Dashboard Đánh giá (Structured Data)</h4>
+                                    <h4 className={styles.jsonDashTitle}>Dashboard Đánh giá (Structured Data)</h4>
                                     <div className={styles.jsonDashGrid}>
-                                        {/* Risk Summary */}
                                         <div className={styles.jsonDashCard}>
-                                            <div className={styles.jsonDashCardTitle}>🎯 Phân loại Rủi ro</div>
+                                            <div className={styles.jsonDashCardTitle}>Phân loại Rủi ro</div>
                                             <div className={styles.riskSummaryRow}>
                                                 {[
                                                     { key: 'critical_gaps', label: 'Critical', color: 'var(--accent-red)' },
@@ -1355,9 +1319,8 @@ export default function FormISOPage() {
                                             </div>
                                         </div>
 
-                                        {/* Weight Breakdown */}
                                         <div className={styles.jsonDashCard}>
-                                            <div className={styles.jsonDashCardTitle}>⚖️ Tuân thủ theo Trọng số</div>
+                                            <div className={styles.jsonDashCardTitle}>Tuân thủ theo Trọng số</div>
                                             {['critical','high','medium','low'].map(w => {
                                                 const bd = result.json_data.weight_breakdown?.[w]
                                                 if (!bd || bd.total === 0) return null
@@ -1375,10 +1338,9 @@ export default function FormISOPage() {
                                             })}
                                         </div>
 
-                                        {/* Top Gaps */}
                                         {result.json_data.top_gaps?.length > 0 && (
                                             <div className={`${styles.jsonDashCard} ${styles.jsonDashCardWide}`}>
-                                                <div className={styles.jsonDashCardTitle}>🔴 Controls Thiếu Ưu tiên Cao</div>
+                                                <div className={styles.jsonDashCardTitle}>Controls Thiếu Ưu tiên Cao</div>
                                                 <div className={styles.topGapsList}>
                                                     {result.json_data.top_gaps.slice(0, 8).map((gap, i) => (
                                                         <div key={i} className={styles.topGapItem}>
@@ -1395,9 +1357,8 @@ export default function FormISOPage() {
                                             </div>
                                         )}
 
-                                        {/* Export JSON */}
                                         <div className={`${styles.jsonDashCard} ${styles.jsonDashExport}`}>
-                                            <div className={styles.jsonDashCardTitle}>💾 Export Dữ liệu</div>
+                                            <div className={styles.jsonDashCardTitle}>Export Dữ liệu</div>
                                             <button
                                                 className={styles.jsonExportBtn}
                                                 onClick={() => {
@@ -1419,16 +1380,14 @@ export default function FormISOPage() {
                                 </div>
                             )}
 
-                            {/* ── Report Action Bar ────────────────────────── */}
                             <div className={styles.reportActions}>
                                 <button className={styles.reportActionBtn} onClick={() => {
                                     navigator.clipboard?.writeText(result.report || '')
                                     .catch(() => {})
                                 }}>
-                                    📋 Sao chép báo cáo
+                                    Copy report
                                 </button>
                                 <button className={styles.reportActionBtn} onClick={() => {
-                                    // Open a clean printable view in a new tab (view in UI + print/save PDF)
                                     const reportHtml = `<!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -1501,7 +1460,6 @@ ${(result.report || '').replace(/^(#{1,6})\s+(.+)$/gm, (m, h, t) => `<h${h.lengt
                                 </button>
                             </div>
 
-                            {/* ── Report Body ──────────────────────────────── */}
                             <div className={styles.reportSection}>
                                 <div className={styles.md}>
                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -1517,8 +1475,8 @@ ${(result.report || '').replace(/^(#{1,6})\s+(.+)$/gm, (m, h, t) => `<h${h.lengt
             {activeTab === 'history' && (
                 <div className={styles.historyWrap}>
                     <div className={styles.historyHeader}>
-                        <h2 className={styles.sectionTitle}>🕒 Lịch sử Báo cáo</h2>
-                        <button className={styles.refreshBtn} onClick={fetchHistory}>🔄 Làm mới</button>
+                        <h2 className={styles.sectionTitle}>Lịch sử Báo cáo</h2>
+                        <button className={styles.refreshBtn} onClick={fetchHistory}>Làm mới</button>
                     </div>
                     <p className={styles.helperText}>Hệ thống RAG xử lý ngầm. Báo cáo được lưu theo Thread ID trên máy chủ.</p>
 
@@ -1535,7 +1493,6 @@ ${(result.report || '').replace(/^(#{1,6})\s+(.+)$/gm, (m, h, t) => `<h${h.lengt
                                         </div>
                                         <div className={styles.histStd}>Tiêu chuẩn: <strong>{hist.standard}</strong></div>
                                     </div>
-                                    {/* Always render percent column for consistent grid — show placeholder if null */}
                                     <div className={styles.histPercent}>
                                         {hist.compliance_percent != null ? (
                                             <>
@@ -1575,15 +1532,11 @@ ${(result.report || '').replace(/^(#{1,6})\s+(.+)$/gm, (m, h, t) => `<h${h.lengt
                 </div>
             )}
 
-            {/* ══════════════════════════════════════
-                TAB: TEMPLATES (integrated from /templates)
-            ══════════════════════════════════════ */}
             {activeTab === 'templates' && (
                 <div className={styles.templatesWrap}>
                     <div className={styles.tplHeaderRow}>
                         <div>
                             <h2 className={styles.sectionTitle}>
-                                <span className={styles.sectionIcon}>📂</span>
                                 Kho Mẫu Hệ thống Thực tế
                             </h2>
                             <p className={styles.helperText}>Dữ liệu kiến trúc mạng, quản lý truy cập và mức tuân thủ của các tổ chức thực tế.</p>
@@ -1684,14 +1637,13 @@ ${(result.report || '').replace(/^(#{1,6})\s+(.+)$/gm, (m, h, t) => `<h${h.lengt
                     </div>
 
                     <div className={styles.tplNavRow}>
-                        <button className={styles.btnSecondary} onClick={() => setActiveTab('form')}>← Quay lại Nhập liệu</button>
-                        <Link href="/analytics" className={styles.btnPrimary}>📊 Analytics & Tiêu chuẩn →</Link>
+                        <button className={styles.btnSecondary} onClick={() => setActiveTab('form')}>← Nhập liệu</button>
+                        <Link href="/analytics" className={styles.btnPrimary}>Analytics & Standards →</Link>
                     </div>
                 </div>
             )}
             {activeTooltip && (() => {
                 const ctrlId = activeTooltip
-                // Skip non-control tooltips (topology_guide, notes_guide, model_info)
                 if (['topology_guide', 'notes_guide', 'model_info'].includes(ctrlId)) return null
                 const desc = allDescriptions[ctrlId]
                 const allControls = currentStandard.controls.flatMap(c => c.controls)
@@ -1725,28 +1677,25 @@ ${(result.report || '').replace(/^(#{1,6})\s+(.+)$/gm, (m, h, t) => `<h${h.lengt
                             <div className={styles.panelBody}>
                                 {desc ? (
                                     <>
-                                        {/* YÊU CẦU TIÊU CHUẨN */}
                                         <div className={styles.panelSection}>
                                             <div className={styles.panelSectionTitle}>
-                                                <span>📋</span> Yêu cầu tiêu chuẩn
+                                                Yêu cầu tiêu chuẩn
                                             </div>
                                             <p className={styles.panelText}>{desc.requirement}</p>
                                         </div>
                                         <div className={styles.panelDivider} />
 
-                                        {/* TIÊU CHÍ ĐÁNH GIÁ */}
                                         <div className={styles.panelSection}>
                                             <div className={styles.panelSectionTitle}>
-                                                <span>🎯</span> Tiêu chí đánh giá
+                                                Tiêu chí đánh giá
                                             </div>
                                             <p className={styles.panelText}>{desc.criteria}</p>
                                         </div>
                                         <div className={styles.panelDivider} />
 
-                                        {/* HƯỚNG DẪN TRIỂN KHAI */}
                                         <div className={styles.panelSection}>
                                             <div className={styles.panelSectionTitle}>
-                                                <span>💡</span> Hướng dẫn triển khai
+                                                Hướng dẫn triển khai
                                             </div>
                                             <p className={styles.panelHint}>{desc.hint ||
                                                 (isImplemented
@@ -1756,11 +1705,10 @@ ${(result.report || '').replace(/^(#{1,6})\s+(.+)$/gm, (m, h, t) => `<h${h.lengt
                                         </div>
                                         <div className={styles.panelDivider} />
 
-                                        {/* BẰNG CHỨNG YÊU CẦU */}
                                         {desc.evidence && desc.evidence.length > 0 && (
                                             <div className={styles.panelSection}>
                                                 <div className={styles.panelSectionTitle}>
-                                                    <span>📁</span> Bằng chứng yêu cầu
+                                                    Bằng chứng yêu cầu
                                                     <span className={styles.panelEvidenceCount}>{desc.evidence.length} loại tài liệu</span>
                                                 </div>
                                                 <ul className={styles.panelEvidenceList}>
@@ -1782,11 +1730,10 @@ ${(result.report || '').replace(/^(#{1,6})\s+(.+)$/gm, (m, h, t) => `<h${h.lengt
                                     </div>
                                 )}
 
-                                {/* ══ EVIDENCE UPLOAD — DRAG & DROP + MULTI-FILE + PREVIEW ══ */}
                                 <div className={styles.panelDivider} />
                                 <div className={styles.panelSection}>
                                     <div className={styles.panelSectionTitle}>
-                                        <span>📎</span> Upload bằng chứng triển khai
+                                        Upload bằng chứng triển khai
                                         {ctrlEvidence.length > 0 && (
                                             <span className={styles.panelEvidenceCount}>{ctrlEvidence.length} file đã tải</span>
                                         )}

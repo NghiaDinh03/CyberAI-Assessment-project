@@ -65,7 +65,7 @@ async def limit_request_size(request: Request, call_next):
     return await call_next(request)
 
 
-from api.routes import chat, document, health, iso27001, system, news, standards, benchmark
+from api.routes import chat, document, health, iso27001, system, standards, benchmark
 
 app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(chat.router, prefix="/api", tags=["Chat"])
@@ -73,7 +73,6 @@ app.include_router(document.router, prefix="/api", tags=["Documents"])
 app.include_router(iso27001.router, prefix="/api", tags=["ISO27001"])
 app.include_router(standards.router, prefix="/api", tags=["Standards"])
 app.include_router(system.router, prefix="/api", tags=["System"])
-app.include_router(news.router, prefix="/api", tags=["News"])
 app.include_router(benchmark.router, prefix="/api", tags=["Benchmark"])
 
 
@@ -81,18 +80,17 @@ app.include_router(benchmark.router, prefix="/api", tags=["Benchmark"])
 from fastapi import BackgroundTasks as _BT
 
 @app.post("/api/dataset/generate", tags=["Dataset"])
-async def generate_dataset(background_tasks: _BT,
-                            news_limit: int = 30,
-                            synthetic_count: int = 10):
+async def generate_dataset(background_tasks: _BT, synthetic_count: int = 10):
     """Trigger fine-tuning dataset generation in background.
+    Sources: completed assessments + synthetic Cloud AI pairs.
     Produces /data/knowledge_base/finetune_iso27001.jsonl (Alpaca format).
     """
     def _run():
         from services.dataset_generator import run_full_pipeline
-        run_full_pipeline(news_limit=news_limit, synthetic_count=synthetic_count)
+        run_full_pipeline(synthetic_count=synthetic_count)
 
     background_tasks.add_task(_run)
-    return {"status": "accepted", "message": f"Dataset generation started (news={news_limit}, synthetic={synthetic_count})"}
+    return {"status": "accepted", "message": f"Dataset generation started (synthetic={synthetic_count})"}
 
 
 @app.get("/api/dataset/status", tags=["Dataset"])
@@ -120,12 +118,10 @@ def on_startup():
     logger.info(f"   Cloud API keys: {len(settings.cloud_api_key_list)}")
     logger.info(f"   LocalAI: {settings.LOCALAI_URL}")
     logger.info(f"   CORS origins: {settings.cors_origins_list}")
-    logger.info(f"   CPU threads (torch): {settings.TORCH_THREADS}")
+    logger.info(f"   PREFER_LOCAL: {settings.PREFER_LOCAL}")
 
     from services.model_guard import ModelGuard
     ModelGuard.refresh()
-    from services.news_service import start_bg_worker
-    start_bg_worker()
 
     try:
         from repositories.session_store import SessionStore

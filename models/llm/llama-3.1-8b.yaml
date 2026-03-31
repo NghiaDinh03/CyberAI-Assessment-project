@@ -1,0 +1,27 @@
+name: Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf
+backend: llama
+parameters:
+  model: Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 40
+  maxtokens: 2048
+  f16: true
+  threads: 6
+  ctx_size: 8192
+  mmap: true
+
+# LocalAI auto-downloads this file on first startup if missing
+url: "huggingface://bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf"
+
+template:
+  chat: |
+    <|begin_of_text|><|start_header_id|>system<|end_header_id|>
+    {{.System}}<|eot_id|>
+    {{range .Messages}}<|start_header_id|>{{.Role}}<|end_header_id|>
+    {{.Content}}<|eot_id|>{{end}}
+    <|start_header_id|>assistant<|end_header_id|>
+
+stop_words:
+  - "<|eot_id|>"
+  - "<|end_of_text|>"

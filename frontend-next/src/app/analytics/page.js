@@ -8,7 +8,6 @@ import SystemStats from '@/components/SystemStats'
 import Link from 'next/link'
 import styles from './page.module.css'
 
-// Minimal markdown-to-HTML for the PDF export window (no external deps)
 function mdToHtml(md) {
     if (!md) return ''
     return md
@@ -30,7 +29,6 @@ function mdToHtml(md) {
         .replace(/^(?!<[hbcuop]|<\/[hbcuop])(.*\S.*)$/gm, '$1<br>')
 }
 
-// Mini SVG gauge for the analytics modal
 function SvgGauge({ percent, size = 96, color = 'var(--accent-blue)' }) {
     const r = (size - 12) / 2
     const circ = 2 * Math.PI * r
@@ -49,8 +47,11 @@ function SvgGauge({ percent, size = 96, color = 'var(--accent-blue)' }) {
     )
 }
 
+const WEIGHT_COLOR_STD = { critical: '#f87171', high: '#fbbf24', medium: '#4f8ef7', low: '#7d8fa3' }
+const WEIGHT_LABEL_STD = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' }
+
 export default function AnalyticsPage() {
-    const [activeMainTab, setActiveMainTab] = useState('dashboard') // 'dashboard' | 'standards' | 'benchmark'
+    const [activeMainTab, setActiveMainTab] = useState('dashboard')
     const [benchmarkCases, setBenchmarkCases] = useState(null)
     const [benchmarkRunning, setBenchmarkRunning] = useState(false)
     const [benchmarkResult, setBenchmarkResult] = useState(null)
@@ -70,7 +71,6 @@ export default function AnalyticsPage() {
     const [searching, setSearching] = useState(false)
     const [showFiles, setShowFiles] = useState(false)
     const [cacheStats, setCacheStats] = useState(null)
-    // Standards state
     const [standards, setStandards] = useState({ builtin: [], custom: [] })
     const [stdLoading, setStdLoading] = useState(false)
     const [stdUploading, setStdUploading] = useState(false)
@@ -113,7 +113,7 @@ export default function AnalyticsPage() {
     }
 
     const handleStdDelete = async (standardId) => {
-        if (!confirm(`Xác nhận xóa tiêu chuẩn "${standardId}"?`)) return
+        if (!confirm(`Confirm delete standard "${standardId}"?`)) return
         try {
             const res = await fetch(`/api/standards/${standardId}`, { method: 'DELETE' })
             if (res.ok) { fetchStandards(); if (selectedStandard?.id === standardId) setSelectedStandard(null) }
@@ -124,8 +124,8 @@ export default function AnalyticsPage() {
         try {
             const res = await fetch(`/api/standards/${standardId}/index`, { method: 'POST' })
             const data = await res.json()
-            alert(data.status === 'ok' ? `✅ Indexed ${data.chunks_indexed} chunks` : `❌ ${data.message || 'Failed'}`)
-        } catch (e) { alert(`❌ ${e.message}`) }
+            alert(data.status === 'ok' ? `Indexed ${data.chunks_indexed} chunks` : data.message || 'Failed')
+        } catch (e) { alert(e.message) }
     }
 
     const handleStdDetail = async (standardId) => {
@@ -148,7 +148,6 @@ export default function AnalyticsPage() {
         } catch (e) { console.error(e) }
     }
 
-    // Load standards when tab is activated
     useEffect(() => {
         if (activeMainTab === 'standards' && standards.builtin.length === 0) {
             fetchStandards()
@@ -161,13 +160,12 @@ export default function AnalyticsPage() {
         try {
             const res = await fetch(`/api/iso27001/assessments/${id}`)
             if (res.ok) {
-                const data = await res.json()
-                setSelectedAssessment(data)
+                setSelectedAssessment(await res.json())
             } else {
-                setSelectedAssessment({ id, error: 'Không tìm thấy dữ liệu' })
+                setSelectedAssessment({ id, error: 'Data not found' })
             }
         } catch {
-            setSelectedAssessment({ id, error: 'Lỗi tải chi tiết' })
+            setSelectedAssessment({ id, error: 'Failed to load details' })
         } finally {
             setModalLoading(false)
         }
@@ -198,7 +196,7 @@ export default function AnalyticsPage() {
                 if (selectedAssessment?.id === id) setSelectedAssessment(null)
             }
         } catch (e) {
-            console.error('Lỗi khi xóa:', e)
+            console.error('Delete error:', e)
         } finally {
             setDeleteWarning(null)
         }
@@ -206,9 +204,7 @@ export default function AnalyticsPage() {
 
     const confirmDelete = () => {
         if (dontAskAgain) {
-            // Suppress warnings for 24 hours
-            const twentyFourHours = 24 * 60 * 60 * 1000
-            localStorage.setItem('skip_delete_warning_iso', Date.now() + twentyFourHours)
+            localStorage.setItem('skip_delete_warning_iso', Date.now() + 24 * 60 * 60 * 1000)
         }
         executeDelete(deleteWarning)
     }
@@ -218,39 +214,27 @@ export default function AnalyticsPage() {
             try {
                 const res = await fetch('/api/health')
                 const backendReady = res.ok
-
                 let localaiReady = false
-                let models = []
                 try {
                     const sysRes = await fetch('/api/system/stats')
                     if (sysRes.ok) localaiReady = true
                 } catch { }
-
                 try {
                     const assessRes = await fetch('/api/iso27001/assessments')
-                    if (assessRes.ok) {
-                        setAssessments(await assessRes.json())
-                    }
+                    if (assessRes.ok) setAssessments(await assessRes.json())
                 } catch { }
-
                 try {
                     const chromaRes = await fetch('/api/iso27001/chromadb/stats')
-                    if (chromaRes.ok) {
-                        setChromaStats(await chromaRes.json())
-                    }
+                    if (chromaRes.ok) setChromaStats(await chromaRes.json())
                 } catch { }
-
                 try {
                     const cacheRes = await fetch('/api/system/cache-stats')
-                    if (cacheRes.ok) {
-                        setCacheStats(await cacheRes.json())
-                    }
+                    if (cacheRes.ok) setCacheStats(await cacheRes.json())
                 } catch { }
-
                 setServices({
                     backend: { status: backendReady ? 'Running' : 'Offline', ready: backendReady },
                     localai: { status: localaiReady ? 'Ready' : 'Offline', ready: localaiReady },
-                    models
+                    models: []
                 })
             } catch {
                 setServices({
@@ -267,17 +251,28 @@ export default function AnalyticsPage() {
         return () => clearInterval(interval)
     }, [])
 
-    const WEIGHT_COLOR_STD = { critical: '#ef4444', high: '#f59e0b', medium: '#3b82f6', low: '#94a3b8' }
-    const WEIGHT_LABEL_STD = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' }
+    const getPctColor = (pct) => pct == null ? '' :
+        pct >= 80 ? 'var(--accent-green)' :
+        pct >= 50 ? 'var(--accent-blue)' :
+        pct >= 25 ? 'var(--accent-amber)' :
+        'var(--accent-red)'
+
+    const SERVICE_ROWS = [
+        { name: 'FastAPI Backend', detail: `Core API Service · Port: 8000 · v1.0.0`, ready: services?.backend?.ready, status: services?.backend?.status },
+        { name: 'LocalAI Engine', detail: `Model Server · Port: 8080 · CPU Mode`, ready: services?.localai?.ready, status: services?.localai?.status },
+        { name: 'ChromaDB', detail: `Vector Database · RAG ISO 27001 · cosine space`, ready: services?.backend?.ready, status: services?.backend?.status },
+        { name: 'VinAI Translate', detail: `Vietnamese NLP · Parameters: 135M`, ready: true, status: 'Active' },
+        { name: 'Llama 3.1 8B', detail: `LLM (General/Summary) · Quant: Q4_K_M · 4.9GB`, ready: services?.localai?.ready, loading: !services?.localai?.ready },
+        { name: 'SecurityLLM 7B', detail: `LLM (ISO Assessor) · Quant: Q4_K_M · 4.4GB`, ready: services?.localai?.ready, loading: !services?.localai?.ready },
+    ]
 
     return (
         <div className="page-container">
             <div className={styles.header}>
-                <h1 className={styles.title}>📊 Analytics & Quản lý</h1>
-                <p className={styles.subtitle}>Giám sát hệ thống, lịch sử đánh giá và quản lý tiêu chuẩn đánh giá</p>
+                <h1 className={styles.title}>Analytics</h1>
+                <p className={styles.subtitle}>System monitoring, assessment history and standards management</p>
             </div>
 
-            {/* ── Main Tab Nav ───────────────────────── */}
             <div className={styles.mainTabNav}>
                 <button
                     className={`${styles.mainTab} ${activeMainTab === 'dashboard' ? styles.mainTabActive : ''}`}
@@ -289,7 +284,7 @@ export default function AnalyticsPage() {
                     className={`${styles.mainTab} ${activeMainTab === 'standards' ? styles.mainTabActive : ''}`}
                     onClick={() => setActiveMainTab('standards')}
                 >
-                    📋 Tiêu chuẩn
+                    📋 Standards
                 </button>
                 <button
                     className={`${styles.mainTab} ${activeMainTab === 'benchmark' ? styles.mainTabActive : ''}`}
@@ -304,25 +299,18 @@ export default function AnalyticsPage() {
                     🧪 Benchmark AI
                 </button>
                 <span className={styles.mainTabSpacer} />
-                <Link href="/form-iso" className={styles.mainTabLink}>← Đánh giá</Link>
+                <Link href="/form-iso" className={styles.mainTabLink}>← Assessment</Link>
             </div>
 
-            {/* ══════════════════════════════════════
-                TAB: STANDARDS MANAGEMENT
-            ══════════════════════════════════════ */}
             {activeMainTab === 'standards' && (
                 <div>
-                    {/* Upload section */}
                     <div className={styles.stdSection}>
                         <div className={styles.stdSectionHeader}>
-                            <h2 className={styles.stdSectionTitle}>⬆️ Upload Tiêu chuẩn Mới</h2>
+                            <h2 className={styles.stdSectionTitle}>Upload New Standard</h2>
                             <div className={styles.stdHeaderActions}>
-                                <button className={styles.stdBtnOutline} onClick={downloadSample}>📥 Tải mẫu JSON</button>
-                                <button
-                                    className={styles.stdBtnOutline}
-                                    onClick={() => setShowSchemaGuide(!showSchemaGuide)}
-                                >
-                                    {showSchemaGuide ? '✕ Đóng hướng dẫn' : '❓ Hướng dẫn format'}
+                                <button className={styles.stdBtnOutline} onClick={downloadSample}>Download sample JSON</button>
+                                <button className={styles.stdBtnOutline} onClick={() => setShowSchemaGuide(!showSchemaGuide)}>
+                                    {showSchemaGuide ? 'Close guide' : 'Format guide'}
                                 </button>
                             </div>
                         </div>
@@ -330,35 +318,24 @@ export default function AnalyticsPage() {
                         {showSchemaGuide && (
                             <div className={styles.stdSchemaBox}>
                                 <pre className={styles.stdSchemaCode}>{`{
-  "id": "my_standard_id",       // ID slug (a-z, 0-9, _, -)
-  "name": "Tên tiêu chuẩn",     // Tên hiển thị
+  "id": "my_standard_id",
+  "name": "Standard Name",
   "version": "1.0",
-  "description": "Mô tả ngắn",
+  "description": "Description",
   "controls": [
     {
-      "category": "1. Tên nhóm",
+      "category": "1. Group Name",
       "controls": [
-        {
-          "id": "CTL.01",            // ID control (unique)
-          "label": "Tên control",    // Mô tả ngắn
-          "weight": "critical",      // critical|high|medium|low
-          "description": {           // Tùy chọn
-            "requirement": "...",
-            "criteria": "...",
-            "hint": "...",
-            "evidence": ["Bằng chứng 1"]
-          }
-        }
+        { "id": "CTL.01", "label": "Control name", "weight": "critical" }
       ]
     }
   ]
 }`}</pre>
                                 <div className={styles.stdWeightNote}>
-                                    <strong>Trọng số:</strong>
-                                    <span style={{ color: '#ef4444', border: '1px solid #ef4444', borderRadius: 12, padding: '1px 8px', fontSize: 11, fontWeight: 700 }}>critical=4</span>
-                                    <span style={{ color: '#f59e0b', border: '1px solid #f59e0b', borderRadius: 12, padding: '1px 8px', fontSize: 11, fontWeight: 700 }}>high=3</span>
-                                    <span style={{ color: '#3b82f6', border: '1px solid #3b82f6', borderRadius: 12, padding: '1px 8px', fontSize: 11, fontWeight: 700 }}>medium=2</span>
-                                    <span style={{ color: '#94a3b8', border: '1px solid #94a3b8', borderRadius: 12, padding: '1px 8px', fontSize: 11, fontWeight: 700 }}>low=1</span>
+                                    <strong>Weights:</strong>
+                                    {[['critical', '#f87171', '4pts'], ['high', '#fbbf24', '3pts'], ['medium', '#4f8ef7', '2pts'], ['low', '#7d8fa3', '1pt']].map(([w, c, p]) => (
+                                        <span key={w} style={{ borderColor: c, color: c, border: `1px solid ${c}`, borderRadius: '4px', padding: '1px 7px', fontSize: '0.72rem', fontWeight: 700 }}>{w} = {p}</span>
+                                    ))}
                                 </div>
                             </div>
                         )}
@@ -372,24 +349,23 @@ export default function AnalyticsPage() {
                             {stdUploading ? (
                                 <div className={styles.stdDropContent}>
                                     <span className={styles.stdDropSpinner} />
-                                    <p>Đang upload và xử lý...</p>
+                                    <p>Uploading and processing...</p>
                                 </div>
                             ) : (
                                 <div className={styles.stdDropContent}>
-                                    <span className={styles.stdDropIcon}>📂</span>
-                                    <p className={styles.stdDropText}>Kéo thả file JSON / YAML vào đây</p>
+                                    <p className={styles.stdDropText}>Drop JSON / YAML file here</p>
                                     <label className={styles.stdBtnPrimary}>
-                                        Chọn file
+                                        Select file
                                         <input type="file" accept=".json,.yaml,.yml" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleStdUpload(f) }} hidden />
                                     </label>
-                                    <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>.json, .yaml, .yml · Tối đa 2MB</p>
+                                    <p className={styles.stdDropHint}>.json, .yaml, .yml · Max 2MB</p>
                                 </div>
                             )}
                         </div>
 
                         {stdUploadResult && (
                             <div className={`${styles.stdResultBox} ${stdUploadResult.success ? styles.stdResultSuccess : styles.stdResultError}`}>
-                                <div className={styles.stdResultHeader}>{stdUploadResult.success ? '✅ Upload thành công!' : '❌ Upload thất bại'}</div>
+                                <div className={styles.stdResultHeader}>{stdUploadResult.success ? 'Upload successful' : 'Upload failed'}</div>
                                 {stdUploadResult.success && stdUploadResult.data?.standard && (
                                     <div className={styles.stdResultMeta}>
                                         <span>ID: <strong>{stdUploadResult.data.standard.id}</strong></span>
@@ -398,7 +374,7 @@ export default function AnalyticsPage() {
                                     </div>
                                 )}
                                 {stdUploadResult.errors?.length > 0 && (
-                                    <ul style={{ margin: '6px 0 0', paddingLeft: 18, fontSize: 12, color: 'var(--accent-red)' }}>
+                                    <ul className={styles.stdResultErrors}>
                                         {stdUploadResult.errors.map((e, i) => <li key={i}>{e}</li>)}
                                     </ul>
                                 )}
@@ -406,18 +382,17 @@ export default function AnalyticsPage() {
                         )}
                     </div>
 
-                    {/* Standards list */}
                     <div className={styles.stdSection}>
                         <div className={styles.stdSectionHeader}>
-                            <h2 className={styles.stdSectionTitle}>📚 Danh sách Tiêu chuẩn</h2>
-                            <button className={styles.stdBtnOutline} onClick={fetchStandards} disabled={stdLoading}>🔄 Làm mới</button>
+                            <h2 className={styles.stdSectionTitle}>Standards Library</h2>
+                            <button className={styles.stdBtnOutline} onClick={fetchStandards} disabled={stdLoading}>Refresh</button>
                         </div>
 
                         {stdLoading ? (
-                            <div className={styles.loading}>⏳ Đang tải...</div>
+                            <div className={styles.loading}>Loading...</div>
                         ) : (
                             <>
-                                <p className={styles.stdGroupLabel}>🏛️ Tiêu chuẩn có sẵn (Built-in)</p>
+                                <p className={styles.stdGroupLabel}>Built-in Standards</p>
                                 <div className={styles.stdGrid}>
                                     {standards.builtin.map(std => (
                                         <div key={std.id} className={styles.stdCard}>
@@ -432,17 +407,17 @@ export default function AnalyticsPage() {
                                                 <span>{std.categories} categories</span>
                                             </div>
                                             <div className={styles.stdCardActions}>
-                                                <Link href="/form-iso" className={styles.stdBtnSmall}>📝 Sử dụng</Link>
+                                                <Link href="/form-iso" className={styles.stdBtnSmall}>Use in Assessment</Link>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
 
-                                <p className={styles.stdGroupLabel} style={{ marginTop: '1.25rem' }}>⬆️ Tiêu chuẩn tùy chỉnh (Uploaded)</p>
+                                <p className={styles.stdGroupLabel} style={{ marginTop: '1.25rem' }}>Custom Standards (Uploaded)</p>
                                 {standards.custom.length === 0 ? (
                                     <div className={styles.stdEmpty}>
-                                        <p>Chưa có tiêu chuẩn tùy chỉnh.</p>
-                                        <p style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4 }}>Upload file JSON/YAML ở trên để thêm.</p>
+                                        <p>No custom standards yet.</p>
+                                        <p className={styles.stdEmptyHint}>Upload a JSON/YAML file above to add one.</p>
                                     </div>
                                 ) : (
                                     <div className={styles.stdGrid}>
@@ -453,10 +428,10 @@ export default function AnalyticsPage() {
                                                     <span className={styles.stdCardVersion}>{std.version}</span>
                                                 </div>
                                                 <h4 className={styles.stdCardName}>{std.name}</h4>
-                                                <p className={styles.stdCardDesc}>{std.description || 'Không có mô tả'}</p>
+                                                <p className={styles.stdCardDesc}>{std.description || 'No description'}</p>
                                                 <div className={styles.stdCardStats}>
                                                     <span>{std.total_controls} controls</span>
-                                                    <span>Max: {std.max_weighted_score}đ</span>
+                                                    <span>Max: {std.max_weighted_score}pts</span>
                                                 </div>
                                                 {std.weight_breakdown && (
                                                     <div className={styles.stdWeightTags}>
@@ -468,12 +443,12 @@ export default function AnalyticsPage() {
                                                     </div>
                                                 )}
                                                 <div className={styles.stdCardActions}>
-                                                    <button className={styles.stdBtnSmall} onClick={() => handleStdDetail(std.id)}>👁️ Chi tiết</button>
-                                                    <button className={styles.stdBtnSmall} onClick={() => handleStdReindex(std.id)}>🔄 Re-index</button>
-                                                    <button className={`${styles.stdBtnSmall} ${styles.stdBtnDanger}`} onClick={() => handleStdDelete(std.id)}>🗑️</button>
+                                                    <button className={styles.stdBtnSmall} onClick={() => handleStdDetail(std.id)}>Detail</button>
+                                                    <button className={styles.stdBtnSmall} onClick={() => handleStdReindex(std.id)}>Re-index</button>
+                                                    <button className={`${styles.stdBtnSmall} ${styles.stdBtnDanger}`} onClick={() => handleStdDelete(std.id)}>Delete</button>
                                                 </div>
-                                                <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 6 }}>
-                                                    📅 {std.created_at ? new Date(std.created_at).toLocaleDateString('vi-VN') : '—'}
+                                                <div className={styles.stdCardDate}>
+                                                    {std.created_at ? new Date(std.created_at).toLocaleDateString('vi-VN') : '—'}
                                                 </div>
                                             </div>
                                         ))}
@@ -483,7 +458,6 @@ export default function AnalyticsPage() {
                         )}
                     </div>
 
-                    {/* Standard detail side panel */}
                     {selectedStandard && selectedStandard.controls && (
                         <>
                             <div className={styles.modalOverlay} onClick={() => setSelectedStandard(null)} />
@@ -496,18 +470,18 @@ export default function AnalyticsPage() {
                                     <button className={styles.closeBtn} onClick={() => setSelectedStandard(null)}>✕</button>
                                 </div>
                                 <div className={styles.modalBody} style={{ overflowY: 'auto', flex: 1 }}>
-                                    {stdDetailLoading ? <div className={styles.loading}>⏳</div> : (
+                                    {stdDetailLoading ? <div className={styles.loading}>Loading...</div> : (
                                         selectedStandard.controls.map((cat, ci) => (
-                                            <div key={ci} style={{ marginBottom: '1rem' }}>
-                                                <h4 style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-blue)', borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 6, display: 'flex', gap: 8, alignItems: 'center' }}>
+                                            <div key={ci} className={styles.stdDetailCat}>
+                                                <h4 className={styles.stdDetailCatTitle}>
                                                     {cat.category}
-                                                    <span style={{ fontSize: 10, color: 'var(--text-dim)', fontWeight: 400 }}>{cat.controls.length} controls</span>
+                                                    <span className={styles.stdDetailCatCount}>{cat.controls.length} controls</span>
                                                 </h4>
                                                 {cat.controls.map(ctrl => (
-                                                    <div key={ctrl.id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '4px 6px', borderRadius: 6, background: 'var(--bg-subtle)', marginBottom: 3, fontSize: 12 }}>
-                                                        <span style={{ fontWeight: 700, color: 'var(--text-primary)', minWidth: 52 }}>{ctrl.id}</span>
-                                                        <span style={{ flex: 1, color: 'var(--text-secondary)' }}>{ctrl.label}</span>
-                                                        <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 12, border: `1px solid ${WEIGHT_COLOR_STD[ctrl.weight]}`, color: WEIGHT_COLOR_STD[ctrl.weight] }}>{ctrl.weight}</span>
+                                                    <div key={ctrl.id} className={styles.stdDetailCtrl}>
+                                                        <span className={styles.stdDetailCtrlId}>{ctrl.id}</span>
+                                                        <span className={styles.stdDetailCtrlLabel}>{ctrl.label}</span>
+                                                        <span className={styles.stdDetailCtrlWeight} style={{ borderColor: WEIGHT_COLOR_STD[ctrl.weight], color: WEIGHT_COLOR_STD[ctrl.weight] }}>{ctrl.weight}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -515,8 +489,8 @@ export default function AnalyticsPage() {
                                     )}
                                 </div>
                                 <div className={styles.modalFooter}>
-                                    <Link href="/form-iso" className={styles.btnPrimary}>📝 Sử dụng trong Form</Link>
-                                    <button className={styles.btnSecondary} onClick={() => setSelectedStandard(null)}>Đóng</button>
+                                    <Link href="/form-iso" className={styles.btnPrimary}>Use in Assessment</Link>
+                                    <button className={styles.btnSecondary} onClick={() => setSelectedStandard(null)}>Close</button>
                                 </div>
                             </div>
                         </>
@@ -524,449 +498,342 @@ export default function AnalyticsPage() {
                 </div>
             )}
 
-            {/* ══════════════════════════════════════
-                TAB: DASHBOARD (existing content)
-            ══════════════════════════════════════ */}
             {activeMainTab === 'dashboard' && (
-            <div>
+                <div>
+                    <section className={styles.section}>
+                        <p className="section-title">⚡ System Resources</p>
+                        <SystemStats />
+                    </section>
 
-            <section style={{ marginBottom: '2.5rem' }}>
-                <h2 className="section-title">⚡ Tài nguyên Hệ thống</h2>
-                <SystemStats />
-            </section>
-
-            <section style={{ marginBottom: '2.5rem' }}>
-                <h2 className="section-title">🤖 Trạng thái Dịch vụ</h2>
-                {loading ? (
-                    <div className={styles.loading}>Đang tải...</div>
-                ) : (
-                    <div className="grid-2">
-                        <div className={styles.serviceCard}>
-                            <div className={styles.serviceHeader}>
-                                <div>
-                                    <div className={styles.serviceName}>
-                                        {services?.backend?.ready ? '✅' : '⏳'} FastAPI Backend
-                                    </div>
-                                    <div className={styles.serviceDetail}>
-                                        Core API Service • Port: <strong style={{ color: 'var(--accent-blue)' }}>8000</strong> • v1.0.0
-                                    </div>
-                                </div>
-                                <span className={`status-badge ${services?.backend?.ready ? 'status-online' : 'status-offline'}`}>
-                                    {services?.backend?.status}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className={styles.serviceCard}>
-                            <div className={styles.serviceHeader}>
-                                <div>
-                                    <div className={styles.serviceName}>
-                                        {services?.localai?.ready ? '🔥' : '⏳'} LocalAI Engine
-                                    </div>
-                                    <div className={styles.serviceDetail}>
-                                        Model Server • Port: <strong style={{ color: 'var(--accent-blue)' }}>8080</strong> • CPU Mode
-                                    </div>
-                                </div>
-                                <span className={`status-badge ${services?.localai?.ready ? 'status-online' : 'status-offline'}`}>
-                                    {services?.localai?.status}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className={styles.serviceCard}>
-                            <div className={styles.serviceHeader}>
-                                <div>
-                                    <div className={styles.serviceName}>
-                                        {services?.backend?.ready ? '🗄️' : '⏳'} ChromaDB
-                                    </div>
-                                    <div className={styles.serviceDetail}>
-                                        Vector Database • RAG ISO 27001 • <strong style={{ color: 'var(--accent-green)' }}>cosine</strong> space
-                                    </div>
-                                </div>
-                                <span className={`status-badge ${services?.backend?.ready ? 'status-online' : 'status-offline'}`}>
-                                    {services?.backend?.status}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className={styles.serviceCard}>
-                            <div className={styles.serviceHeader}>
-                                <div>
-                                    <div className={styles.serviceName}>🧠 VinAI Translate Model</div>
-                                    <div className={styles.serviceDetail}>
-                                        Vietnamese NLP • Parameters: <strong style={{ color: 'var(--accent-green)' }}>135M</strong>
-                                    </div>
-                                </div>
-                                <span className="status-badge status-online">Active</span>
-                            </div>
-                        </div>
-
-                        <div className={styles.serviceCard}>
-                            <div className={styles.serviceHeader}>
-                                <div>
-                                    <div className={styles.serviceName}>⚡ Llama 3.1 8B</div>
-                                    <div className={styles.serviceDetail}>
-                                        LLM (General/Summary) • Quant: <strong style={{ color: 'var(--accent-amber)' }}>Q4_K_M</strong> • 4.9GB
-                                    </div>
-                                </div>
-                                <span className={`status-badge ${services?.localai?.ready ? 'status-online' : 'status-loading'}`}>
-                                    {services?.localai?.ready ? 'Ready' : 'Loading'}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className={styles.serviceCard}>
-                            <div className={styles.serviceHeader}>
-                                <div>
-                                    <div className={styles.serviceName}>🛡️ SecurityLLM 7B</div>
-                                    <div className={styles.serviceDetail}>
-                                        LLM (ISO Assessor) • Quant: <strong style={{ color: 'var(--accent-amber)' }}>Q4_K_M</strong> • 4.4GB
-                                    </div>
-                                </div>
-                                <span className={`status-badge ${services?.localai?.ready ? 'status-online' : 'status-loading'}`}>
-                                    {services?.localai?.ready ? 'Ready' : 'Loading'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </section>
-
-            <section style={{ marginBottom: '2.5rem' }}>
-                <h2 className="section-title">💾 Giám sát Sinh Cache (Audio & Translate)</h2>
-                {cacheStats ? (
-                    <div className="grid-3">
-                        <div className={styles.configCard} style={{ background: 'var(--bg-secondary)' }}>
-                            <div className={styles.configLabel}>Cache Translations (Text)</div>
-                            <div className={styles.configValue}>{cacheStats.translations.files}</div>
-                            <div className={styles.configUnit}>files • {(cacheStats.translations.size_bytes / 1024 / 1024).toFixed(2)} MB</div>
-                        </div>
-                        <div className={styles.configCard} style={{ background: 'var(--bg-secondary)' }}>
-                            <div className={styles.configLabel}>Cache Summaries (Audio)</div>
-                            <div className={styles.configValue}>{cacheStats.summaries.files}</div>
-                            <div className={styles.configUnit}>files • {(cacheStats.summaries.size_bytes / 1024 / 1024).toFixed(2)} MB</div>
-                        </div>
-                        <div className={styles.configCard} style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid var(--accent-blue)' }}>
-                            <div className={styles.configLabel} style={{ color: 'var(--accent-blue)' }}>Tổng dung lượng Storage</div>
-                            <div className={styles.configValue} style={{ color: 'var(--text-primary)' }}>{(cacheStats.total_size_bytes / 1024 / 1024).toFixed(2)}</div>
-                            <div className={styles.configUnit}>Megabytes (Tự dọn dẹp mỗi 2h)</div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className={styles.loading}>Đang tải thống kê cache...</div>
-                )}
-            </section>
-
-            <section style={{ marginBottom: '2.5rem' }}>
-                <h2 className="section-title">🕒 Lịch sử Đánh giá ISO 27001</h2>
-                <div className={styles.tableContainer}>
-                    <table className={styles.table}>
-                        <thead>
-                            <tr>
-                                <th>Thời gian</th>
-                                <th>Tổ chức</th>
-                                <th>% Tuân thủ</th>
-                                <th>Trạng thái</th>
-                                <th>ID Giao dịch</th>
-                                <th style={{ textAlign: 'right' }}>Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {assessments.length > 0 ? assessments.map(a => {
-                                const pct = a.compliance_percent ?? null
-                                const pctColor = pct == null ? '' :
-                                    pct >= 80 ? 'var(--accent-green)' :
-                                    pct >= 50 ? 'var(--accent-blue)' :
-                                    pct >= 25 ? 'var(--accent-amber,#f59e0b)' :
-                                    'var(--accent-red)'
-                                return (
-                                    <tr key={a.id} onClick={() => openDetail(a.id)} className={styles.tableRowRef}>
-                                        <td>{new Date(a.created_at).toLocaleString('vi-VN')}</td>
-                                        <td><strong>{a.org_name}</strong></td>
-                                        <td>
-                                            {pct != null ? (
-                                                <span className={styles.pctBadge} style={{ color: pctColor, borderColor: pctColor }}>
-                                                    {pct}%
-                                                </span>
-                                            ) : (
-                                                <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>—</span>
-                                            )}
-                                        </td>
-                                        <td>
-                                            <span className={`status-badge ${a.status === 'completed' ? 'status-online' : a.status === 'processing' ? 'status-loading' : 'status-offline'}`}>
-                                                {a.status.toUpperCase()}
+                    <section className={styles.section}>
+                        <p className="section-title">🤖 Service Status</p>
+                        {loading ? (
+                            <div className={styles.loading}>Loading...</div>
+                        ) : (
+                            <div className="grid-2">
+                                {SERVICE_ROWS.map((svc, i) => (
+                                    <div key={i} className={styles.serviceCard}>
+                                        <div className={styles.serviceHeader}>
+                                            <div>
+                                                <div className={styles.serviceName}>{svc.name}</div>
+                                                <div className={styles.serviceDetail}>{svc.detail}</div>
+                                            </div>
+                                            <span className={`status-badge ${svc.ready ? 'status-online' : svc.loading ? 'status-loading' : 'status-offline'}`}>
+                                                {svc.status}
                                             </span>
-                                        </td>
-                                        <td><code className={styles.codeId}>{a.id.split('-')[0]}</code></td>
-                                        <td style={{ textAlign: 'right' }}>
-                                            <button
-                                                className={styles.deleteBtn}
-                                                onClick={(e) => checkDeleteWarning(a.id, e)}
-                                                title="Xóa đánh giá này"
-                                            >
-                                                🗑️
-                                            </button>
-                                        </td>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+
+                    <section className={styles.section}>
+                        <p className="section-title">💾 Cache Monitor</p>
+                        {cacheStats ? (
+                            <div className="grid-3">
+                                {[
+                                    {
+                                        label: 'Translation Cache',
+                                        val: cacheStats?.translations?.files ?? 0,
+                                        unit: `files · ${((cacheStats?.translations?.size_bytes ?? 0) / 1024 / 1024).toFixed(2)} MB`
+                                    },
+                                    {
+                                        label: 'Summary Cache',
+                                        val: cacheStats?.summaries?.files ?? 0,
+                                        unit: `files · ${((cacheStats?.summaries?.size_bytes ?? 0) / 1024 / 1024).toFixed(2)} MB`
+                                    },
+                                    {
+                                        label: 'Total Storage',
+                                        val: ((cacheStats?.total_size_bytes ?? 0) / 1024 / 1024).toFixed(2),
+                                        unit: 'MB · auto-cleared every 2h',
+                                        highlight: true
+                                    },
+                                ].map((c, i) => (
+                                    <div key={i} className={`${styles.configCard} ${c.highlight ? styles.configCardHighlight : ''}`}>
+                                        <div className={styles.configLabel}>{c.label}</div>
+                                        <div className={styles.configValue}>{c.val}</div>
+                                        <div className={styles.configUnit}>{c.unit}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className={styles.loading}>Loading cache stats...</div>
+                        )}
+                    </section>
+
+                    <section className={styles.section}>
+                        <p className="section-title">🕒 Assessment History</p>
+                        <div className={styles.tableContainer}>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Organization</th>
+                                        <th>Compliance</th>
+                                        <th>Status</th>
+                                        <th>ID</th>
+                                        <th style={{ textAlign: 'right' }}>Actions</th>
                                     </tr>
-                                )
-                            }) : (
-                                <tr>
-                                    <td colSpan="6" style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)' }}>Chưa có yêu cầu đánh giá nào.</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            <section style={{ marginBottom: '2.5rem' }}>
-                <h2 className="section-title">📈 Cấu hình Hệ thống</h2>
-                <div className="grid-3">
-                    <div className={styles.configCard}>
-                        <div className={styles.configLabel}>Context Size</div>
-                        <div className={styles.configValue}>8192</div>
-                        <div className={styles.configUnit}>tokens</div>
-                    </div>
-                    <div className={styles.configCard}>
-                        <div className={styles.configLabel}>Max Tokens</div>
-                        <div className={styles.configValue}>Unlimited</div>
-                        <div className={styles.configUnit}>không giới hạn</div>
-                    </div>
-                    <div className={styles.configCard}>
-                        <div className={styles.configLabel}>Threads</div>
-                        <div className={styles.configValue}>8</div>
-                        <div className={styles.configUnit}>CPU threads</div>
-                    </div>
-                </div>
-            </section>
-
-            <section>
-                <h2 className="section-title">🗄️ Kho Tài liệu AI — ChromaDB</h2>
-                <div className={styles.chromaPanel}>
-                    <div className={styles.chromaHeader}>
-                        <div className={styles.chromaHeaderLeft}>
-                            <div className={styles.chromaGrid}>
-                                <div className={styles.chromaStat}>
-                                    <span className={styles.chromaStatIcon}>🧩</span>
-                                    <div>
-                                        <span className={styles.chromaStatValue}>{chromaStats?.total_chunks ?? '--'}</span>
-                                        <span className={styles.chromaStatLabel}>Chunks</span>
-                                    </div>
-                                </div>
-                                <div className={styles.chromaStat}>
-                                    <span className={styles.chromaStatIcon}>📄</span>
-                                    <div>
-                                        <span className={styles.chromaStatValue}>{chromaStats?.total_files ?? '--'}</span>
-                                        <span className={styles.chromaStatLabel}>Files</span>
-                                    </div>
-                                </div>
-                                <div className={styles.chromaStat}>
-                                    <span className={styles.chromaStatIcon}>🎯</span>
-                                    <div>
-                                        <span className={styles.chromaStatValue} style={{ fontSize: '1rem', textTransform: 'uppercase' }}>{chromaStats?.metric ?? '--'}</span>
-                                        <span className={styles.chromaStatLabel}>Metric</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className={styles.chromaHeaderRight}>
-                            <div className={styles.searchBox}>
-                                <input
-                                    type="text"
-                                    placeholder="Thử tìm kiếm tài liệu..."
-                                    value={searchQuery}
-                                    onChange={e => setSearchQuery(e.target.value)}
-                                    className={styles.searchInput}
-                                    onKeyDown={async (e) => {
-                                        if (e.key === 'Enter' && searchQuery.trim()) {
-                                            setSearching(true)
-                                            try {
-                                                const res = await fetch('/api/iso27001/chromadb/search', {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({ query: searchQuery, top_k: 3 })
-                                                })
-                                                if (res.ok) setSearchResults(await res.json())
-                                            } catch { } finally { setSearching(false) }
-                                        }
-                                    }}
-                                />
-                                <button
-                                    className={styles.btnSearch}
-                                    disabled={searching || !searchQuery.trim()}
-                                    onClick={async () => {
-                                        if (!searchQuery.trim()) return
-                                        setSearching(true)
-                                        try {
-                                            const res = await fetch('/api/iso27001/chromadb/search', {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ query: searchQuery, top_k: 3 })
-                                            })
-                                            if (res.ok) setSearchResults(await res.json())
-                                        } catch { } finally { setSearching(false) }
-                                    }}
-                                >{searching ? '⏳' : '🔍'}</button>
-                            </div>
-                            {searchResults?.results?.length > 0 && (
-                                <div className={styles.searchResultsPanel}>
-                                    {searchResults.results.map((r, i) => (
-                                        <div key={i} className={styles.searchResultItem}>
-                                            <div className={styles.searchResultHeader}>
-                                                <span className={styles.searchResultSource}>{r.source}</span>
-                                                <span className={styles.searchResultScore}>{(r.score * 100).toFixed(0)}%</span>
-                                            </div>
-                                            <p className={styles.searchResultText}>{r.text?.substring(0, 200)}...</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            <div className={styles.chromaStatusRow} style={{ marginTop: 'auto', paddingTop: '1rem' }}>
-                                <span className={`${styles.chromaStatusDot} ${chromaStats?.status === 'ok' ? styles.dotOk : styles.dotErr}`} />
-                                <span className={styles.chromaStatusText}>{chromaStats?.status === 'ok' ? 'Database sẵn sàng' : 'Đang kiểm tra...'}</span>
-                                <button
-                                    className={styles.btnReindex}
-                                    disabled={reindexing}
-                                    onClick={async () => {
-                                        setReindexing(true)
-                                        try {
-                                            const res = await fetch('/api/iso27001/reindex', { method: 'POST' })
-                                            if (res.ok) {
-                                                const data = await res.json()
-                                                alert(`Nạp lại thành công! ${data.files} files → ${data.chunks} chunks`)
-                                                const r2 = await fetch('/api/iso27001/chromadb/stats')
-                                                if (r2.ok) setChromaStats(await r2.json())
-                                            }
-                                        } catch (e) {
-                                            alert('Lỗi: ' + e.message)
-                                        } finally { setReindexing(false) }
-                                    }}
-                                >
-                                    {reindexing ? '⏳ Đang nạp...' : '🔄 Nạp lại'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {chromaStats?.files?.length > 0 && (
-                        <div className={styles.chromaFiles}>
-                            <div className={styles.fileToggle} onClick={() => setShowFiles(!showFiles)}>
-                                <span>{showFiles ? '▼' : '▶'} Danh sách tài liệu ({chromaStats.files.length} files)</span>
-                                <span className={styles.fileTotalSize}>
-                                    {(chromaStats.files.reduce((s, f) => s + f.size_bytes, 0) / 1024).toFixed(1)} KB
-                                </span>
-                            </div>
-                            {showFiles && (
-                                <div className={styles.fileList}>
-                                    {chromaStats.files.map((f, i) => (
-                                        <div key={i} className={styles.fileItem}>
-                                            <span className={styles.fileName}>{f.name}</span>
-                                            <span className={styles.fileSize}>{(f.size_bytes / 1024).toFixed(1)} KB</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </section>
-
-            {selectedAssessment && (
-                <div className={styles.modalOverlay} onClick={() => setSelectedAssessment(null)}>
-                    <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-                        <div className={styles.modalHeader}>
-                            <div>
-                                <h3 className={styles.modalTitle}>
-                                    Chi tiết Đánh giá
-                                </h3>
-                                <p className={styles.modalSubtitle}>
-                                    ID: <code className={styles.codeId}>{selectedAssessment.id?.split('-')[0]}</code>
-                                    {selectedAssessment.created_at && (
-                                        <> &nbsp;·&nbsp; {new Date(selectedAssessment.created_at).toLocaleString('vi-VN')}</>
-                                    )}
-                                </p>
-                            </div>
-                            <button className={styles.closeBtn} onClick={() => setSelectedAssessment(null)}>✕</button>
-                        </div>
-                        <div className={styles.modalBody}>
-                            {modalLoading || selectedAssessment.loading ? (
-                                <div className={styles.loading}>
-                                    <div className={styles.loadingSpinner} />
-                                    <span>Đang tải chi tiết báo cáo...</span>
-                                </div>
-                            ) : selectedAssessment.error ? (
-                                <div className={styles.statusError}>{selectedAssessment.error}</div>
-                            ) : (
-                                <>
-                                    {/* ── Score Hero mini ── */}
-                                    {(() => {
-                                        const pct = selectedAssessment.compliance_percent ?? null
-                                        const org = selectedAssessment.system_info?.organization
-                                        const infra = selectedAssessment.system_info?.infrastructure
-                                        const comp = selectedAssessment.system_info?.compliance
-                                        const stdId = selectedAssessment.standard
-                                        const stdName = stdId === 'tcvn11930' ? 'TCVN 11930:2017' : 'ISO 27001:2022'
-                                        const gaugeColor = pct == null ? 'var(--accent-blue)' :
-                                            pct >= 80 ? 'var(--accent-green)' :
-                                            pct >= 50 ? 'var(--accent-blue)' :
-                                            pct >= 25 ? 'var(--accent-amber,#f59e0b)' :
-                                            'var(--accent-red)'
-                                        const badgeClass = pct == null ? styles.modalBadgeNeutral :
-                                            pct >= 80 ? styles.modalBadgeFull :
-                                            pct >= 50 ? styles.modalBadgeMostly :
-                                            pct >= 25 ? styles.modalBadgePartial :
-                                            styles.modalBadgeLow
-                                        const badgeLabel = pct == null ? '— Đang xử lý' :
-                                            pct >= 80 ? '✅ Tuân thủ cao' :
-                                            pct >= 50 ? '🟡 Tuân thủ một phần' :
-                                            pct >= 25 ? '🟠 Tuân thủ thấp' :
-                                            '🔴 Không tuân thủ'
+                                </thead>
+                                <tbody>
+                                    {assessments.length > 0 ? assessments.map(a => {
+                                        const pct = a.compliance_percent ?? null
+                                        const pctColor = getPctColor(pct)
                                         return (
-                                            <div className={styles.modalScoreHero}>
-                                                <div className={styles.modalGaugeWrap}>
+                                            <tr key={a.id} onClick={() => openDetail(a.id)} className={styles.tableRowRef}>
+                                                <td>{new Date(a.created_at).toLocaleString('vi-VN')}</td>
+                                                <td><strong>{a.org_name}</strong></td>
+                                                <td>
                                                     {pct != null ? (
-                                                        <>
-                                                            <SvgGauge percent={pct} size={96} color={gaugeColor} />
-                                                            <div className={styles.modalGaugeOverlay}>
-                                                                <span className={styles.modalGaugePct} style={{ color: gaugeColor }}>{pct}%</span>
-                                                                <span className={styles.modalGaugeLabel}>Tuân thủ</span>
-                                                            </div>
-                                                        </>
+                                                        <span className={styles.pctBadge} style={{ color: pctColor, borderColor: pctColor }}>{pct}%</span>
                                                     ) : (
-                                                        <div className={styles.modalGaugePlaceholder}>⏳</div>
+                                                        <span className={styles.pctEmpty}>—</span>
                                                     )}
-                                                </div>
-                                                <div className={styles.modalScoreInfo}>
-                                                    <div className={styles.modalOrgName}>{org?.name || 'Tổ chức'}</div>
-                                                    <div className={styles.modalStdName}>{stdName}</div>
-                                                    <span className={`${styles.modalBadge} ${badgeClass}`}>{badgeLabel}</span>
-                                                    <div className={styles.modalMetaRow}>
-                                                        {org?.employees ? <span>{org.employees} nhân viên</span> : null}
-                                                        {infra?.servers ? <span>{infra.servers} máy chủ</span> : null}
-                                                        {comp?.iso_status ? <span>{comp.iso_status}</span> : null}
-                                                    </div>
-                                                </div>
-                                            </div>
+                                                </td>
+                                                <td>
+                                                    <span className={`status-badge ${a.status === 'completed' ? 'status-online' : a.status === 'processing' ? 'status-loading' : 'status-offline'}`}>
+                                                        {a.status.toUpperCase()}
+                                                    </span>
+                                                </td>
+                                                <td><code className={styles.codeId}>{a.id.split('-')[0]}</code></td>
+                                                <td style={{ textAlign: 'right' }}>
+                                                    <button className={styles.deleteBtn} onClick={(e) => checkDeleteWarning(a.id, e)} title="Delete assessment">
+                                                        ×
+                                                    </button>
+                                                </td>
+                                            </tr>
                                         )
-                                    })()}
+                                    }) : (
+                                        <tr>
+                                            <td colSpan="6" className={styles.tableEmpty}>No assessments yet.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
 
-                                    {/* ── Action bar ── */}
-                                    <div className={styles.modalActionBar}>
-                                        <button className={styles.modalActionBtn} onClick={() => {
-                                            const text = selectedAssessment.result?.report || ''
-                                            navigator.clipboard?.writeText(text).catch(() => {})
-                                        }}>📋 Sao chép</button>
-                                        <button className={styles.modalActionBtn} onClick={() => {
-                                            const pct = selectedAssessment.compliance_percent ?? null
-                                            const orgName = selectedAssessment.system_info?.organization?.name || 'Tổ chức'
-                                            const stdId = selectedAssessment.standard
-                                            const stdName = stdId === 'tcvn11930' ? 'TCVN 11930:2017' : 'ISO 27001:2022'
-                                            const gaugeColor = pct == null ? '#3b82f6' :
-                                                pct >= 80 ? '#10b981' : pct >= 50 ? '#3b82f6' : pct >= 25 ? '#f59e0b' : '#ef4444'
-                                            const reportHtml = `<!DOCTYPE html>
+                    <section className={styles.section}>
+                        <p className="section-title">⚙️ System Configuration</p>
+                        <div className="grid-3">
+                            {[
+                                { label: 'Context Size', val: '8192', unit: 'tokens' },
+                                { label: 'Max Tokens', val: 'Unlimited', unit: 'no limit' },
+                                { label: 'Threads', val: '8', unit: 'CPU threads' },
+                            ].map((c, i) => (
+                                <div key={i} className={styles.configCard}>
+                                    <div className={styles.configLabel}>{c.label}</div>
+                                    <div className={styles.configValue}>{c.val}</div>
+                                    <div className={styles.configUnit}>{c.unit}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    <section className={styles.section}>
+                        <p className="section-title">🗄️ ChromaDB — RAG Document Store</p>
+                        <div className={styles.chromaPanel}>
+                            <div className={styles.chromaHeader}>
+                                <div className={styles.chromaHeaderLeft}>
+                                    <div className={styles.chromaGrid}>
+                                        {[
+                                            { val: chromaStats?.total_chunks ?? '--', label: 'Chunks' },
+                                            { val: chromaStats?.total_files ?? '--', label: 'Files' },
+                                            { val: chromaStats?.metric ?? '--', label: 'Metric' },
+                                        ].map(s => (
+                                            <div key={s.label} className={styles.chromaStat}>
+                                                <span className={styles.chromaStatValue}>{s.val}</span>
+                                                <span className={styles.chromaStatLabel}>{s.label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className={styles.chromaHeaderRight}>
+                                    <div className={styles.searchBox}>
+                                        <input
+                                            type="text"
+                                            placeholder="Search documents..."
+                                            value={searchQuery}
+                                            onChange={e => setSearchQuery(e.target.value)}
+                                            className={styles.searchInput}
+                                            onKeyDown={async (e) => {
+                                                if (e.key === 'Enter' && searchQuery.trim()) {
+                                                    setSearching(true)
+                                                    try {
+                                                        const res = await fetch('/api/iso27001/chromadb/search', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ query: searchQuery, top_k: 3 })
+                                                        })
+                                                        if (res.ok) setSearchResults(await res.json())
+                                                    } catch { } finally { setSearching(false) }
+                                                }
+                                            }}
+                                        />
+                                        <button
+                                            className={styles.btnSearch}
+                                            disabled={searching || !searchQuery.trim()}
+                                            onClick={async () => {
+                                                if (!searchQuery.trim()) return
+                                                setSearching(true)
+                                                try {
+                                                    const res = await fetch('/api/iso27001/chromadb/search', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ query: searchQuery, top_k: 3 })
+                                                    })
+                                                    if (res.ok) setSearchResults(await res.json())
+                                                } catch { } finally { setSearching(false) }
+                                            }}
+                                        >{searching ? '...' : 'Search'}</button>
+                                    </div>
+                                    {searchResults?.results?.length > 0 && (
+                                        <div className={styles.searchResultsPanel}>
+                                            {searchResults.results.map((r, i) => (
+                                                <div key={i} className={styles.searchResultItem}>
+                                                    <div className={styles.searchResultHeader}>
+                                                        <span className={styles.searchResultSource}>{r.source}</span>
+                                                        <span className={styles.searchResultScore}>{(r.score * 100).toFixed(0)}%</span>
+                                                    </div>
+                                                    <p className={styles.searchResultText}>{r.text?.substring(0, 200)}...</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div className={styles.chromaStatusRow}>
+                                        <span className={`${styles.chromaStatusDot} ${chromaStats?.status === 'ok' ? styles.dotOk : styles.dotErr}`} />
+                                        <span className={styles.chromaStatusText}>{chromaStats?.status === 'ok' ? 'Database ready' : 'Checking...'}</span>
+                                        <button
+                                            className={styles.btnReindex}
+                                            disabled={reindexing}
+                                            onClick={async () => {
+                                                setReindexing(true)
+                                                try {
+                                                    const res = await fetch('/api/iso27001/reindex', { method: 'POST' })
+                                                    if (res.ok) {
+                                                        const data = await res.json()
+                                                        alert(`Reindex successful: ${data.files} files → ${data.chunks} chunks`)
+                                                        const r2 = await fetch('/api/iso27001/chromadb/stats')
+                                                        if (r2.ok) setChromaStats(await r2.json())
+                                                    }
+                                                } catch (e) {
+                                                    alert('Error: ' + e.message)
+                                                } finally { setReindexing(false) }
+                                            }}
+                                        >{reindexing ? 'Reindexing...' : 'Reindex'}</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {chromaStats?.files?.length > 0 && (
+                                <div className={styles.chromaFiles}>
+                                    <div className={styles.fileToggle} onClick={() => setShowFiles(!showFiles)}>
+                                        <span>{showFiles ? '▼' : '▶'} Documents ({chromaStats.files.length} files)</span>
+                                        <span className={styles.fileTotalSize}>
+                                            {(chromaStats.files.reduce((s, f) => s + f.size_bytes, 0) / 1024).toFixed(1)} KB
+                                        </span>
+                                    </div>
+                                    {showFiles && (
+                                        <div className={styles.fileList}>
+                                            {chromaStats.files.map((f, i) => (
+                                                <div key={i} className={styles.fileItem}>
+                                                    <span className={styles.fileName}>{f.name}</span>
+                                                    <span className={styles.fileSize}>{(f.size_bytes / 1024).toFixed(1)} KB</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </section>
+
+                    {selectedAssessment && (
+                        <div className={styles.modalOverlay} onClick={() => setSelectedAssessment(null)}>
+                            <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+                                <div className={styles.modalHeader}>
+                                    <div>
+                                        <h3 className={styles.modalTitle}>Assessment Detail</h3>
+                                        <p className={styles.modalSubtitle}>
+                                            ID: <code className={styles.codeId}>{selectedAssessment.id?.split('-')[0]}</code>
+                                            {selectedAssessment.created_at && <> · {new Date(selectedAssessment.created_at).toLocaleString('vi-VN')}</>}
+                                        </p>
+                                    </div>
+                                    <button className={styles.closeBtn} onClick={() => setSelectedAssessment(null)}>✕</button>
+                                </div>
+                                <div className={styles.modalBody}>
+                                    {modalLoading || selectedAssessment.loading ? (
+                                        <div className={styles.loading}>
+                                            <div className={styles.loadingSpinner} />
+                                            <span>Loading report...</span>
+                                        </div>
+                                    ) : selectedAssessment.error ? (
+                                        <div className={styles.statusError}>{selectedAssessment.error}</div>
+                                    ) : (
+                                        <>
+                                            {(() => {
+                                                const pct = selectedAssessment.compliance_percent ?? null
+                                                const org = selectedAssessment.system_info?.organization
+                                                const infra = selectedAssessment.system_info?.infrastructure
+                                                const comp = selectedAssessment.system_info?.compliance
+                                                const stdId = selectedAssessment.standard
+                                                const stdName = stdId === 'tcvn11930' ? 'TCVN 11930:2017' : 'ISO 27001:2022'
+                                                const gaugeColor = getPctColor(pct) || 'var(--accent-blue)'
+                                                const badgeClass = pct == null ? styles.modalBadgeNeutral :
+                                                    pct >= 80 ? styles.modalBadgeFull :
+                                                    pct >= 50 ? styles.modalBadgeMostly :
+                                                    pct >= 25 ? styles.modalBadgePartial :
+                                                    styles.modalBadgeLow
+                                                const badgeLabel = pct == null ? 'Processing' :
+                                                    pct >= 80 ? 'Compliant' :
+                                                    pct >= 50 ? 'Mostly Compliant' :
+                                                    pct >= 25 ? 'Partially Compliant' :
+                                                    'Non-compliant'
+                                                return (
+                                                    <div className={styles.modalScoreHero}>
+                                                        <div className={styles.modalGaugeWrap}>
+                                                            {pct != null ? (
+                                                                <>
+                                                                    <SvgGauge percent={pct} size={96} color={gaugeColor} />
+                                                                    <div className={styles.modalGaugeOverlay}>
+                                                                        <span className={styles.modalGaugePct} style={{ color: gaugeColor }}>{pct}%</span>
+                                                                        <span className={styles.modalGaugeLabel}>Compliance</span>
+                                                                    </div>
+                                                                </>
+                                                            ) : (
+                                                                <div className={styles.modalGaugePlaceholder}>—</div>
+                                                            )}
+                                                        </div>
+                                                        <div className={styles.modalScoreInfo}>
+                                                            <div className={styles.modalOrgName}>{org?.name || 'Organization'}</div>
+                                                            <div className={styles.modalStdName}>{stdName}</div>
+                                                            <span className={`${styles.modalBadge} ${badgeClass}`}>{badgeLabel}</span>
+                                                            <div className={styles.modalMetaRow}>
+                                                                {org?.employees ? <span>{org.employees} employees</span> : null}
+                                                                {infra?.servers ? <span>{infra.servers} servers</span> : null}
+                                                                {comp?.iso_status ? <span>{comp.iso_status}</span> : null}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })()}
+
+                                            <div className={styles.modalActionBar}>
+                                                <button className={styles.modalActionBtn} onClick={() => {
+                                                    const text = selectedAssessment.result?.report || ''
+                                                    navigator.clipboard?.writeText(text).catch(() => { })
+                                                }}>Copy Report</button>
+                                                <button className={styles.modalActionBtn} onClick={() => {
+                                                    const pct = selectedAssessment.compliance_percent ?? null
+                                                    const orgName = selectedAssessment.system_info?.organization?.name || 'Organization'
+                                                    const stdId = selectedAssessment.standard
+                                                    const stdName = stdId === 'tcvn11930' ? 'TCVN 11930:2017' : 'ISO 27001:2022'
+                                                    const gaugeColor = getPctColor(pct) || '#4f8ef7'
+                                                    const reportHtml = `<!DOCTYPE html>
 <html lang="vi"><head><meta charset="UTF-8">
-<title>Báo cáo Đánh giá - ${orgName}</title>
+<title>Assessment Report - ${orgName}</title>
 <style>
   body{font-family:'Segoe UI',Arial,sans-serif;max-width:860px;margin:40px auto;padding:0 24px;color:#1e293b;line-height:1.7;font-size:14px}
   h1{font-size:20px;font-weight:800;border-bottom:2px solid #3b82f6;padding-bottom:8px}
@@ -982,96 +849,90 @@ export default function AnalyticsPage() {
   @media print{.no-print{display:none!important}}
 </style></head><body>
 <div class="no-print" style="background:#eff6ff;border:1px solid #3b82f6;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#1d4ed8;">
-  💡 <strong>Để lưu PDF:</strong> nhấn <kbd>Ctrl+P</kbd> → chọn <em>"Lưu thành PDF"</em>.
-  <button onclick="window.print()" style="float:right;padding:6px 14px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">🖨️ In / Lưu PDF</button>
+  <strong>Save as PDF:</strong> press Ctrl+P → select "Save as PDF".
+  <button onclick="window.print()" style="float:right;padding:6px 14px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Print / Save PDF</button>
 </div>
 <div class="hero">
   <div class="pct">${pct != null ? pct + '%' : '—'}</div>
   <div class="meta"><strong>${orgName}</strong><span>${stdName}</span></div>
 </div>
-<p>${mdToHtml(selectedAssessment.result?.report || 'Chưa có báo cáo.')}</p>
+<p>${mdToHtml(selectedAssessment.result?.report || 'No report available.')}</p>
 </body></html>`
-                                            const w = window.open('', '_blank')
-                                            if (w) { w.document.write(reportHtml); w.document.close() }
-                                        }}>📄 Xem / Xuất PDF</button>
-                                        <button className={styles.modalActionBtnSecondary} onClick={handleReuse}>♻️ Tái sử dụng</button>
-                                    </div>
+                                                    const w = window.open('', '_blank')
+                                                    if (w) { w.document.write(reportHtml); w.document.close() }
+                                                }}>Export PDF</button>
+                                                <button className={styles.modalActionBtnSecondary} onClick={handleReuse}>Reuse Form</button>
+                                            </div>
 
-                                    {/* ── Report ── */}
-                                    {selectedAssessment.status === 'failed' && (
-                                        <div className={styles.failedNote}>
-                                            <strong>💡 Lưu ý:</strong> Báo cáo này bị lỗi từ phiên cũ. Hãy dùng &quot;Tái sử dụng&quot; để chạy lại trên hệ thống mới.
-                                        </div>
+                                            {selectedAssessment.status === 'failed' && (
+                                                <div className={styles.failedNote}>
+                                                    <strong>Note:</strong> This report failed in an older session. Use &quot;Reuse Form&quot; to re-run on the current system.
+                                                </div>
+                                            )}
+                                            <div className={styles.md}>
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                    {selectedAssessment.result?.report || '*No detailed report for this assessment.*'}
+                                                </ReactMarkdown>
+                                            </div>
+                                        </>
                                     )}
-                                    <div className={styles.md}>
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                            {selectedAssessment.result?.report || '*Chưa có báo cáo chi tiết cho đánh giá này.*'}
-                                        </ReactMarkdown>
-                                    </div>
-                                </>
-                            )}
+                                </div>
+                                <div className={styles.modalFooter}>
+                                    <button className={styles.btnSecondary} onClick={() => setSelectedAssessment(null)}>Close</button>
+                                    <button className={styles.btnPrimary} onClick={handleReuse}>Reuse this Form</button>
+                                </div>
+                            </div>
                         </div>
-                        <div className={styles.modalFooter}>
-                            <button className={styles.btnSecondary} onClick={() => setSelectedAssessment(null)}>Đóng</button>
-                            <button className={styles.btnPrimary} onClick={handleReuse}>♻️ Tái sử dụng Form này</button>
+                    )}
+
+                    {deleteWarning && (
+                        <div className={styles.modalOverlay} onClick={() => setDeleteWarning(null)}>
+                            <div className={`${styles.modalContent} ${styles.modalSmall}`} onClick={e => e.stopPropagation()}>
+                                <div className={styles.modalHeader}>
+                                    <h3 className={`${styles.modalTitle} ${styles.modalTitleDanger}`}>Confirm Delete</h3>
+                                    <button className={styles.closeBtn} onClick={() => setDeleteWarning(null)}>✕</button>
+                                </div>
+                                <div className={styles.modalBody}>
+                                    <p className={styles.deleteWarningText}>
+                                        This action permanently deletes the assessment report and cannot be undone.
+                                    </p>
+                                    <label className={styles.checkboxLabel}>
+                                        <input
+                                            type="checkbox"
+                                            checked={dontAskAgain}
+                                            onChange={(e) => setDontAskAgain(e.target.checked)}
+                                        />
+                                        <span>Don&apos;t ask again for 24 hours</span>
+                                    </label>
+                                </div>
+                                <div className={styles.modalFooter}>
+                                    <button className={styles.btnSecondary} onClick={() => setDeleteWarning(null)}>Cancel</button>
+                                    <button className={styles.btnDanger} onClick={confirmDelete}>Delete permanently</button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             )}
 
-            {deleteWarning && (
-                <div className={styles.modalOverlay} onClick={() => setDeleteWarning(null)}>
-                    <div className={`${styles.modalContent} ${styles.modalSmall}`} onClick={e => e.stopPropagation()}>
-                        <div className={styles.modalHeader}>
-                            <h3 className={styles.modalTitle} style={{ color: 'var(--accent-red)' }}>⚠️ Xác nhận Xóa</h3>
-                            <button className={styles.closeBtn} onClick={() => setDeleteWarning(null)}>✕</button>
-                        </div>
-                        <div className={styles.modalBody} style={{ paddingBottom: '0.5rem' }}>
-                            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-                                Bạn có chắc chắn muốn xóa vĩnh viễn báo cáo đánh giá này không? Hành động này không thể hoàn tác.
-                            </p>
-                            <label className={styles.checkboxLabel}>
-                                <input
-                                    type="checkbox"
-                                    checked={dontAskAgain}
-                                    onChange={(e) => setDontAskAgain(e.target.checked)}
-                                />
-                                <span>Không hiển thị lại thông báo này trong 24 giờ tới</span>
-                            </label>
-                        </div>
-                        <div className={styles.modalFooter}>
-                            <button className={styles.btnSecondary} onClick={() => setDeleteWarning(null)}>Hủy bỏ</button>
-                            <button className={styles.btnDanger} onClick={confirmDelete}>Xóa vĩnh viễn</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            </div>
-            )} {/* end activeMainTab === 'dashboard' */}
-
-            {/* ══════════════════════════════════════
-                TAB: BENCHMARK AI — Model Comparison
-            ══════════════════════════════════════ */}
             {activeMainTab === 'benchmark' && (
                 <div className={styles.benchmarkWrap}>
                     <div className={styles.benchmarkHeader}>
                         <div>
-                            <h2 className={styles.sectionTitle}>🧪 Benchmark AI Auditor</h2>
+                            <h2 className={styles.sectionTitle}>AI Auditor Benchmark</h2>
                             <p className={styles.helperText}>
-                                So sánh chất lượng phân tích giữa các model: <strong>SecurityLM (LocalAI)</strong> vs <strong>Meta-Llama (LocalAI)</strong> vs <strong>Cloud (OpenClaude)</strong>.
-                                Dữ liệu test case chuẩn với kết quả mong đợi đã được định nghĩa sẵn.
+                                Compare analysis quality between: <strong>SecurityLM (LocalAI)</strong> vs <strong>Meta-Llama (LocalAI)</strong> vs <strong>Cloud</strong>.
                             </p>
                         </div>
                     </div>
 
-                    {/* Scoring Guide */}
                     <div className={styles.benchmarkGuideRow}>
                         {[
-                            { label: 'Section đầy đủ', max: 5, desc: '5 section bắt buộc' },
-                            { label: 'Risk coverage', max: 3, desc: 'Control ID chính xác' },
-                            { label: 'Severity format', max: 3, desc: '🔴🟠🟡⚪ + Risk Register' },
+                            { label: 'Complete sections', max: 5, desc: '5 required sections' },
+                            { label: 'Risk coverage', max: 3, desc: 'Accurate control IDs' },
+                            { label: 'Severity format', max: 3, desc: 'Risk Register format' },
                             { label: 'Executive Summary', max: 2, desc: 'Metrics + Next Steps' },
-                            { label: 'Action Plan', max: 2, desc: 'Timeline cụ thể' },
+                            { label: 'Action Plan', max: 2, desc: 'Specific timeline' },
                         ].map(g => (
                             <div key={g.label} className={styles.benchmarkGuideCard}>
                                 <span className={styles.benchmarkGuideLabel}>{g.label}</span>
@@ -1081,14 +942,13 @@ export default function AnalyticsPage() {
                         ))}
                     </div>
 
-                    {/* Run Controls */}
                     <div className={styles.benchmarkControls}>
                         <div className={styles.benchmarkModeRow}>
-                            <label className={styles.benchmarkModeLabel}>Chế độ chạy:</label>
+                            <label className={styles.benchmarkModeLabel}>Run mode:</label>
                             {[
-                                { id: 'local', label: '🔒 Local Only', desc: 'SecurityLM 7B' },
-                                { id: 'hybrid', label: '⚡ Hybrid', desc: 'SecurityLM + Cloud' },
-                                { id: 'cloud', label: '☁️ Cloud', desc: 'OpenClaude' },
+                                { id: 'local', label: 'Local Only', desc: 'SecurityLM 7B' },
+                                { id: 'hybrid', label: 'Hybrid', desc: 'SecurityLM + Cloud' },
+                                { id: 'cloud', label: 'Cloud', desc: 'OpenClaude' },
                             ].map(m => (
                                 <button
                                     key={m.id}
@@ -1108,7 +968,7 @@ export default function AnalyticsPage() {
                                 onChange={e => setBenchmarkCompare(e.target.checked)}
                                 disabled={benchmarkRunning}
                             />
-                            <span>So sánh Local vs Cloud (chạy 2 lần/test case)</span>
+                            <span>Compare Local vs Cloud (run twice per test case)</span>
                         </label>
                         <button
                             className={styles.benchmarkRunBtn}
@@ -1131,14 +991,13 @@ export default function AnalyticsPage() {
                                 finally { setBenchmarkRunning(false) }
                             }}
                         >
-                            {benchmarkRunning ? '⏳ Đang chạy...' : `▶ Chạy Benchmark (${benchmarkCases?.total_cases || '?'} test cases)`}
+                            {benchmarkRunning ? 'Running...' : `Run Benchmark (${benchmarkCases?.total_cases || '?'} test cases)`}
                         </button>
                     </div>
 
-                    {/* Test Cases List */}
                     {benchmarkCases && (
                         <div className={styles.benchmarkCaseList}>
-                            <h4 className={styles.benchmarkSectionTitle}>📋 Test Cases ({benchmarkCases.total_cases})</h4>
+                            <h4 className={styles.benchmarkSectionTitle}>Test Cases ({benchmarkCases.total_cases})</h4>
                             {benchmarkCases.test_cases?.map(tc => (
                                 <div key={tc.id} className={styles.benchmarkCaseItem}>
                                     <span className={styles.benchmarkCaseId}>{tc.id}</span>
@@ -1150,12 +1009,9 @@ export default function AnalyticsPage() {
                         </div>
                     )}
 
-                    {/* Results */}
                     {benchmarkResult && (
                         <div className={styles.benchmarkResults}>
-                            <h4 className={styles.benchmarkSectionTitle}>📊 Kết quả Benchmark</h4>
-
-                            {/* Summary */}
+                            <h4 className={styles.benchmarkSectionTitle}>Benchmark Results</h4>
                             <div className={styles.benchmarkSummary}>
                                 {Object.entries(benchmarkResult.summary?.per_mode_avg_score || {}).map(([mode, score]) => (
                                     <div key={mode} className={styles.benchmarkSummaryCard}>
@@ -1171,8 +1027,6 @@ export default function AnalyticsPage() {
                                     </div>
                                 ))}
                             </div>
-
-                            {/* Per test case */}
                             {benchmarkResult.results?.map(r => (
                                 <div key={r.id} className={styles.benchmarkResultItem}>
                                     <div className={styles.benchmarkResultHeader}>
@@ -1189,11 +1043,11 @@ export default function AnalyticsPage() {
                                                             data.quality_score?.percentage >= 70 ? styles.scoreGradeB :
                                                             data.quality_score?.percentage >= 55 ? styles.scoreGradeC : styles.scoreGradeD
                                                         }`}>{data.quality_score?.percentage}% ({data.quality_score?.grade})</span>
-                                                        <span className={styles.benchmarkResultTime}>⏱ {data.elapsed_seconds}s</span>
+                                                        <span className={styles.benchmarkResultTime}>{data.elapsed_seconds}s</span>
                                                         <span className={styles.benchmarkResultLen}>{data.report_length} chars</span>
                                                     </>
                                                 ) : (
-                                                    <span className={styles.benchmarkResultError}>❌ {data.error?.slice(0, 80)}</span>
+                                                    <span className={styles.benchmarkResultError}>{data.error?.slice(0, 80)}</span>
                                                 )}
                                             </div>
                                         ))}
@@ -1203,33 +1057,32 @@ export default function AnalyticsPage() {
                         </div>
                     )}
 
-                    {/* Tool vs Real IT Audit explanation */}
                     <div className={styles.benchmarkAuditNote}>
-                        <h4>🔍 Công cụ này vs IT Audit thực tế</h4>
+                        <h4>This Tool vs Official IT Audit</h4>
                         <div className={styles.benchmarkAuditGrid}>
                             <div className={styles.benchmarkAuditCol}>
-                                <div className={styles.benchmarkAuditColTitle}>🤖 CyberAI Assessment Tool</div>
+                                <div className={styles.benchmarkAuditColTitle}>CyberAI Assessment Tool</div>
                                 <ul>
-                                    <li>IT staff tự khai báo controls đã triển khai</li>
-                                    <li>AI phân tích GAP và tạo Risk Register tự động</li>
-                                    <li>Hoàn thành trong 2–5 phút</li>
-                                    <li>LocalAI: dữ liệu không rời server (air-gap)</li>
-                                    <li>Phù hợp cho: Pre-audit self-assessment, đào tạo, benchmark nội bộ</li>
+                                    <li>IT staff self-declares implemented controls</li>
+                                    <li>AI auto-generates GAP analysis and Risk Register</li>
+                                    <li>Completes in 2–5 minutes</li>
+                                    <li>LocalAI: data never leaves the server (air-gap)</li>
+                                    <li>Best for: pre-audit self-assessment, training, internal benchmarking</li>
                                 </ul>
                             </div>
                             <div className={styles.benchmarkAuditCol}>
-                                <div className={styles.benchmarkAuditColTitle}>👨‍💼 IT Audit Chính thức</div>
+                                <div className={styles.benchmarkAuditColTitle}>Official IT Audit</div>
                                 <ul>
-                                    <li>Auditor bên thứ ba đến kiểm tra trực tiếp</li>
-                                    <li>Phỏng vấn nhân viên, kiểm tra bằng chứng thực tế</li>
-                                    <li>Mất 2–6 tuần cho tổ chức trung bình</li>
-                                    <li>Kết quả là báo cáo pháp lý có giá trị chứng nhận</li>
-                                    <li>Phù hợp cho: Chứng nhận ISO, tuân thủ pháp lý, báo cáo khách hàng</li>
+                                    <li>Third-party auditor performs on-site inspection</li>
+                                    <li>Staff interviews and real evidence verification</li>
+                                    <li>Takes 2–6 weeks for a medium-sized organization</li>
+                                    <li>Results are legally binding certification reports</li>
+                                    <li>Best for: ISO certification, legal compliance, client reporting</li>
                                 </ul>
                             </div>
                         </div>
                         <p className={styles.benchmarkAuditNote2}>
-                            <strong>Kết luận:</strong> Tool này <em>không thay thế</em> IT Audit chính thức mà là công cụ <strong>hỗ trợ</strong> — giúp mọi IT staff (không cần chuyên môn bảo mật sâu) tự đánh giá sơ bộ hệ thống, xác định điểm yếu và chuẩn bị cho audit thực tế.
+                            <strong>Conclusion:</strong> This tool does <em>not replace</em> a formal IT Audit — it is a <strong>support tool</strong> that helps any IT staff (without deep security expertise) perform a preliminary self-assessment, identify weaknesses, and prepare for a formal audit.
                         </p>
                     </div>
                 </div>

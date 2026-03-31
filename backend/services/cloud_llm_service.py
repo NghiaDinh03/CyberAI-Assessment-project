@@ -1,13 +1,14 @@
 """Cloud LLM Service — Open Claude (primary) with LocalAI fallback.
 
 Model routing:
-  news_translate  → gemini-2.5-pro       (best translation quality)
-  news_summary    → gemini-3-flash-preview (fast, cheap for summaries)
-  chat            → gemini-3-pro-preview  (balanced chat)
-  iso_local       → LocalAI only          (ISO assessment pre-processing)
-  iso_analysis    → gemini-2.5-pro        (deep ISO analysis)
-  complex         → gemini-2.5-pro        (any heavy task)
-  default         → gemini-3-pro-preview
+  chat            → gpt-5.2              (balanced chat)
+  iso_local       → LocalAI only         (ISO assessment pre-processing)
+  iso_analysis    → gpt-5.2             (deep ISO analysis)
+  complex         → gpt-5.2             (any heavy task)
+  default         → gpt-5.2
+
+Auto-fallback chain: when a cloud model fails (429/500/503), automatically
+retry with next model in FALLBACK_CHAIN until one succeeds.
 """
 
 import time
@@ -24,13 +25,21 @@ MIN_MAX_TOKENS = 10000
 
 # Task-type → preferred model on Open Claude
 TASK_MODEL_MAP: Dict[str, str] = {
-    "news_translate": "gemini-2.5-pro",
-    "news_summary":   "gemini-3-flash-preview",
-    "iso_analysis":   "gemini-2.5-pro",
-    "complex":        "gemini-2.5-pro",
-    "chat":           "gemini-3-pro-preview",
-    "default":        "gemini-3-pro-preview",
+    "iso_analysis":   "gemini-3-flash-preview",
+    "complex":        "gemini-3-pro-preview",
+    "chat":           "gemini-3-flash-preview",
+    "default":        "gemini-3-flash-preview",
 }
+
+# Auto-fallback chain: if primary model fails, try these in order
+# Model IDs verified against GET /v1/models endpoint
+FALLBACK_CHAIN: list = [
+    "gemini-3-flash-preview",
+    "gemini-3-pro-preview",
+    "gpt-5-mini",
+    "claude-sonnet-4",
+    "gpt-5",
+]
 
 # Tasks that must go to LocalAI only (never Cloud)
 LOCAL_ONLY_TASKS = {"iso_local"}
@@ -39,7 +48,7 @@ LOCAL_ONLY_TASKS = {"iso_local"}
 class CloudLLMService:
     _key_index: int = 0
     _rate_limit_cooldowns: Dict[int, float] = {}
-    RATE_LIMIT_COOLDOWN: int = 60
+    RATE_LIMIT_COOLDOWN: int = 30
 
     @classmethod
     def _is_rate_limited(cls, key_idx: int) -> bool:
@@ -64,46 +73,63 @@ class CloudLLMService:
     def _call_open_claude(cls, messages: List[Dict], temperature: float = 0.7,
                           max_tokens: int = 8192, model: str = None,
                           task_type: str = None) -> Dict[str, Any]:
-        model = model or cls._resolve_model(task_type)
+        """Call Open Claude. Auto-fallback through FALLBACK_CHAIN on 404/500/503."""
+        requested_model = model or cls._resolve_model(task_type)
         keys = settings.cloud_api_key_list
         if not keys:
             raise Exception("[OpenClaude] No API key configured")
 
         effective_max_tokens = max(max_tokens, MIN_MAX_TOKENS)
-        logger.info(f"[OpenClaude] Requesting model={model}, task={task_type or 'auto'}, "
-                    f"max_tokens={effective_max_tokens}, messages={len(messages)}")
+
+        # Build fallback chain starting from requested model
+        fallback_models = [requested_model]
+        for m in FALLBACK_CHAIN:
+            if m != requested_model:
+                fallback_models.append(m)
 
         last_error = None
-        for attempt in range(len(keys)):
-            idx = cls._key_index % len(keys)
-            current_key = keys[idx]
-            cls._key_index += 1
+        for model_attempt, current_model in enumerate(fallback_models):
+            logger.info(f"[OpenClaude] Requesting model={current_model}, task={task_type or 'auto'}, "
+                        f"max_tokens={effective_max_tokens}, messages={len(messages)}"
+                        + (f" [fallback #{model_attempt}]" if model_attempt > 0 else ""))
 
-            if cls._is_rate_limited(idx):
-                remaining = cls.RATE_LIMIT_COOLDOWN - (time.time() - cls._rate_limit_cooldowns.get(idx, 0))
-                logger.warning(f"[OpenClaude] Key {idx} in cooldown ({remaining:.0f}s remaining), skipping")
-                last_error = f"Key {idx} in cooldown"
-                continue
+            for attempt in range(len(keys)):
+                idx = cls._key_index % len(keys)
+                current_key = keys[idx]
+                cls._key_index += 1
 
-            try:
-                logger.debug(f"[OpenClaude] Attempt {attempt+1}/{len(keys)} with key index {idx}")
-                response = httpx.post(
-                    f"{settings.CLOUD_LLM_API_URL}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {current_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": model,
-                        "messages": messages,
-                        "temperature": temperature,
-                        "max_tokens": effective_max_tokens,
-                        "stream": False,
-                    },
-                    timeout=settings.CLOUD_TIMEOUT,
-                )
+                if cls._is_rate_limited(idx):
+                    remaining = cls.RATE_LIMIT_COOLDOWN - (time.time() - cls._rate_limit_cooldowns.get(idx, 0))
+                    logger.warning(f"[OpenClaude] Key {idx} in cooldown ({remaining:.0f}s remaining), skipping")
+                    last_error = f"Key {idx} in cooldown"
+                    continue
 
-                logger.debug(f"[OpenClaude] Response status: {response.status_code}")
+                try:
+                    logger.debug(f"[OpenClaude] Key {idx}, model={current_model}")
+                    response = httpx.post(
+                        f"{settings.CLOUD_LLM_API_URL}/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {current_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": current_model,
+                            "messages": messages,
+                            "temperature": temperature,
+                            "max_tokens": effective_max_tokens,
+                            "stream": False,
+                        },
+                        timeout=settings.CLOUD_TIMEOUT,
+                    )
+                    logger.debug(f"[OpenClaude] Response status: {response.status_code}")
+                except httpx.TimeoutException:
+                    last_error = f"Timeout after {settings.CLOUD_TIMEOUT}s"
+                    logger.warning(f"[OpenClaude] Timeout model={current_model}, key {idx}")
+                    continue
+                except Exception as e:
+                    last_error = str(e)
+                    logger.error(f"[OpenClaude] Exception model={current_model}, key {idx}: {e}")
+                    continue
 
                 if response.status_code == 429:
                     cls._mark_rate_limited(idx)
@@ -111,20 +137,19 @@ class CloudLLMService:
                     continue
 
                 if response.status_code == 401:
-                    logger.error(f"[OpenClaude] 401 Unauthorized for key {idx} — "
-                                 f"check API key validity. Response: {response.text[:200]}")
+                    logger.error(f"[OpenClaude] 401 Unauthorized for key {idx}")
                     last_error = "Auth failed (401) — invalid API key"
-                    continue  # NO cooldown — 401 is a config issue, not rate limit
-
-                if response.status_code == 404:
-                    logger.error(f"[OpenClaude] 404 — model '{model}' not found. "
-                                 f"Response: {response.text[:200]}")
-                    last_error = f"Model not found (404): {model}"
-                    # Try fallback to default model
-                    if model != settings.CLOUD_MODEL_NAME:
-                        model = settings.CLOUD_MODEL_NAME
-                        logger.warning(f"[OpenClaude] Retrying with default model: {model}")
                     continue
+
+                if response.status_code in (404, 400):
+                    logger.warning(f"[OpenClaude] {response.status_code} for model='{current_model}' — trying next fallback")
+                    last_error = f"Model unavailable ({response.status_code}): {current_model}"
+                    break  # break key loop → try next model in fallback chain
+
+                if response.status_code in (500, 502, 503):
+                    logger.warning(f"[OpenClaude] Server error {response.status_code} for model='{current_model}' — trying next fallback")
+                    last_error = f"Server error ({response.status_code})"
+                    break  # break key loop → try next model in fallback chain
 
                 if response.status_code != 200:
                     logger.error(f"[OpenClaude] HTTP {response.status_code}: {response.text[:300]}")
@@ -135,17 +160,17 @@ class CloudLLMService:
                 content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
                 if not content:
-                    logger.error(f"[OpenClaude] 200 OK but empty content — model={model}, "
-                                 f"response={str(data)[:300]}")
+                    logger.error(f"[OpenClaude] 200 OK but empty content — model={current_model}")
                     last_error = "Empty content in response"
                     continue
 
                 usage = data.get("usage", {})
                 logger.info(
-                    f"[OpenClaude] OK — model={model}, "
+                    f"[OpenClaude] OK — model={current_model}, "
                     f"prompt_tokens={usage.get('prompt_tokens','?')}, "
                     f"completion_tokens={usage.get('completion_tokens','?')}, "
                     f"total={usage.get('total_tokens','?')}"
+                    + (f" [fallback from {requested_model}]" if current_model != requested_model else "")
                 )
                 return {
                     "content": content.strip(),
@@ -154,18 +179,11 @@ class CloudLLMService:
                         "completion_tokens": usage.get("completion_tokens", 0),
                         "total_tokens": usage.get("total_tokens", 0),
                     },
-                    "model": model,
+                    "model": current_model,
                     "provider": "open-claude",
                 }
 
-            except httpx.TimeoutException:
-                last_error = f"Timeout after {settings.CLOUD_TIMEOUT}s"
-                logger.error(f"[OpenClaude] Timeout after {settings.CLOUD_TIMEOUT}s for key {idx}")
-            except Exception as e:
-                last_error = str(e)
-                logger.error(f"[OpenClaude] Exception with key {idx}: {e}")
-
-        raise Exception(f"[OpenClaude] All keys failed. Last error: {last_error}")
+        raise Exception(f"[OpenClaude] All models/keys failed. Last error: {last_error}")
 
     @classmethod
     def localai_health_check(cls, model: str = None, timeout: int = 10) -> bool:
@@ -198,22 +216,8 @@ class CloudLLMService:
     @classmethod
     def _call_localai(cls, model: str, messages: List[Dict], temperature: float = 0.7,
                       priority: bool = False) -> Dict[str, Any]:
-        """Call LocalAI. priority=True: bypass news-busy check, used for ISO assessments."""
+        """Call LocalAI. priority=True is reserved for high-priority tasks (e.g. ISO assessments)."""
         logger.info(f"[LocalAI] Requesting model={model}, messages={len(messages)}, priority={priority}")
-
-        try:
-            from services.news_service import get_ai_status, set_ai_status
-            ai_status = get_ai_status()
-            if "Đang rảnh" not in ai_status:
-                if priority:
-                    logger.warning(f"[LocalAI] News busy ({ai_status[:60]}) — ISO priority, pausing")
-                    set_ai_status("⏸️ Tạm dừng (ISO assessment ưu tiên)")
-                    import time as _time
-                    _time.sleep(1.5)
-                else:
-                    raise Exception(f"[LocalAI] Busy: {ai_status}")
-        except ImportError:
-            pass
 
         # Cap max_tokens for small models to avoid OOM
         # If user sets MAX_TOKENS>0 use that; else default 2048 for local
@@ -238,15 +242,6 @@ class CloudLLMService:
             raise Exception(f"[LocalAI] Timeout after {settings.INFERENCE_TIMEOUT}s")
         except Exception as e:
             raise Exception(f"[LocalAI] Connection error: {e}")
-        finally:
-            if priority:
-                try:
-                    from services.news_service import get_ai_status, set_ai_status
-                    if "Tạm dừng" in get_ai_status():
-                        set_ai_status("Đang rảnh")
-                except ImportError:
-                    pass
-
         if response.status_code != 200:
             err_text = response.text[:300]
             # Detect model-load failures specifically
@@ -270,19 +265,19 @@ class CloudLLMService:
     @classmethod
     def chat_completion(cls, messages: List[Dict], temperature: float = 0.7,
                         max_tokens: int = 8192, prefer_cloud: bool = True,
-                        local_model: str = None, task_type: str = None) -> Dict[str, Any]:
+                        local_model: str = None, task_type: str = None,
+                        cloud_model: str = None) -> Dict[str, Any]:
         """Route to the best model based on task_type.
 
-        Priority order:
-        - If LOCAL_ONLY_MODE → force LocalAI (guarded by ModelGuard + health check)
-        - Else if PREFER_LOCAL=True → try LocalAI first, then cloud fallback
-        - Else (default) → cloud first, then LocalAI fallback
+        cloud_model: explicit cloud model name from user selection (e.g. gpt-5.2).
+                     Takes priority over TASK_MODEL_MAP routing.
         """
         local_model = local_model or settings.MODEL_NAME
         errors = []
 
-        # Override prefer_cloud using global preference for on-prem first
-        effective_prefer_cloud = prefer_cloud and not settings.PREFER_LOCAL
+        # If user explicitly selected LocalAI (prefer_cloud=False, no cloud_model) → force local path
+        force_local = not prefer_cloud and not cloud_model
+        effective_prefer_cloud = prefer_cloud and not settings.PREFER_LOCAL and not force_local
 
         # ISO local: try LocalAI first; if model fails to load, auto-fallback to cloud
         if task_type in LOCAL_ONLY_TASKS:
@@ -317,7 +312,7 @@ class CloudLLMService:
 
             raise Exception(f"LocalAI failed for local-only task: {' | '.join(errors)}")
 
-        model = cls._resolve_model(task_type)
+        model = cloud_model or cls._resolve_model(task_type)
         logger.info(f"[ChatCompletion] task_type={task_type or 'auto'}, model={model}, "
                     f"max_tokens={max_tokens}, prefer_cloud={effective_prefer_cloud}, prefer_local={settings.PREFER_LOCAL}")
 
@@ -335,8 +330,8 @@ class CloudLLMService:
                 errors.append(f"Local-only: {e}")
             raise Exception(f"Local-only mode: LocalAI failed: {' | '.join(errors)}")
 
-        # Branch A: prefer_local=True → LocalAI first
-        if settings.PREFER_LOCAL:
+        # Branch A: prefer_local=True OR user explicitly chose LocalAI → LocalAI first
+        if settings.PREFER_LOCAL or force_local:
             try:
                 result = cls._call_localai(local_model, messages, temperature)
                 if result.get("content"):
@@ -346,6 +341,14 @@ class CloudLLMService:
             except Exception as e:
                 errors.append(f"LocalAI: {e}")
                 logger.warning(f"[ChatCompletion] LocalAI failed: {e}")
+
+            # If user explicitly chose LocalAI (force_local), don't silently fallback to cloud
+            if force_local:
+                err_msg = " | ".join(errors)
+                raise Exception(
+                    f"⚠️ LocalAI không khả dụng: {err_msg}. "
+                    "Vui lòng tải model GGUF vào thư mục ./models hoặc chọn model Cloud ở dropdown."
+                )
 
             if settings.cloud_api_key_list:
                 try:
@@ -426,14 +429,22 @@ class CloudLLMService:
 
         if status["open_claude"]["configured"]:
             try:
-                cls._call_open_claude(
-                    [{"role": "user", "content": "Say OK in one word"}],
-                    max_tokens=MIN_MAX_TOKENS,
-                )
-                status["open_claude"]["status"] = "healthy"
+                # Lightweight connectivity check — GET /models (no LLM call, no rate-limit risk)
+                keys = settings.cloud_api_key_list
+                if keys:
+                    resp = httpx.get(
+                        f"{settings.CLOUD_LLM_API_URL}/models",
+                        headers={"Authorization": f"Bearer {keys[0]}"},
+                        timeout=10,
+                    )
+                    if resp.status_code == 200:
+                        status["open_claude"]["status"] = "healthy"
+                    else:
+                        status["open_claude"]["status"] = f"http_{resp.status_code}"
+                else:
+                    status["open_claude"]["status"] = "no_keys"
             except Exception as e:
-                status["open_claude"]["status"] = f"error: {str(e)[:100]}"
-                logger.error(f"[HealthCheck] Open Claude error: {e}")
+                status["open_claude"]["status"] = f"unreachable: {str(e)[:80]}"
 
         try:
             resp = requests.get(f"{settings.LOCALAI_URL}/readyz", timeout=5)

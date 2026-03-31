@@ -327,34 +327,109 @@ async def delete_assessment(assessment_id: str):
 
 @router.post("/iso27001/reindex")
 async def reindex():
+    """Re-index all ISO documents into the default 'iso_documents' collection."""
     vs = ChatService.get_vector_store()
-    result = vs.index_documents()
+    result = vs.index_documents(domain="iso_documents")
     return result
+
+
+@router.post("/iso27001/reindex-domains")
+async def reindex_domains():
+    """Re-index each standard's markdown files into its own domain collection.
+
+    Reads all .md files from /data/iso_documents and routes each file
+    to its matching domain collection based on filename prefix.
+    """
+    from repositories.vector_store import VectorStore
+    from pathlib import Path
+
+    DOMAIN_FILE_MAP = {
+        "iso27001":  ["iso27001_annex_a.md", "iso27002_2022.md"],
+        "tcvn11930": ["tcvn_11930_2017.md", "nd85_2016_cap_do_httt.md"],
+        "nd13":      ["nghi_dinh_13_2023_bvdlcn.md", "luat_an_ninh_mang_2018.md"],
+        "nist_csf":  ["nist_csf_2.md", "nist_sp800_53.md"],
+        "pci_dss":   ["pci_dss_4.md"],
+        "hipaa":     ["hipaa_security_rule.md"],
+        "gdpr":      ["gdpr_compliance.md"],
+        "soc2":      ["soc2_trust_criteria.md"],
+    }
+
+    docs_dir = Path(os.getenv("ISO_DOCS_PATH", "/data/iso_documents"))
+    vs = VectorStore()
+    results = {}
+
+    for domain, filenames in DOMAIN_FILE_MAP.items():
+        chunks_added = 0
+        coll = vs.get_collection(domain)
+        # Clear existing chunks for this domain
+        try:
+            existing = coll.get()
+            if existing and existing["ids"]:
+                coll.delete(ids=existing["ids"])
+        except Exception:
+            pass
+
+        all_chunks, all_ids, all_metas = [], [], []
+        for fname in filenames:
+            fpath = docs_dir / fname
+            if not fpath.exists():
+                logger.warning(f"[ReindexDomains] File not found: {fpath}")
+                continue
+            content = fpath.read_text(encoding="utf-8")
+            file_chunks = vs._chunk_text(content)
+            first_line = content.split('\n')[0].strip().lstrip('#').strip()
+            for i, chunk in enumerate(file_chunks):
+                all_chunks.append(chunk)
+                all_ids.append(f"{fpath.stem}_{i}")
+                all_metas.append({
+                    "source": fpath.stem,
+                    "file": fname,
+                    "chunk_index": i,
+                    "total_chunks": len(file_chunks),
+                    "doc_title": first_line[:100],
+                    "domain": domain,
+                })
+
+        if all_chunks:
+            for i in range(0, len(all_chunks), 100):
+                end = min(i + 100, len(all_chunks))
+                coll.add(documents=all_chunks[i:end], ids=all_ids[i:end], metadatas=all_metas[i:end])
+            chunks_added = len(all_chunks)
+            vs._initialized[domain] = True
+
+        results[domain] = {"files": len(filenames), "chunks": chunks_added}
+        logger.info(f"[ReindexDomains] {domain}: {chunks_added} chunks from {len(filenames)} files")
+
+    return {"status": "ok", "domains": results}
 
 
 @router.get("/iso27001/chromadb/stats")
 async def chromadb_stats():
     try:
         vs = ChatService.get_vector_store()
-        count = vs.collection.count()
-        metadata = vs.collection.metadata
-        peek = vs.collection.peek(limit=3)
-        sources = set()
-        if peek and peek.get('metadatas'):
-            for m in peek['metadatas']:
-                if m and m.get('source'):
-                    sources.add(m['source'])
+        # Use default collection for backward-compatible stats
+        default_coll = vs.get_collection("iso_documents")
+        count = default_coll.count()
+        metadata = default_coll.metadata
+
+        # Collect stats from all known domain collections
+        KNOWN_DOMAINS = ["iso_documents", "iso27001", "tcvn11930", "nd13", "nist_csf", "pci_dss", "hipaa", "gdpr", "soc2"]
+        domain_stats = {}
+        for domain in KNOWN_DOMAINS:
+            try:
+                d_coll = vs.get_collection(domain)
+                d_count = d_coll.count()
+                if d_count > 0:
+                    domain_stats[domain] = d_count
+            except Exception:
+                pass
 
         docs_dir = os.getenv("ISO_DOCS_PATH", "/data/iso_documents")
         files = []
-        from pathlib import Path
         docs_path = Path(docs_dir)
         if docs_path.exists():
             for f in docs_path.glob("*.md"):
-                files.append({
-                    "name": f.name,
-                    "size_bytes": f.stat().st_size
-                })
+                files.append({"name": f.name, "size_bytes": f.stat().st_size})
 
         return {
             "status": "ok",
@@ -362,8 +437,8 @@ async def chromadb_stats():
             "total_files": len(files),
             "files": files,
             "collection_name": "iso_documents",
-            "metric": metadata.get("hnsw:space", "unknown"),
-            "sample_sources": list(sources)
+            "metric": metadata.get("hnsw:space", "cosine"),
+            "domain_collections": domain_stats,
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}

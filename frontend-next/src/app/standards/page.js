@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import styles from './page.module.css'
 
-// ── Inline Format Guide Panel ────────────────────────────────────────────────
 function FormatGuidePanel({ onClose }) {
     const [tab, setTab] = useState('json')
     return (
@@ -12,10 +11,10 @@ function FormatGuidePanel({ onClose }) {
             <div className={styles.formatGuidePanel} onClick={e => e.stopPropagation()}>
                 <div className={styles.formatGuideHeader}>
                     <div>
-                        <h3 className={styles.formatGuideTitle}>📖 Hướng dẫn Format Tiêu chuẩn</h3>
+                        <h3 className={styles.formatGuideTitle}>Standard Format Guide</h3>
                         <p className={styles.formatGuideSubtitle}>
-                            Cả hai tiêu chuẩn có sẵn (ISO 27001, TCVN 11930) đều dùng chung schema này.
-                            File custom upload phải đúng format bên dưới.
+                            Both built-in standards (ISO 27001, TCVN 11930) share this schema.
+                            Custom uploaded files must follow this format.
                         </p>
                     </div>
                     <button className={styles.formatGuideClose} onClick={onClose}>✕</button>
@@ -23,10 +22,10 @@ function FormatGuidePanel({ onClose }) {
 
                 <div className={styles.formatGuideTabs}>
                     {[
-                        { id: 'json', label: '📄 JSON' },
-                        { id: 'yaml', label: '📄 YAML' },
-                        { id: 'builtin', label: '🏛️ Built-in mẫu' },
-                        { id: 'chromadb', label: '🗄️ vs ChromaDB' },
+                        { id: 'json', label: 'JSON' },
+                        { id: 'yaml', label: 'YAML' },
+                        { id: 'builtin', label: 'Built-in examples' },
+                        { id: 'chromadb', label: 'vs ChromaDB' },
                     ].map(t => (
                         <button
                             key={t.id}
@@ -40,138 +39,129 @@ function FormatGuidePanel({ onClose }) {
                     {tab === 'json' && (
                         <>
                             <p className={styles.formatGuideNote}>
-                                ✅ Format JSON đầy đủ — cả <strong>controls lồng nhau theo category</strong> và <strong>controlDescriptions</strong> tùy chọn.
+                                Full JSON format — supports <strong>nested controls by category</strong> and optional <strong>controlDescriptions</strong>.
                             </p>
                             <pre className={styles.formatGuideCode}>{`{
-  "id": "my_standard",          // BẮT BUỘC · Duy nhất · a-z 0-9 _ -
-  "name": "Tên Tiêu chuẩn",    // BẮT BUỘC · Hiển thị trong dropdown
-  "version": "1.0",             // Tùy chọn
-  "description": "Mô tả...",   // Tùy chọn
+  "id": "my_standard",
+  "name": "Standard Name",
+  "version": "1.0",
+  "description": "Description...",
 
-  "controls": [                 // BẮT BUỘC · Mảng categories
+  "controls": [
     {
-      "category": "1. Tên nhóm",
+      "category": "1. Group Name",
       "controls": [
         {
-          "id": "CTL.01",       // BẮT BUỘC · Duy nhất trong toàn tiêu chuẩn
-          "label": "Tên ngắn",  // BẮT BUỘC
-          "weight": "critical"  // BẮT BUỘC · critical|high|medium|low
+          "id": "CTL.01",
+          "label": "Short name",
+          "weight": "critical"
         },
         {
           "id": "CTL.02",
-          "label": "Control khác",
+          "label": "Another control",
           "weight": "high"
         }
       ]
     }
   ],
 
-  "controlDescriptions": {      // TÙY CHỌN · Chi tiết từng control
+  "controlDescriptions": {
     "CTL.01": {
-      "requirement": "Yêu cầu tiêu chuẩn đặt ra...",
-      "criteria": "Cách đánh giá / kiểm tra...",
-      "hint": "Gợi ý triển khai thực tế...",
+      "requirement": "Standard requirement...",
+      "criteria": "Evaluation criteria...",
+      "hint": "Implementation hint...",
       "evidence": [
-        "Tài liệu chính sách ABC",
+        "Policy document ABC",
         "Log file XYZ"
       ]
     }
   }
 }`}</pre>
                             <div className={styles.formatGuideWeights}>
-                                <strong>Trọng số điểm:</strong>
-                                {[['critical','#ef4444','4 điểm'],['high','#f59e0b','3 điểm'],['medium','#3b82f6','2 điểm'],['low','#94a3b8','1 điểm']].map(([w,c,p])=>(
-                                    <span key={w} style={{borderColor:c,color:c,border:`1px solid ${c}`,borderRadius:'4px',padding:'2px 8px',fontSize:'0.78rem'}}>{w} = {p}</span>
+                                <strong>Weight scores:</strong>
+                                {[['critical', '#f87171', '4pts'], ['high', '#fbbf24', '3pts'], ['medium', '#4f8ef7', '2pts'], ['low', '#7d8fa3', '1pt']].map(([w, c, p]) => (
+                                    <span key={w} style={{ borderColor: c, color: c, border: `1px solid ${c}`, borderRadius: '4px', padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700 }}>{w} = {p}</span>
                                 ))}
                             </div>
                         </>
                     )}
                     {tab === 'yaml' && (
                         <>
-                            <p className={styles.formatGuideNote}>✅ Format YAML — tương đương JSON, cú pháp gọn hơn.</p>
+                            <p className={styles.formatGuideNote}>YAML format — equivalent to JSON, more concise syntax.</p>
                             <pre className={styles.formatGuideCode}>{`id: my_standard
-name: "Tên Tiêu chuẩn"
+name: "Standard Name"
 version: "1.0"
-description: "Mô tả tiêu chuẩn"
+description: "Description"
 
 controls:
-  - category: "1. Tên nhóm"
+  - category: "1. Group Name"
     controls:
       - id: CTL.01
-        label: "Tên control ngắn"
-        weight: critical        # critical | high | medium | low
+        label: "Control short name"
+        weight: critical
       - id: CTL.02
-        label: "Control khác"
+        label: "Another control"
         weight: high
 
-controlDescriptions:            # Tùy chọn
+controlDescriptions:
   CTL.01:
-    requirement: "Yêu cầu tiêu chuẩn..."
-    criteria: "Tiêu chí kiểm tra..."
-    hint: "Gợi ý triển khai..."
+    requirement: "Standard requirement..."
+    criteria: "Evaluation criteria..."
+    hint: "Implementation hint..."
     evidence:
-      - "Tài liệu chính sách"
-      - "Log file minh chứng"`}</pre>
+      - "Policy document"
+      - "Evidence log file"`}</pre>
                         </>
                     )}
                     {tab === 'builtin' && (
                         <>
                             <p className={styles.formatGuideNote}>
-                                🏛️ Hai tiêu chuẩn built-in dùng <strong>cùng schema</strong> như custom upload.
-                                Sự khác biệt duy nhất: built-in được hardcode trong <code>src/data/standards.js</code> và không thể xóa.
+                                Both built-in standards use the <strong>same schema</strong> as custom uploads.
+                                The only difference: built-in standards are hardcoded in <code>src/data/standards.js</code> and cannot be deleted.
                             </p>
-                            <pre className={styles.formatGuideCode}>{`// ISO 27001:2022 — ví dụ 2 controls đầu
+                            <pre className={styles.formatGuideCode}>{`// ISO 27001:2022 — first 2 controls
 {
   "id": "iso27001",
-  "name": "ISO 27001:2022 (93 Biện pháp kiểm soát)",
+  "name": "ISO 27001:2022 (93 Controls)",
   "controls": [
     {
-      "category": "A.5 Tổ chức",
+      "category": "A.5 Organizational",
       "controls": [
-        { "id": "A.5.1",  "label": "Chính sách an toàn thông tin", "weight": "critical" },
-        { "id": "A.5.2",  "label": "Vai trò và trách nhiệm ATTT",  "weight": "critical" }
-        // ... 91 controls tiếp theo
+        { "id": "A.5.1", "label": "Information security policies", "weight": "critical" },
+        { "id": "A.5.2", "label": "ISMS roles and responsibilities", "weight": "critical" }
       ]
-    },
-    { "category": "A.6 Con người",   "controls": [ /* 8 controls */ ] },
-    { "category": "A.7 Vật lý",      "controls": [ /* 14 controls */ ] },
-    { "category": "A.8 Công nghệ",   "controls": [ /* 34 controls */ ] }
+    }
   ]
 }
 
-// TCVN 11930:2017 — cùng schema, ID khác
+// TCVN 11930:2017 — same schema, different IDs
 {
   "id": "tcvn11930",
-  "name": "TCVN 11930:2017 (34 Yêu cầu kỹ thuật/quản lý)",
+  "name": "TCVN 11930:2017 (34 Requirements)",
   "controls": [
-    { "category": "1. Bảo đảm ATTT Mạng",            "controls": [ /* NW.01–NW.08 */ ] },
-    { "category": "2. Bảo đảm ATTT Máy chủ",          "controls": [ /* SV.01–SV.08 */ ] },
-    { "category": "3. Bảo đảm ATTT Ứng dụng",         "controls": [ /* APP.01–APP.07 */ ] },
-    { "category": "4. Bảo đảm ATTT Dữ liệu",          "controls": [ /* DAT.01–DAT.06 */ ] },
-    { "category": "5. Quản lý Vận hành & Chính sách",  "controls": [ /* MNG.01–MNG.05 */ ] }
+    { "category": "1. Network Security", "controls": [ /* NW.01–NW.08 */ ] },
+    { "category": "2. Server Security", "controls": [ /* SV.01–SV.08 */ ] }
   ]
 }`}</pre>
-                            <p className={styles.formatGuideNote} style={{marginTop:'0.75rem'}}>
-                                💡 Muốn xem full schema? Bấm <strong>"Tải mẫu JSON"</strong> — file tải về sẽ có đầy đủ tất cả trường bắt buộc và tùy chọn.
+                            <p className={styles.formatGuideNote} style={{ marginTop: '0.75rem' }}>
+                                Want to see the full schema? Click <strong>Download sample JSON</strong> — the downloaded file will have all required and optional fields.
                             </p>
                         </>
                     )}
                     {tab === 'chromadb' && (
                         <>
                             <p className={styles.formatGuideNote}>
-                                🗄️ <strong>ChromaDB không dùng format JSON của bạn trực tiếp.</strong>
-                                Backend tự động chuyển đổi (transform) khi bạn upload.
+                                <strong>ChromaDB does not use your JSON file directly.</strong>
+                                The backend automatically transforms it when you upload.
                             </p>
                             <div className={styles.formatGuideCompare}>
                                 <div className={styles.formatGuideCompareCol}>
-                                    <div className={styles.formatGuideCompareHead} style={{background:'var(--surface-2,#1e2a3a)',color:'var(--accent-blue)'}}>
-                                        📄 File upload của bạn (JSON/YAML)
-                                    </div>
-                                    <pre className={styles.formatGuideCode} style={{margin:0,borderRadius:'0 0 8px 8px'}}>{`{
+                                    <div className={styles.formatGuideCompareHead}>Your upload file (JSON/YAML)</div>
+                                    <pre className={styles.formatGuideCode} style={{ margin: 0, borderRadius: '0 0 8px 8px' }}>{`{
   "id": "my_standard",
   "controls": [
     {
-      "category": "1. Nhóm A",
+      "category": "1. Group A",
       "controls": [
         {
           "id": "CTL.01",
@@ -185,29 +175,26 @@ controlDescriptions:            # Tùy chọn
                                 </div>
                                 <div className={styles.formatGuideCompareArrow}>→ backend transform →</div>
                                 <div className={styles.formatGuideCompareCol}>
-                                    <div className={styles.formatGuideCompareHead} style={{background:'var(--surface-2,#1e2a3a)',color:'var(--accent-green)'}}>
-                                        🗄️ ChromaDB document chunk
-                                    </div>
-                                    <pre className={styles.formatGuideCode} style={{margin:0,borderRadius:'0 0 8px 8px'}}>{`{
+                                    <div className={styles.formatGuideCompareHead}>ChromaDB document chunk</div>
+                                    <pre className={styles.formatGuideCode} style={{ margin: 0, borderRadius: '0 0 8px 8px' }}>{`{
   "id": "my_standard__CTL_01",
-  "document": "CTL.01 — Control name\\n
-    Category: 1. Nhóm A\\n
-    Weight: critical\\n
+  "document": "CTL.01 — Control name
+    Category: 1. Group A
+    Weight: critical
     Standard: my_standard",
   "metadata": {
     "source": "my_standard",
     "control_id": "CTL.01",
-    "category": "1. Nhóm A",
+    "category": "1. Group A",
     "weight": "critical"
   }
 }`}</pre>
                                 </div>
                             </div>
-                            <p className={styles.formatGuideNote} style={{marginTop:'0.75rem'}}>
-                                Mỗi control được index thành <strong>1 chunk riêng</strong> trong ChromaDB.
-                                AI Auditor tra cứu ChromaDB khi đánh giá để tìm yêu cầu chuẩn liên quan.
-                                <br/>
-                                Sau upload, nhấn <strong>🔄 Re-index</strong> trên card tiêu chuẩn để cập nhật ChromaDB nếu cần.
+                            <p className={styles.formatGuideNote} style={{ marginTop: '0.75rem' }}>
+                                Each control becomes <strong>1 separate chunk</strong> in ChromaDB.
+                                The AI Auditor queries ChromaDB during assessment to find relevant standard requirements.
+                                After uploading, click <strong>Re-index</strong> on the standard card to update ChromaDB if needed.
                             </p>
                         </>
                     )}
@@ -250,25 +237,16 @@ export default function StandardsPage() {
         setUploading(true)
         setUploadResult(null)
         setValidateResult(null)
-
         const formData = new FormData()
         formData.append('file', file)
-
         try {
-            const res = await fetch('/api/standards/upload', {
-                method: 'POST',
-                body: formData,
-            })
+            const res = await fetch('/api/standards/upload', { method: 'POST', body: formData })
             const data = await res.json()
-
             if (res.ok && data.status === 'success') {
                 setUploadResult({ success: true, data })
                 fetchStandards()
             } else {
-                setUploadResult({
-                    success: false,
-                    errors: data.errors || [data.detail || data.message || 'Upload failed'],
-                })
+                setUploadResult({ success: false, errors: data.errors || [data.detail || data.message || 'Upload failed'] })
             }
         } catch (e) {
             setUploadResult({ success: false, errors: [`Network error: ${e.message}`] })
@@ -280,15 +258,10 @@ export default function StandardsPage() {
     const handleValidate = async (file) => {
         if (!file) return
         setValidateResult(null)
-
         const formData = new FormData()
         formData.append('file', file)
-
         try {
-            const res = await fetch('/api/standards/validate', {
-                method: 'POST',
-                body: formData,
-            })
+            const res = await fetch('/api/standards/validate', { method: 'POST', body: formData })
             const data = await res.json()
             setValidateResult(data)
         } catch (e) {
@@ -297,8 +270,7 @@ export default function StandardsPage() {
     }
 
     const handleDelete = async (standardId) => {
-        if (!confirm(`Xác nhận xóa tiêu chuẩn "${standardId}"? Hành động này không thể hoàn tác.`)) return
-
+        if (!confirm(`Confirm delete standard "${standardId}"? This action cannot be undone.`)) return
         try {
             const res = await fetch(`/api/standards/${standardId}`, { method: 'DELETE' })
             if (res.ok) {
@@ -315,11 +287,11 @@ export default function StandardsPage() {
             const res = await fetch(`/api/standards/${standardId}/index`, { method: 'POST' })
             const data = await res.json()
             alert(data.status === 'ok'
-                ? `✅ Indexed ${data.chunks_indexed} chunks cho tiêu chuẩn "${standardId}"`
-                : `❌ ${data.message || 'Indexing failed'}`
+                ? `Indexed ${data.chunks_indexed} chunks for "${standardId}"`
+                : data.message || 'Indexing failed'
             )
         } catch (e) {
-            alert(`❌ Error: ${e.message}`)
+            alert(`Error: ${e.message}`)
         }
     }
 
@@ -371,42 +343,35 @@ export default function StandardsPage() {
         if (file) handleValidate(file)
     }
 
-    const WEIGHT_LABEL = { critical: 'Tối quan trọng', high: 'Quan trọng', medium: 'Trung bình', low: 'Thấp' }
-    const WEIGHT_COLOR = { critical: '#ef4444', high: '#f59e0b', medium: '#3b82f6', low: '#94a3b8' }
+    const WEIGHT_COLOR = { critical: '#f87171', high: '#fbbf24', medium: '#4f8ef7', low: '#7d8fa3' }
+    const WEIGHT_LABEL = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' }
 
     return (
         <div className="page-container">
             <div className={styles.header}>
-                <h1 className={styles.title}>📋 Quản lý Tiêu chuẩn Đánh giá</h1>
+                <h1 className={styles.title}>Standards Management</h1>
                 <p className={styles.subtitle}>
-                    Upload tiêu chuẩn tùy chỉnh (JSON/YAML) → Backend parse + ChromaDB index → Form đánh giá tự động render.
-                    <br />
-                    <Link href="/form-iso" className={styles.backLink}>← Quay lại Form đánh giá</Link>
+                    Upload custom standards (JSON/YAML) → Backend parses + ChromaDB indexes → Assessment form auto-renders.
                 </p>
+                <Link href="/form-iso" className={styles.backLink}>← Back to Assessment</Link>
             </div>
 
-            {/* ── Format Guide Modal ──────────────────────── */}
             {showFormatGuide && <FormatGuidePanel onClose={() => setShowFormatGuide(false)} />}
 
-            {/* ── Upload Section ──────────────────────────── */}
             <div className={styles.section}>
                 <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>
-                        <span>⬆️</span> Upload Tiêu chuẩn Mới
-                        <button
-                            className={styles.infoIconBtn}
-                            onClick={() => setShowFormatGuide(true)}
-                            title="Xem hướng dẫn format file upload"
-                        >ℹ️</button>
-                    </h2>
+                    <h2 className={styles.sectionTitle}>Upload New Standard</h2>
                     <div className={styles.sectionActions}>
                         <button className={styles.btnOutline} onClick={downloadSample}>
-                            📥 Tải mẫu JSON
+                            Download sample JSON
                         </button>
                         <label className={styles.btnOutline}>
-                            🔍 Validate file
+                            Validate file
                             <input type="file" accept=".json,.yaml,.yml" onChange={onValidateSelect} hidden />
                         </label>
+                        <button className={styles.btnOutline} onClick={() => setShowFormatGuide(true)}>
+                            Format guide
+                        </button>
                     </div>
                 </div>
 
@@ -419,32 +384,30 @@ export default function StandardsPage() {
                     {uploading ? (
                         <div className={styles.dropContent}>
                             <span className={styles.dropSpinner} />
-                            <p>Đang upload và xử lý...</p>
+                            <p>Uploading and processing...</p>
                         </div>
                     ) : (
                         <div className={styles.dropContent}>
-                            <span className={styles.dropIcon}>📂</span>
-                            <p className={styles.dropText}>Kéo thả file JSON / YAML vào đây</p>
-                            <p className={styles.dropHint}>hoặc</p>
+                            <p className={styles.dropText}>Drop JSON / YAML file here</p>
+                            <p className={styles.dropHint}>or</p>
                             <label className={styles.btnPrimary}>
-                                Chọn file
+                                Select file
                                 <input type="file" accept=".json,.yaml,.yml" onChange={onFileSelect} hidden />
                             </label>
-                            <p className={styles.dropMeta}>Hỗ trợ: .json, .yaml, .yml · Tối đa 2MB</p>
+                            <p className={styles.dropMeta}>.json, .yaml, .yml · Max 2MB</p>
                         </div>
                     )}
                 </div>
 
-                {/* Validate Result */}
                 {validateResult && (
                     <div className={`${styles.resultBox} ${validateResult.valid ? styles.resultSuccess : styles.resultError}`}>
                         <div className={styles.resultHeader}>
-                            {validateResult.valid ? '✅ File hợp lệ' : '❌ File không hợp lệ'}
+                            {validateResult.valid ? 'File is valid' : 'File is invalid'}
                         </div>
                         {validateResult.preview && (
                             <div className={styles.resultMeta}>
                                 <span>ID: <strong>{validateResult.preview.id}</strong></span>
-                                <span>Tên: <strong>{validateResult.preview.name}</strong></span>
+                                <span>Name: <strong>{validateResult.preview.name}</strong></span>
                                 <span>Controls: <strong>{validateResult.preview.total_controls}</strong></span>
                                 <span>Categories: <strong>{validateResult.preview.categories}</strong></span>
                             </div>
@@ -457,16 +420,15 @@ export default function StandardsPage() {
                     </div>
                 )}
 
-                {/* Upload Result */}
                 {uploadResult && (
                     <div className={`${styles.resultBox} ${uploadResult.success ? styles.resultSuccess : styles.resultError}`}>
                         <div className={styles.resultHeader}>
-                            {uploadResult.success ? '✅ Upload thành công!' : '❌ Upload thất bại'}
+                            {uploadResult.success ? 'Upload successful' : 'Upload failed'}
                         </div>
                         {uploadResult.success && uploadResult.data?.standard && (
                             <div className={styles.resultMeta}>
                                 <span>ID: <strong>{uploadResult.data.standard.id}</strong></span>
-                                <span>Tên: <strong>{uploadResult.data.standard.name}</strong></span>
+                                <span>Name: <strong>{uploadResult.data.standard.name}</strong></span>
                                 <span>Controls: <strong>{uploadResult.data.standard.total_controls}</strong></span>
                                 <span>Max Score: <strong>{uploadResult.data.standard.max_weighted_score}</strong></span>
                                 {uploadResult.data.chromadb_index?.chunks_indexed && (
@@ -481,36 +443,30 @@ export default function StandardsPage() {
                         )}
                         {!uploadResult.success && (
                             <p className={styles.resultHint}>
-                                💡 Tải <button className={styles.linkBtn} onClick={downloadSample}>mẫu JSON</button> để xem format chuẩn.
+                                Download <button className={styles.linkBtn} onClick={downloadSample}>sample JSON</button> to see the correct format.
                             </p>
                         )}
                     </div>
                 )}
             </div>
 
-            {/* ── Standards List ──────────────────────────── */}
             <div className={styles.section}>
                 <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>
-                        <span>📚</span> Danh sách Tiêu chuẩn
-                    </h2>
+                    <h2 className={styles.sectionTitle}>Standards Library</h2>
                     <button className={styles.btnOutline} onClick={fetchStandards} disabled={loading}>
-                        🔄 Làm mới
+                        Refresh
                     </button>
                 </div>
 
                 {loading ? (
-                    <div className={styles.loadingBox}>⏳ Đang tải...</div>
+                    <div className={styles.loadingBox}>Loading...</div>
                 ) : (
                     <>
-                        {/* Built-in Standards */}
                         <div className={styles.groupTitleRow}>
-                            <h3 className={styles.groupTitle}>🏛️ Tiêu chuẩn có sẵn (Built-in)</h3>
-                            <button
-                                className={styles.infoIconBtn}
-                                onClick={() => setShowFormatGuide(true)}
-                                title="Xem format schema của tiêu chuẩn built-in"
-                            >ℹ️ Xem format</button>
+                            <h3 className={styles.groupTitle}>Built-in Standards</h3>
+                            <button className={styles.infoIconBtn} onClick={() => setShowFormatGuide(true)}>
+                                View schema
+                            </button>
                         </div>
                         <div className={styles.standardGrid}>
                             {standards.builtin.map(std => (
@@ -526,23 +482,18 @@ export default function StandardsPage() {
                                         <span>{std.categories} categories</span>
                                     </div>
                                     <div className={styles.cardActions}>
-                                        <Link href="/form-iso" className={styles.btnSmall}>
-                                            📝 Sử dụng
-                                        </Link>
-                                        <button className={styles.btnSmall} onClick={() => setShowFormatGuide(true)}>
-                                            📖 Schema
-                                        </button>
+                                        <Link href="/form-iso" className={styles.btnSmall}>Use in Assessment</Link>
+                                        <button className={styles.btnSmall} onClick={() => setShowFormatGuide(true)}>Schema</button>
                                     </div>
                                 </div>
                             ))}
                         </div>
 
-                        {/* Custom Standards */}
-                        <h3 className={styles.groupTitle}>⬆️ Tiêu chuẩn tùy chỉnh (Uploaded)</h3>
+                        <h3 className={styles.groupTitle} style={{ marginTop: '1.25rem' }}>Custom Standards (Uploaded)</h3>
                         {standards.custom.length === 0 ? (
                             <div className={styles.emptyBox}>
-                                <p>Chưa có tiêu chuẩn tùy chỉnh nào.</p>
-                                <p className={styles.emptyHint}>Upload file JSON/YAML ở trên để thêm tiêu chuẩn mới.</p>
+                                <p>No custom standards yet.</p>
+                                <p className={styles.emptyHint}>Upload a JSON/YAML file above to add a new standard.</p>
                             </div>
                         ) : (
                             <div className={styles.standardGrid}>
@@ -553,11 +504,11 @@ export default function StandardsPage() {
                                             <span className={styles.cardVersion}>{std.version}</span>
                                         </div>
                                         <h4 className={styles.cardName}>{std.name}</h4>
-                                        <p className={styles.cardDesc}>{std.description || 'Không có mô tả'}</p>
+                                        <p className={styles.cardDesc}>{std.description || 'No description'}</p>
                                         <div className={styles.cardStats}>
                                             <span>{std.total_controls} controls</span>
                                             <span>{std.categories} categories</span>
-                                            <span>Max: {std.max_weighted_score} điểm</span>
+                                            <span>Max: {std.max_weighted_score}pts</span>
                                         </div>
                                         {std.weight_breakdown && Object.keys(std.weight_breakdown).length > 0 && (
                                             <div className={styles.weightBreakdown}>
@@ -569,18 +520,12 @@ export default function StandardsPage() {
                                             </div>
                                         )}
                                         <div className={styles.cardActions}>
-                                            <button className={styles.btnSmall} onClick={() => handleViewDetail(std.id)}>
-                                                👁️ Chi tiết
-                                            </button>
-                                            <button className={styles.btnSmall} onClick={() => handleReindex(std.id)}>
-                                                🔄 Re-index
-                                            </button>
-                                            <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => handleDelete(std.id)}>
-                                                🗑️ Xóa
-                                            </button>
+                                            <button className={styles.btnSmall} onClick={() => handleViewDetail(std.id)}>Detail</button>
+                                            <button className={styles.btnSmall} onClick={() => handleReindex(std.id)}>Re-index</button>
+                                            <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => handleDelete(std.id)}>Delete</button>
                                         </div>
                                         <div className={styles.cardMeta}>
-                                            <span>📅 {std.created_at ? new Date(std.created_at).toLocaleDateString('vi-VN') : '—'}</span>
+                                            <span>{std.created_at ? new Date(std.created_at).toLocaleDateString('vi-VN') : '—'}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -590,7 +535,6 @@ export default function StandardsPage() {
                 )}
             </div>
 
-            {/* ── Detail Panel ──────────────────────────── */}
             {selectedStandard && selectedStandard.controls && (
                 <>
                     <div className={styles.panelOverlay} onClick={() => setSelectedStandard(null)} />
@@ -606,7 +550,7 @@ export default function StandardsPage() {
                         </div>
                         <div className={styles.panelBody}>
                             {detailLoading ? (
-                                <div className={styles.loadingBox}>⏳ Đang tải chi tiết...</div>
+                                <div className={styles.loadingBox}>Loading details...</div>
                             ) : (
                                 selectedStandard.controls.map((cat, catIdx) => (
                                     <div key={catIdx} className={styles.detailCategory}>
@@ -633,72 +577,66 @@ export default function StandardsPage() {
                             )}
                         </div>
                         <div className={styles.panelFooter}>
-                            <Link href="/form-iso" className={styles.btnPrimary}>
-                                📝 Sử dụng trong Form đánh giá
-                            </Link>
+                            <Link href="/form-iso" className={styles.btnPrimary}>Use in Assessment Form</Link>
                         </div>
                     </div>
                 </>
             )}
 
-            {/* ── Schema Guide (Quick Reference) ──────────── */}
             <div className={styles.section}>
                 <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>
-                        <span>📖</span> Hướng dẫn Format Nhanh
-                    </h2>
+                    <h2 className={styles.sectionTitle}>Quick Format Reference</h2>
                     <button className={styles.btnOutline} onClick={() => setShowFormatGuide(true)}>
-                        📖 Xem đầy đủ (JSON / YAML / ChromaDB)
+                        Full guide (JSON / YAML / ChromaDB)
                     </button>
                 </div>
                 <div className={styles.schemaBox}>
                     <div className={styles.schemaSyncNote}>
-                        <span className={styles.schemaSyncBadge}>✅ Đồng bộ</span>
-                        Hai tiêu chuẩn có sẵn (<strong>ISO 27001</strong> và <strong>TCVN 11930</strong>) dùng
-                        <strong> cùng schema JSON</strong> với custom upload. Chỉ khác ở <code>id</code> và
-                        cấu trúc tên category/control ID.
+                        <span className={styles.schemaSyncBadge}>Synced</span>
+                        Both built-in standards (<strong>ISO 27001</strong> and <strong>TCVN 11930</strong>) use the
+                        <strong> same JSON schema</strong> as custom uploads. Only the <code>id</code> and
+                        category/control ID structure differ.
                     </div>
                     <pre className={styles.schemaCode}>{`{
-  "id": "my_standard_id",          // BẮT BUỘC · a-z 0-9 _ - · ISO dùng "iso27001"
-  "name": "Tên tiêu chuẩn",        // BẮT BUỘC · Hiển thị trong dropdown
-  "version": "1.0",                // Tùy chọn
-  "description": "Mô tả ngắn",    // Tùy chọn
-  "controls": [                    // BẮT BUỘC · Mảng categories
+  "id": "my_standard_id",
+  "name": "Standard Name",
+  "version": "1.0",
+  "description": "Short description",
+  "controls": [
     {
-      "category": "1. Tên nhóm",  // Ví dụ: "A.5 Tổ chức" (ISO) / "1. Bảo đảm ATTT Mạng" (TCVN)
+      "category": "1. Group Name",
       "controls": [
         {
-          "id": "CTL.01",          // Duy nhất · ISO dùng "A.5.1" · TCVN dùng "NW.01"
-          "label": "Tên ngắn",
-          "weight": "critical"     // critical | high | medium | low
+          "id": "CTL.01",
+          "label": "Short name",
+          "weight": "critical"
         }
       ]
     }
   ],
-  "controlDescriptions": {         // TÙY CHỌN · Chi tiết hiển thị khi click ℹ
+  "controlDescriptions": {
     "CTL.01": {
-      "requirement": "Yêu cầu tiêu chuẩn",
-      "criteria": "Tiêu chí đánh giá",
-      "hint": "Hướng dẫn triển khai",
-      "evidence": ["Bằng chứng 1", "Bằng chứng 2"]
+      "requirement": "Standard requirement",
+      "criteria": "Evaluation criteria",
+      "hint": "Implementation hint",
+      "evidence": ["Evidence 1", "Evidence 2"]
     }
   }
 }`}</pre>
                     <div className={styles.schemaNote}>
-                        <p><strong>Trọng số điểm:</strong></p>
+                        <p><strong>Weight scores:</strong></p>
                         <div className={styles.weightBreakdown}>
-                            <span className={styles.weightTag} style={{ borderColor: '#ef4444', color: '#ef4444' }}>critical = 4 điểm</span>
-                            <span className={styles.weightTag} style={{ borderColor: '#f59e0b', color: '#f59e0b' }}>high = 3 điểm</span>
-                            <span className={styles.weightTag} style={{ borderColor: '#3b82f6', color: '#3b82f6' }}>medium = 2 điểm</span>
-                            <span className={styles.weightTag} style={{ borderColor: '#94a3b8', color: '#94a3b8' }}>low = 1 điểm</span>
+                            <span className={styles.weightTag} style={{ borderColor: '#f87171', color: '#f87171' }}>critical = 4pts</span>
+                            <span className={styles.weightTag} style={{ borderColor: '#fbbf24', color: '#fbbf24' }}>high = 3pts</span>
+                            <span className={styles.weightTag} style={{ borderColor: '#4f8ef7', color: '#4f8ef7' }}>medium = 2pts</span>
+                            <span className={styles.weightTag} style={{ borderColor: '#7d8fa3', color: '#7d8fa3' }}>low = 1pt</span>
                         </div>
                         <p className={styles.schemaHintText}>
-                            File hỗ trợ <strong>JSON và YAML</strong>. Tối đa 500 controls. Sau khi upload,
-                            backend tự động chuyển đổi từng control thành document chunk và index vào <strong>ChromaDB</strong>
-                            để AI Auditor có thể tra cứu khi đánh giá.
-                            <br />
-                            <button className={styles.linkBtn} onClick={() => setShowFormatGuide(true)}>
-                                👁️ Xem cách ChromaDB lưu trữ khác gì với file upload →
+                            Supports <strong>JSON and YAML</strong>. Max 500 controls. After uploading,
+                            the backend automatically converts each control into a document chunk and indexes it into <strong>ChromaDB</strong>
+                            so the AI Auditor can query it during assessment.
+                            {' '}<button className={styles.linkBtn} onClick={() => setShowFormatGuide(true)}>
+                                See how ChromaDB storage differs from the upload file →
                             </button>
                         </p>
                     </div>

@@ -12,15 +12,15 @@ services:
       - MODEL_NAME=${MODEL_NAME}
       - SECURITY_MODEL_NAME=${SECURITY_MODEL_NAME:-${MODEL_NAME}}
       - MAX_TOKENS=-1
+      - PREFER_LOCAL=${PREFER_LOCAL:-false}
       # Cloud LLM (Open Claude)
       - CLOUD_LLM_API_URL=${CLOUD_LLM_API_URL:-https://open-claude.com/v1}
-      - CLOUD_MODEL_NAME=${CLOUD_MODEL_NAME:-gemini-3-pro-preview}
+      - CLOUD_MODEL_NAME=${CLOUD_MODEL_NAME:-gpt-5.2}
       - CLOUD_API_KEYS=${CLOUD_API_KEYS}
       # Data paths
       - ISO_DOCS_PATH=/data/iso_documents
       - VECTOR_STORE_PATH=/data/vector_store
       - DATA_PATH=/data
-      - HF_HOME=/data/models/huggingface
       # Logging
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - DEBUG=${DEBUG:-false}
@@ -30,17 +30,23 @@ services:
       # Rate Limiting
       - RATE_LIMIT_CHAT=${RATE_LIMIT_CHAT:-10/minute}
       - RATE_LIMIT_ASSESS=${RATE_LIMIT_ASSESS:-3/minute}
+      - RATE_LIMIT_BENCHMARK=${RATE_LIMIT_BENCHMARK:-5/minute}
       # Performance
-      - TORCH_THREADS=${TORCH_THREADS:-4}
-      - INFERENCE_TIMEOUT=${INFERENCE_TIMEOUT:-180}
+      - INFERENCE_TIMEOUT=${INFERENCE_TIMEOUT:-300}
       - CLOUD_TIMEOUT=${CLOUD_TIMEOUT:-60}
-      # Legacy compatibility
-      - LLM_API_URL=http://phobert-localai:8080/v1
     networks:
       - phobert-network
     volumes:
       - ./backend:/app
-      - ./data:/data
+      - ./data/iso_documents:/data/iso_documents
+      - ./data/vector_store:/data/vector_store
+      - ./data/assessments:/data/assessments
+      - ./data/evidence:/data/evidence
+      - ./data/exports:/data/exports
+      - ./data/sessions:/data/sessions
+      - ./data/standards:/data/standards
+      - ./data/knowledge_base:/data/knowledge_base
+      - ./data/uploads:/data/uploads
       - /proc:/host/proc:ro
     depends_on:
       localai:
@@ -101,7 +107,7 @@ services:
     ulimits:
       memlock: -1
     volumes:
-      - ./models:/build/models
+      - ./models/llm:/build/models
     networks:
       - phobert-network
     restart: unless-stopped

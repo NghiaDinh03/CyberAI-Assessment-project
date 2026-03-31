@@ -3,10 +3,11 @@
     top: 0;
     z-index: 100;
     background: var(--navbar-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
-    height: 56px;
+    height: 52px;
+    transition: border-color 0.2s ease;
 }
 
 .inner {
@@ -23,21 +24,31 @@
 .brand {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
     text-decoration: none;
     flex-shrink: 0;
 }
 
-.logo {
-    font-size: 1.25rem;
-    line-height: 1;
+.brandMark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background: var(--accent-blue);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    border-radius: 6px;
+    flex-shrink: 0;
 }
 
 .brandText {
-    font-size: 1rem;
-    font-weight: 800;
+    font-size: 0.95rem;
+    font-weight: 700;
     color: var(--text-primary);
-    letter-spacing: -0.5px;
+    letter-spacing: -0.4px;
 }
 
 .hamburger {
@@ -55,7 +66,7 @@
 .hamburgerLine {
     display: block;
     width: 18px;
-    height: 2px;
+    height: 1.5px;
     background: var(--text-muted);
     border-radius: 1px;
     position: relative;
@@ -67,19 +78,19 @@
     content: '';
     position: absolute;
     width: 18px;
-    height: 2px;
+    height: 1.5px;
     background: var(--text-muted);
     border-radius: 1px;
     left: 0;
-    transition: transform 0.25s ease;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hamburgerLine::before {
-    top: -6px;
+    top: -5px;
 }
 
 .hamburgerLine::after {
-    top: 6px;
+    top: 5px;
 }
 
 .hamburgerOpen {
@@ -87,31 +98,31 @@
 }
 
 .hamburgerOpen::before {
-    transform: translateY(6px) rotate(45deg);
+    transform: translateY(5px) rotate(45deg);
 }
 
 .hamburgerOpen::after {
-    transform: translateY(-6px) rotate(-45deg);
+    transform: translateY(-5px) rotate(-45deg);
 }
 
 .navLinks {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 1px;
 }
 
 .navLink {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 6px 12px;
-    border-radius: 8px;
+    padding: 5px 11px;
+    border-radius: 7px;
     font-size: 0.8rem;
     font-weight: 500;
     color: var(--text-muted);
     text-decoration: none;
-    transition: all 0.15s;
+    transition: color 0.15s ease, background 0.15s ease;
     white-space: nowrap;
+    letter-spacing: 0.1px;
 }
 
 .navLink:hover {
@@ -120,20 +131,27 @@
 }
 
 .navLinkActive {
-    color: var(--accent-blue);
-    background: var(--blue-subtle);
+    color: var(--text-primary);
+    background: var(--bg-muted);
     font-weight: 600;
+    position: relative;
 }
 
-.navIcon {
-    font-size: 0.85rem;
-    line-height: 1;
+.navLinkActive::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 11px;
+    right: 11px;
+    height: 2px;
+    background: var(--accent-blue);
+    border-radius: 1px 1px 0 0;
 }
 
 .controls {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     flex-shrink: 0;
 }
 
@@ -145,8 +163,8 @@
     user-select: none;
     line-height: 1;
     padding: 4px 8px;
-    border-radius: 8px;
-    transition: background 0.15s;
+    border-radius: 7px;
+    transition: background 0.15s ease;
 }
 
 .clock:hover {
@@ -154,73 +172,63 @@
 }
 
 .clockTime {
-    font-size: 0.82rem;
-    font-weight: 700;
-    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
 }
 
 .clockMeta {
-    font-size: 0.62rem;
+    font-size: 0.6rem;
     color: var(--text-dim);
-    margin-top: 1px;
+    margin-top: 2px;
+    letter-spacing: 0.2px;
 }
 
 .statusDot {
     display: flex;
     align-items: center;
-    gap: 5px;
     padding: 4px;
 }
 
 .dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: var(--accent-green);
-    box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
-    animation: blink 2s infinite;
+    box-shadow: 0 0 5px rgba(52, 211, 153, 0.5);
+    animation: blink 2.5s ease-in-out infinite;
 }
 
 @keyframes blink {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+    50% { opacity: 0.35; }
 }
 
 .themeToggle {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 7px;
     background: var(--bg-muted);
     border: 1px solid var(--border);
     cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
+    transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .themeToggle:hover {
-    background: var(--bg-subtle);
+    background: var(--hover);
     border-color: var(--border-active);
-    transform: scale(1.05);
 }
 
-.themeIcon {
-    font-size: 1rem;
-    line-height: 1;
-    transition: transform 0.3s ease;
-}
-
-.themeDark {
-    transform: rotate(0deg);
-}
-
-.themeLight {
-    transform: rotate(180deg);
+.themeLabel {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
 }
 
 @media (max-width: 900px) {
@@ -231,16 +239,16 @@
     .navLinks {
         display: none;
         position: absolute;
-        top: 56px;
+        top: 52px;
         left: 0;
         right: 0;
         background: var(--navbar-bg);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         border-bottom: 1px solid var(--border);
         flex-direction: column;
         padding: 0.5rem;
-        gap: 2px;
+        gap: 1px;
     }
 
     .navLinksOpen {
@@ -249,8 +257,12 @@
 
     .navLink {
         width: 100%;
-        padding: 10px 16px;
-        border-radius: 10px;
+        padding: 10px 14px;
+        border-radius: 8px;
+    }
+
+    .navLinkActive::after {
+        display: none;
     }
 
     .clock {
@@ -264,6 +276,6 @@
     }
 
     .brandText {
-        font-size: 0.9rem;
+        font-size: 0.88rem;
     }
 }

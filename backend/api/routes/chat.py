@@ -1,6 +1,6 @@
 ﻿"""Chat API Routes — Streaming, history, and session management."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from core.config import settings
@@ -20,6 +20,8 @@ except ImportError:
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
     session_id: str = Field(default="default")
+    model: Optional[str] = Field(default="gemini-3-flash-preview")
+    prefer_cloud: bool = Field(default=True)
 
 
 class ChatResponse(BaseModel):
@@ -37,11 +39,16 @@ class ChatResponse(BaseModel):
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(http_request: Request, request: ChatRequest):
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
     try:
-        return ChatService.generate_response(message=request.message.strip(), session_id=request.session_id)
+        return ChatService.generate_response(
+            message=request.message.strip(),
+            session_id=request.session_id,
+            model_override=request.model,
+            prefer_cloud=request.prefer_cloud,
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -55,7 +62,10 @@ async def chat_stream(request: ChatRequest):
 
     def event_generator():
         for event in ChatService.generate_response_stream(
-            message=request.message.strip(), session_id=request.session_id
+            message=request.message.strip(),
+            session_id=request.session_id,
+            model_override=request.model,
+            prefer_cloud=request.prefer_cloud,
         ):
             yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
 

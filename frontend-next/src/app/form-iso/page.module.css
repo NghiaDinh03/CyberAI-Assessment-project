@@ -6,13 +6,9 @@
 .title {
     font-size: 1.35rem;
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.5px;
     margin-bottom: 0.3rem;
     color: var(--text-primary);
-    background: linear-gradient(135deg, var(--text-primary) 60%, var(--accent-blue));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
 }
 
 .subtitle {
@@ -207,8 +203,8 @@
 
 
 .sectionTitle {
-    font-size: 0.95rem;
-    font-weight: 600;
+    font-size: 0.9rem;
+    font-weight: 700;
     margin-bottom: 0.9rem;
     color: var(--text-primary);
     border-bottom: 1px solid var(--border);
@@ -216,12 +212,12 @@
     display: flex;
     align-items: center;
     gap: 7px;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.1px;
 }
 
 .sectionIcon {
-    font-size: 1rem;
-    opacity: 0.85;
+    font-size: 0.9rem;
+    opacity: 0.8;
 }
 
 .helperText {
@@ -1791,18 +1787,19 @@
 ═══════════════════════════════════════════════════════════ */
 .processingCard {
     background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
+    border: 1px solid var(--border-active);
+    border-radius: 20px;
     padding: 2.5rem 2rem;
     text-align: center;
     animation: fadeIn 0.3s ease;
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.08);
 }
 
 .processingSpinner {
     position: relative;
-    width: 72px;
-    height: 72px;
-    margin: 0 auto 1.25rem;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1814,7 +1811,8 @@
     border-radius: 50%;
     border: 3px solid var(--border);
     border-top-color: var(--accent-blue);
-    animation: spin 1s linear infinite;
+    border-right-color: var(--accent-purple);
+    animation: spin 1.2s linear infinite;
 }
 
 @keyframes spin {
@@ -1822,27 +1820,34 @@
 }
 
 .spinnerIcon {
-    font-size: 1.6rem;
+    font-size: 1.8rem;
     position: relative;
     z-index: 1;
+    animation: pulseIcon 2s ease infinite;
+}
+
+@keyframes pulseIcon {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.85; }
 }
 
 .processingTitle {
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: var(--text-secondary);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
 }
 
 .processingDesc {
-    font-size: 0.86rem;
-    color: var(--text-dim);
-    line-height: 1.6;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.7;
     margin-bottom: 1.5rem;
 }
 
 .processingDesc strong {
-    color: var(--text-muted);
+    color: var(--text-secondary);
 }
 
 .processingSteps {
@@ -3104,28 +3109,38 @@
 }
 
 .processingProgressBar {
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
+    height: 10px;
+    background: var(--bg-muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
     overflow: hidden;
 }
 
 .processingProgressFill {
     height: 100%;
-    background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
-    border-radius: 3px;
-    transition: width 0.8s ease;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+    background-size: 200% 100%;
+    border-radius: 6px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% center; }
+    100% { background-position: -200% center; }
 }
 
 .processingProgressMsg {
-    font-size: 0.75rem;
-    color: var(--text-dim);
+    font-size: 0.78rem;
+    color: var(--text-muted);
     text-align: center;
+    font-weight: 500;
 }
 
 .processingProgressPct {
     color: var(--accent-blue);
-    font-weight: 600;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
 }
 
 /* ── Processing Step Redesign ────────────────────────────── */

@@ -140,20 +140,20 @@ def get_dir_size(path: str):
 
 @router.get("/system/cache-stats")
 def cache_stats():
-    trans_size, trans_files = get_dir_size("/data/translations")
-    sum_size, sum_files = get_dir_size("/data/summaries")
-    
+    sessions_size, sessions_files = get_dir_size("/data/sessions")
+    exports_size, exports_files = get_dir_size("/data/exports")
+
     return {
-        "translations": {
-            "size_bytes": trans_size,
-            "files": trans_files
+        "sessions": {
+            "size_bytes": sessions_size,
+            "files": sessions_files
         },
-        "summaries": {
-            "size_bytes": sum_size,
-            "files": sum_files
+        "exports": {
+            "size_bytes": exports_size,
+            "files": exports_files
         },
-        "total_size_bytes": trans_size + sum_size,
-        "total_files": trans_files + sum_files
+        "total_size_bytes": sessions_size + exports_size,
+        "total_files": sessions_files + exports_files
     }
 
 

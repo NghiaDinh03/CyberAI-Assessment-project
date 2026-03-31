@@ -82,7 +82,7 @@ export default function SystemStats() {
                 <div className={styles.grid}>
                     {[1, 2, 3, 4].map(i => (
                         <div key={i} className={styles.card}>
-                            <div className={styles.skeleton} style={{ height: '80%' }} />
+                            <div className={styles.skeleton} />
                         </div>
                     ))}
                 </div>
@@ -94,7 +94,7 @@ export default function SystemStats() {
         return (
             <div className={styles.wrapper}>
                 <div className={styles.errorCard}>
-                    <p>⚠️ Không thể kết nối hệ thống</p>
+                    <p>Unable to connect to system</p>
                 </div>
             </div>
         )
@@ -108,7 +108,8 @@ export default function SystemStats() {
 
     const items = [
         {
-            icon: '💻', label: 'CPU',
+            label: 'CPU',
+            abbr: 'proc',
             value: `${stats.cpu.percent}%`,
             detail: stats.cpu.name,
             sub: `${stats.cpu.cores} Cores`,
@@ -116,28 +117,31 @@ export default function SystemStats() {
             percent: stats.cpu.percent
         },
         {
-            icon: '🧠', label: 'RAM',
+            label: 'RAM',
+            abbr: 'mem',
             value: formatBytes(stats.memory.used),
             unit: 'GB',
-            detail: `${stats.memory.percent}% sử dụng`,
-            sub: `Tổng: ${formatBytes(stats.memory.total)} GB`,
+            detail: `${stats.memory.percent}% used`,
+            sub: `Total: ${formatBytes(stats.memory.total)} GB`,
             color: getColor(stats.memory.percent, [60, 85]),
             percent: stats.memory.percent
         },
         {
-            icon: '💾', label: 'Disk',
+            label: 'Disk',
+            abbr: 'stor',
             value: formatBytes(stats.disk.used),
             unit: 'GB',
-            detail: `${stats.disk.percent}% sử dụng`,
-            sub: `Tổng: ${formatBytes(stats.disk.total)} GB`,
+            detail: `${stats.disk.percent}% used`,
+            sub: `Total: ${formatBytes(stats.disk.total)} GB`,
             color: getColor(stats.disk.percent, [70, 90]),
             percent: stats.disk.percent
         },
         {
-            icon: '⚡', label: 'Uptime',
+            label: 'Uptime',
+            abbr: 'sys',
             value: formatUptime(stats.uptime_seconds),
             detail: stats.platform,
-            sub: 'Hệ điều hành',
+            sub: 'Operating System',
             color: 'var(--accent-green)',
             percent: 100
         }
@@ -145,13 +149,13 @@ export default function SystemStats() {
 
     return (
         <div className={styles.wrapper}>
-            {refreshing && <div className={styles.refreshDot} title="Đang cập nhật..." />}
+            {refreshing && <div className={styles.refreshDot} title="Refreshing..." />}
             <div className={styles.grid}>
                 {items.map((item, i) => (
                     <div key={i} className={styles.card}>
                         <div className={styles.header}>
-                            <span className={styles.icon}>{item.icon}</span>
                             <span className={styles.label}>{item.label}</span>
+                            <span className={styles.abbr}>{item.abbr}</span>
                         </div>
                         <div className={styles.value} style={{ color: item.color }}>
                             {item.value}

@@ -21,7 +21,7 @@ class Settings:
     )
 
     CLOUD_LLM_API_URL: str = os.getenv("CLOUD_LLM_API_URL", "https://open-claude.com/v1")
-    CLOUD_MODEL_NAME: str = os.getenv("CLOUD_MODEL_NAME", "gemini-3-pro-preview")
+    CLOUD_MODEL_NAME: str = os.getenv("CLOUD_MODEL_NAME", "gemini-3-flash-preview")
     CLOUD_API_KEYS: str = os.getenv("CLOUD_API_KEYS", "")
 
     ISO_DOCS_PATH: str = os.getenv("ISO_DOCS_PATH", "/data/iso_documents")
@@ -34,9 +34,8 @@ class Settings:
 
     RATE_LIMIT_CHAT: str = os.getenv("RATE_LIMIT_CHAT", "10/minute")
     RATE_LIMIT_ASSESS: str = os.getenv("RATE_LIMIT_ASSESS", "3/minute")
-    RATE_LIMIT_NEWS: str = os.getenv("RATE_LIMIT_NEWS", "5/minute")
+    RATE_LIMIT_BENCHMARK: str = os.getenv("RATE_LIMIT_BENCHMARK", "5/minute")
 
-    TORCH_THREADS: int = int(os.getenv("TORCH_THREADS", str(os.cpu_count() or 4)))
     INFERENCE_TIMEOUT: int = int(os.getenv("INFERENCE_TIMEOUT", "120"))
     CLOUD_TIMEOUT: int = int(os.getenv("CLOUD_TIMEOUT", "60"))
     MAX_CONCURRENT_REQUESTS: int = int(os.getenv("MAX_CONCURRENT_REQUESTS", "3"))

@@ -185,15 +185,16 @@ async def remove_standard(standard_id: str):
         if not deleted:
             raise HTTPException(status_code=404, detail=f"Standard '{standard_id}' not found")
 
-        # Try to remove from ChromaDB
+        # Try to remove from ChromaDB (domain-scoped collection)
         try:
             from repositories.vector_store import VectorStore
             vs = VectorStore()
-            existing = vs.collection.get(where={"standard_id": standard_id})
+            coll = vs.get_collection(standard_id)
+            existing = coll.get()
             if existing and existing["ids"]:
-                vs.collection.delete(ids=existing["ids"])
+                coll.delete(ids=existing["ids"])
         except Exception as e:
-            logger.warning(f"Could not remove ChromaDB index for '{standard_id}': {e}")
+            logger.warning(f"Could not remove ChromaDB collection for '{standard_id}': {e}")
 
         return {"status": "success", "message": f"Standard '{standard_id}' deleted"}
 

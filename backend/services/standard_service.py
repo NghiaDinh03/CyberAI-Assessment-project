@@ -265,10 +265,10 @@ def delete_standard(standard_id: str) -> bool:
 
 
 def index_standard_to_chromadb(standard_id: str) -> Dict[str, Any]:
-    """Index a custom standard's controls into ChromaDB for RAG retrieval.
+    """Index a custom standard's controls into its own ChromaDB domain collection for RAG retrieval.
 
-    Creates markdown-like chunks from the standard's controls and adds them
-    to the existing ChromaDB collection so the AI can reference them during assessment.
+    Each custom standard gets its own named collection (domain = standard_id) so
+    assessments can query only the relevant standard without cross-contamination.
     """
     data = load_standard(standard_id)
     if not data:
@@ -277,6 +277,8 @@ def index_standard_to_chromadb(standard_id: str) -> Dict[str, Any]:
     try:
         from repositories.vector_store import VectorStore
         vs = VectorStore()
+        # Use the standard's own domain collection
+        coll = vs.get_collection(standard_id)
 
         std_name = data.get("name", standard_id)
         chunks = []
@@ -324,21 +326,22 @@ def index_standard_to_chromadb(standard_id: str) -> Dict[str, Any]:
         if not chunks:
             return {"status": "error", "message": "No content to index"}
 
-        # Remove existing chunks for this standard (if re-indexing)
+        # Remove all existing chunks for this standard (full re-index)
         try:
-            existing = vs.collection.get(where={"standard_id": standard_id})
+            existing = coll.get()
             if existing and existing["ids"]:
-                vs.collection.delete(ids=existing["ids"])
+                coll.delete(ids=existing["ids"])
                 logger.info(f"Removed {len(existing['ids'])} existing chunks for standard '{standard_id}'")
         except Exception:
-            pass  # Collection might not support where filter on new field
+            pass
 
-        # Add new chunks
-        vs.collection.add(
+        # Add new chunks into the domain-specific collection
+        coll.add(
             documents=chunks,
             ids=chunk_ids,
             metadatas=chunk_metas
         )
+        vs._initialized[standard_id] = True
 
         logger.info(f"Indexed standard '{standard_id}' → {len(chunks)} chunks into ChromaDB")
         return {

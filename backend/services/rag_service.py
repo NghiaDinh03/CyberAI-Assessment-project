@@ -12,14 +12,14 @@ class RAGService:
     def __init__(self):
         self.vector_store = VectorStore()
 
-    def retrieve_context(self, query: str, top_k: int = 5) -> str:
-        results = self.vector_store.multi_query_search(query, top_k=top_k)
+    def retrieve_context(self, query: str, top_k: int = 5, domain: str = "iso_documents") -> str:
+        results = self.vector_store.multi_query_search(query, top_k=top_k, domain=domain)
         if not results:
             return ""
         return "\n\n---\n\n".join([doc["text"] for doc in results])
 
-    def retrieve_with_sources(self, query: str, top_k: int = 5) -> Dict:
-        results = self.vector_store.multi_query_search(query, top_k=top_k)
+    def retrieve_with_sources(self, query: str, top_k: int = 5, domain: str = "iso_documents") -> Dict:
+        results = self.vector_store.multi_query_search(query, top_k=top_k, domain=domain)
         if not results:
             return {"context": "", "sources": []}
 
@@ -36,9 +36,9 @@ class RAGService:
                 })
         return {"context": context, "sources": unique_sources}
 
-    def generate_response(self, query: str, context: str = None) -> str:
+    def generate_response(self, query: str, context: str = None, domain: str = "iso_documents") -> str:
         if context is None:
-            context = self.retrieve_context(query)
+            context = self.retrieve_context(query, domain=domain)
 
         if not context:
             try:
@@ -63,6 +63,6 @@ class RAGService:
             logger.error(f"RAG generate failed: {e}")
             return "Xin lỗi, tôi không thể trả lời lúc này."
 
-    def is_relevant(self, query: str, threshold: float = 0.3) -> bool:
-        results = self.vector_store.search(query, top_k=1)
+    def is_relevant(self, query: str, threshold: float = 0.3, domain: str = "iso_documents") -> bool:
+        results = self.vector_store.search(query, top_k=1, domain=domain)
         return bool(results and results[0].get("score", 0) >= threshold)

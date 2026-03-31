@@ -14,9 +14,17 @@ class VectorStore:
     def __init__(self, persist_dir: str = None):
         persist_dir = persist_dir or settings.VECTOR_STORE_PATH
         self.client = chromadb.PersistentClient(path=persist_dir)
-        self.collection = self.client.get_or_create_collection(
-            name="iso_documents", metadata={"hnsw:space": "cosine"})
-        self._initialized = False
+        # Dictionary mapping domain name to its collection
+        self.collections = {}
+        self._initialized = {}
+
+    def get_collection(self, domain: str = "iso_documents"):
+        """Get or create a collection for a specific domain."""
+        if domain not in self.collections:
+            self.collections[domain] = self.client.get_or_create_collection(
+                name=domain, metadata={"hnsw:space": "cosine"})
+            self._initialized[domain] = False
+        return self.collections[domain]
 
     def _chunk_text(self, text: str, chunk_size: int = 600, overlap: int = 150) -> list:
         lines = text.split('\n')
@@ -67,12 +75,14 @@ class VectorStore:
 
         return chunks
 
-    def index_documents(self, docs_dir: str = None):
+    def index_documents(self, docs_dir: str = None, domain: str = "iso_documents"):
         docs_dir = docs_dir or settings.ISO_DOCS_PATH
         docs_path = Path(docs_dir)
 
         if not docs_path.exists():
             return {"status": "error", "message": f"Directory not found: {docs_dir}"}
+        
+        collection = self.get_collection(domain)
 
         md_files = list(docs_path.glob("*.md"))
         if not md_files:
@@ -95,32 +105,35 @@ class VectorStore:
                     "doc_title": first_line[:100],
                 })
 
-        existing = self.collection.get()
+        existing = collection.get()
         if existing["ids"]:
-            self.collection.delete(ids=existing["ids"])
+            collection.delete(ids=existing["ids"])
 
         for i in range(0, len(all_chunks), 100):
             end = min(i + 100, len(all_chunks))
-            self.collection.add(documents=all_chunks[i:end], ids=all_ids[i:end], metadatas=all_metadata[i:end])
+            collection.add(documents=all_chunks[i:end], ids=all_ids[i:end], metadatas=all_metadata[i:end])
 
-        self._initialized = True
-        logger.info(f"Indexed {len(md_files)} files → {len(all_chunks)} chunks")
+        self._initialized[domain] = True
+        logger.info(f"Indexed {len(md_files)} files into {domain} → {len(all_chunks)} chunks")
         return {"status": "ok", "files": len(md_files), "chunks": len(all_chunks),
                 "file_names": [f.name for f in md_files]}
 
-    def ensure_indexed(self):
-        if not self._initialized:
-            if self.collection.count() == 0:
-                self.index_documents()
+    def ensure_indexed(self, domain: str = "iso_documents"):
+        collection = self.get_collection(domain)
+        if not self._initialized.get(domain, False):
+            if collection.count() == 0:
+                self.index_documents(domain=domain)
             else:
-                self._initialized = True
+                self._initialized[domain] = True
 
-    def search(self, query: str, top_k: int = 5) -> list:
-        self.ensure_indexed()
-        if self.collection.count() == 0:
+    def search(self, query: str, top_k: int = 5, domain: str = "iso_documents") -> list:
+        self.ensure_indexed(domain)
+        collection = self.get_collection(domain)
+        
+        if collection.count() == 0:
             return []
 
-        results = self.collection.query(query_texts=[query], n_results=min(top_k, self.collection.count()))
+        results = collection.query(query_texts=[query], n_results=min(top_k, collection.count()))
 
         docs = []
         if results and results["documents"]:
@@ -138,7 +151,7 @@ class VectorStore:
         docs.sort(key=lambda x: x["score"], reverse=True)
         return docs
 
-    def multi_query_search(self, query: str, top_k: int = 5) -> list:
+    def multi_query_search(self, query: str, top_k: int = 5, domain: str = "iso_documents") -> list:
         queries = [query]
         if "iso" in query.lower() or "tcvn" in query.lower():
             queries.append(f"tiêu chuẩn {query}")
@@ -148,7 +161,7 @@ class VectorStore:
         seen_ids = set()
         all_results = []
         for q in queries:
-            for r in self.search(q, top_k=top_k):
+            for r in self.search(q, top_k=top_k, domain=domain):
                 result_id = f"{r['source']}_{r['chunk_index']}"
                 if result_id not in seen_ids:
                     seen_ids.add(result_id)

@@ -5,55 +5,69 @@
 
 .heroLabel {
     display: inline-block;
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     font-weight: 600;
-    color: var(--accent-blue);
-    background: var(--blue-subtle);
-    border: 1px solid var(--border-active);
-    padding: 5px 16px;
-    border-radius: 20px;
+    color: var(--text-dim);
+    background: var(--bg-muted);
+    border: 1px solid var(--border);
+    padding: 4px 14px;
+    border-radius: 4px;
     margin-bottom: 1.25rem;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
 }
 
 .heroTitle {
-    font-size: 2.4rem;
-    font-weight: 800;
-    letter-spacing: -1.5px;
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: -1.2px;
     margin-bottom: 0.75rem;
     color: var(--text-primary);
-    line-height: 1.1;
+    line-height: 1.15;
 }
 
 .heroSub {
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: var(--text-muted);
-    max-width: 560px;
+    max-width: 520px;
     margin: 0 auto;
-    line-height: 1.7;
+    line-height: 1.75;
 }
 
 .heroSub strong {
-    color: var(--accent-blue);
+    color: var(--text-secondary);
+    font-weight: 600;
 }
 
 .features {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .card {
     display: flex;
     align-items: center;
-    gap: 1.25rem;
+    gap: 0;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 1.25rem 1.5rem;
-    transition: all 0.2s;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
     cursor: pointer;
     box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    animation: cardSlideIn 0.3s ease both;
+}
+
+.card:nth-child(1) { animation-delay: 0.05s; }
+.card:nth-child(2) { animation-delay: 0.1s; }
+.card:nth-child(3) { animation-delay: 0.15s; }
+.card:nth-child(4) { animation-delay: 0.2s; }
+
+@keyframes cardSlideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
 }
 
 .card:hover {
@@ -62,45 +76,62 @@
     box-shadow: var(--shadow-md);
 }
 
-.cardIcon {
-    font-size: 2rem;
+.cardAccent {
+    width: 3px;
+    align-self: stretch;
     flex-shrink: 0;
-    width: 50px;
-    text-align: center;
+    opacity: 0.7;
+    transition: opacity 0.18s ease;
+}
+
+.card:hover .cardAccent {
+    opacity: 1;
 }
 
 .cardBody {
     flex: 1;
+    padding: 1.1rem 1.25rem;
+}
+
+.cardTop {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.3rem;
 }
 
 .cardBody h3 {
-    font-size: 1rem;
-    font-weight: 700;
-    margin-bottom: 0.25rem;
+    font-size: 0.92rem;
+    font-weight: 600;
     color: var(--text-primary);
+    letter-spacing: -0.1px;
 }
 
 .cardBody p {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: var(--text-muted);
-    margin-bottom: 0.5rem;
+    line-height: 1.55;
 }
 
 .tag {
     display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.7rem;
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-size: 0.67rem;
     font-weight: 600;
     border: 1px solid;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    flex-shrink: 0;
 }
 
 .arrow {
-    font-size: 1.2rem;
+    font-size: 1rem;
     color: var(--text-dim);
     opacity: 0;
-    transition: opacity 0.15s;
+    transition: opacity 0.15s ease;
     flex-shrink: 0;
+    padding-right: 1.25rem;
 }
 
 .card:hover .arrow {
@@ -111,21 +142,16 @@
     text-align: center;
     padding: 3rem 0 1rem;
     color: var(--text-dim);
-    font-size: 0.78rem;
+    font-size: 0.74rem;
+    letter-spacing: 0.2px;
 }
 
 @media (max-width: 640px) {
     .heroTitle {
-        font-size: 1.6rem;
+        font-size: 1.55rem;
     }
 
-    .card {
-        padding: 1rem;
-        gap: 0.75rem;
-    }
-
-    .cardIcon {
-        font-size: 1.5rem;
-        width: 36px;
+    .cardBody {
+        padding: 0.9rem 1rem;
     }
 }
