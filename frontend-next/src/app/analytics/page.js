@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import rehypeSanitize from 'rehype-sanitize'
 import SystemStats from '@/components/SystemStats'
 import Link from 'next/link'
 import styles from './page.module.css'
@@ -951,7 +950,6 @@ export default function AnalyticsPage() {
                                             <div className={styles.md}>
                                                 <ReactMarkdown
                                                     remarkPlugins={[remarkGfm]}
-                                                    rehypePlugins={[rehypeSanitize]}
                                                 >
                                                     {selectedAssessment.result?.report || '*No detailed report for this assessment.*'}
                                                 </ReactMarkdown>

@@ -80,6 +80,8 @@ services:
       - ./frontend-next/public:/app/public
       - ./frontend-next/next.config.js:/app/next.config.js
       - ./frontend-next/jsconfig.json:/app/jsconfig.json
+      - ./frontend-next/package.json:/app/package.json
+      - ./frontend-next/package-lock.json:/app/package-lock.json
     networks:
       - phobert-network
     depends_on:
