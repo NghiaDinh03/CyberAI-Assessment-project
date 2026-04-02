@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import styles from './page.module.css'
+import { useToast } from '@/components/Toast'
+import { SkeletonTable } from '@/components/Skeleton'
 
 function FormatGuidePanel({ onClose }) {
     const [tab, setTab] = useState('json')
@@ -205,6 +207,7 @@ controlDescriptions:
 }
 
 export default function StandardsPage() {
+    const { showToast } = useToast()
     const [standards, setStandards] = useState({ builtin: [], custom: [] })
     const [loading, setLoading] = useState(true)
     const [uploading, setUploading] = useState(false)
@@ -214,6 +217,7 @@ export default function StandardsPage() {
     const [selectedStandard, setSelectedStandard] = useState(null)
     const [detailLoading, setDetailLoading] = useState(false)
     const [showFormatGuide, setShowFormatGuide] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
 
     const fetchStandards = useCallback(async () => {
         try {
@@ -286,12 +290,13 @@ export default function StandardsPage() {
         try {
             const res = await fetch(`/api/standards/${standardId}/index`, { method: 'POST' })
             const data = await res.json()
-            alert(data.status === 'ok'
-                ? `Indexed ${data.chunks_indexed} chunks for "${standardId}"`
-                : data.message || 'Indexing failed'
-            )
+            if (data.status === 'ok') {
+                showToast(`Indexed ${data.chunks_indexed} chunks for "${standardId}"`, 'success')
+            } else {
+                showToast(data.message || 'Indexing failed', 'error')
+            }
         } catch (e) {
-            alert(`Error: ${e.message}`)
+            showToast(`Error: ${e.message}`, 'error')
         }
     }
 
@@ -458,9 +463,40 @@ export default function StandardsPage() {
                     </button>
                 </div>
 
+                <div className={styles.searchBarWrap}>
+                    <input
+                        type="text"
+                        className={styles.searchBar}
+                        placeholder="Tìm kiếm tiêu chuẩn..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                    />
+                    {searchQuery && (
+                        <button className={styles.searchClear} onClick={() => setSearchQuery('')} aria-label="Clear search">✕</button>
+                    )}
+                </div>
+
                 {loading ? (
-                    <div className={styles.loadingBox}>Loading...</div>
-                ) : (
+                    <SkeletonTable rows={5} cols={3} />
+                ) : (() => {
+                    const q = searchQuery.toLowerCase()
+                    const filteredBuiltin = standards.builtin.filter(s =>
+                        !q || s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q)
+                    )
+                    const filteredCustom = standards.custom.filter(s =>
+                        !q || s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q)
+                    )
+                    const totalFiltered = filteredBuiltin.length + filteredCustom.length
+                    if (totalFiltered === 0 && q) {
+                        return (
+                            <div className={styles.emptySearchState}>
+                                <span className={styles.emptySearchIcon}>🔍</span>
+                                <p className={styles.emptySearchText}>Không tìm thấy tiêu chuẩn nào phù hợp</p>
+                                <p className={styles.emptySearchHint}>Thử từ khóa khác hoặc <button className={styles.linkBtn} onClick={() => setSearchQuery('')}>xóa bộ lọc</button></p>
+                            </div>
+                        )
+                    }
+                    return (
                     <>
                         <div className={styles.groupTitleRow}>
                             <h3 className={styles.groupTitle}>Built-in Standards</h3>
@@ -469,7 +505,7 @@ export default function StandardsPage() {
                             </button>
                         </div>
                         <div className={styles.standardGrid}>
-                            {standards.builtin.map(std => (
+                            {filteredBuiltin.map(std => (
                                 <div key={std.id} className={styles.standardCard}>
                                     <div className={styles.cardHeader}>
                                         <span className={styles.cardBadge}>Built-in</span>
@@ -490,14 +526,14 @@ export default function StandardsPage() {
                         </div>
 
                         <h3 className={styles.groupTitle} style={{ marginTop: '1.25rem' }}>Custom Standards (Uploaded)</h3>
-                        {standards.custom.length === 0 ? (
+                        {filteredCustom.length === 0 && !q ? (
                             <div className={styles.emptyBox}>
                                 <p>No custom standards yet.</p>
                                 <p className={styles.emptyHint}>Upload a JSON/YAML file above to add a new standard.</p>
                             </div>
-                        ) : (
+                        ) : filteredCustom.length === 0 ? null : (
                             <div className={styles.standardGrid}>
-                                {standards.custom.map(std => (
+                                {filteredCustom.map(std => (
                                     <div key={std.id} className={`${styles.standardCard} ${styles.standardCardCustom}`}>
                                         <div className={styles.cardHeader}>
                                             <span className={`${styles.cardBadge} ${styles.cardBadgeCustom}`}>Custom</span>
@@ -532,7 +568,8 @@ export default function StandardsPage() {
                             </div>
                         )}
                     </>
-                )}
+                    )
+                })()}
             </div>
 
             {selectedStandard && selectedStandard.controls && (

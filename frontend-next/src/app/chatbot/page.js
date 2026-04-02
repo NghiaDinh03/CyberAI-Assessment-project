@@ -5,6 +5,9 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import styles from './page.module.css'
 
+const MAX_INPUT = 2000
+const WARN_THRESHOLD = 1800
+
 const CLOUD_MODELS = [
     { id: 'gemini-3-flash-preview', label: 'Gemini 3 Flash', provider: 'google', badge: 'Fast' },
     { id: 'gemini-3-pro-preview', label: 'Gemini 3 Pro', provider: 'google', badge: '' },
@@ -81,10 +84,15 @@ export default function ChatbotPage() {
     const [ready, setReady] = useState(false)
     const [selectedModel, setSelectedModel] = useState('gemini-3-flash-preview')
     const [modelDropdown, setModelDropdown] = useState(false)
+    const [focusedModelIdx, setFocusedModelIdx] = useState(-1)
     const [aiStatus, setAiStatus] = useState(null)
+    const [copiedMsgId, setCopiedMsgId] = useState(null)
+    const isSubmitting = useRef(false)
     const mountedRef = useRef(true)
     const endRef = useRef(null)
     const inputRef = useRef(null)
+    const modelBtnRef = useRef(null)
+    const dropdownRef = useRef(null)
 
     useEffect(() => {
         let cancelled = false
@@ -131,6 +139,7 @@ export default function ChatbotPage() {
             setActiveId(pending.sessionId)
             setMsgs(pending.currentMessages || [])
             setSending(true)
+            isSubmitting.current = true
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), 600000)
             fetch('/api/chat', {
@@ -153,7 +162,10 @@ export default function ChatbotPage() {
                     lsDel(PENDING_KEY)
                     if (mountedRef.current) { setMsgs(final); setSessions(lsGet(SESSIONS_KEY, [])); setSending(false) }
                 })
-                .finally(() => clearTimeout(timeoutId))
+                .finally(() => {
+                    clearTimeout(timeoutId)
+                    isSubmitting.current = false
+                })
         } else {
             setSessions(saved)
             if (id) {
@@ -167,13 +179,54 @@ export default function ChatbotPage() {
 
     useEffect(() => { if (ready) lsSet(SESSIONS_KEY, sessions) }, [sessions, ready])
     useEffect(() => { if (ready) lsSet(ACTIVE_KEY, activeId) }, [activeId, ready])
+    // Improvement 5: scroll to bottom whenever message content changes (catches typewriter growth)
     useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs])
 
     const handleModelChange = (modelId) => {
         setSelectedModel(modelId)
         lsSet(MODEL_KEY, modelId)
         setModelDropdown(false)
+        setFocusedModelIdx(-1)
+        modelBtnRef.current?.focus()
     }
+
+    const openDropdown = () => {
+        const idx = CLOUD_MODELS.findIndex(m => m.id === selectedModel)
+        setFocusedModelIdx(idx >= 0 ? idx : 0)
+        setModelDropdown(true)
+    }
+
+    const handleModelKeyDown = (e) => {
+        if (!modelDropdown) {
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+                e.preventDefault()
+                openDropdown()
+            }
+            return
+        }
+        if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            setFocusedModelIdx(prev => (prev + 1) % CLOUD_MODELS.length)
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            setFocusedModelIdx(prev => (prev - 1 + CLOUD_MODELS.length) % CLOUD_MODELS.length)
+        } else if (e.key === 'Enter') {
+            e.preventDefault()
+            if (focusedModelIdx >= 0) handleModelChange(CLOUD_MODELS[focusedModelIdx].id)
+        } else if (e.key === 'Escape' || e.key === 'Tab') {
+            e.preventDefault()
+            setModelDropdown(false)
+            setFocusedModelIdx(-1)
+            modelBtnRef.current?.focus()
+        }
+    }
+
+    const copyMessage = useCallback((msgId, text) => {
+        navigator.clipboard.writeText(text).then(() => {
+            setCopiedMsgId(msgId)
+            setTimeout(() => setCopiedMsgId(null), 2000)
+        }).catch(() => {})
+    }, [])
 
     const updateSessions = useCallback((messages, id) => {
         setSessions(prev => {
@@ -185,7 +238,12 @@ export default function ChatbotPage() {
     }, [])
 
     const send = async (text) => {
-        if (!text.trim() || sending) return
+        if (!text.trim()) return
+
+        // Improvement 3: guard against double-submit race condition
+        if (isSubmitting.current) return
+        isSubmitting.current = true
+
         const id = activeId || uid()
         if (!activeId) setActiveId(id)
         const userMsg = { role: 'user', content: text.trim(), time: now() }
@@ -217,6 +275,20 @@ export default function ChatbotPage() {
                 const decoder = new TextDecoder()
                 let buffer = ''
                 let finalData = null
+
+                // Improvement 5: add a streaming placeholder message for typewriter effect
+                const pendingMsgId = `pending-${Date.now()}`
+                const streamingMsg = {
+                    role: 'assistant',
+                    content: '',
+                    time: now(),
+                    _streaming: true,
+                    _id: pendingMsgId,
+                }
+                if (mountedRef.current) {
+                    setMsgs(prev => [...prev, streamingMsg])
+                }
+
                 while (true) {
                     const { done, value } = await reader.read()
                     if (done) break
@@ -227,15 +299,29 @@ export default function ChatbotPage() {
                         if (!line.startsWith('data: ')) continue
                         try {
                             const event = JSON.parse(line.slice(6))
-                            if (event.step === 'done' || event.step === 'error') finalData = event.data
-                            else if (event.message && mountedRef.current) setStatusText(event.message)
+                            if (event.step === 'done' || event.step === 'error') {
+                                finalData = event.data
+                            } else if (event.step === 'token' && event.token && mountedRef.current) {
+                                // Improvement 5: append each token incrementally (typewriter)
+                                setMsgs(prev => prev.map(m =>
+                                    m._id === pendingMsgId
+                                        ? { ...m, content: m.content + event.token }
+                                        : m
+                                ))
+                            } else if (event.message && mountedRef.current) {
+                                setStatusText(event.message)
+                            }
                         } catch { }
                     }
                 }
+
                 if (finalData) {
+                    const botContent = finalData.error
+                        ? (finalData.response || 'Model không khả dụng.')
+                        : (finalData.response || 'Không có phản hồi.')
                     const botMsg = {
                         role: 'assistant',
-                        content: finalData.error ? (finalData.response || 'Model không khả dụng.') : (finalData.response || 'Không có phản hồi.'),
+                        content: botContent,
                         time: now(),
                         model: finalData.model,
                         requestedModel: isLocalAI ? 'localai' : selectedModel,
@@ -244,10 +330,19 @@ export default function ChatbotPage() {
                         ragUsed: finalData.rag_used,
                         webSources: finalData.web_sources,
                         sources: finalData.sources,
+                        // _streaming and _id intentionally absent — finalised message
                     }
-                    const final = [...next, botMsg]
+                    // Replace the streaming placeholder with the complete finalised message
+                    const final = [
+                        ...next,
+                        botMsg,
+                    ]
                     directSaveSession(id, final)
-                    if (mountedRef.current) { setMsgs(final); updateSessions(final, id); lsDel(PENDING_KEY) }
+                    if (mountedRef.current) {
+                        setMsgs(final)
+                        updateSessions(final, id)
+                        lsDel(PENDING_KEY)
+                    }
                 } else {
                     throw new Error('Stream ended without response')
                 }
@@ -275,6 +370,7 @@ export default function ChatbotPage() {
                 const content = err?.name === 'AbortError'
                     ? 'Request timeout (5 phút). Model đang quá tải.'
                     : `Lỗi kết nối: ${err.message}`
+                // Remove any in-flight streaming placeholder before appending error
                 const final = [...next, { role: 'assistant', content, time: now() }]
                 directSaveSession(id, final)
                 setMsgs(final)
@@ -282,6 +378,8 @@ export default function ChatbotPage() {
                 lsDel(PENDING_KEY)
             }
         } finally {
+            // Improvement 3: always reset the submission guard in finally
+            isSubmitting.current = false
             if (mountedRef.current) { setSending(false); setStatusText('') }
         }
     }
@@ -370,37 +468,59 @@ export default function ChatbotPage() {
                     {msgs.length === 0 && !sending ? (
                         <div className={styles.welcome}>
                             <div className={styles.welcomeHeading}>
-                                <h2 className={styles.welcomeTitle}>CyberAI Assistant</h2>
-                                <p className={styles.welcomeSub}>AI assistant for ISO 27001, TCVN 11930 and cybersecurity research</p>
+                                <div className={styles.emptyIcon}>💬</div>
+                                <h2 className={styles.welcomeTitle}>Bắt đầu cuộc trò chuyện</h2>
+                                <p className={styles.welcomeSub}>Hỏi bất kỳ câu hỏi nào về ISO 27001, bảo mật thông tin, hoặc compliance.</p>
                             </div>
                             <div className={styles.chips}>
-                                {SUGGESTIONS.map((s, i) => (
-                                    <button key={i} className={styles.chip} onClick={() => send(s.text)}>
-                                        {s.text}
+                                {[
+                                    'Kiểm soát truy cập là gì?',
+                                    'Giải thích Annex A',
+                                    'ISO 27001 vs SOC 2',
+                                    ...SUGGESTIONS.slice(0, 3).map(s => s.text)
+                                ].map((text, i) => (
+                                    <button key={i} className={styles.chip} onClick={() => setInput(text)}>
+                                        {text}
                                     </button>
                                 ))}
                             </div>
                         </div>
                     ) : (
                         <div className={styles.msgList}>
-                            {msgs.map((m, i) => (
-                                <div key={i} className={`${styles.msg} ${m.role === 'user' ? styles.msgUser : styles.msgBot}`}>
+                            {msgs.map((m, i) => {
+                                const msgKey = m._id || i
+                                return (
+                                <div key={msgKey} className={`${styles.msg} ${m.role === 'user' ? styles.msgUser : styles.msgBot}`}>
                                     {m.role === 'assistant' && <div className={styles.avatar}>AI</div>}
                                     <div className={`${styles.bubble} ${m.role === 'user' ? styles.bubbleUser : styles.bubbleBot}`}>
                                         {m.role === 'assistant' ? (
-                                            <div className={styles.md}><ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown></div>
+                                            <div className={`${styles.md} ${m._streaming ? styles.streamingCursor : ''}`}>
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content || ' '}</ReactMarkdown>
+                                            </div>
                                         ) : m.content}
-                                        <div className={styles.msgMeta}>
-                                            {m.ragUsed && <span className={styles.badge}>RAG</span>}
-                                            {m.searchUsed && <span className={styles.badge}>Web</span>}
-                                            {m.model && (
-                                                <span className={styles.badge} title={m.requestedModel && m.requestedModel !== m.model ? `Requested: ${m.requestedModel} → Fallback: ${m.model}` : m.model}>
-                                                    {m.model}{m.requestedModel && m.requestedModel !== m.model ? ' ↩' : ''}
-                                                </span>
-                                            )}
-                                            <span className={styles.time}>{m.time}</span>
-                                        </div>
-                                        {m.ragUsed && m.sources?.length > 0 && (
+                                        {m.role === 'assistant' && !m._streaming && (
+                                            <button
+                                                className={styles.copyBtn}
+                                                onClick={() => copyMessage(msgKey, m.content)}
+                                                title="Copy message"
+                                                aria-label="Copy message to clipboard"
+                                            >
+                                                {copiedMsgId === msgKey ? '✓ Copied!' : '📋 Copy'}
+                                            </button>
+                                        )}
+                                        {!m._streaming && (
+                                            <div className={styles.msgMeta}>
+                                                {m.ragUsed && <span className={styles.badge}>RAG</span>}
+                                                {m.searchUsed && <span className={styles.badge}>Web</span>}
+                                                {m.model && (
+                                                    <span className={styles.badge} title={m.requestedModel && m.requestedModel !== m.model ? `Requested: ${m.requestedModel} → Fallback: ${m.model}` : m.model}>
+                                                        {m.model}{m.requestedModel && m.requestedModel !== m.model ? ' ↩' : ''}
+                                                    </span>
+                                                )}
+                                                <span className={styles.time}>{m.time}</span>
+                                            </div>
+                                        )}
+                                        {!m._streaming && m.ragUsed && m.sources?.length > 0 && (
                                             <div className={styles.sourcesList}>
                                                 {m.sources.slice(0, 4).map((src, idx) => (
                                                     <a key={idx} href={src.startsWith('http') ? src : '#'} target="_blank" rel="noreferrer" className={styles.sourceItem}>
@@ -412,11 +532,17 @@ export default function ChatbotPage() {
                                     </div>
                                     {m.role === 'user' && <div className={styles.avatarUser}>You</div>}
                                 </div>
-                            ))}
-                            {sending && (
+                                )
+                            })}
+                            {sending && !msgs.some(m => m._streaming) && (
                                 <div className={styles.typingWrap}>
                                     <div className={styles.typingDots}><span /><span /><span /></div>
                                     {statusText && <span className={styles.statusText}>{statusText}</span>}
+                                </div>
+                            )}
+                            {sending && statusText && msgs.some(m => m._streaming) && (
+                                <div className={styles.typingWrap}>
+                                    <span className={styles.statusText}>{statusText}</span>
                                 </div>
                             )}
                             <div ref={endRef} />
@@ -428,24 +554,40 @@ export default function ChatbotPage() {
                     <div className={styles.inputToolbar} onClick={e => e.stopPropagation()}>
                         <div className={styles.modelPicker}>
                             <button
+                                ref={modelBtnRef}
                                 type="button"
                                 className={styles.modelBtn}
-                                onClick={() => setModelDropdown(p => !p)}
+                                onClick={() => modelDropdown ? (setModelDropdown(false), setFocusedModelIdx(-1)) : openDropdown()}
+                                onKeyDown={handleModelKeyDown}
                                 style={{ '--provider-color': PROVIDER_COLORS[activeModelInfo.provider] }}
+                                aria-haspopup="listbox"
+                                aria-expanded={modelDropdown}
+                                aria-label={`Selected model: ${activeModelInfo.label}`}
                             >
                                 <span className={styles.modelDot} style={{ background: PROVIDER_COLORS[activeModelInfo.provider] }} />
                                 <span className={styles.modelBtnLabel}>{activeModelInfo.label}</span>
                                 <span className={styles.modelChevron}>{modelDropdown ? '▴' : '▾'}</span>
                             </button>
                             {modelDropdown && (
-                                <div className={styles.modelDropdown}>
+                                <div
+                                    ref={dropdownRef}
+                                    className={styles.modelDropdown}
+                                    role="listbox"
+                                    aria-label="Select AI Model"
+                                    aria-activedescendant={focusedModelIdx >= 0 ? `model-opt-${CLOUD_MODELS[focusedModelIdx].id}` : undefined}
+                                    onKeyDown={handleModelKeyDown}
+                                >
                                     <div className={styles.modelDropdownTitle}>Select AI Model</div>
-                                    {CLOUD_MODELS.map(m => (
+                                    {CLOUD_MODELS.map((m, idx) => (
                                         <button
                                             key={m.id}
+                                            id={`model-opt-${m.id}`}
                                             type="button"
-                                            className={`${styles.modelOption} ${selectedModel === m.id ? styles.modelOptionActive : ''}`}
+                                            role="option"
+                                            aria-selected={selectedModel === m.id}
+                                            className={`${styles.modelOption} ${selectedModel === m.id ? styles.modelOptionActive : ''} ${focusedModelIdx === idx ? styles.modelOptionFocused : ''}`}
                                             onClick={() => handleModelChange(m.id)}
+                                            onMouseEnter={() => setFocusedModelIdx(idx)}
                                         >
                                             <span className={styles.modelDot} style={{ background: PROVIDER_COLORS[m.provider] }} />
                                             <span className={styles.modelOptionName}>{m.label}</span>
@@ -459,15 +601,21 @@ export default function ChatbotPage() {
                         <span className={styles.inputHint}>Enter to send · Shift+Enter for newline</span>
                     </div>
                     <form className={styles.inputBar} onSubmit={e => { e.preventDefault(); send(input) }}>
-                        <input
-                            ref={inputRef}
-                            value={input}
-                            onChange={e => setInput(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) } }}
-                            placeholder="Ask about ISO 27001, TCVN, cybersecurity..."
-                            disabled={sending}
-                            autoFocus
-                        />
+                        <div className={styles.inputWrap}>
+                            <input
+                                ref={inputRef}
+                                value={input}
+                                onChange={e => setInput(e.target.value.slice(0, MAX_INPUT))}
+                                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) } }}
+                                placeholder="Ask about ISO 27001, TCVN, cybersecurity..."
+                                disabled={sending}
+                                maxLength={MAX_INPUT}
+                                autoFocus
+                            />
+                            <span className={`${styles.charCounter} ${input.length >= WARN_THRESHOLD ? styles.charCounterWarn : ''}`}>
+                                {input.length}/{MAX_INPUT}
+                            </span>
+                        </div>
                         <button type="submit" disabled={!input.trim() || sending}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
                         </button>

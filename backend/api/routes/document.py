@@ -6,7 +6,7 @@ router = APIRouter()
 doc_service = DocumentService()
 
 try:
-    from main import limiter, _has_rate_limit
+    from core.limiter import limiter, _has_rate_limit
 except ImportError:
     limiter = None
     _has_rate_limit = False

@@ -68,6 +68,8 @@ export default function Navbar() {
     }, [pathname])
 
     return (
+        <>
+        {mobileOpen && <div className={styles.navBackdrop} onClick={() => setMobileOpen(false)} aria-hidden="true" />}
         <nav className={styles.navbar}>
             <div className={styles.inner}>
                 <Link href="/" className={styles.brand}>
@@ -79,11 +81,12 @@ export default function Navbar() {
                     className={styles.hamburger}
                     onClick={() => setMobileOpen(!mobileOpen)}
                     aria-label="Toggle menu"
+                    aria-expanded={mobileOpen}
                 >
                     <span className={`${styles.hamburgerLine} ${mobileOpen ? styles.hamburgerOpen : ''}`} />
                 </button>
 
-                <div className={`${styles.navLinks} ${mobileOpen ? styles.navLinksOpen : ''}`}>
+                <div className={`${styles.navLinks} ${mobileOpen ? styles.navLinksOpen : ''}`} role="navigation">
                     {NAV_ITEMS.map(item => (
                         <Link
                             key={item.href}
@@ -122,5 +125,6 @@ export default function Navbar() {
                 </div>
             </div>
         </nav>
+        </>
     )
 }

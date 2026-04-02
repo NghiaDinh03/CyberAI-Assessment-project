@@ -47,7 +47,6 @@ services:
       - ./data/standards:/data/standards
       - ./data/knowledge_base:/data/knowledge_base
       - ./data/uploads:/data/uploads
-      - /proc:/host/proc:ro
     depends_on:
       localai:
         condition: service_started

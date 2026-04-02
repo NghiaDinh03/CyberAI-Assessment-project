@@ -164,6 +164,42 @@
     background: rgba(16, 185, 129, 0.35);
 }
 
+/* ── Step banner: "Step X of 4 — Title" ────────────────────────────────────── */
+
+.stepBanner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 0.5rem 0 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    animation: fadeIn 0.2s ease;
+}
+
+.stepBannerCount {
+    font-weight: 700;
+    color: var(--accent-blue);
+    font-size: 0.75rem;
+    letter-spacing: 0.3px;
+    background: var(--blue-subtle);
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid var(--border-active);
+}
+
+.stepBannerSep {
+    color: var(--text-dim);
+    font-size: 0.7rem;
+}
+
+.stepBannerTitle {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    letter-spacing: -0.1px;
+}
+
 .progressBar {
     height: 2px;
     background: var(--border);

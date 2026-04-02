@@ -4,30 +4,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import rehypeSanitize from 'rehype-sanitize'
 import SystemStats from '@/components/SystemStats'
 import Link from 'next/link'
 import styles from './page.module.css'
-
-function mdToHtml(md) {
-    if (!md) return ''
-    return md
-        .replace(/^######\s+(.+)$/gm, '<h6>$1</h6>')
-        .replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>')
-        .replace(/^####\s+(.+)$/gm, '<h4>$1</h4>')
-        .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>')
-        .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
-        .replace(/^#\s+(.+)$/gm, '<h1>$1</h1>')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>')
-        .replace(/^(\d+)\.\s+(.+)$/gm, '<li>$2</li>')
-        .replace(/^>\s+(.+)$/gm, '<blockquote>$1</blockquote>')
-        .replace(/^---+$/gm, '<hr>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/(<li>[\s\S]*?<\/li>)+/g, s => `<ul>${s}</ul>`)
-        .replace(/\n\n+/g, '</p><p>')
-        .replace(/^(?!<[hbcuop]|<\/[hbcuop])(.*\S.*)$/gm, '$1<br>')
-}
+import { useToast } from '@/components/Toast'
+import { SkeletonCard, SkeletonTable } from '@/components/Skeleton'
 
 function SvgGauge({ percent, size = 96, color = 'var(--accent-blue)' }) {
     const r = (size - 12) / 2
@@ -50,7 +32,87 @@ function SvgGauge({ percent, size = 96, color = 'var(--accent-blue)' }) {
 const WEIGHT_COLOR_STD = { critical: '#f87171', high: '#fbbf24', medium: '#4f8ef7', low: '#7d8fa3' }
 const WEIGHT_LABEL_STD = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' }
 
+// ── ISO 27001:2022 Annex A domains with control IDs ────────────────────────
+const ANNEX_A_DOMAINS = [
+    { id: 'A.5',  label: 'Org. Controls',     controls: ['A.5.1','A.5.2','A.5.3','A.5.4','A.5.5','A.5.6','A.5.7','A.5.8','A.5.9','A.5.10','A.5.11','A.5.12','A.5.13','A.5.14','A.5.15','A.5.16','A.5.17','A.5.18','A.5.19','A.5.20','A.5.21','A.5.22','A.5.23','A.5.24','A.5.25','A.5.26','A.5.27','A.5.28','A.5.29','A.5.30','A.5.31','A.5.32','A.5.33','A.5.34','A.5.35','A.5.36','A.5.37'] },
+    { id: 'A.6',  label: 'People Controls',   controls: ['A.6.1','A.6.2','A.6.3','A.6.4','A.6.5','A.6.6','A.6.7','A.6.8'] },
+    { id: 'A.7',  label: 'Physical Controls', controls: ['A.7.1','A.7.2','A.7.3','A.7.4','A.7.5','A.7.6','A.7.7','A.7.8','A.7.9','A.7.10','A.7.11','A.7.12','A.7.13','A.7.14'] },
+    { id: 'A.8',  label: 'Tech. Controls',    controls: ['A.8.1','A.8.2','A.8.3','A.8.4','A.8.5','A.8.6','A.8.7','A.8.8','A.8.9','A.8.10','A.8.11','A.8.12','A.8.13','A.8.14','A.8.15','A.8.16','A.8.17','A.8.18','A.8.19','A.8.20','A.8.21','A.8.22','A.8.23','A.8.24','A.8.25','A.8.26','A.8.27','A.8.28','A.8.29','A.8.30','A.8.31','A.8.32','A.8.33','A.8.34'] },
+]
+
+function ComplianceHeatmap({ assessments }) {
+    if (!assessments || assessments.length === 0) return null
+
+    // Use the most recent completed assessment with control data
+    const recent = assessments
+        .filter(a => a.status === 'completed' && a.system_info?.compliance?.implemented_controls?.length > 0)
+        .slice(0, 1)[0]
+
+    const implemented = new Set(recent?.system_info?.compliance?.implemented_controls || [])
+    const hasData = implemented.size > 0
+
+    return (
+        <div>
+            <div className={styles.heatmapLegend}>
+                {[
+                    { color: '#34d399', label: '≥ 80% Compliant' },
+                    { color: '#fbbf24', label: '50–79% Partial' },
+                    { color: '#f87171', label: '< 50% Gap' },
+                    { color: 'var(--bg-muted)', label: 'Not assessed' },
+                ].map(l => (
+                    <span key={l.label} className={styles.heatmapLegendItem}>
+                        <span className={styles.heatmapLegendDot} style={{ background: l.color }} />
+                        {l.label}
+                    </span>
+                ))}
+                {recent && (
+                    <span className={styles.heatmapLegendOrg}>
+                        {recent.org_name} · {new Date(recent.created_at).toLocaleDateString('vi-VN')}
+                    </span>
+                )}
+            </div>
+            <div className={styles.heatmapGrid}>
+                {ANNEX_A_DOMAINS.map(domain => {
+                    const total = domain.controls.length
+                    const done = hasData ? domain.controls.filter(c => implemented.has(c)).length : 0
+                    const pct = hasData ? Math.round((done / total) * 100) : null
+                    const cellColor = pct == null ? 'var(--bg-muted)' :
+                        pct >= 80 ? 'rgba(52,211,153,0.22)' :
+                        pct >= 50 ? 'rgba(251,191,36,0.22)' :
+                                    'rgba(248,113,113,0.22)'
+                    const borderColor = pct == null ? 'var(--border)' :
+                        pct >= 80 ? 'rgba(52,211,153,0.4)' :
+                        pct >= 50 ? 'rgba(251,191,36,0.4)' :
+                                    'rgba(248,113,113,0.4)'
+                    const textColor = pct == null ? 'var(--text-dim)' :
+                        pct >= 80 ? '#34d399' :
+                        pct >= 50 ? '#fbbf24' :
+                                    '#f87171'
+                    return (
+                        <div
+                            key={domain.id}
+                            className={styles.heatmapCell}
+                            style={{ background: cellColor, borderColor }}
+                            title={pct != null ? `${domain.id} ${domain.label}: ${done}/${total} controls (${pct}%)` : `${domain.id} ${domain.label}: not assessed`}
+                        >
+                            <span className={styles.heatmapCellId}>{domain.id}</span>
+                            <span className={styles.heatmapCellLabel}>{domain.label}</span>
+                            <span className={styles.heatmapCellPct} style={{ color: textColor }}>
+                                {pct != null ? `${pct}%` : '—'}
+                            </span>
+                            <span className={styles.heatmapCellSub}>
+                                {pct != null ? `${done}/${total}` : `${total} ctrl`}
+                            </span>
+                        </div>
+                    )
+                })}
+            </div>
+        </div>
+    )
+}
+
 export default function AnalyticsPage() {
+    const { showToast } = useToast()
     const [activeMainTab, setActiveMainTab] = useState('dashboard')
     const [benchmarkCases, setBenchmarkCases] = useState(null)
     const [benchmarkRunning, setBenchmarkRunning] = useState(false)
@@ -124,8 +186,12 @@ export default function AnalyticsPage() {
         try {
             const res = await fetch(`/api/standards/${standardId}/index`, { method: 'POST' })
             const data = await res.json()
-            alert(data.status === 'ok' ? `Indexed ${data.chunks_indexed} chunks` : data.message || 'Failed')
-        } catch (e) { alert(e.message) }
+            if (data.status === 'ok') {
+                showToast(`Indexed ${data.chunks_indexed} chunks`, 'success')
+            } else {
+                showToast(data.message || 'Indexing failed', 'error')
+            }
+        } catch (e) { showToast(e.message, 'error') }
     }
 
     const handleStdDetail = async (standardId) => {
@@ -389,7 +455,7 @@ export default function AnalyticsPage() {
                         </div>
 
                         {stdLoading ? (
-                            <div className={styles.loading}>Loading...</div>
+                            <SkeletonTable rows={5} cols={3} />
                         ) : (
                             <>
                                 <p className={styles.stdGroupLabel}>Built-in Standards</p>
@@ -508,7 +574,9 @@ export default function AnalyticsPage() {
                     <section className={styles.section}>
                         <p className="section-title">🤖 Service Status</p>
                         {loading ? (
-                            <div className={styles.loading}>Loading...</div>
+                            <div className="grid-2">
+                                {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+                            </div>
                         ) : (
                             <div className="grid-2">
                                 {SERVICE_ROWS.map((svc, i) => (
@@ -606,12 +674,23 @@ export default function AnalyticsPage() {
                                         )
                                     }) : (
                                         <tr>
-                                            <td colSpan="6" className={styles.tableEmpty}>No assessments yet.</td>
+                                            <td colSpan="6" className={styles.tableEmpty}>
+                                                <div className={styles.emptyState}>
+                                                    <span className={styles.emptyStateIcon}>📋</span>
+                                                    <p className={styles.emptyStateText}>Chọn một đánh giá để xem phân tích</p>
+                                                    <p className={styles.emptyStateHint}>Chưa có đánh giá nào. Tạo đánh giá mới từ trang Assessment.</p>
+                                                </div>
+                                            </td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
                         </div>
+                    </section>
+
+                    <section className={styles.section}>
+                        <p className="section-title">🗺️ Compliance Gap Heatmap</p>
+                        <ComplianceHeatmap assessments={assessments} />
                     </section>
 
                     <section className={styles.section}>
@@ -714,12 +793,12 @@ export default function AnalyticsPage() {
                                                     const res = await fetch('/api/iso27001/reindex', { method: 'POST' })
                                                     if (res.ok) {
                                                         const data = await res.json()
-                                                        alert(`Reindex successful: ${data.files} files → ${data.chunks} chunks`)
+                                                        showToast(`Reindex successful: ${data.files} files → ${data.chunks} chunks`, 'success')
                                                         const r2 = await fetch('/api/iso27001/chromadb/stats')
                                                         if (r2.ok) setChromaStats(await r2.json())
                                                     }
                                                 } catch (e) {
-                                                    alert('Error: ' + e.message)
+                                                    showToast('Error: ' + e.message, 'error')
                                                 } finally { setReindexing(false) }
                                             }}
                                         >{reindexing ? 'Reindexing...' : 'Reindex'}</button>
@@ -856,7 +935,7 @@ export default function AnalyticsPage() {
   <div class="pct">${pct != null ? pct + '%' : '—'}</div>
   <div class="meta"><strong>${orgName}</strong><span>${stdName}</span></div>
 </div>
-<p>${mdToHtml(selectedAssessment.result?.report || 'No report available.')}</p>
+<pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.7;margin:0">${(selectedAssessment.result?.report || 'No report available.').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
 </body></html>`
                                                     const w = window.open('', '_blank')
                                                     if (w) { w.document.write(reportHtml); w.document.close() }
@@ -870,7 +949,10 @@ export default function AnalyticsPage() {
                                                 </div>
                                             )}
                                             <div className={styles.md}>
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    rehypePlugins={[rehypeSanitize]}
+                                                >
                                                     {selectedAssessment.result?.report || '*No detailed report for this assessment.*'}
                                                 </ReactMarkdown>
                                             </div>

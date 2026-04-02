@@ -845,6 +845,82 @@
     margin-top: 2rem;
 }
 
+/* ── Search bar ────────────────────────────────────────────────────────────── */
+
+.searchBarWrap {
+    position: relative;
+    margin-bottom: 1.25rem;
+}
+
+.searchBar {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 36px 9px 14px;
+    color: var(--text-primary);
+    font-size: 0.84rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.searchBar:focus {
+    border-color: var(--input-focus-border);
+    box-shadow: 0 0 0 3px var(--blue-subtle);
+}
+
+.searchBar::placeholder {
+    color: var(--text-dim);
+}
+
+.searchClear {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: color 0.15s ease;
+    font-family: inherit;
+}
+
+.searchClear:hover {
+    color: var(--text-primary);
+}
+
+/* ── Empty search state ────────────────────────────────────────────────────── */
+
+.emptySearchState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.emptySearchIcon {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.emptySearchText {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.emptySearchHint {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+}
+
 @media (max-width: 640px) {
     .standardGrid { grid-template-columns: 1fr; }
     .schemaBox { flex-direction: column; }

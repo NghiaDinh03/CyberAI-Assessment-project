@@ -6,6 +6,8 @@ import threading
 from datetime import datetime, timezone
 from typing import Dict, Any, Generator, List
 
+from fastapi import HTTPException
+
 from core.config import settings
 from services.cloud_llm_service import CloudLLMService
 from services.model_guard import ModelGuard
@@ -21,6 +23,36 @@ SPECIAL_TOKENS = re.compile(
     r'<\|begin_of_text\|>|<\|end_of_text\|>|<\|finetune_right_pad_id\|>|'
     r'<\|reserved_special_token_\d+\|>'
 )
+
+# Prompt-injection patterns — case-insensitive, matched anywhere in the message.
+_INJECTION_PATTERNS = re.compile(
+    r'ignore\s+previous\s+instructions'
+    r'|disregard\s+all\s+prior'
+    r'|you\s+are\s+now\b'
+    r'|act\s+as\b'
+    r'|forget\s+everything'
+    r'|<\|im_start\|>'
+    r'|<\|im_end\|>',
+    re.IGNORECASE,
+)
+# "system:" is only an injection signal when it appears at the very start of the message.
+_SYSTEM_PREFIX_RE = re.compile(r'^\s*system\s*:', re.IGNORECASE)
+
+
+def sanitize_user_input(text: str) -> str:
+    """Strip known prompt-injection patterns from *text*.
+
+    Raises :class:`fastapi.HTTPException` 400 if a definitive injection attempt
+    is detected so callers can surface a clear error to the client.  Benign text
+    is returned unchanged.
+    """
+    if _INJECTION_PATTERNS.search(text) or _SYSTEM_PREFIX_RE.match(text):
+        logger.warning("Prompt injection attempt blocked: %.120s", text)
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid input: message contains disallowed content.",
+        )
+    return text
 
 
 class ChatService:
@@ -87,6 +119,7 @@ class ChatService:
     @staticmethod
     def generate_response(message: str, session_id: str = "default",
                           model_override: str = None, prefer_cloud: bool = True) -> Dict[str, Any]:
+        message = sanitize_user_input(message)
         guard_error = ChatService._local_only_guard()
         if guard_error:
             return guard_error
@@ -155,6 +188,7 @@ class ChatService:
     @staticmethod
     def generate_response_stream(message: str, session_id: str = "default",
                                   model_override: str = None, prefer_cloud: bool = True) -> Generator:
+        message = sanitize_user_input(message)
         guard_error = ChatService._local_only_guard(stream=True, session_id=session_id)
         if guard_error:
             yield guard_error

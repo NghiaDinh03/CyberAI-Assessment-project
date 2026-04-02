@@ -1074,6 +1074,17 @@ export default function FormISOPage() {
                         ))}
                     </div>
 
+                    <div className={styles.stepBanner}>
+                        <span className={styles.stepBannerCount}>Bước {step} / 4</span>
+                        <span className={styles.stepBannerSep}>—</span>
+                        <span className={styles.stepBannerTitle}>
+                            {step === 1 ? 'Thông tin Tổ chức & Tiêu chuẩn' :
+                             step === 2 ? 'Hạ tầng & Kỹ thuật mạng' :
+                             step === 3 ? 'Biện pháp kiểm soát (Controls)' :
+                             'Mô tả hệ thống & Tổng kết'}
+                        </span>
+                    </div>
+
                     <div className={styles.progressBar}>
                         <div className={styles.progressFill} style={{ width: `${((step - 1) / 3) * 100}%` }} />
                     </div>

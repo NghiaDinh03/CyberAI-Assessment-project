@@ -1802,3 +1802,122 @@
 @media print {
     .modalActionBar { display: none !important; }
 }
+
+/* ── Compliance Gap Heatmap ────────────────────────────────────────────────── */
+
+.heatmapGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-top: 0.75rem;
+}
+
+.heatmapCell {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    cursor: default;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+}
+
+.heatmapCell:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.heatmapCellId {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+}
+
+.heatmapCellLabel {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+
+.heatmapCellPct {
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-top: 4px;
+    letter-spacing: -0.5px;
+}
+
+.heatmapCellSub {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-top: 1px;
+}
+
+.heatmapLegend {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+}
+
+.heatmapLegendItem {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.heatmapLegendDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.heatmapLegendOrg {
+    margin-left: auto;
+    font-style: italic;
+    color: var(--text-muted);
+    font-size: 0.69rem;
+}
+
+@media (max-width: 640px) {
+    .heatmapGrid { grid-template-columns: repeat(2, 1fr); }
+    .heatmapLegendOrg { margin-left: 0; }
+}
+
+/* ── Empty state ───────────────────────────────────────────────────────────── */
+
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2.5rem 1rem;
+    gap: 8px;
+}
+
+.emptyStateIcon {
+    font-size: 2rem;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.emptyStateText {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.emptyStateHint {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    text-align: center;
+    max-width: 320px;
+}

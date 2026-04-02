@@ -1,6 +1,7 @@
 import './globals.css'
 import Navbar from '@/components/Navbar'
 import ThemeProvider from '@/components/ThemeProvider'
+import { ToastProvider } from '@/components/Toast'
 
 export const metadata = {
     title: 'CyberAI Assessment Platform - Enterprise Edition',
@@ -13,8 +14,10 @@ export default function RootLayout({ children }) {
         <html lang="vi">
             <body>
                 <ThemeProvider>
-                    <Navbar />
-                    <main>{children}</main>
+                    <ToastProvider>
+                        <Navbar />
+                        <main>{children}</main>
+                    </ToastProvider>
                 </ThemeProvider>
             </body>
         </html>

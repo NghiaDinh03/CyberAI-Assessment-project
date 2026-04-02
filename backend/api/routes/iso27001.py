@@ -1,4 +1,5 @@
-from fastapi import APIRouter, BackgroundTasks, UploadFile, File, HTTPException
+import re as _re_val
+from fastapi import APIRouter, BackgroundTasks, UploadFile, File, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
@@ -13,6 +14,21 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Regex for safe path-component identifiers: alphanumeric, hyphen, underscore only.
+_SAFE_ID_RE = _re_val.compile(r'^[a-zA-Z0-9_\-]+$')
+
+
+def _validate_path_id(value: str, field_name: str = "id") -> None:
+    """Raise HTTP 400 if *value* contains characters that could enable path traversal."""
+    if not value or not _SAFE_ID_RE.match(value):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Invalid {field_name}: only alphanumeric characters, hyphens, "
+                f"and underscores are allowed."
+            ),
+        )
 
 ASSESSMENTS_DIR = os.getenv("DATA_PATH", "./data") + "/assessments"
 EVIDENCE_DIR = os.getenv("DATA_PATH", "./data") + "/evidence"
@@ -301,12 +317,35 @@ async def assess(data: SystemInfo, background_tasks: BackgroundTasks):
 
 
 @router.get("/iso27001/assessments")
-async def get_all_assessments():
-    return list_assessments()
+async def get_all_assessments(
+    page: int = Query(default=1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(default=20, ge=1, le=100, description="Items per page (max 100)"),
+):
+    """List all assessments with pagination.
+
+    Returns a paginated envelope:
+    ``{ items, total, page, page_size, total_pages }``
+    """
+    all_items = list_assessments()
+    total = len(all_items)
+    total_pages = max(1, -(-total // page_size))  # ceiling division
+
+    start = (page - 1) * page_size
+    end = start + page_size
+    items = all_items[start:end]
+
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+    }
 
 
 @router.get("/iso27001/assessments/{assessment_id}")
 async def get_assessment(assessment_id: str):
+    _validate_path_id(assessment_id, "assessment_id")
     data = load_assessment(assessment_id)
     if not data:
         return {"error": "Assessment not found", "status": "not_found"}
@@ -315,6 +354,7 @@ async def get_assessment(assessment_id: str):
 
 @router.delete("/iso27001/assessments/{assessment_id}")
 async def delete_assessment(assessment_id: str):
+    _validate_path_id(assessment_id, "assessment_id")
     filepath = os.path.join(ASSESSMENTS_DIR, f"{assessment_id}.json")
     if os.path.exists(filepath):
         try:
@@ -465,6 +505,7 @@ async def chromadb_search(query: dict):
 @router.post("/iso27001/evidence/{control_id}")
 async def upload_evidence(control_id: str, file: UploadFile = File(...)):
     """Upload evidence file for a specific control."""
+    _validate_path_id(control_id, "control_id")
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename")
 
@@ -500,6 +541,7 @@ async def upload_evidence(control_id: str, file: UploadFile = File(...)):
 @router.get("/iso27001/evidence/{control_id}")
 async def list_evidence(control_id: str):
     """List all evidence files for a control."""
+    _validate_path_id(control_id, "control_id")
     ctrl_dir = os.path.join(EVIDENCE_DIR, control_id.replace(".", "_"))
     if not os.path.exists(ctrl_dir):
         return {"control_id": control_id, "files": []}
@@ -521,8 +563,15 @@ async def list_evidence(control_id: str):
 @router.get("/iso27001/evidence/{control_id}/{filename}")
 async def download_evidence(control_id: str, filename: str):
     """Download a specific evidence file."""
+    _validate_path_id(control_id, "control_id")
+    _validate_path_id(filename.replace(".", "_"), "filename")
     ctrl_dir = os.path.join(EVIDENCE_DIR, control_id.replace(".", "_"))
     filepath = os.path.join(ctrl_dir, filename)
+    # Resolve the real path and confirm it stays within the evidence directory.
+    real_base = os.path.realpath(EVIDENCE_DIR)
+    real_path = os.path.realpath(filepath)
+    if not real_path.startswith(real_base + os.sep):
+        raise HTTPException(status_code=400, detail="Invalid file path.")
 
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="File not found")
@@ -533,8 +582,15 @@ async def download_evidence(control_id: str, filename: str):
 @router.delete("/iso27001/evidence/{control_id}/{filename}")
 async def delete_evidence(control_id: str, filename: str):
     """Delete a specific evidence file."""
+    _validate_path_id(control_id, "control_id")
+    _validate_path_id(filename.replace(".", "_"), "filename")
     ctrl_dir = os.path.join(EVIDENCE_DIR, control_id.replace(".", "_"))
     filepath = os.path.join(ctrl_dir, filename)
+    # Resolve the real path and confirm it stays within the evidence directory.
+    real_base = os.path.realpath(EVIDENCE_DIR)
+    real_path = os.path.realpath(filepath)
+    if not real_path.startswith(real_base + os.sep):
+        raise HTTPException(status_code=400, detail="Invalid file path.")
 
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="File not found")
@@ -566,8 +622,15 @@ async def get_all_evidence_summary():
 @router.get("/iso27001/evidence/{control_id}/{filename}/preview")
 async def preview_evidence(control_id: str, filename: str):
     """Parse and return text content of an evidence file for preview."""
+    _validate_path_id(control_id, "control_id")
+    _validate_path_id(filename.replace(".", "_"), "filename")
     ctrl_dir = os.path.join(EVIDENCE_DIR, control_id.replace(".", "_"))
     filepath = os.path.join(ctrl_dir, filename)
+    # Resolve the real path and confirm it stays within the evidence directory.
+    real_base = os.path.realpath(EVIDENCE_DIR)
+    real_path = os.path.realpath(filepath)
+    if not real_path.startswith(real_base + os.sep):
+        raise HTTPException(status_code=400, detail="Invalid file path.")
 
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="File not found")
@@ -595,6 +658,7 @@ async def preview_evidence(control_id: str, filename: str):
 async def export_pdf(assessment_id: str):
     """Generate PDF from assessment report using weasyprint.
     Falls back to HTML file if weasyprint is not available."""
+    _validate_path_id(assessment_id, "assessment_id")
     data = load_assessment(assessment_id)
     if not data:
         raise HTTPException(status_code=404, detail="Assessment not found")

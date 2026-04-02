@@ -1,6 +1,37 @@
 import os
 from typing import List
 
+# ── Weak / placeholder JWT secret values that must never reach production ──
+_WEAK_JWT_SECRETS = {
+    "changeme",
+    "change-me-in-production",
+    "secret",
+    "your-secret-key",
+    "your_secret_key",
+}
+_JWT_MIN_LENGTH = 32
+
+
+def _validate_jwt_secret(value: str) -> str:
+    """Raise ValueError at import-time if JWT_SECRET is insecure."""
+    if not value:
+        raise ValueError(
+            "JWT_SECRET is not set. "
+            "Generate a secure random string of at least 32 characters and set it "
+            "as the JWT_SECRET environment variable."
+        )
+    if value.lower() in _WEAK_JWT_SECRETS:
+        raise ValueError(
+            f"JWT_SECRET is set to a known weak default value '{value}'. "
+            "Set a unique random secret of at least 32 characters."
+        )
+    if len(value) < _JWT_MIN_LENGTH:
+        raise ValueError(
+            f"JWT_SECRET is too short ({len(value)} chars). "
+            f"It must be at least {_JWT_MIN_LENGTH} characters long."
+        )
+    return value
+
 
 class Settings:
     APP_NAME: str = "CyberAI Assessment API"
@@ -28,7 +59,10 @@ class Settings:
     VECTOR_STORE_PATH: str = os.getenv("VECTOR_STORE_PATH", "/data/vector_store")
     DATA_PATH: str = os.getenv("DATA_PATH", "/data")
 
-    JWT_SECRET: str = os.getenv("JWT_SECRET", "change-me-in-production")
+    # JWT_SECRET is validated at startup — weak/default values raise ValueError.
+    JWT_SECRET: str = _validate_jwt_secret(
+        os.getenv("JWT_SECRET", "change-me-in-production")
+    )
     JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "60"))
     CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "http://localhost:3000")
 
@@ -62,8 +96,6 @@ class Settings:
         warnings = []
         if not self.cloud_api_key_list:
             warnings.append("No CLOUD_API_KEYS configured — will fallback to LocalAI")
-        if self.JWT_SECRET == "change-me-in-production":
-            warnings.append("JWT_SECRET not changed — not safe for production")
         if "*" in self.CORS_ORIGINS:
             warnings.append("CORS_ORIGINS='*' — should restrict to specific domains")
         return warnings

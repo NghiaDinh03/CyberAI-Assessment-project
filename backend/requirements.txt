@@ -22,6 +22,12 @@ sse-starlette>=1.8.0
 # ======= Security & Rate Limiting =======
 slowapi>=0.1.9
 
+# ======= Observability / Metrics =======
+prometheus-client>=0.20.0
+
+# ======= System Monitoring (replaces /proc mount) =======
+psutil>=5.9.0
+
 # ======= YAML Parsing (Dynamic Standards) =======
 pyyaml>=6.0
 

@@ -43,6 +43,7 @@
 .layout {
     display: flex;
     height: calc(100vh - 52px);
+    height: calc(100dvh - 52px);
     position: relative;
     overflow: hidden;
 }
@@ -631,6 +632,10 @@
     border-top: 1px solid var(--border);
     flex-shrink: 0;
     background: var(--bg-primary);
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .inputToolbar {
@@ -796,34 +801,6 @@
     flex-shrink: 0;
 }
 
-.inputBar input {
-    flex: 1;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 9px;
-    padding: 10px 14px;
-    color: var(--text-primary);
-    font-size: 0.86rem;
-    outline: none;
-    font-family: inherit;
-    transition: border-color 0.18s ease, box-shadow 0.18s ease;
-    line-height: 1.4;
-}
-
-.inputBar input:focus {
-    border-color: var(--input-focus-border);
-    box-shadow: 0 0 0 3px var(--blue-subtle);
-}
-
-.inputBar input::placeholder {
-    color: var(--text-dim);
-    font-size: 0.83rem;
-}
-
-.inputBar input:disabled {
-    opacity: 0.3;
-}
-
 .inputBar button {
     width: 38px;
     height: 38px;
@@ -850,6 +827,119 @@
     opacity: 0.2;
     cursor: not-allowed;
     transform: none;
+}
+
+/* ── Improvement 5: Typewriter / streaming cursor ─────────────────────────── */
+
+.streamingCursor::after {
+    content: '▋';
+    display: inline-block;
+    margin-left: 1px;
+    animation: blink 1s step-end infinite;
+    color: var(--accent-blue);
+    font-size: 0.85em;
+    vertical-align: baseline;
+    line-height: 1;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* ── Empty state icon ─────────────────────────────────────────────────────── */
+
+.emptyIcon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    line-height: 1;
+}
+
+/* ── Copy button on assistant messages ────────────────────────────────────── */
+
+.copyBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    padding: 3px 9px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--bg-muted);
+    color: var(--text-dim);
+    font-size: 0.68rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    font-family: inherit;
+    letter-spacing: 0.1px;
+}
+
+.copyBtn:hover {
+    background: var(--blue-subtle);
+    border-color: var(--border-active);
+    color: var(--accent-blue);
+}
+
+/* ── Character counter ─────────────────────────────────────────────────────── */
+
+.inputWrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.inputWrap input {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px 14px;
+    color: var(--text-primary);
+    font-size: 0.86rem;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    line-height: 1.4;
+}
+
+.inputWrap input:focus {
+    border-color: var(--input-focus-border);
+    box-shadow: 0 0 0 3px var(--blue-subtle);
+}
+
+.inputWrap input::placeholder {
+    color: var(--text-dim);
+    font-size: 0.83rem;
+}
+
+.inputWrap input:disabled {
+    opacity: 0.3;
+}
+
+.charCounter {
+    font-size: 0.61rem;
+    color: var(--text-dim);
+    text-align: right;
+    padding-right: 2px;
+    transition: color 0.15s ease;
+    line-height: 1;
+}
+
+.charCounterWarn {
+    color: var(--accent-red);
+    font-weight: 600;
+}
+
+/* ── Focused model option (keyboard nav) ───────────────────────────────────── */
+
+.modelOptionFocused {
+    background: var(--hover);
+    color: var(--text-primary);
+    outline: 2px solid var(--border-active);
+    outline-offset: -2px;
 }
 
 @media (max-width: 640px) {

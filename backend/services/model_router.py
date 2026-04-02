@@ -13,6 +13,7 @@ GENERAL_MODEL = settings.MODEL_NAME
 
 INTENT_TEMPLATES = {
     "security": [
+        # Vietnamese
         "đánh giá rủi ro bảo mật", "cấu hình firewall", "iso 27001",
         "kiểm toán an toàn thông tin", "chính sách bảo mật",
         "tcvn 11930", "pentest", "vulnerability assessment",
@@ -20,47 +21,92 @@ INTENT_TEMPLATES = {
         "mã hóa dữ liệu", "kiểm soát truy cập", "siem ids ips",
         "chứng nhận iso", "nghị định 13 bảo vệ dữ liệu cá nhân",
         "luật an ninh mạng", "biện pháp kiểm soát kỹ thuật",
+        "kiểm soát", "tuân thủ", "kiểm toán", "đánh giá rủi ro",
+        "hệ thống quản lý", "an toàn thông tin", "chính sách bảo mật",
+        "lỗ hổng bảo mật", "vá lỗi bảo mật", "tường lửa", "mạng bảo mật",
+        # English
+        "risk assessment", "access control", "security policy",
+        "information security management", "control objective",
+        "annex a", "iso 27002", "nist", "encryption", "vulnerability",
+        "patch management", "network security", "firewall configuration",
+        "security audit", "compliance audit", "isms implementation",
+        "security controls", "data protection", "incident response",
     ],
     "search": [
+        # Vietnamese
         "tin tức mới nhất", "tìm kiếm thông tin", "cập nhật gần đây",
         "giá cổ phiếu hôm nay", "xu hướng thị trường",
         "sự kiện an ninh mạng mới", "so sánh sản phẩm",
         "tình hình chứng khoán", "diễn biến thị trường",
         "cho tôi biết về", "thông tin mới về",
+        # English
+        "latest news", "recent updates", "current events",
+        "stock price today", "market trend", "compare products",
+        "what is happening", "tell me about recent",
     ],
     "general": [
+        # Vietnamese
         "xin chào", "giúp tôi", "cảm ơn",
         "giải thích khái niệm", "hướng dẫn sử dụng",
         "bạn là ai", "chatbot có thể làm gì",
+        "chào", "giúp tôi với", "bạn có thể làm gì",
+        "tôi cần hỗ trợ", "hỗ trợ tôi",
+        # English
+        "hello", "hi there", "help me", "what can you do",
+        "who are you", "how does this work", "getting started",
+        "thank you", "thanks", "explain to me",
     ],
 }
 
 ISO_KEYWORDS = [
+    # Standards identifiers — language-neutral
     "iso 27001", "iso 27002", "iso27001", "iso27002",
     "tcvn 14423", "tcvn14423", "tcvn 11930", "tcvn11930", "cấp độ",
-    "annex a", "compliance", "tuân thủ", "isms", "gap analysis",
-    "điều khoản iso", "biện pháp kiểm soát", "đánh giá iso", "kiểm toán",
-    "audit", "pentest", "vulnerability assessment",
+    "annex a", "isms", "gap analysis", "nist", "pci dss", "soc 2", "gdpr",
+    # Vietnamese compliance terms
+    "compliance", "tuân thủ", "kiểm toán", "đánh giá iso",
+    "điều khoản iso", "biện pháp kiểm soát", "kiểm soát",
     "chứng chỉ iso", "chứng nhận iso", "an toàn thông tin", "attt",
     "nghị định 13", "bảo vệ dữ liệu cá nhân", "luật an ninh mạng",
+    "hệ thống quản lý", "đánh giá rủi ro", "kiểm soát truy cập",
+    "chính sách bảo mật", "mã hóa dữ liệu", "an ninh mạng",
+    # English ISO/compliance terms
+    "audit", "pentest", "vulnerability assessment", "risk assessment",
+    "access control", "security policy", "information security",
+    "data protection", "encryption", "patch management",
+    "incident response", "business continuity", "disaster recovery",
+    "security controls", "control objective", "compliance framework",
 ]
 
 SEARCH_KEYWORDS = [
-    "tìm kiếm", "tra cứu", "search", "tìm giúp",
-    "mới nhất", "latest", "gần đây", "recent",
-    "hiện tại", "currently", "bây giờ",
+    # Vietnamese search intent
+    "tìm kiếm", "tra cứu", "tìm giúp",
+    "mới nhất", "gần đây", "hiện tại", "bây giờ",
     "năm 2024", "năm 2025", "năm 2026",
-    "tin tức", "news", "cập nhật", "so sánh", "compare",
-    "giá cổ phiếu", "thị trường chứng khoán", "xu hướng", "trend",
-    "sự kiện", "event", "ai biết", "cho tôi biết",
+    "tin tức", "cập nhật", "so sánh",
+    "giá cổ phiếu", "thị trường chứng khoán", "xu hướng",
+    "sự kiện", "ai biết", "cho tôi biết",
     "tình hình", "diễn biến", "thông tin về", "nói cho tôi",
+    # English search intent
+    "search", "latest", "recent", "currently", "news",
+    "compare", "trend", "event", "stock price", "market",
+    "what happened", "today", "this week", "breaking",
 ]
 
 ISO_STRICT_KEYWORDS = [
-    "iso", "27001", "27002", "14423", "tcvn", "isms", "annex", "compliance",
-    "đánh giá rủi ro", "kiểm soát truy cập", "chính sách bảo mật",
+    # Standards / framework identifiers
+    "iso", "27001", "27002", "14423", "tcvn", "isms", "annex", "nist",
+    # Vietnamese strict compliance terms
+    "compliance", "đánh giá rủi ro", "kiểm soát truy cập",
+    "chính sách bảo mật", "kiểm toán", "kiểm soát",
+    "tuân thủ", "an toàn thông tin", "hệ thống quản lý",
+    "mã hóa", "lỗ hổng", "vá lỗi", "tường lửa", "mạng bảo mật",
+    "nghị định 13", "luật an ninh mạng", "điều khoản", "gap analysis",
+    # English strict security/compliance terms
     "firewall", "siem", "ids", "ips", "pentest", "audit",
-    "gap analysis", "điều khoản", "nghị định 13", "luật an ninh mạng",
+    "encryption", "vulnerability", "patch", "risk assessment",
+    "access control", "security policy", "incident response",
+    "data protection", "security controls",
 ]
 
 _iso_pattern = re.compile(r'(' + '|'.join(re.escape(kw) for kw in ISO_KEYWORDS) + r')', re.IGNORECASE)
