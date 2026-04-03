@@ -158,3 +158,10 @@
         padding: 0.9rem 1rem;
     }
 }
+
+.statsRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.statCard { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; display: flex; align-items: center; gap: 12px; transition: border-color 0.18s ease, transform 0.18s ease; }
+.statCard:hover { border-color: var(--border-active); transform: translateY(-1px); }
+.statIcon { color: var(--accent-blue); flex-shrink: 0; }
+.statValue { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+.statLabel { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
