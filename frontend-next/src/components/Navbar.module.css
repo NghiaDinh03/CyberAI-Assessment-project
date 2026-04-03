@@ -29,19 +29,16 @@
     flex-shrink: 0;
 }
 
-.brandMark {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.brandIcon {
     width: 26px;
     height: 26px;
-    background: var(--accent-blue);
-    color: #fff;
-    font-size: 0.65rem;
-    font-weight: 800;
-    letter-spacing: 0.5px;
-    border-radius: 6px;
+    color: var(--accent-blue);
     flex-shrink: 0;
+    transition: color 0.2s;
+}
+
+.brand:hover .brandIcon {
+    color: var(--accent-cyan, #22d3ee);
 }
 
 .brandText {
@@ -210,18 +207,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 32px;
     height: 28px;
-    padding: 0 10px;
+    padding: 0;
     border-radius: 7px;
     background: var(--bg-muted);
     border: 1px solid var(--border);
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    color: var(--text-muted);
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .themeToggle:hover {
     background: var(--hover);
     border-color: var(--border-active);
+    color: var(--accent-blue);
 }
 
 .themeLabel {

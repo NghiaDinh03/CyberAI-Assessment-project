@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from './ThemeProvider'
 import styles from './Navbar.module.css'
-import { Home, MessageSquare, Shield, BookOpen, BarChart2 } from 'lucide-react'
+import { Home, MessageSquare, Shield, BookOpen, BarChart2, Sun, Moon } from 'lucide-react'
 
 const NAV_ITEMS = [
     { href: '/', label: 'Home', icon: Home },
@@ -74,7 +74,11 @@ export default function Navbar() {
         <nav className={styles.navbar}>
             <div className={styles.inner}>
                 <Link href="/" className={styles.brand}>
-                    <span className={styles.brandMark}>CA</span>
+                    <svg className={styles.brandIcon} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M16 3L4 8v8c0 6.627 5.153 12.417 12 13.95C22.847 28.417 28 22.627 28 16V8L16 3z" fill="currentColor" opacity="0.15"/>
+                        <path d="M16 3L4 8v8c0 6.627 5.153 12.417 12 13.95C22.847 28.417 28 22.627 28 16V8L16 3z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                        <path d="M11 16l3.5 3.5L21 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                     <span className={styles.brandText}>CyberAI</span>
                 </Link>
 
@@ -116,12 +120,12 @@ export default function Navbar() {
                         <button
                             className={styles.themeToggle}
                             onClick={toggle}
-                            aria-label="Toggle theme"
+                            aria-label={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                         >
-                            <span className={styles.themeLabel}>
-                                {theme === 'dark' ? 'Light' : 'Dark'}
-                            </span>
+                            {theme === 'dark'
+                                ? <Sun size={16} strokeWidth={1.8} />
+                                : <Moon size={16} strokeWidth={1.8} />}
                         </button>
                     )}
                 </div>
