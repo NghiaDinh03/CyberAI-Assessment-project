@@ -49,6 +49,7 @@ export default function TemplatesMonitorPage() {
                 </button>
                 {ASSESSMENT_STANDARDS.map(std => {
                     const count = ASSESSMENT_TEMPLATES.filter(t => t.standard === std.id).length
+                    if (count === 0) return null
                     return (
                         <button
                             key={std.id}
@@ -114,19 +115,30 @@ export default function TemplatesMonitorPage() {
                                         <span className={styles.complianceValue}>{implemented}/{total} — {percent}%</span>
                                     </div>
                                     <div className={styles.complianceTrack}>
-                                        <div className={styles.complianceFill} style={{ width: `${percent}%` }} />
+                                        <div className={styles.complianceFill} style={{
+                                            width: `${percent}%`,
+                                            background: percent >= 80 ? 'var(--accent-green)'
+                                                      : percent >= 50 ? 'var(--accent-blue)'
+                                                      : percent >= 25 ? 'var(--accent-amber, #f59e0b)'
+                                                      : 'var(--accent-red, #ef4444)'
+                                        }} />
                                     </div>
                                 </div>
                             </div>
 
                             <div className={styles.cardFooter}>
-                                <button className={styles.useBtn} onClick={() => selectTemplate(tpl)}>
+                                <button className={styles.useBtn} onClick={() => selectTemplate(tpl)} aria-label={`Analyze ${tpl.name}`}>
                                     Analyze this system →
                                 </button>
                             </div>
                         </div>
                     )
                 })}
+                {filteredTemplates.length === 0 && (
+                    <div className={styles.emptyState}>
+                        <p>No templates available for this standard.</p>
+                    </div>
+                )}
             </div>
         </div>
     )

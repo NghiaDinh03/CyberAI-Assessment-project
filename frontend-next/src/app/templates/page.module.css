@@ -99,6 +99,10 @@
 .templateCard:nth-child(5) { animation-delay: 0.20s; }
 .templateCard:nth-child(6) { animation-delay: 0.24s; }
 
+.templateGrid > *:nth-child(n+7) {
+  animation-delay: 0.28s;
+}
+
 @keyframes cardFadeUp {
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
@@ -306,9 +310,16 @@
 
 .complianceFill {
     height: 100%;
-    background: var(--accent-green);
     border-radius: 2px;
     transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.emptyState {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+    font-size: 0.9375rem;
 }
 
 .cardFooter {
