@@ -1,5 +1,9 @@
 const BACKEND_URL = process.env.API_URL || 'http://backend:8000'
 
+// LocalAI cold start (loading ~5GB GGUF into RAM) can take 3-5 minutes
+const CONNECT_TIMEOUT_MS = 300000   // 5 min — allows LocalAI model warmup
+const INACTIVITY_TIMEOUT_MS = 300000 // 5 min — inactivity watchdog
+
 export const maxDuration = 300
 
 export async function POST(request) {
@@ -7,8 +11,7 @@ export async function POST(request) {
         const body = await request.json()
 
         const controller = new AbortController()
-        // 120s hard timeout — streams an error event then closes
-        const timeout = setTimeout(() => controller.abort(), 120000)
+        const timeout = setTimeout(() => controller.abort(), CONNECT_TIMEOUT_MS)
 
         let res
         try {
@@ -21,14 +24,9 @@ export async function POST(request) {
         } catch (fetchErr) {
             clearTimeout(timeout)
             if (fetchErr.name === 'AbortError') {
-                // Stream a user-visible timeout error as SSE then close
-                const errorPayload = `data: ${JSON.stringify({ step: 'error', data: { error: true, response: 'Request timed out after 120 seconds. The model is overloaded — please try again.' } })}\n\n`
+                const errorPayload = `data: ${JSON.stringify({ step: 'error', data: { error: true, response: 'Request timed out after 5 minutes. If using LocalAI, the model may still be warming up — please try again in a moment.' } })}\n\n`
                 return new Response(errorPayload, {
-                    headers: {
-                        'Content-Type': 'text/event-stream',
-                        'Cache-Control': 'no-cache',
-                        'Connection': 'keep-alive'
-                    }
+                    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' }
                 })
             }
             return Response.json(
@@ -47,20 +45,17 @@ export async function POST(request) {
             )
         }
 
-        // Pipe backend SSE stream directly to client, but wrap it so we can
-        // inject a timeout error if the stream stalls after the initial connect.
         const { readable, writable } = new TransformStream()
         const writer = writable.getWriter()
         const encoder = new TextEncoder()
 
-        // 120s inactivity watchdog on the piped stream
         let streamTimeout = setTimeout(async () => {
             try {
-                const msg = `data: ${JSON.stringify({ step: 'error', data: { error: true, response: 'Stream timed out after 120 seconds. Please try again.' } })}\n\n`
+                const msg = `data: ${JSON.stringify({ step: 'error', data: { error: true, response: 'Stream inactive for 5 minutes. Please try again.' } })}\n\n`
                 await writer.write(encoder.encode(msg))
                 await writer.close()
             } catch { }
-        }, 120000)
+        }, INACTIVITY_TIMEOUT_MS)
 
         ;(async () => {
             try {
@@ -71,11 +66,11 @@ export async function POST(request) {
                     clearTimeout(streamTimeout)
                     streamTimeout = setTimeout(async () => {
                         try {
-                            const msg = `data: ${JSON.stringify({ step: 'error', data: { error: true, response: 'Stream timed out after 120 seconds. Please try again.' } })}\n\n`
+                            const msg = `data: ${JSON.stringify({ step: 'error', data: { error: true, response: 'Stream inactive for 5 minutes. Please try again.' } })}\n\n`
                             await writer.write(encoder.encode(msg))
                             await writer.close()
                         } catch { }
-                    }, 120000)
+                    }, INACTIVITY_TIMEOUT_MS)
                     await writer.write(value)
                 }
                 clearTimeout(streamTimeout)
@@ -87,11 +82,7 @@ export async function POST(request) {
         })()
 
         return new Response(readable, {
-            headers: {
-                'Content-Type': 'text/event-stream',
-                'Cache-Control': 'no-cache',
-                'Connection': 'keep-alive'
-            }
+            headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' }
         })
     } catch (err) {
         return Response.json(
