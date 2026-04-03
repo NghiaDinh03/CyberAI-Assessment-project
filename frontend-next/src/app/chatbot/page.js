@@ -12,18 +12,26 @@ const MAX_INPUT = 2000
 const WARN_THRESHOLD = 1800
 
 const CLOUD_MODELS = [
+    // ── Google Gemini ─────────────────────────────────────────────────────────
     { id: 'gemini-3-flash-preview', label: 'Gemini 3 Flash', provider: 'google', badge: 'Fast' },
-    { id: 'gemini-3-pro-preview', label: 'Gemini 3 Pro', provider: 'google', badge: '' },
-    { id: 'gpt-5', label: 'GPT-5', provider: 'openai', badge: 'Pro' },
-    { id: 'gpt-5-mini', label: 'GPT-5 Mini', provider: 'openai', badge: 'Fast' },
-    { id: 'gpt-5.2', label: 'GPT-5.2', provider: 'openai', badge: '' },
-    { id: 'gpt-5.2-codex', label: 'GPT-5.2 Codex', provider: 'openai', badge: 'Code' },
-    { id: 'gpt-5.4', label: 'GPT-5.4', provider: 'openai', badge: 'Fast' },
+    { id: 'gemini-3-pro-preview',   label: 'Gemini 3 Pro',   provider: 'google', badge: '' },
+    // ── Google Gemma 4 ────────────────────────────────────────────────────────
+    { id: 'gemma-3-27b-it',  label: 'Gemma 4 27B', provider: 'google', badge: 'Pro' },
+    { id: 'gemma-3-12b-it',  label: 'Gemma 4 12B', provider: 'google', badge: '' },
+    { id: 'gemma-3-4b-it',   label: 'Gemma 4 4B',  provider: 'google', badge: 'Fast' },
+    // ── OpenAI ────────────────────────────────────────────────────────────────
+    { id: 'gpt-5',           label: 'GPT-5',         provider: 'openai', badge: 'Pro' },
+    { id: 'gpt-5-mini',      label: 'GPT-5 Mini',    provider: 'openai', badge: 'Fast' },
+    { id: 'gpt-5.2',         label: 'GPT-5.2',       provider: 'openai', badge: '' },
+    { id: 'gpt-5.2-codex',   label: 'GPT-5.2 Codex', provider: 'openai', badge: 'Code' },
+    { id: 'gpt-5.4',         label: 'GPT-5.4',       provider: 'openai', badge: 'Fast' },
+    { id: 'gpt-4.1',         label: 'GPT-4.1',       provider: 'openai', badge: '' },
+    { id: 'gpt-4.1-mini',    label: 'GPT-4.1 Mini',  provider: 'openai', badge: 'Fast' },
+    // ── Anthropic ─────────────────────────────────────────────────────────────
     { id: 'claude-opus-4.5', label: 'Claude Opus 4.5', provider: 'anthropic', badge: 'Pro' },
     { id: 'claude-opus-4.6', label: 'Claude Opus 4.6', provider: 'anthropic', badge: 'New' },
-    { id: 'claude-sonnet-4', label: 'Claude Sonnet 4', provider: 'anthropic', badge: 'Fast' },
-    { id: 'gpt-4.1', label: 'GPT-4.1', provider: 'openai', badge: '' },
-    { id: 'gpt-4.1-mini', label: 'GPT-4.1 Mini', provider: 'openai', badge: 'Fast' },
+    { id: 'claude-sonnet-4', label: 'Claude Sonnet 4',  provider: 'anthropic', badge: 'Fast' },
+    // ── Local ─────────────────────────────────────────────────────────────────
     { id: 'localai', label: 'LocalAI (On-prem)', provider: 'local', badge: 'Local' },
 ]
 
