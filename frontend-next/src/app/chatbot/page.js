@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import {
+    Send, Copy, Plus, Trash2, ChevronDown, Bot, User, Loader2
+} from 'lucide-react'
 import styles from './page.module.css'
 
 const MAX_INPUT = 2000
@@ -31,13 +34,10 @@ const PROVIDER_COLORS = {
     local: '#8b5cf6',
 }
 
-const SUGGESTIONS = [
-    { text: 'ISO 27001:2022 có gì mới so với 2013?' },
-    { text: 'TCVN 11930 yêu cầu kỹ thuật gì?' },
-    { text: 'Cách triển khai ISMS cho doanh nghiệp nhỏ' },
-    { text: 'Các lỗ hổng bảo mật nguy hiểm nhất 2026' },
-    { text: 'Tin tức an ninh mạng mới nhất' },
-    { text: 'Tác giả của CyberAI là ai?' },
+const SUGGESTED_PROMPTS = [
+    'Kiểm soát truy cập là gì?',
+    'Giải thích Annex A ISO 27001',
+    'ISO 27001 vs SOC 2 khác nhau thế nào?',
 ]
 
 const SESSIONS_KEY = 'phobert_chat_sessions'
@@ -73,6 +73,209 @@ function directSaveSession(sessionId, messages) {
     } catch { }
 }
 
+// ─── MessageBubble ────────────────────────────────────────────────────────────
+const MessageBubble = memo(function MessageBubble({ m, msgKey, isLastStreaming, copiedMsgId, onCopy }) {
+    const isBot = m.role === 'assistant'
+    const isStreaming = !!m._streaming
+
+    return (
+        <div className={`${styles.msg} ${isBot ? styles.msgBot : styles.msgUser}`}>
+            {isBot && (
+                <div className={styles.avatar}>
+                    {isStreaming
+                        ? <Loader2 size={14} className={styles.spinIcon} />
+                        : <Bot size={14} />}
+                </div>
+            )}
+            <div className={`${styles.bubble} ${isBot ? styles.bubbleBot : styles.bubbleUser}`}>
+                {isBot ? (
+                    isStreaming && m.content === '' ? (
+                        <div className={styles.skeletonWrap}>
+                            <div className={`${styles.skeletonLine} ${styles.skeletonLong}`} />
+                            <div className={`${styles.skeletonLine} ${styles.skeletonMed}`} />
+                            <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
+                        </div>
+                    ) : (
+                        <div className={styles.md}>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content || ' '}</ReactMarkdown>
+                            {isLastStreaming && <span className={styles.blinkCursor}>|</span>}
+                        </div>
+                    )
+                ) : m.content}
+
+                {isBot && !isStreaming && (
+                    <button
+                        className={styles.copyBtn}
+                        onClick={() => onCopy(msgKey, m.content)}
+                        title="Copy message"
+                        aria-label="Copy message to clipboard"
+                    >
+                        {copiedMsgId === msgKey
+                            ? <><Copy size={12} /> Copied!</>
+                            : <><Copy size={12} /> Copy</>}
+                    </button>
+                )}
+
+                {!isStreaming && (
+                    <div className={styles.msgMeta}>
+                        {m.ragUsed && <span className={styles.badge}>RAG</span>}
+                        {m.searchUsed && <span className={styles.badge}>Web</span>}
+                        {m.model && (
+                            <span
+                                className={styles.badge}
+                                title={m.requestedModel && m.requestedModel !== m.model
+                                    ? `Requested: ${m.requestedModel} → Fallback: ${m.model}`
+                                    : m.model}
+                            >
+                                {m.model}{m.requestedModel && m.requestedModel !== m.model ? ' ↩' : ''}
+                            </span>
+                        )}
+                        <span className={styles.time}>{m.time}</span>
+                    </div>
+                )}
+
+                {!isStreaming && m.ragUsed && m.sources?.length > 0 && (
+                    <div className={styles.sourcesList}>
+                        {m.sources.slice(0, 4).map((src, idx) => (
+                            <a key={idx} href={src.startsWith('http') ? src : '#'} target="_blank" rel="noreferrer" className={styles.sourceItem}>
+                                {src}
+                            </a>
+                        ))}
+                    </div>
+                )}
+            </div>
+            {!isBot && <div className={styles.avatarUser}><User size={14} /></div>}
+        </div>
+    )
+})
+
+// ─── ModelDropdown ────────────────────────────────────────────────────────────
+const ModelDropdown = memo(function ModelDropdown({
+    selectedModel, modelDropdown, focusedModelIdx,
+    onToggle, onSelect, onKeyDown, modelBtnRef, dropdownRef
+}) {
+    const activeModelInfo = CLOUD_MODELS.find(m => m.id === selectedModel) || CLOUD_MODELS[0]
+    return (
+        <div className={styles.modelPicker}>
+            <button
+                ref={modelBtnRef}
+                type="button"
+                className={styles.modelBtn}
+                onClick={onToggle}
+                onKeyDown={onKeyDown}
+                style={{ '--provider-color': PROVIDER_COLORS[activeModelInfo.provider] }}
+                aria-haspopup="listbox"
+                aria-expanded={modelDropdown}
+                aria-label={`Selected model: ${activeModelInfo.label}`}
+            >
+                <span className={styles.modelDot} style={{ background: PROVIDER_COLORS[activeModelInfo.provider] }} />
+                <span className={styles.modelBtnLabel}>{activeModelInfo.label}</span>
+                <ChevronDown size={14} className={`${styles.modelChevron} ${modelDropdown ? styles.modelChevronOpen : ''}`} />
+            </button>
+            {modelDropdown && (
+                <div
+                    ref={dropdownRef}
+                    className={styles.modelDropdown}
+                    role="listbox"
+                    aria-label="Select AI Model"
+                    aria-activedescendant={focusedModelIdx >= 0 ? `model-opt-${CLOUD_MODELS[focusedModelIdx].id}` : undefined}
+                    onKeyDown={onKeyDown}
+                >
+                    <div className={styles.modelDropdownTitle}>Select AI Model</div>
+                    {CLOUD_MODELS.map((m, idx) => (
+                        <button
+                            key={m.id}
+                            id={`model-opt-${m.id}`}
+                            type="button"
+                            role="option"
+                            aria-selected={selectedModel === m.id}
+                            className={`${styles.modelOption} ${selectedModel === m.id ? styles.modelOptionActive : ''} ${focusedModelIdx === idx ? styles.modelOptionFocused : ''}`}
+                            onClick={() => onSelect(m.id)}
+                            onMouseEnter={() => { }}
+                        >
+                            <span className={styles.modelDot} style={{ background: PROVIDER_COLORS[m.provider] }} />
+                            <span className={styles.modelOptionName}>{m.label}</span>
+                            {m.badge && <span className={styles.modelBadge}>{m.badge}</span>}
+                            <span className={styles.modelProviderTag} style={{ color: PROVIDER_COLORS[m.provider] }}>{m.provider}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+})
+
+// ─── SessionList ──────────────────────────────────────────────────────────────
+const SessionList = memo(function SessionList({ sessions, activeId, onOpen, onRemove, onNew, onClose, onClearAll }) {
+    const [search, setSearch] = useState('')
+
+    const filtered = useMemo(() => {
+        if (!search.trim()) return sessions
+        const q = search.toLowerCase()
+        return sessions.filter(s =>
+            s.title?.toLowerCase().includes(q) ||
+            s.messages?.some(m => m.content?.toLowerCase().includes(q))
+        )
+    }, [sessions, search])
+
+    return (
+        <>
+            <div className={styles.sidebarHeader}>
+                <h3>History</h3>
+                <div style={{ display: 'flex', gap: 4 }}>
+                    {sessions.length > 0 && (
+                        <button
+                            className={styles.sidebarClose}
+                            onClick={onClearAll}
+                            title="Clear all history"
+                            style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: 6, background: 'rgba(248,113,113,0.09)', color: 'var(--accent-red)', border: '1px solid rgba(248,113,113,0.2)' }}
+                        >
+                            Clear all
+                        </button>
+                    )}
+                    <button className={styles.sidebarClose} onClick={onClose}>✕</button>
+                </div>
+            </div>
+            <button className={styles.newBtn} onClick={onNew}>
+                <Plus size={13} style={{ marginRight: 4 }} />New Chat
+            </button>
+            {sessions.length > 0 && (
+                <div style={{ padding: '0 0.75rem 0.4rem' }}>
+                    <input
+                        className={styles.sessionSearch}
+                        type="search"
+                        placeholder="Search history…"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        aria-label="Search sessions"
+                    />
+                </div>
+            )}
+            <div className={styles.sessionList}>
+                {filtered.length === 0 && (
+                    <p className={styles.empty}>{sessions.length === 0 ? 'No conversations yet' : 'No matches'}</p>
+                )}
+                {filtered.map(s => (
+                    <div
+                        key={s.id}
+                        className={`${styles.sessionItem} ${s.id === activeId ? styles.sessionActive : ''}`}
+                        onClick={() => onOpen(s)}
+                    >
+                        <div className={styles.sessionInfo}>
+                            <div className={styles.sessionTitle}>{s.title}</div>
+                            <div className={styles.sessionMeta}>{s.count} msgs · {s.time}</div>
+                        </div>
+                        <button className={styles.sessionDel} onClick={e => onRemove(e, s.id)} aria-label="Delete session">
+                            <Trash2 size={12} />
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </>
+    )
+})
+
+// ─── ChatbotPage ──────────────────────────────────────────────────────────────
 export default function ChatbotPage() {
     const [sessions, setSessions] = useState([])
     const [activeId, setActiveId] = useState(null)
@@ -93,6 +296,7 @@ export default function ChatbotPage() {
     const inputRef = useRef(null)
     const modelBtnRef = useRef(null)
     const dropdownRef = useRef(null)
+    const prevMsgLenRef = useRef(0)
 
     useEffect(() => {
         let cancelled = false
@@ -179,24 +383,30 @@ export default function ChatbotPage() {
 
     useEffect(() => { if (ready) lsSet(SESSIONS_KEY, sessions) }, [sessions, ready])
     useEffect(() => { if (ready) lsSet(ACTIVE_KEY, activeId) }, [activeId, ready])
-    // Improvement 5: scroll to bottom whenever message content changes (catches typewriter growth)
-    useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs])
 
-    const handleModelChange = (modelId) => {
+    // Scroll only when a new message is added
+    useEffect(() => {
+        if (msgs.length > prevMsgLenRef.current) {
+            endRef.current?.scrollIntoView({ behavior: 'smooth' })
+        }
+        prevMsgLenRef.current = msgs.length
+    }, [msgs.length])
+
+    const handleModelChange = useCallback((modelId) => {
         setSelectedModel(modelId)
         lsSet(MODEL_KEY, modelId)
         setModelDropdown(false)
         setFocusedModelIdx(-1)
         modelBtnRef.current?.focus()
-    }
+    }, [])
 
-    const openDropdown = () => {
+    const openDropdown = useCallback(() => {
         const idx = CLOUD_MODELS.findIndex(m => m.id === selectedModel)
         setFocusedModelIdx(idx >= 0 ? idx : 0)
         setModelDropdown(true)
-    }
+    }, [selectedModel])
 
-    const handleModelKeyDown = (e) => {
+    const handleModelKeyDown = useCallback((e) => {
         if (!modelDropdown) {
             if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
                 e.preventDefault()
@@ -219,7 +429,7 @@ export default function ChatbotPage() {
             setFocusedModelIdx(-1)
             modelBtnRef.current?.focus()
         }
-    }
+    }, [modelDropdown, focusedModelIdx, handleModelChange, openDropdown])
 
     const copyMessage = useCallback((id, text) => {
         navigator.clipboard.writeText(text).then(() => {
@@ -227,17 +437,17 @@ export default function ChatbotPage() {
             setTimeout(() => setCopiedMsgId(null), 2000)
         }).catch(() => {
             try {
-                const ta = document.createElement('textarea');
-                ta.value = text;
-                ta.style.position = 'fixed';
-                ta.style.opacity = '0';
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                setCopiedMsgId(id);
-                setTimeout(() => setCopiedMsgId(null), 2000);
-            } catch { /* copy not available */ }
+                const ta = document.createElement('textarea')
+                ta.value = text
+                ta.style.position = 'fixed'
+                ta.style.opacity = '0'
+                document.body.appendChild(ta)
+                ta.select()
+                document.execCommand('copy')
+                document.body.removeChild(ta)
+                setCopiedMsgId(id)
+                setTimeout(() => setCopiedMsgId(null), 2000)
+            } catch { }
         })
     }, [])
 
@@ -250,10 +460,8 @@ export default function ChatbotPage() {
         })
     }, [])
 
-    const send = async (text) => {
+    const send = useCallback(async (text) => {
         if (!text.trim()) return
-
-        // Improvement 3: guard against double-submit race condition
         if (isSubmitting.current) return
         isSubmitting.current = true
 
@@ -270,6 +478,7 @@ export default function ChatbotPage() {
         setStatusText('Đang xử lý...')
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 600000)
+
         try {
             const res = await fetch('/api/chat', {
                 method: 'POST',
@@ -282,6 +491,7 @@ export default function ChatbotPage() {
                 const errData = await res.json().catch(() => null)
                 throw new Error(errData?.detail || errData?.response || `HTTP ${res.status}`)
             }
+
             const contentType = res.headers.get('content-type') || ''
             if (contentType.includes('text/event-stream')) {
                 const reader = res.body.getReader()
@@ -289,15 +499,8 @@ export default function ChatbotPage() {
                 let buffer = ''
                 let finalData = null
 
-                // Improvement 5: add a streaming placeholder message for typewriter effect
                 const pendingMsgId = `pending-${Date.now()}`
-                const streamingMsg = {
-                    role: 'assistant',
-                    content: '',
-                    time: now(),
-                    _streaming: true,
-                    _id: pendingMsgId,
-                }
+                const streamingMsg = { role: 'assistant', content: '', time: now(), _streaming: true, _id: pendingMsgId }
                 if (mountedRef.current) {
                     setMsgs(prev => [...prev, streamingMsg])
                 }
@@ -315,7 +518,6 @@ export default function ChatbotPage() {
                             if (event.step === 'done' || event.step === 'error') {
                                 finalData = event.data
                             } else if (event.step === 'token' && event.token && mountedRef.current) {
-                                // Improvement 5: append each token incrementally (typewriter)
                                 setMsgs(prev => prev.map(m =>
                                     m._id === pendingMsgId
                                         ? { ...m, content: m.content + event.token }
@@ -343,9 +545,7 @@ export default function ChatbotPage() {
                         ragUsed: finalData.rag_used,
                         webSources: finalData.web_sources,
                         sources: finalData.sources,
-                        // _streaming and _id intentionally absent — finalised message
                     }
-                    // Replace the streaming placeholder in-place by its _id
                     if (mountedRef.current) {
                         setMsgs(prev => {
                             const final = prev.map(m => m._id === pendingMsgId ? botMsg : m)
@@ -382,7 +582,6 @@ export default function ChatbotPage() {
                 const content = err?.name === 'AbortError'
                     ? 'Request timeout (5 phút). Model đang quá tải.'
                     : `Lỗi kết nối: ${err.message}`
-                // Remove any in-flight streaming placeholder before appending error
                 const final = [...next, { role: 'assistant', content, time: now() }]
                 directSaveSession(id, final)
                 setMsgs(final)
@@ -390,64 +589,55 @@ export default function ChatbotPage() {
                 lsDel(PENDING_KEY)
             }
         } finally {
-            // Improvement 3: always reset the submission guard in finally
             isSubmitting.current = false
             if (mountedRef.current) { setSending(false); setStatusText('') }
         }
-    }
+    }, [activeId, msgs, selectedModel, updateSessions])
 
-    const newChat = () => { setActiveId(null); setMsgs([]); setSidebar(false); setTimeout(() => inputRef.current?.focus(), 100) }
-    const openSession = (s) => { setActiveId(s.id); setMsgs(s.messages || []); setSidebar(false) }
-    const removeSession = (e, id) => { e.stopPropagation(); setSessions(prev => prev.filter(x => x.id !== id)); if (activeId === id) { setActiveId(null); setMsgs([]) } }
-    const clearAllSessions = () => {
-        setSessions([])
-        setActiveId(null)
-        setMsgs([])
-        lsDel(SESSIONS_KEY)
-        lsDel(ACTIVE_KEY)
-        lsDel(PENDING_KEY)
-    }
+    const newChat = useCallback(() => {
+        setActiveId(null); setMsgs([]); setSidebar(false)
+        setTimeout(() => inputRef.current?.focus(), 100)
+    }, [])
 
-    const activeModelInfo = CLOUD_MODELS.find(m => m.id === selectedModel) || CLOUD_MODELS[0]
+    const openSession = useCallback((s) => { setActiveId(s.id); setMsgs(s.messages || []); setSidebar(false) }, [])
+
+    const removeSession = useCallback((e, id) => {
+        e.stopPropagation()
+        setSessions(prev => prev.filter(x => x.id !== id))
+        if (activeId === id) { setActiveId(null); setMsgs([]) }
+    }, [activeId])
+
+    const clearAllSessions = useCallback(() => {
+        setSessions([]); setActiveId(null); setMsgs([])
+        lsDel(SESSIONS_KEY); lsDel(ACTIVE_KEY); lsDel(PENDING_KEY)
+    }, [])
+
+    const activeModelInfo = useMemo(() =>
+        CLOUD_MODELS.find(m => m.id === selectedModel) || CLOUD_MODELS[0],
+        [selectedModel]
+    )
+
+    const lastStreamingIdx = useMemo(() => {
+        for (let i = msgs.length - 1; i >= 0; i--) {
+            if (msgs[i]._streaming) return i
+        }
+        return -1
+    }, [msgs])
 
     return (
         <div className={styles.layout} onClick={() => modelDropdown && setModelDropdown(false)}>
             {sidebar && <div className={styles.overlay} onClick={() => setSidebar(false)} />}
 
             <aside className={`${styles.sidebar} ${sidebar ? styles.sidebarOpen : ''}`}>
-                <div className={styles.sidebarHeader}>
-                    <h3>History</h3>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                        {sessions.length > 0 && (
-                            <button
-                                className={styles.sidebarClose}
-                                onClick={clearAllSessions}
-                                title="Clear all history"
-                                style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: 6, background: 'rgba(248,113,113,0.09)', color: 'var(--accent-red)', border: '1px solid rgba(248,113,113,0.2)' }}
-                            >
-                                Clear all
-                            </button>
-                        )}
-                        <button className={styles.sidebarClose} onClick={() => setSidebar(false)}>✕</button>
-                    </div>
-                </div>
-                <button className={styles.newBtn} onClick={newChat}>New Chat</button>
-                <div className={styles.sessionList}>
-                    {sessions.length === 0 && <p className={styles.empty}>No conversations yet</p>}
-                    {sessions.map(s => (
-                        <div
-                            key={s.id}
-                            className={`${styles.sessionItem} ${s.id === activeId ? styles.sessionActive : ''}`}
-                            onClick={() => openSession(s)}
-                        >
-                            <div className={styles.sessionInfo}>
-                                <div className={styles.sessionTitle}>{s.title}</div>
-                                <div className={styles.sessionMeta}>{s.count} msgs · {s.time}</div>
-                            </div>
-                            <button className={styles.sessionDel} onClick={e => removeSession(e, s.id)}>✕</button>
-                        </div>
-                    ))}
-                </div>
+                <SessionList
+                    sessions={sessions}
+                    activeId={activeId}
+                    onOpen={openSession}
+                    onRemove={removeSession}
+                    onNew={newChat}
+                    onClose={() => setSidebar(false)}
+                    onClearAll={clearAllSessions}
+                />
             </aside>
 
             <div className={styles.main}>
@@ -472,7 +662,9 @@ export default function ChatbotPage() {
                         </div>
                     </div>
                     <div className={styles.topRight}>
-                        <button className={styles.topBtn} onClick={newChat}>New</button>
+                        <button className={styles.topBtn} onClick={newChat}>
+                            <Plus size={13} style={{ marginRight: 3 }} />New
+                        </button>
                         <button className={styles.topBtn} onClick={() => setSidebar(true)}>History ({sessions.length})</button>
                     </div>
                 </div>
@@ -481,17 +673,12 @@ export default function ChatbotPage() {
                     {msgs.length === 0 && !sending ? (
                         <div className={styles.welcome}>
                             <div className={styles.welcomeHeading}>
-                                <div className={styles.emptyIcon}>💬</div>
+                                <div className={styles.emptyIcon}><Bot size={32} /></div>
                                 <h2 className={styles.welcomeTitle}>Bắt đầu cuộc trò chuyện</h2>
                                 <p className={styles.welcomeSub}>Hỏi bất kỳ câu hỏi nào về ISO 27001, bảo mật thông tin, hoặc compliance.</p>
                             </div>
                             <div className={styles.chips}>
-                                {[
-                                    'Kiểm soát truy cập là gì?',
-                                    'Giải thích Annex A',
-                                    'ISO 27001 vs SOC 2',
-                                    ...SUGGESTIONS.slice(0, 3).map(s => s.text)
-                                ].map((text, i) => (
+                                {SUGGESTED_PROMPTS.map((text, i) => (
                                     <button key={i} className={styles.chip} onClick={() => setInput(text)} aria-label={text}>
                                         {text}
                                     </button>
@@ -503,48 +690,14 @@ export default function ChatbotPage() {
                             {msgs.map((m, i) => {
                                 const msgKey = m._id || i
                                 return (
-                                <div key={msgKey} className={`${styles.msg} ${m.role === 'user' ? styles.msgUser : styles.msgBot}`}>
-                                    {m.role === 'assistant' && <div className={styles.avatar}>AI</div>}
-                                    <div className={`${styles.bubble} ${m.role === 'user' ? styles.bubbleUser : styles.bubbleBot}`}>
-                                        {m.role === 'assistant' ? (
-                                            <div className={`${styles.md} ${m._streaming ? styles.streamingCursor : ''}`}>
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content || ' '}</ReactMarkdown>
-                                            </div>
-                                        ) : m.content}
-                                        {m.role === 'assistant' && !m._streaming && (
-                                            <button
-                                                className={styles.copyBtn}
-                                                onClick={() => copyMessage(msgKey, m.content)}
-                                                title="Copy message"
-                                                aria-label="Copy message to clipboard"
-                                            >
-                                                {copiedMsgId === msgKey ? '✓ Copied!' : '📋 Copy'}
-                                            </button>
-                                        )}
-                                        {!m._streaming && (
-                                            <div className={styles.msgMeta}>
-                                                {m.ragUsed && <span className={styles.badge}>RAG</span>}
-                                                {m.searchUsed && <span className={styles.badge}>Web</span>}
-                                                {m.model && (
-                                                    <span className={styles.badge} title={m.requestedModel && m.requestedModel !== m.model ? `Requested: ${m.requestedModel} → Fallback: ${m.model}` : m.model}>
-                                                        {m.model}{m.requestedModel && m.requestedModel !== m.model ? ' ↩' : ''}
-                                                    </span>
-                                                )}
-                                                <span className={styles.time}>{m.time}</span>
-                                            </div>
-                                        )}
-                                        {!m._streaming && m.ragUsed && m.sources?.length > 0 && (
-                                            <div className={styles.sourcesList}>
-                                                {m.sources.slice(0, 4).map((src, idx) => (
-                                                    <a key={idx} href={src.startsWith('http') ? src : '#'} target="_blank" rel="noreferrer" className={styles.sourceItem}>
-                                                        {src}
-                                                    </a>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                    {m.role === 'user' && <div className={styles.avatarUser}>You</div>}
-                                </div>
+                                    <MessageBubble
+                                        key={msgKey}
+                                        m={m}
+                                        msgKey={msgKey}
+                                        isLastStreaming={i === lastStreamingIdx}
+                                        copiedMsgId={copiedMsgId}
+                                        onCopy={copyMessage}
+                                    />
                                 )
                             })}
                             {sending && !msgs.some(m => m._streaming) && (
@@ -565,52 +718,16 @@ export default function ChatbotPage() {
 
                 <div className={styles.inputFooter}>
                     <div className={styles.inputToolbar} onClick={e => e.stopPropagation()}>
-                        <div className={styles.modelPicker}>
-                            <button
-                                ref={modelBtnRef}
-                                type="button"
-                                className={styles.modelBtn}
-                                onClick={() => modelDropdown ? (setModelDropdown(false), setFocusedModelIdx(-1)) : openDropdown()}
-                                onKeyDown={handleModelKeyDown}
-                                style={{ '--provider-color': PROVIDER_COLORS[activeModelInfo.provider] }}
-                                aria-haspopup="listbox"
-                                aria-expanded={modelDropdown}
-                                aria-label={`Selected model: ${activeModelInfo.label}`}
-                            >
-                                <span className={styles.modelDot} style={{ background: PROVIDER_COLORS[activeModelInfo.provider] }} />
-                                <span className={styles.modelBtnLabel}>{activeModelInfo.label}</span>
-                                <span className={styles.modelChevron}>{modelDropdown ? '▴' : '▾'}</span>
-                            </button>
-                            {modelDropdown && (
-                                <div
-                                    ref={dropdownRef}
-                                    className={styles.modelDropdown}
-                                    role="listbox"
-                                    aria-label="Select AI Model"
-                                    aria-activedescendant={focusedModelIdx >= 0 ? `model-opt-${CLOUD_MODELS[focusedModelIdx].id}` : undefined}
-                                    onKeyDown={handleModelKeyDown}
-                                >
-                                    <div className={styles.modelDropdownTitle}>Select AI Model</div>
-                                    {CLOUD_MODELS.map((m, idx) => (
-                                        <button
-                                            key={m.id}
-                                            id={`model-opt-${m.id}`}
-                                            type="button"
-                                            role="option"
-                                            aria-selected={selectedModel === m.id}
-                                            className={`${styles.modelOption} ${selectedModel === m.id ? styles.modelOptionActive : ''} ${focusedModelIdx === idx ? styles.modelOptionFocused : ''}`}
-                                            onClick={() => handleModelChange(m.id)}
-                                            onMouseEnter={() => setFocusedModelIdx(idx)}
-                                        >
-                                            <span className={styles.modelDot} style={{ background: PROVIDER_COLORS[m.provider] }} />
-                                            <span className={styles.modelOptionName}>{m.label}</span>
-                                            {m.badge && <span className={styles.modelBadge}>{m.badge}</span>}
-                                            <span className={styles.modelProviderTag} style={{ color: PROVIDER_COLORS[m.provider] }}>{m.provider}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                        <ModelDropdown
+                            selectedModel={selectedModel}
+                            modelDropdown={modelDropdown}
+                            focusedModelIdx={focusedModelIdx}
+                            onToggle={() => modelDropdown ? (setModelDropdown(false), setFocusedModelIdx(-1)) : openDropdown()}
+                            onSelect={handleModelChange}
+                            onKeyDown={handleModelKeyDown}
+                            modelBtnRef={modelBtnRef}
+                            dropdownRef={dropdownRef}
+                        />
                         <span className={styles.inputHint}>Enter to send · Shift+Enter for newline</span>
                     </div>
                     <form className={styles.inputBar} onSubmit={e => { e.preventDefault(); send(input) }}>
@@ -630,7 +747,9 @@ export default function ChatbotPage() {
                             </span>
                         </div>
                         <button type="submit" disabled={!input.trim() || sending}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+                            {sending
+                                ? <Loader2 size={16} className={styles.spinIcon} />
+                                : <Send size={16} />}
                         </button>
                     </form>
                 </div>

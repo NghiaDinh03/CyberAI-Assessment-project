@@ -964,3 +964,91 @@
         align-items: stretch;
     }
 }
+
+/* ── Blinking cursor (streaming) ────────────────────────────────────────────── */
+
+.blinkCursor {
+    display: inline-block;
+    margin-left: 1px;
+    color: var(--accent-blue);
+    font-weight: 300;
+    animation: blink 0.9s step-start infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* ── Skeleton pulse (bot message loading) ───────────────────────────────────── */
+
+.skeletonWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 2px 0;
+}
+
+.skeletonLine {
+    height: 11px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--bg-muted) 25%, var(--border) 50%, var(--bg-muted) 75%);
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.4s ease infinite;
+}
+
+.skeletonLong  { width: 88%; }
+.skeletonMed   { width: 65%; }
+.skeletonShort { width: 42%; }
+
+@keyframes skeletonShimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ── Spinning icon ──────────────────────────────────────────────────────────── */
+
+.spinIcon {
+    animation: spin 0.9s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* ── Chevron open state ─────────────────────────────────────────────────────── */
+
+.modelChevronOpen {
+    transform: rotate(180deg);
+    transition: transform 0.18s ease;
+}
+
+.modelChevron {
+    transition: transform 0.18s ease;
+}
+
+/* ── Session search input ───────────────────────────────────────────────────── */
+
+.sessionSearch {
+    width: 100%;
+    padding: 5px 9px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-family: inherit;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease;
+}
+
+.sessionSearch:focus {
+    border-color: var(--border-active);
+}
+
+.sessionSearch::placeholder {
+    color: var(--text-dim);
+}
