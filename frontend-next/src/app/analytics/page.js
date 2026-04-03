@@ -40,10 +40,12 @@ const ANNEX_A_DOMAINS = [
 ]
 
 function ComplianceHeatmap({ assessments }) {
-    if (!assessments || assessments.length === 0) return null
+    // Guard: ensure assessments is always an array before calling .filter
+    const list = Array.isArray(assessments) ? assessments : []
+    if (list.length === 0) return null
 
     // Use the most recent completed assessment with control data
-    const recent = assessments
+    const recent = list
         .filter(a => a.status === 'completed' && a.system_info?.compliance?.implemented_controls?.length > 0)
         .slice(0, 1)[0]
 
@@ -286,7 +288,16 @@ export default function AnalyticsPage() {
                 } catch { }
                 try {
                     const assessRes = await fetch('/api/iso27001/assessments')
-                    if (assessRes.ok) setAssessments(await assessRes.json())
+                    if (assessRes.ok) {
+                        const assessData = await assessRes.json()
+                        // API may return paginated object { assessments: [...], total, page }
+                        // or plain array (legacy). Normalise to always be an array.
+                        setAssessments(Array.isArray(assessData)
+                            ? assessData
+                            : Array.isArray(assessData?.assessments)
+                                ? assessData.assessments
+                                : [])
+                    }
                 } catch { }
                 try {
                     const chromaRes = await fetch('/api/iso27001/chromadb/stats')
