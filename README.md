@@ -1,554 +1,673 @@
-<div align="center">
-  <h1>🛡️ CyberAI Assessment Platform v2.0</h1>
-  <p>Enterprise ISO 27001 Assessment · RAG Chatbot · AI News Aggregator · Text-to-Speech</p>
-  <p>
-    <a href="README.md"><img src="https://img.shields.io/badge/English-README-blue?logo=googletranslate&logoColor=white" /></a>
-    <a href="README_vi.md"><img src="https://img.shields.io/badge/Tiếng Việt-README-red?logo=googletranslate&logoColor=white" /></a>
-  </p>
-  <p>
-    <img src="https://img.shields.io/badge/Next.js-15.1-black?logo=next.js" />
-    <img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi" />
-    <img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python" />
-    <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker" />
-    <img src="https://img.shields.io/badge/ChromaDB-Vector_Store-orange" />
-    <img src="https://img.shields.io/badge/Open_Claude-Primary_LLM-green" />
-  </p>
-</div>
+# CyberAI Assessment Platform
+
+> AI-powered cybersecurity assessment platform with multi-model inference, RAG-enhanced analysis, and ISO 27001 / TCVN 11930 compliance evaluation.
+
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=next.js&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 ---
 
 ## Table of Contents
-- [Overview](#overview)
-- [System Architecture](#system-architecture)
-- [Feature Mechanism Flows](#feature-mechanism-flows)
-  - [AI Chatbot (RAG + Web Search)](#1-ai-chatbot--rag--web-search)
-  - [ISO 27001 / TCVN Assessment](#2-iso-27001--tcvn-assessment)
-  - [News Aggregator + TTS](#3-news-aggregator--text-to-speech)
-  - [Analytics Dashboard](#4-analytics-dashboard)
-- [Tech Stack](#tech-stack)
-- [AI Models & Task Routing](#ai-models--task-routing)
+
+- [Features](#features)
+  - [AI Chatbot](#-ai-chatbot)
+  - [ISO 27001 / TCVN 11930 Assessment](#-iso-27001--tcvn-11930-assessment)
+  - [RAG Pipeline](#-rag-pipeline)
+  - [Standards Management](#-standards-management)
+  - [Web Search](#-web-search)
+  - [Dual Local Inference](#️-dual-local-inference)
+  - [Monitoring](#-monitoring)
+  - [Security](#-security)
+- [Architecture](#architecture)
 - [Quick Start](#quick-start)
+- [Model Infrastructure](#model-infrastructure)
+  - [Cloud Fallback Chain](#cloud-fallback-chain)
+  - [Resource Requirements](#resource-requirements)
 - [Environment Variables](#environment-variables)
+- [Project Structure](#project-structure)
+- [API Overview](#api-overview)
+  - [Example: Chat Request](#example-chat-request)
+  - [Example: Assessment Request](#example-assessment-request)
+- [AI Pipeline Details](#ai-pipeline-details)
+  - [2-Phase Assessment Pipeline](#2-phase-assessment-pipeline)
+  - [Weighted Compliance Scoring](#weighted-compliance-scoring)
+  - [RAG Retrieval Strategy](#rag-retrieval-strategy)
+  - [Prompt Injection Detection](#prompt-injection-detection)
+- [Prometheus Metrics](#prometheus-metrics)
 - [Documentation](#documentation)
+- [Tech Stack](#tech-stack)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## Overview
+## Features
 
-**CyberAI Assessment Platform** is a fully containerized, on-premise AI system for Vietnamese enterprises. It provides:
+### 🤖 AI Chatbot
 
-- **ISO 27001:2022 & TCVN 11930:2017 compliance assessment** — automated two-phase AI gap analysis with async background processing
-- **RAG-powered AI Chatbot** — hybrid semantic + keyword routing with ChromaDB retrieval and optional DuckDuckGo web search
-- **AI News Aggregator with TTS** — RSS aggregation, VinAI Vietnamese translation, and Edge-TTS audio generation with 2-tier AI fallback
-- **Analytics Dashboard** — real-time system monitoring via `/host/proc/` filesystem, ChromaDB management, assessment history
+Multi-model chat with **18+ models** across **5 providers** (OpenAI, Google, Anthropic, Ollama, LocalAI). Key capabilities:
 
-All services run via `docker-compose up --build -d` with zero manual dependency setup.
+- **SSE streaming** — real-time token-by-token responses via `POST /chat/stream`
+- **Session memory** — persistent conversation context stored in JSON files under `data/sessions/`
+- **Smart routing** — hybrid intent classifier (semantic ChromaDB + keyword fallback) auto-selects between SecurityLLM, Llama, or cloud models
+- **Markdown rendering** — full GFM support via `react-markdown` + `remark-gfm`
+- **Prompt injection detection** — regex-based blocking of `ignore previous instructions`, `system:` prefix, special token injection
+
+**Example chat flow:**
+```
+User: "Đánh giá rủi ro cho hệ thống có 50 servers"
+  → Intent classifier: "security" (confidence 0.87)
+  → Model selected: SecurityLLM-7B-Q4_K_M.gguf
+  → RAG retrieves: iso27001_annex_a.md, nist_csf_2.md (cosine ≥ 0.35)
+  → Response streamed with source attribution
+```
+
+### 📋 ISO 27001 / TCVN 11930 Assessment
+
+4-step wizard with a **2-phase AI pipeline**:
+
+| Step | UI Component | Description |
+|------|-------------|-------------|
+| 1 | System Info | Organization name, size, industry, infrastructure details |
+| 2 | Control Checklist | Select implemented controls (93 for ISO 27001, 34 for TCVN 11930) |
+| 3 | Evidence Upload | Attach files per control (PDF/PNG/DOCX/XLSX, max 10 MB each) |
+| 4 | AI Analysis | 2-phase pipeline generates GAP analysis + formatted report |
+
+**Scoring example (ISO 27001):**
+```
+Organization: Acme Corp (200 employees, 50 servers)
+Implemented: 62/93 controls → 66.7% compliance
+Weighted score: 148/268 points → 55.2% (critical gaps in A.8 Technology)
+
+Risk Register output:
+| # | Control | Severity | L | I | Risk | Recommendation |
+|---|---------|----------|---|---|------|----------------|
+| 1 | A.8.8   | 🔴 Critical | 4 | 5 | 20 | Deploy vulnerability scanning |
+| 2 | A.8.9   | 🔴 Critical | 4 | 4 | 16 | Implement CIS hardening |
+| 3 | A.5.24  | 🟠 High     | 3 | 4 | 12 | Create incident response plan |
+```
+
+### 📚 RAG Pipeline
+
+**21 security standards** as knowledge base with intelligent retrieval:
+
+| Category | Documents | Examples |
+|----------|-----------|----------|
+| International | 8 | ISO 27001 Annex A, ISO 27002:2022, NIST CSF 2.0, NIST SP 800-53 |
+| Industry | 4 | PCI DSS 4.0, HIPAA Security Rule, SOC 2, OWASP Top 10 |
+| Regional | 2 | NIS2 Directive, GDPR Compliance |
+| Vietnamese | 4 | TCVN 11930:2017, Luật An ninh mạng 2018, Nghị định 13/2023, Nghị định 85/2016 |
+| Internal | 3 | Assessment criteria, GAP analysis patterns, Infrastructure guide |
+
+**Technical parameters:**
+- Chunking: 600 chars with 150-char overlap, header-aware (preserves `# > ## > ###` hierarchy)
+- Embedding: ChromaDB default (all-MiniLM-L6-v2), cosine similarity
+- Confidence threshold: `score ≥ 0.35` (distance ≤ 0.65)
+- Multi-query expansion: auto-generates Vietnamese synonyms (`đánh giá` → `kiểm toán`)
+- Batch indexing: 100 chunks/batch for memory efficiency
+
+### 📁 Standards Management
+
+Upload custom standards (JSON/YAML, up to 500 controls), auto-indexed to ChromaDB.
+
+**Built-in standards:**
+
+| Standard | Controls | Weight Distribution |
+|----------|----------|-------------------|
+| ISO 27001:2022 | 93 | 15 critical, 30 high, 28 medium, 20 low |
+| TCVN 11930:2017 | 34 | 8 critical, 12 high, 10 medium, 4 low |
+
+**Custom standard JSON format:**
+```json
+{
+  "standard_name": "Company Security Policy v2",
+  "categories": [
+    {
+      "category": "Access Control",
+      "controls": [
+        { "id": "AC-01", "label": "MFA for all users", "weight": "critical" },
+        { "id": "AC-02", "label": "Password rotation policy", "weight": "high" }
+      ]
+    }
+  ]
+}
+```
+
+### 🔍 Web Search
+
+DuckDuckGo integration for real-time information retrieval when the knowledge base doesn't cover the query. Triggered automatically by the intent classifier when search keywords are detected (`latest`, `recent`, `news`, `tìm kiếm`, `tin tức`).
+
+### 🖥️ Dual Local Inference
+
+**LocalAI** (Llama 3.1 8B + SecurityLLM 7B) + **Ollama** (Gemma 3n E4B) with automatic cloud fallback.
+
+```
+Request flow:
+  1. PREFER_LOCAL=true → try LocalAI first
+  2. LocalAI timeout/error → try Ollama (gemma3n:e4b)
+  3. Ollama unavailable → Cloud fallback chain
+  4. All cloud models failed → Return graceful error
+```
+
+### 📊 Monitoring
+
+Prometheus-compatible metrics at `GET /metrics`:
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `cyberai_requests_total` | Counter | HTTP requests by method, endpoint, status |
+| `cyberai_request_duration_seconds` | Histogram | Latency distribution (11 buckets: 5ms → 10s) |
+| `cyberai_active_sessions` | Gauge | Current active chat sessions |
+| `cyberai_rag_queries_total` | Counter | RAG queries by result (`hit` / `miss`) |
+| `cyberai_assessments_total` | Gauge | Total persisted assessments |
+
+System stats via `GET /system/stats`: CPU usage, RAM usage, disk usage (powered by `psutil`).
+
+### 🔒 Security
+
+| Layer | Mechanism | Configuration |
+|-------|-----------|---------------|
+| Rate limiting | SlowAPI | `10/min` chat, `3/min` assess, `5/min` benchmark |
+| Authentication | JWT (HS256) | ≥32-char secret, 60-min expiry, enforced in prod |
+| CORS | FastAPI middleware | Configurable origins (default: `localhost:3000`) |
+| Input validation | Pydantic v2 | `max_length=2000` on chat, safe path IDs on file ops |
+| Prompt injection | Regex detection | Blocks `ignore previous`, `system:`, special tokens |
+| Request size | Evidence upload | 10 MB/file, allowed extensions whitelist |
 
 ---
 
-## System Architecture
-
-### Container Topology
+## Architecture
 
 ```
-Host Machine
-│
-├── :3000  ──► phobert-frontend  (Next.js 15)
-│                  next.config.js rewrite:
-│                  /api/:path* → http://backend:8000/api/:path*
-│
-├── :8000  ──► phobert-backend   (FastAPI / Python 3.11)
-│                  ├── services/
-│                  │   ├── cloud_llm_service.py  ← Open Claude primary
-│                  │   ├── chat_service.py        ← RAG + web search + session
-│                  │   ├── model_router.py        ← hybrid semantic+keyword router
-│                  │   ├── summary_service.py     ← scrape + translate + TTS
-│                  │   ├── news_service.py        ← RSS + background workers
-│                  │   ├── translation_service.py ← VinAI EN→VI (CPU)
-│                  │   └── web_search.py          ← DuckDuckGo search
-│                  └── repositories/
-│                      ├── vector_store.py        ← ChromaDB wrapper
-│                      └── session_store.py       ← file-based sessions
-│
-└── :8080  ──► phobert-localai   (LocalAI GGUF server)
-                   /models/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf   ← Phase 2 report
-                   /models/SecurityLLM-7B-Q4_K_M.gguf               ← Phase 1 GAP analysis
-                   RAM required: ~9GB total (8B ~5GB + 7B ~4GB)
-
-Shared Volume:  ./data:/data
-  data/
-  ├── iso_documents/   ← 21 .md knowledge base files for ChromaDB
-  │   ├── iso27001_annex_a.md, tcvn_11930_2017.md   ← Primary standards
-  │   ├── iso27002_2022.md, nist_csf_2.md, nist_sp800_53.md
-  │   ├── pci_dss_4.md, soc2_trust_criteria.md, hipaa_security_rule.md
-  │   ├── gdpr_compliance.md, nis2_directive.md, owasp_top10_2021.md
-  │   ├── cis_controls_v8.md, nd85_2016_cap_do_httt.md
-  │   ├── gap_analysis_patterns.md, infrastructure_description_guide.md
-  │   └── author_profile.md  ← Creator info for chatbot queries
-  ├── vector_store/    ← ChromaDB SQLite (221 chunks, cosine similarity)
-  ├── summaries/       ← Article JSON cache
-  ├── sessions/        ← Chat session JSON
-  ├── assessments/     ← ISO assessment JSON (id, status, result, json_data)
-  └── knowledge_base/  ← benchmark_iso27001.json + control definitions
+┌─────────────────────────────────────────────────────────────┐
+│                      Docker Network                          │
+│                                                              │
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌──────────┐ │
+│  │ Frontend   │  │ Backend   │  │ LocalAI   │  │ Ollama   │ │
+│  │ Next.js 15 │  │ FastAPI   │  │ v2.24.2   │  │ latest   │ │
+│  │ React 19   │  │ Pydantic  │  │ GGUF      │  │ Gemma 3n │ │
+│  │ :3000      │→ │ :8000     │→ │ :8080     │  │ :11434   │ │
+│  │ (2 GB)     │  │ (6 GB)    │  │ (12 GB)   │  │ (12 GB)  │ │
+│  └───────────┘  └─────┬─────┘  └───────────┘  └──────────┘ │
+│                       │                                      │
+│              ┌────────┴────────┐                             │
+│              │    ChromaDB     │                             │
+│              │  (embedded)     │                             │
+│              │  cosine HNSW    │                             │
+│              │  21 docs →      │                             │
+│              │  ~500 chunks    │                             │
+│              └────────┬────────┘                             │
+│                       │                                      │
+│              ┌────────┴────────┐                             │
+│              │   Cloud APIs    │                             │
+│              │   Open Claude   │                             │
+│              │   gateway       │                             │
+│              │  (fallback)     │                             │
+│              └─────────────────┘                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### AI Fallback Chain
-
+**Data flow — Assessment pipeline:**
 ```
-Task arrives → CloudLLMService.chat_completion()
-    │
-    ├── task_type == "iso_local"?
-    │     ├── Health check: localai_health_check(timeout=15s)
-    │     │     ├── PASS → LocalAI SecurityLLM (priority=True, preempts news)
-    │     │     └── FAIL (OOM/RPC) → auto-fallback:
-    │     │           local mode  → hybrid (if cloud keys available)
-    │     │           hybrid mode → cloud only
-    │     └── raise if no fallback available
-    │
-    └── Cloud path:
-          Open Claude (CLOUD_API_KEYS, round-robin)
-            │ 429 → key cooldown 60s, try next key
-            │ 401 → skip key (config issue, no cooldown)
-            │ All keys exhausted?
-            ▼
-          LocalAI fallback (http://localai:8080)
-            │ Timeout: INFERENCE_TIMEOUT (300s default)
-            │ Priority: ISO assessment preempts news summarization
-            ▼
-          raise Exception("All AI providers failed")
+Frontend (Step 1-3)           Backend                        AI Models
+──────────────────           ───────                        ─────────
+SystemInfo + Controls  →  /iso27001/assess
+                              │
+                              ├─ Calculate weighted score
+                              ├─ Chunk controls by category
+                              ├─ RAG: retrieve relevant standards
+                              │
+                              ├─ Phase 1: SecurityLLM (GAP analysis)
+                              │    └─ Per-category JSON gap items
+                              │    └─ Validate + anti-hallucination filter
+                              │    └─ Severity normalization (≤70% critical)
+                              │
+                              ├─ Phase 2: Llama 3.1 (Report formatting)
+                              │    └─ Risk Register markdown table
+                              │    └─ Executive summary
+                              │
+                              └─ Return: { report, gaps, score, pdf_url }
 ```
-
-### Task-Specific Model Routing
-
-| Task type | Model (Phase) | Description |
-|-----------|---------------|-------------|
-| `iso_local` | SecurityLLM 7B (Phase 1) | Domain-specific GAP analysis per category |
-| `iso_local` Phase 2 | Meta-Llama 8B (local) or Cloud | Report formatting |
-| `iso_analysis` | `gemini-2.5-pro` (Cloud) | Cloud-only ISO analysis |
-| `news_translate` | `gemini-2.5-pro` | EN→VI translation |
-| `news_summary` | `gemini-3-flash-preview` | Article summarization |
-| `chat` | `gemini-3-pro-preview` | General conversation |
-| `complex` | `gemini-2.5-pro` | Complex reasoning |
-
-### Assessment Algorithm — 2-Phase Pipeline
-
-```
-User submits form
-       │
-       ▼
-[Pre-check] localai_health_check() → auto-downgrade mode if OOM
-       │
-       ▼
-[Phase 1: SecurityLM 7B — GAP Analysis per Category]
-  For each standard category (A.5/A.6/A.7/A.8 or NW/SV/APP/DAT/MNG):
-    1. RAG lookup: ChromaDB.search(cat_name + std_name, top_k=2)
-    2. Build compact prompt (~1000 tokens): missing controls + system summary + RAG excerpt
-    3. SecurityLM returns JSON array: [{id, severity, likelihood, impact, risk, gap, recommendation}]
-    4. Validate JSON → retry ×2 if invalid → skip if all attempts fail
-  Aggregate all category results → Risk Register markdown
-       │
-       ▼
-[P2 Compression] if raw_analysis > 2500 chars → extract table rows only
-       │
-       ▼
-[Phase 2: Meta-Llama 8B (local) / Cloud (hybrid/cloud mode)]
-  Input: Risk Register + scoring data + org info
-  Output: Full Markdown report (5 sections):
-    1. ĐÁNH GIÁ TỔNG QUAN — compliance % + weight breakdown
-    2. RISK REGISTER — sorted by Risk Score (L×I)
-    3. GAP ANALYSIS — grouped by severity
-    4. ACTION PLAN — 0-30d / 1-3mo / 3-12mo roadmap
-    5. EXECUTIVE SUMMARY — metrics + budget estimates + next steps
-       │
-       ▼
-[Structured JSON] _build_structured_json() → json_data field
-  {compliance: {score, percentage, tier}, risk_summary: {critical, high, medium, low},
-   weight_breakdown: per-weight %, top_gaps: [{id, severity}], organization: {...}}
-       │
-       ▼
-[Background save] FastAPI BackgroundTasks → assessment JSON file
-  Frontend polls every 10s → auto-loads when completed
-```
-
-### Model Comparison — Benchmark Results (typical)
-
-| Metric | Local (SecurityLM + Llama 8B) | Hybrid (SecurityLM + Cloud) | Cloud Only |
-|--------|-------------------------------|----------------------------|-----------|
-| Processing time | 2–5 min | 1–3 min | 30–60s |
-| Section completeness | 70–85% | 85–95% | 90–98% |
-| Control accuracy | 75–85% | 80–90% | 88–95% |
-| Data stays on-prem | ✅ Yes | ⚠️ Partial | ❌ No |
-| Offline capable | ✅ Yes | ❌ No | ❌ No |
-
-> Run `GET /api/benchmark/test-cases` + `POST /api/benchmark/run` to reproduce results.
-
----
-
-## Feature Mechanism Flows
-
-### 1. AI Chatbot — RAG + Web Search
-
-```
-User sends message → POST /api/chat  (or /api/chat/stream for SSE)
-        │
-        ▼
-[model_router.py: route_model(message)]
-  Hybrid classification:
-  ┌─────────────────────────────────────────────────────────┐
-  │ Step 1: Semantic (ChromaDB intent classifier)           │
-  │   in-memory collection "intent_classifier"              │
-  │   INTENT_TEMPLATES: security / search / general        │
-  │   confidence > 0.6 → use semantic result               │
-  │                                                         │
-  │ Step 2: Keyword fallback (confidence ≤ 0.6)            │
-  │   ISO_KEYWORDS → route=security, use_rag=True           │
-  │   SEARCH_KEYWORDS → route=search, use_search=True       │
-  │   else → route=general                                  │
-  └─────────────────────────────────────────────────────────┘
-        │
-        ├── route=security → RAG retrieval
-        │   VectorStore.search(message, top_k=5)
-        │   Collection: "iso_documents" (ChromaDB)
-        │   Returns chunks sorted by cosine similarity score
-        │
-        ├── route=search → DuckDuckGo web search
-        │   WebSearch.search(query, max_results=5, region="vn-vi")
-        │   Returns [{title, url, snippet}]
-        │
-        └── route=general → no external retrieval
-        │
-        ▼
-[SessionStore: get_context_messages(session_id, max_messages=10)]
-  Load last 10 messages from data/sessions/<session_id>.json
-  TTL: 24h (SESSION_TTL = 86400s)
-  MAX_HISTORY_PER_SESSION = 20 stored, 10 sent to LLM
-        │
-        ▼
-[_build_messages(): system prompt + RAG/search context + history + user msg]
-        │
-        ▼
-[CloudLLMService.chat_completion()]
-  Open Claude → LocalAI fallback
-  Returns: {content, model, provider, usage}
-        │
-        ▼
-[Save to session + return response]
-  {response, model, provider, route, rag_used, search_used,
-   sources, web_sources, tokens}
-```
-
-**Streaming endpoint** (`POST /api/chat/stream`): SSE events in order:
-`routing` → `rag` (if ISO) → `searching` (if search) → `thinking` → `done`
-
----
-
-### 2. ISO 27001 / TCVN Assessment
-
-```
-User fills multi-step form → POST /api/iso27001/assess
-  SystemInfo payload:
-  { assessment_standard, org_name, servers, firewalls, vpn,
-    cloud_provider, antivirus, siem, implemented_controls[],
-    incidents_12m, employees, iso_status, notes }
-        │
-        ▼
-[BackgroundTasks] — async, non-blocking
-  assessment_id = uuid4()
-  Saved to data/assessments/<id>.json with status="pending"
-  Returns immediately: { id, status: "pending" }
-        │
-        ▼ (background)
-[chat_service.py: assess_system(system_data)]
-        │
-        ▼
-Phase 1: RAG Context
-  VectorStore.search(standard-specific query, top_k=6)
-  ISO 27001 → "A.5 Tổ chức, A.6 Nhân sự, A.7 Vật lý, A.8 Công nghệ"
-  TCVN 11930 → "TCVN 11930 hệ thống thông tin cấp độ bảo đảm an toàn"
-        │
-        ▼
-Phase 2: Security Audit (task_type="iso_local" → LocalAI SecurityLLM)
-  Prompt: "Chuyên gia Auditor về {std}. Chỉ trả về danh sách phát hiện kỹ thuật thô."
-  Input: RAG context + system_info_txt
-  Compliance score: len(implemented_controls) / 93 (ISO) or /34 (TCVN)
-        │
-        ▼
-Phase 3: Report Formatting (task_type="iso_analysis" → gemini-2.5-pro)
-  Prompt: Format raw analysis into Vietnamese Markdown:
-    1. ĐÁNH GIÁ TỔNG QUAN
-    2. PHÂN TÍCH LỖ HỔNG (GAP ANALYSIS)
-    3. KHUYẾN NGHỊ ƯU TIÊN (ACTION PLAN)
-        │
-        ▼
-Saved to data/assessments/<id>.json with status="completed"
-Frontend polls GET /api/iso27001/history to see result
-```
-
-**Supported standards:**
-
-| Standard | Max score | Scoring |
-|---------|----------|---------|
-| ISO 27001:2022 | 93 controls | `len(implemented) / 93 × 100%` |
-| TCVN 11930:2017 | 34 requirements | `len(implemented) / 34 × 100%` |
-
----
-
-### 3. News Aggregator + Text-to-Speech
-
-```
-[Background worker: start_bg_worker()]
-  feedparser.parse(rss_url) → 15 articles/category
-  Categories:
-  • cybersecurity         → The Hacker News, BleepingComputer, Dark Reading
-  • stocks_international  → CNBC, Yahoo Finance, MarketWatch
-  • stocks_vietnam        → CafeF, VnEconomy, VnExpress Finance
-
-  ┌── Thread: _translation_worker()
-  │   Queue: _translate_queue
-  │   VinAI envit5-translation (135M, local CPU)
-  │   Batch: 8 titles, torch.jit.optimize_for_inference()
-  │   Cache: data/translations/<category>.json
-  │
-  └── Thread: _llama_worker()
-      Queue: _llama_queue
-      CloudLLMService.quick_completion() → article tagging
-      Prompt: "Tag 1-2 keywords. No explanation."
-
-User clicks ▶ Play → POST /api/news/summarize
-        │
-        ▼
-[SummaryService._process_article_internal()]
-  Cache check: MD5(url) → data/summaries/<hash>.json
-        │ Cache hit → return {audio_url, summary_vi} immediately
-        │ Cache miss ↓
-        ▼
-Scraping (3-method fallback):
-  1. requests + BeautifulSoup4
-  2. trafilatura
-  3. newspaper3k
-  Cap: 12,000 chars, noise filter, dedup
-        │
-        ▼
-AI Translation (2-tier fallback):
-  1. Open Claude (task_type="news_translate" → gemini-2.5-pro)
-     OR (task_type="news_summary" → gemini-3-flash-preview)
-     Round-robin CLOUD_API_KEYS, 60s cooldown on 429
-  2. LocalAI Llama 3.1 70B (offline fallback)
-  Prompt: full editorial rewrite in Vietnamese
-  Preserves: CVEs, dates, names, statistics verbatim
-  max_tokens: 16000
-        │
-        ▼
-_fix_pronunciation(): DDoS→"Đi Đốt", VPN, SSL/TLS, ransomware...
-        │
-        ▼
-Edge-TTS: voice="vi-VN-HoaiMyNeural" → data/summaries/audio/<hash>.mp3
-Persist: data/summaries/<hash>.json (TTL: 7 days)
-```
-
----
-
-### 4. Analytics Dashboard
-
-```
-/analytics page
-  │
-  ├── GET /api/system/stats (every 5s)
-  │     Reads /host/proc/stat, /host/proc/meminfo (host filesystem)
-  │     CPU%, RAM used/total/%, disk%, uptime
-  │
-  ├── GET /api/system/ai-status
-  │     CloudLLMService.health_check()
-  │     → open_claude: {configured, url, model, task_routing, keys_count, status}
-  │     → localai: {url, model, status}
-  │
-  ├── GET /api/iso27001/history
-  │     Lists data/assessments/*.json
-  │     Columns: id, status, standard, org_name, created_at
-  │
-  ├── GET /api/iso27001/chromadb/stats
-  │     Collection "iso_documents": doc count, chunk count
-  │
-  ├── POST /api/iso27001/chromadb/search { query, n_results }
-  │     VectorStore.search() → top-N chunks with score
-  │
-  └── POST /api/iso27001/chromadb/reload
-        Drops collection → re-indexes all data/iso_documents/*.md
-        Chunk size: 600 chars, overlap: 150 chars
-        Header-aware: [Context: # > ## > ###] prepended to chunks
-```
-
----
-
-## Tech Stack
-
-### Frontend
-
-| Technology | Version | Role |
-|-----------|---------|------|
-| Next.js | 15.1 | App Router, SSR, `/api/*` rewrite proxy to backend |
-| React | 19.0 | UI components, `useState` / `useEffect` / `useRef` |
-| CSS Modules | — | Scoped styles with CSS custom properties (dark/light theme) |
-| react-markdown | 9.0 | Render AI-generated markdown reports |
-| remark-gfm | 4.0 | GitHub-flavored markdown (tables, task lists) |
-
-### Backend
-
-| Technology | Role |
-|-----------|------|
-| FastAPI 0.115 | Async REST API, StreamingResponse for chat SSE |
-| Python 3.11 | Runtime |
-| Pydantic v2 | Request/response validation schemas |
-| slowapi | Per-endpoint rate limiting (chat: 10/min, assess: 3/min, news: 5/min) |
-| httpx | Async HTTP client for Open Claude API calls |
-| requests | Sync HTTP for LocalAI + article scraping |
-| chromadb | Local vector database (SQLite backend) |
-| sentence-transformers | `all-MiniLM-L6-v2` embedding model (384-dim) |
-| transformers + torch | VinAI `envit5-translation` (135M params, CPU) |
-| feedparser | RSS feed parsing |
-| BeautifulSoup4 | Primary HTML scraper |
-| trafilatura | Fallback article content extractor |
-| newspaper3k | Last-resort article extractor |
-| edge-tts | Microsoft Edge Text-to-Speech (async) |
-| ddgs / duckduckgo-search | DuckDuckGo web search for chatbot |
-
-### Infrastructure
-
-| Component | Role |
-|-----------|------|
-| Docker + Docker Compose | Container orchestration |
-| LocalAI | OpenAI-compatible local GGUF inference server |
-| ChromaDB (SQLite) | On-disk vector database |
-| Docker bridge network | Isolated inter-container networking (`phobert-network`) |
-| Docker Volumes | `./data:/data` persistent storage |
-
----
-
-## AI Models & Task Routing
-
-| # | Model | Provider | Params | Tasks |
-|---|-------|----------|--------|-------|
-| 1 | `gemini-2.5-pro` | Open Claude | — | Translation, ISO analysis, complex tasks |
-| 2 | `gemini-3-pro-preview` | Open Claude | — | Chat, default tasks |
-| 3 | `gemini-3-flash-preview` | Open Claude | — | News summary (fast, cheap) |
-| 4 | `Llama 3.1 70B Instruct Q4_K_M` | LocalAI | 70B | Cloud fallback for all tasks |
-| 5 | `SecurityLLM 7B Q4_K_M` | LocalAI | 7B | ISO security audit (Phase 1, `iso_local`) |
-| 6 | `envit5-translation` (VinAI) | HuggingFace / CPU | 135M | EN→VI title translation (fully offline) |
-| 7 | `all-MiniLM-L6-v2` | sentence-transformers | 22M | Text embedding for ChromaDB + intent classifier |
-| 8 | `vi-VN-HoaiMyNeural` (Edge-TTS) | Microsoft | — | Vietnamese Text-to-Speech |
 
 ---
 
 ## Quick Start
 
-### Prerequisites
-- Docker Engine + Docker Compose v2
-- 16 GB RAM minimum (32 GB recommended for 70B model)
-- 40 GB free disk space
-
-### 1. Clone & Setup
 ```bash
-git clone https://github.com/NghiaDinh03/phobert-chatbot-project.git
+# Clone
+git clone https://github.com/your-org/phobert-chatbot-project.git
 cd phobert-chatbot-project
+
+# Configure
 cp .env.example .env
+# Edit .env — set CLOUD_API_KEYS if using cloud fallback
+
+# Download models (optional — for local inference)
+pip install huggingface_hub hf_transfer
+python scripts/download_models.py --model llama --model security
+
+# Start
+docker compose up -d
+
+# Access
+# Frontend:    http://localhost:3000
+# Backend API: http://localhost:8000
+# API Docs:    http://localhost:8000/docs
+# LocalAI:     http://localhost:8080
+# Ollama:      http://localhost:11434
 ```
 
-### 2. Configure `.env`
-```env
-# Primary Cloud LLM — Open Claude (required)
-CLOUD_API_KEYS=your_key_1,your_key_2,your_key_3
-CLOUD_LLM_API_URL=https://open-claude.com/v1
-CLOUD_MODEL_NAME=gemini-3-pro-preview
+> **Note:** Ollama auto-pulls `gemma3n:e4b` on first start — no manual download required.
 
-# Security (change in production)
-JWT_SECRET=your-random-secret-here
-CORS_ORIGINS=http://localhost:3000
-```
-
-### 3. Build & Launch
+**Verify everything is running:**
 ```bash
-docker-compose up --build -d
+# Check all containers
+docker compose ps
+
+# Health check
+curl http://localhost:8000/health
+
+# Check LocalAI model readiness
+curl http://localhost:8080/readyz
+
+# Check Ollama models
+curl http://localhost:11434/api/tags
 ```
 
-First run: downloads GGUF models (~25–40 GB) and builds images — allow 20–45 minutes.
+---
 
-### 4. Access
-Open **http://localhost:3000**
+## Model Infrastructure
 
-### 5. Performance Tuning (optional)
-```env
-TORCH_THREADS=4           # PyTorch threads for VinAI translation
-MAX_CONCURRENT_REQUESTS=3 # Semaphore limit for concurrent AI calls
-INFERENCE_TIMEOUT=120     # LocalAI timeout in seconds
-CLOUD_TIMEOUT=60          # Open Claude timeout in seconds
+| Provider | Model | Quantization | Size | Port | Role |
+|----------|-------|-------------|------|------|------|
+| LocalAI | Meta-Llama-3.1-8B-Instruct | Q4_K_M | ~4.9 GB | 8080 | Report formatting, general chat |
+| LocalAI | SecurityLLM-7B | Q4_K_M | ~4.2 GB | 8080 | GAP analysis, security audit |
+| Ollama | Gemma 3n E4B | native | ~2 GB | 11434 | Chat, assessment (auto-pulled) |
+| Cloud | gemini-3-flash-preview | — | — | — | Primary cloud fallback |
+| Cloud | gpt-5-mini | — | — | — | Secondary fallback |
+| Cloud | claude-sonnet-4 | — | — | — | Tertiary fallback |
+
+### Cloud Fallback Chain
+
+When local models are unavailable or produce errors:
+
+```
+gemini-3-flash-preview → gemini-3-pro-preview → gpt-5-mini → claude-sonnet-4 → gpt-5
+```
+
+Each model is tried with all available API keys (round-robin with 30s rate-limit cooldown per key).
+
+### Resource Requirements
+
+| Component | RAM (min) | RAM (recommended) | CPU |
+|-----------|-----------|-------------------|-----|
+| Frontend | 512 MB | 2 GB | 1 core |
+| Backend | 2 GB | 6 GB | 2 cores |
+| LocalAI | 4 GB | 12 GB | 6 threads (`THREADS=6`) |
+| Ollama | 2 GB | 12 GB | 4 cores |
+| **Total** | **8.5 GB** | **32 GB** | **4+ cores** |
+
+**Model download options:**
+```bash
+# Check status of all models
+python scripts/download_models.py --status
+
+# Download individual models
+python scripts/download_models.py --model llama        # 4.9 GB
+python scripts/download_models.py --model security     # 4.2 GB
+python scripts/download_models.py --model gemma-3-4b   # 2.5 GB
+python scripts/download_models.py --model gemma-3-12b  # 7.3 GB
+python scripts/download_models.py --model gemma-4-31b  # 19 GB
+
+# Download all models at once
+python scripts/download_models.py --model all
 ```
 
 ---
 
 ## Environment Variables
 
+Key variables — see [`.env.example`](.env.example) for the full list with comments.
+
 | Variable | Default | Description |
-|---------|---------|-------------|
-| `CLOUD_API_KEYS` | `` | Comma-separated Open Claude API keys (round-robin) |
-| `CLOUD_LLM_API_URL` | `https://open-claude.com/v1` | Open Claude base URL |
-| `CLOUD_MODEL_NAME` | `gemini-3-pro-preview` | Default cloud model (overridden by task routing) |
-| `LOCALAI_URL` | `http://localai:8080` | LocalAI server URL |
-| `MODEL_NAME` | `Meta-Llama-3.1-70B-Instruct-Q4_K_M.gguf` | LocalAI general model |
-| `SECURITY_MODEL_NAME` | same as MODEL_NAME | LocalAI security audit model |
-| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated allowed CORS origins |
-| `TORCH_THREADS` | `cpu_count()` | PyTorch thread count for translation |
-| `MAX_CONCURRENT_REQUESTS` | `3` | Semaphore for concurrent AI requests |
-| `INFERENCE_TIMEOUT` | `120` | LocalAI call timeout (seconds) |
-| `CLOUD_TIMEOUT` | `60` | Open Claude call timeout (seconds) |
+|----------|---------|-------------|
+| `MODEL_NAME` | `Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf` | Primary LocalAI model (Phase 2 — report) |
+| `SECURITY_MODEL_NAME` | `SecurityLLM-7B-Q4_K_M.gguf` | Security model (Phase 1 — GAP analysis) |
+| `LOCALAI_URL` | `http://localai:8080` | LocalAI endpoint |
+| `OLLAMA_URL` | `http://ollama:11434` | Ollama endpoint |
+| `PREFER_LOCAL` | `true` | Prefer local inference over cloud |
+| `CLOUD_LLM_API_URL` | `https://open-claude.com/v1` | Cloud LLM gateway URL |
+| `CLOUD_MODEL_NAME` | `gemini-3-flash-preview` | Default cloud model |
+| `CLOUD_API_KEYS` | — | Comma-separated API keys for cloud fallback |
+| `JWT_SECRET` | — | JWT signing secret (≥32 chars, required in prod) |
+| `JWT_EXPIRE_MINUTES` | `60` | JWT token expiry in minutes |
+| `CORS_ORIGINS` | `http://localhost:3000` | Allowed CORS origins (comma-separated) |
 | `RATE_LIMIT_CHAT` | `10/minute` | Chat endpoint rate limit |
 | `RATE_LIMIT_ASSESS` | `3/minute` | Assessment endpoint rate limit |
-| `RATE_LIMIT_NEWS` | `5/minute` | News summarize rate limit |
-| `JWT_SECRET` | `change-me-in-production` | JWT signing secret |
-| `DEBUG` | `false` | Enable DEBUG-level logging |
+| `RATE_LIMIT_BENCHMARK` | `5/minute` | Benchmark endpoint rate limit |
+| `INFERENCE_TIMEOUT` | `300` | LocalAI request timeout (seconds) |
+| `CLOUD_TIMEOUT` | `60` | Cloud API request timeout (seconds) |
+| `CONTEXT_SIZE` | `8192` | LocalAI context window |
+| `THREADS` | `6` | LocalAI CPU threads |
+| `MAX_CONCURRENT_REQUESTS` | `3` | Backend concurrency limit |
+| `ISO_DOCS_PATH` | `/data/iso_documents` | RAG knowledge base directory |
+| `VECTOR_STORE_PATH` | `/data/vector_store` | ChromaDB persistence directory |
+| `DATA_PATH` | `/data` | Root data directory |
+| `LOG_LEVEL` | `INFO` | Logging level |
+| `DEBUG` | `true` | Debug mode (relaxes JWT validation) |
+
+---
+
+## Project Structure
+
+```
+phobert-chatbot-project/
+├── backend/                        # FastAPI application
+│   ├── main.py                     # App entry, lifespan hooks, middleware
+│   ├── core/
+│   │   ├── config.py               # Settings with JWT validation
+│   │   ├── exceptions.py           # Custom exception classes
+│   │   └── limiter.py              # SlowAPI rate limiter setup
+│   ├── api/
+│   │   ├── routes/
+│   │   │   ├── chat.py             # POST /chat, /chat/stream, /chat/history
+│   │   │   ├── iso27001.py         # POST /iso27001/assess (794 lines)
+│   │   │   ├── standards.py        # GET/POST /standards/
+│   │   │   ├── document.py         # POST /documents/upload
+│   │   │   ├── health.py           # GET /health
+│   │   │   ├── metrics.py          # GET /metrics (Prometheus)
+│   │   │   ├── system.py           # GET /system/stats
+│   │   │   └── benchmark.py        # GET /benchmark
+│   │   └── schemas/
+│   │       ├── chat.py             # ChatRequest, ChatResponse
+│   │       └── document.py         # Document schemas
+│   ├── services/
+│   │   ├── chat_service.py         # Conversation routing, SSE (820 lines)
+│   │   ├── cloud_llm_service.py    # Cloud/Local/Ollama with fallback (498 lines)
+│   │   ├── model_router.py         # Intent-based model selection (214 lines)
+│   │   ├── model_guard.py          # Model availability checker
+│   │   ├── rag_service.py          # RAG pipeline, confidence filter
+│   │   ├── standard_service.py     # Custom standard upload & indexing
+│   │   ├── web_search.py           # DuckDuckGo search integration
+│   │   ├── assessment_helpers.py   # 2-phase pipeline, scoring, prompts
+│   │   ├── controls_catalog.py     # ISO 27001 + TCVN 11930 definitions
+│   │   ├── document_service.py     # Document processing
+│   │   └── dataset_generator.py    # Training data generation
+│   ├── repositories/
+│   │   ├── vector_store.py         # ChromaDB wrapper, chunking, search
+│   │   └── session_store.py        # JSON session persistence
+│   └── tests/                      # pytest test suite
+│       ├── test_chat_service.py
+│       ├── test_iso27001_routes.py
+│       └── test_rag_service.py
+├── frontend-next/                  # Next.js 15 frontend
+│   └── src/
+│       ├── app/
+│       │   ├── chatbot/            # AI chat interface
+│       │   ├── form-iso/           # 4-step assessment wizard
+│       │   ├── standards/          # Standards management UI
+│       │   ├── analytics/          # Monitoring dashboard
+│       │   ├── landing/            # Landing page
+│       │   └── templates/          # Report templates
+│       ├── components/             # Navbar, StepProgress, SystemStats, Toast
+│       ├── data/
+│       │   ├── standards.js        # ISO 27001 (93) + TCVN 11930 (34) controls
+│       │   ├── controlDescriptions.js
+│       │   └── templates.js
+│       └── lib/api.js              # Backend API client
+├── data/
+│   ├── iso_documents/              # 21 security standard documents (markdown)
+│   ├── knowledge_base/             # Control catalogs, training pairs (JSON)
+│   ├── vector_store/               # ChromaDB persistence
+│   ├── assessments/                # Saved assessment JSON results
+│   ├── evidence/                   # Uploaded evidence files
+│   ├── exports/                    # Generated PDF reports
+│   ├── sessions/                   # Chat session files
+│   ├── standards/                  # Custom uploaded standards
+│   └── uploads/                    # General uploads
+├── docs/
+│   ├── en/                         # English documentation
+│   │   ├── architecture.md
+│   │   ├── deployment.md
+│   │   ├── api.md
+│   │   ├── chatbot_rag.md
+│   │   ├── iso_assessment_form.md
+│   │   ├── chromadb_guide.md
+│   │   ├── analytics_monitoring.md
+│   │   ├── backup_strategy.md
+│   │   └── markdown_rag_standard.md
+│   └── vi/                         # Vietnamese documentation
+│       ├── architecture.md
+│       ├── deployment.md
+│       ├── api.md
+│       ├── chatbot_rag.md
+│       ├── iso_assessment_form.md
+│       ├── chromadb_guide.md
+│       └── analytics_monitoring.md
+├── scripts/
+│   └── download_models.py          # HuggingFace model downloader (6 models)
+├── nginx/nginx.conf                # Production reverse proxy
+├── docker-compose.yml              # Development stack (4 services)
+├── docker-compose.prod.yml         # Production stack
+└── .env.example                    # Environment variable reference
+```
+
+---
+
+## API Overview
+
+The backend exposes a RESTful API at `http://localhost:8000`. Interactive documentation is available at [`/docs`](http://localhost:8000/docs) (Swagger UI) and [`/redoc`](http://localhost:8000/redoc) (ReDoc).
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/chat` | POST | AI chat (synchronous response) |
+| `/chat/stream` | POST | SSE streaming chat |
+| `/chat/history/{session_id}` | GET | Retrieve session history |
+| `/iso27001/assess` | POST | Run ISO 27001 / TCVN 11930 assessment |
+| `/iso27001/assessments` | GET | List saved assessments |
+| `/iso27001/assessments/{id}` | GET | Get specific assessment |
+| `/iso27001/export/{id}` | GET | Export assessment as PDF |
+| `/iso27001/evidence/{id}` | POST | Upload evidence files |
+| `/standards/` | GET | List available standards |
+| `/standards/` | POST | Upload custom standard |
+| `/documents/upload` | POST | Upload documents for RAG indexing |
+| `/health` | GET | Health check |
+| `/metrics` | GET | Prometheus metrics |
+| `/system/stats` | GET | CPU, RAM, disk statistics |
+
+### Example: Chat Request
+
+```bash
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Giải thích Annex A.8.8 về quản lý lỗ hổng kỹ thuật",
+    "session_id": "user-001",
+    "model": "gemini-3-flash-preview",
+    "prefer_cloud": true
+  }'
+```
+
+**Response:**
+```json
+{
+  "response": "**A.8.8 — Quản lý lỗ hổng kỹ thuật**\n\nĐây là biện pháp kiểm soát ...",
+  "model": "gemini-3-flash-preview",
+  "session_id": "user-001",
+  "provider": "cloud",
+  "rag_used": true,
+  "sources": [
+    { "file": "iso27001_annex_a.md", "title": "ISO 27001:2022 Annex A", "score": 0.72 }
+  ]
+}
+```
+
+### Example: Assessment Request
+
+```bash
+curl -X POST http://localhost:8000/iso27001/assess \
+  -H "Content-Type: application/json" \
+  -d '{
+    "assessment_standard": "iso27001",
+    "org_name": "Acme Corp",
+    "org_size": "medium",
+    "industry": "fintech",
+    "servers": 50,
+    "employees": 200,
+    "implemented_controls": ["A.5.1", "A.5.2", "A.5.15", "A.8.1"],
+    "model_mode": "hybrid"
+  }'
+```
+
+For full API reference, see [`docs/en/api.md`](docs/en/api.md).
+
+---
+
+## AI Pipeline Details
+
+### 2-Phase Assessment Pipeline
+
+The ISO assessment uses a specialized 2-phase approach:
+
+**Phase 1 — GAP Analysis (SecurityLLM 7B)**
+- Input: controls chunked by category + RAG context + evidence
+- Output: JSON array per category with `{ id, severity, likelihood, impact, risk, gap, recommendation }`
+- Anti-hallucination: validates control IDs against known catalog, rejects unknown IDs
+- Severity normalization: if >70% marked critical, redistributes to realistic distribution (~25% critical, 25% high, 30% medium, 20% low)
+- Few-shot examples embedded in prompt for consistent JSON output
+
+**Phase 2 — Report Generation (Llama 3.1 8B)**
+- Input: aggregated gap items + system info + weighted scores
+- Output: formatted markdown report with Risk Register table, executive summary
+- Risk scoring: `Risk = Likelihood × Impact` (each 1–5 scale, max risk = 25)
+
+### Weighted Compliance Scoring
+
+Controls are weighted by criticality:
+
+| Weight | Score | Examples |
+|--------|-------|---------|
+| Critical | 4 pts | A.5.1 Security policy, A.5.15 Access control, A.8.1 Endpoint security |
+| High | 3 pts | A.5.9 Asset inventory, A.6.1 Background check, A.7.1 Physical perimeter |
+| Medium | 2 pts | A.5.7 Threat intelligence, A.7.6 Secure work areas, A.8.6 Capacity |
+| Low | 1 pt | A.5.6 Expert liaison, A.5.11 Asset return, A.7.7 Clear desk |
+
+**Formula:** `Weighted Score = Σ(implemented control weights) / Σ(all control weights) × 100%`
+
+**Example:** 62/93 controls implemented, but mostly low/medium → weighted score could be 55.2% despite 66.7% simple count.
+
+### RAG Retrieval Strategy
+
+```
+User query
+    │
+    ├─ Multi-query expansion
+    │   "đánh giá iso 27001" → ["đánh giá iso 27001", "tiêu chuẩn đánh giá iso 27001"]
+    │   "đánh giá rủi ro" → ["đánh giá rủi ro", "kiểm toán rủi ro"]
+    │
+    ├─ ChromaDB cosine search (per expanded query, top_k=5)
+    │   └─ Deduplicate by (source, chunk_index)
+    │
+    ├─ Confidence filter (score ≥ 0.35)
+    │   └─ Track hit/miss via Prometheus counter
+    │
+    └─ Return context + source attribution
+        └─ Sources: [{ file, title, score }]
+```
+
+### Prompt Injection Detection
+
+The chat service blocks messages matching:
+- `ignore previous instructions`, `disregard all prior`
+- `you are now`, `act as`, `forget everything`
+- Special tokens: `<|im_start|>`, `<|im_end|>`, `<|eot_id|>`
+- `system:` prefix at message start
+
+Blocked requests return HTTP 400 with a generic error (no details leaked).
+
+---
+
+## Prometheus Metrics
+
+Configure Prometheus to scrape the backend:
+
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: cyberai
+    static_configs:
+      - targets: ['backend:8000']
+    scrape_interval: 30s
+```
+
+**Available metrics:**
+
+| Metric | Type | Labels |
+|--------|------|--------|
+| `cyberai_requests_total` | Counter | `method`, `endpoint`, `status` |
+| `cyberai_request_duration_seconds` | Histogram | `endpoint` |
+| `cyberai_active_sessions` | Gauge | — |
+| `cyberai_rag_queries_total` | Counter | `result` (`hit` / `miss`) |
+| `cyberai_assessments_total` | Gauge | — |
+
+**Histogram buckets:** 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s
 
 ---
 
 ## Documentation
 
-| Document | Language | Description |
-|---------|----------|-------------|
-| [Architecture](./docs/architecture.md) | 🇬🇧 EN | Container topology, routing, AI orchestration |
-| [Kiến trúc Hệ thống](./docs/architecture_vi.md) | 🇻🇳 VI | Container topology, routing, AI orchestration |
-| [API Reference](./docs/api.md) | 🇬🇧 EN | All endpoints with schemas |
-| [Tài liệu API](./docs/api_vi.md) | 🇻🇳 VI | All endpoints with schemas |
-| [News Aggregator](./docs/news_aggregator.md) | 🇬🇧 EN | RSS, translation, TTS flow |
-| [Tổng hợp Tin tức](./docs/news_aggregator_vi.md) | 🇻🇳 VI | RSS, translation, TTS flow |
-| [Chatbot RAG](./docs/chatbot_rag.md) | 🇬🇧 EN | Hybrid routing, ChromaDB, web search |
-| [Chatbot RAG](./docs/chatbot_rag_vi.md) | 🇻🇳 VI | Hybrid routing, ChromaDB, web search |
-| [ISO Assessment](./docs/iso_assessment_form.md) | 🇬🇧 EN | Async assessment pipeline |
-| [Form Đánh giá ISO](./docs/iso_assessment_form_vi.md) | 🇻🇳 VI | Async assessment pipeline |
-| [Analytics](./docs/analytics_monitoring.md) | 🇬🇧 EN | Dashboard, system stats |
-| [Analytics](./docs/analytics_monitoring_vi.md) | 🇻🇳 VI | Dashboard, system stats |
-| [ChromaDB Guide](./docs/chromadb_guide.md) | 🇬🇧 EN | Vector store, add documents |
-| [Hướng dẫn ChromaDB](./docs/chromadb_guide_vi.md) | 🇻🇳 VI | Vector store, add documents |
-| [Deployment Guide](./docs/deployment.md) | 🇬🇧 EN | Setup, Docker, production |
-| [Hướng dẫn Triển khai](./docs/deployment_vi.md) | 🇻🇳 VI | Setup, Docker, production |
-| [Markdown RAG Standard](./docs/markdown_rag_standard.md) | 🇻🇳 VI | Format .md files for optimal RAG |
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/en/architecture.md) | System design, service interactions, data flow |
+| [Deployment Guide](docs/en/deployment.md) | Production deployment, Nginx, resource planning |
+| [API Reference](docs/en/api.md) | Complete endpoint documentation |
+| [Chatbot & RAG](docs/en/chatbot_rag.md) | Chat pipeline, RAG strategy, prompt design |
+| [ISO Assessment](docs/en/iso_assessment_form.md) | Assessment wizard, 2-phase pipeline, scoring |
+| [ChromaDB Guide](docs/en/chromadb_guide.md) | Vector store setup, collection management |
+| [Analytics & Monitoring](docs/en/analytics_monitoring.md) | Prometheus metrics, dashboard setup |
+
+Vietnamese versions available: [`docs/vi/`](docs/vi/)
 
 ---
 
-## Performance Reference
+## Tech Stack
 
-| Metric | Value |
-|--------|-------|
-| Chat response (Open Claude) | ~2–5 seconds |
-| Chat response (LocalAI 70B, fallback) | ~30–90 seconds |
-| News title translation (batch 8) | ~3–8 seconds |
-| Article scrape + translate + TTS (cold) | ~15–40 seconds |
-| Audio playback (cached) | ~0 ms instant |
-| ChromaDB vector search (top-5) | < 100 ms |
-| Session context window | 10 messages sent to LLM, 20 stored |
-| Session TTL | 24 hours |
-| Audio/summary cache TTL | 7 days auto-cleanup |
-| Docker memory limits | Backend: 6 GB, LocalAI: 12 GB, Frontend: 2 GB |
+| Layer | Technology | Details |
+|-------|------------|---------|
+| **Backend** | Python 3.10, FastAPI 0.115+, Pydantic v2 | Uvicorn ASGI, async support |
+| **Vector Store** | ChromaDB 0.5+ | Embedded PersistentClient, cosine HNSW |
+| **Frontend** | Next.js 15.1, React 19 | CSS Modules, lucide-react, react-markdown |
+| **Local AI** | LocalAI v2.24.2 | GGUF inference, MMAP enabled, 8192 context |
+| **Local AI** | Ollama (latest) | Gemma 3n architecture, auto-pull |
+| **Cloud AI** | Open Claude gateway | Multi-model routing (Gemini, GPT, Claude) |
+| **Search** | DuckDuckGo Search 6.2+ | Real-time web information |
+| **Metrics** | Prometheus Client 0.20+ | Counter, Gauge, Histogram |
+| **Security** | SlowAPI, JWT (HS256) | Rate limiting, token auth |
+| **Infrastructure** | Docker Compose | 4 services, health checks, resource limits |
+| **Production** | Nginx reverse proxy | TLS termination, static caching |
+| **PDF Export** | WeasyPrint 62+ | HTML → PDF conversion |
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'Add your feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a Pull Request
+
+Please ensure all tests pass before submitting:
+
+```bash
+cd backend && python -m pytest tests/ -v
+```
 
 ---
 
 ## License
 
-Proprietary — built for enterprise cybersecurity assessment.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

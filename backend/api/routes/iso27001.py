@@ -319,12 +319,15 @@ async def assess(data: SystemInfo, background_tasks: BackgroundTasks):
 @router.get("/iso27001/assessments")
 async def get_all_assessments(
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
-    page_size: int = Query(default=20, ge=1, le=100, description="Items per page (max 100)"),
+    page_size: int = Query(default=50, ge=1, le=100, description="Items per page (max 100)"),
+    flat: bool = Query(default=False, description="Return flat array (no pagination envelope)"),
 ):
-    """List all assessments with pagination.
+    """List all assessments.
 
-    Returns a paginated envelope:
+    By default returns a paginated envelope:
     ``{ items, total, page, page_size, total_pages }``
+
+    Pass ``?flat=true`` to get a plain JSON array (legacy compatibility).
     """
     all_items = list_assessments()
     total = len(all_items)
@@ -333,6 +336,9 @@ async def get_all_assessments(
     start = (page - 1) * page_size
     end = start + page_size
     items = all_items[start:end]
+
+    if flat:
+        return items
 
     return {
         "items": items,

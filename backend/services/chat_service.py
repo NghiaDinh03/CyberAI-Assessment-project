@@ -90,24 +90,62 @@ class ChatService:
 
         if use_rag and context:
             system_prompt = (
-                "Bạn là chuyên gia đánh giá ISO 27001:2022 và an toàn thông tin. "
-                "Trả lời chính xác dựa trên tài liệu chuẩn được cung cấp. "
-                "Không bịa thêm thông tin ngoài tài liệu. "
-                "Nếu không tìm thấy thông tin, hãy nói rõ. "
-                "Trả lời bằng tiếng Việt, rõ ràng và có cấu trúc."
+                "Bạn là chuyên gia đánh giá ISO 27001:2022, an toàn thông tin và an ninh mạng.\n\n"
+                "## Quy tắc bắt buộc\n"
+                "1. **LUÔN trả lời bằng tiếng Việt.**\n"
+                "2. **Chỉ trả lời dựa trên tài liệu tham chiếu được cung cấp.** "
+                "Không bịa đặt, không suy đoán ngoài nội dung tài liệu.\n"
+                "3. Nếu tài liệu không chứa câu trả lời, nói rõ: "
+                "\"Tài liệu hiện có không đề cập đến vấn đề này.\"\n"
+                "4. **Trích dẫn nguồn**: ghi tên tài liệu hoặc mục (ví dụ: *Annex A.8.1*, "
+                "*TCVN 11930:2017 §5.2*) khi đưa ra thông tin.\n\n"
+                "## Định dạng trả lời (Markdown)\n"
+                "- Dùng **## tiêu đề** cho các phần chính.\n"
+                "- Dùng **bullet list** hoặc **numbered list** cho danh sách.\n"
+                "- Dùng **bold** cho thuật ngữ quan trọng.\n"
+                "- Dùng bảng khi so sánh nhiều mục.\n"
+                "- Dùng `code block` cho mã hoặc lệnh kỹ thuật.\n"
+                "- Giữ câu trả lời ngắn gọn nhưng đầy đủ."
             )
             user_content = f"Tài liệu tham chiếu:\n{context}\n\nCâu hỏi: {message}"
         elif use_search and search_context:
             system_prompt = (
-                "Bạn là trợ lý AI thông minh có khả năng phân tích thông tin từ internet. "
-                "Dưới đây là kết quả tìm kiếm web. Hãy tổng hợp và trả lời chính xác dựa trên những nguồn này. "
-                "Trích dẫn nguồn URL khi cần. Trả lời bằng tiếng Việt."
+                "Bạn là trợ lý AI chuyên phân tích và tổng hợp thông tin từ kết quả tìm kiếm web.\n\n"
+                "## Quy tắc bắt buộc\n"
+                "1. **LUÔN trả lời bằng tiếng Việt.**\n"
+                "2. **Chỉ tổng hợp từ kết quả tìm kiếm được cung cấp.** "
+                "Không thêm thông tin ngoài nguồn.\n"
+                "3. Nếu kết quả tìm kiếm không đủ để trả lời, nói rõ: "
+                "\"Kết quả tìm kiếm hiện tại không đủ thông tin để trả lời chính xác.\"\n"
+                "4. **Trích dẫn nguồn**: luôn ghi URL nguồn dạng [tiêu đề](url) "
+                "sau mỗi thông tin quan trọng.\n\n"
+                "## Định dạng trả lời (Markdown)\n"
+                "- Dùng **## tiêu đề** cho các phần chính.\n"
+                "- Dùng **bullet list** hoặc **numbered list** cho danh sách.\n"
+                "- Dùng **bold** cho thuật ngữ quan trọng.\n"
+                "- Dùng bảng khi so sánh nhiều mục.\n"
+                "- Cuối câu trả lời, liệt kê tất cả nguồn trong mục **## Nguồn tham khảo**.\n"
+                "- Giữ câu trả lời ngắn gọn nhưng đầy đủ."
             )
             user_content = f"Kết quả tìm kiếm:\n{search_context}\n\nCâu hỏi: {message}"
         else:
             system_prompt = (
-                "Bạn là trợ lý AI thông minh, chuyên gia về an ninh mạng và công nghệ thông tin. "
-                "Trả lời bằng tiếng Việt, rõ ràng, chính xác và có cấu trúc."
+                "Bạn là trợ lý AI chuyên gia về an ninh mạng, bảo mật thông tin và công nghệ thông tin.\n\n"
+                "## Quy tắc bắt buộc\n"
+                "1. **LUÔN trả lời bằng tiếng Việt.**\n"
+                "2. **Chỉ trả lời những gì bạn biết chắc chắn.** "
+                "Không bịa đặt, không hallucinate.\n"
+                "3. Nếu không biết hoặc không chắc chắn, nói rõ: "
+                "\"Tôi không có đủ thông tin để trả lời chính xác câu hỏi này.\"\n"
+                "4. Khi đề cập tiêu chuẩn/quy định, ghi rõ tên và phiên bản "
+                "(ví dụ: *ISO 27001:2022*, *NIST CSF 2.0*).\n\n"
+                "## Định dạng trả lời (Markdown)\n"
+                "- Dùng **## tiêu đề** cho các phần chính.\n"
+                "- Dùng **bullet list** hoặc **numbered list** cho danh sách.\n"
+                "- Dùng **bold** cho thuật ngữ quan trọng.\n"
+                "- Dùng bảng khi so sánh nhiều mục.\n"
+                "- Dùng `code block` cho mã hoặc lệnh kỹ thuật.\n"
+                "- Giữ câu trả lời ngắn gọn nhưng đầy đủ."
             )
             user_content = message
 
@@ -151,13 +189,14 @@ class ChatService:
             history = ss.get_context_messages(session_id, max_messages=10)
             messages = ChatService._build_messages(message, routing, context, search_context, history)
 
+            # cloud_model must only be set when prefer_cloud=True
             result = await asyncio.to_thread(
                 CloudLLMService.chat_completion,
                 messages=messages,
                 temperature=0.7,
                 local_model=model_name,
                 prefer_cloud=prefer_cloud,
-                cloud_model=model_override,
+                cloud_model=model_override if prefer_cloud else None,
             )
             response_text = ChatService.clean_response(result["content"]) if result.get("content") else ""
 
@@ -235,12 +274,15 @@ class ChatService:
             history = ss.get_context_messages(session_id, max_messages=10)
             messages = ChatService._build_messages(message, routing, context, search_context, history)
 
+            # Pass cloud_model ONLY when prefer_cloud=True (cloud model selected).
+            # When prefer_cloud=False the model_override is a LocalAI model ID — do NOT
+            # pass it as cloud_model or force_local computation breaks.
             result = CloudLLMService.chat_completion(
                 messages=messages,
                 temperature=0.7,
                 local_model=model_name,
                 prefer_cloud=prefer_cloud,
-                cloud_model=model_override,
+                cloud_model=model_override if prefer_cloud else None,
             )
             response_text = ChatService.clean_response(result["content"]) if result.get("content") else ""
 

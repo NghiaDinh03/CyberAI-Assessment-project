@@ -12,34 +12,44 @@ const MAX_INPUT = 2000
 const WARN_THRESHOLD = 1800
 
 const CLOUD_MODELS = [
-    // ── Google Gemini ─────────────────────────────────────────────────────────
-    { id: 'gemini-3-flash-preview', label: 'Gemini 3 Flash', provider: 'google', badge: 'Fast' },
-    { id: 'gemini-3-pro-preview',   label: 'Gemini 3 Pro',   provider: 'google', badge: '' },
-    // ── Google Gemma 4 ────────────────────────────────────────────────────────
-    { id: 'gemma-3-27b-it',  label: 'Gemma 4 27B', provider: 'google', badge: 'Pro' },
-    { id: 'gemma-3-12b-it',  label: 'Gemma 4 12B', provider: 'google', badge: '' },
-    { id: 'gemma-3-4b-it',   label: 'Gemma 4 4B',  provider: 'google', badge: 'Fast' },
-    // ── OpenAI ────────────────────────────────────────────────────────────────
-    { id: 'gpt-5',           label: 'GPT-5',         provider: 'openai', badge: 'Pro' },
-    { id: 'gpt-5-mini',      label: 'GPT-5 Mini',    provider: 'openai', badge: 'Fast' },
-    { id: 'gpt-5.2',         label: 'GPT-5.2',       provider: 'openai', badge: '' },
-    { id: 'gpt-5.2-codex',   label: 'GPT-5.2 Codex', provider: 'openai', badge: 'Code' },
-    { id: 'gpt-5.4',         label: 'GPT-5.4',       provider: 'openai', badge: 'Fast' },
-    { id: 'gpt-4.1',         label: 'GPT-4.1',       provider: 'openai', badge: '' },
-    { id: 'gpt-4.1-mini',    label: 'GPT-4.1 Mini',  provider: 'openai', badge: 'Fast' },
-    // ── Anthropic ─────────────────────────────────────────────────────────────
-    { id: 'claude-opus-4.5', label: 'Claude Opus 4.5', provider: 'anthropic', badge: 'Pro' },
-    { id: 'claude-opus-4.6', label: 'Claude Opus 4.6', provider: 'anthropic', badge: 'New' },
-    { id: 'claude-sonnet-4', label: 'Claude Sonnet 4',  provider: 'anthropic', badge: 'Fast' },
-    // ── Local ─────────────────────────────────────────────────────────────────
-    { id: 'localai', label: 'LocalAI (On-prem)', provider: 'local', badge: 'Local' },
+    { id: 'gemini-3-flash-preview', label: 'Gemini 3 Flash', provider: 'google',    badge: 'Fast' },
+    { id: 'gemini-3-pro-preview',   label: 'Gemini 3 Pro',   provider: 'google',    badge: '' },
+    { id: 'gpt-5',                  label: 'GPT-5',           provider: 'openai',    badge: 'Pro' },
+    { id: 'gpt-5-mini',             label: 'GPT-5 Mini',      provider: 'openai',    badge: 'Fast' },
+    { id: 'gpt-5.2',                label: 'GPT-5.2',         provider: 'openai',    badge: '' },
+    { id: 'gpt-5.2-codex',          label: 'GPT-5.2 Codex',   provider: 'openai',    badge: 'Code' },
+    { id: 'gpt-5.4',                label: 'GPT-5.4',         provider: 'openai',    badge: 'Fast' },
+    { id: 'gpt-4.1',                label: 'GPT-4.1',         provider: 'openai',    badge: '' },
+    { id: 'gpt-4.1-mini',           label: 'GPT-4.1 Mini',    provider: 'openai',    badge: 'Fast' },
+    { id: 'claude-opus-4.5',        label: 'Claude Opus 4.5', provider: 'anthropic', badge: 'Pro' },
+    { id: 'claude-opus-4.6',        label: 'Claude Opus 4.6', provider: 'anthropic', badge: 'New' },
+    { id: 'claude-sonnet-4',        label: 'Claude Sonnet 4', provider: 'anthropic', badge: 'Fast' },
+    { id: 'gemma3n:e4b',            label: 'Gemma 3n E4B',    provider: 'ollama',    badge: 'Fast' },
+    { id: 'gemma-3-4b-it',          label: 'Gemma 3 4B',      provider: 'ollama',    badge: '2.4GB' },
+    { id: 'gemma-3-12b-it',         label: 'Gemma 3 12B',     provider: 'ollama',    badge: '7GB' },
+    { id: 'gemma-4-31b-it',         label: 'Gemma 4 31B',     provider: 'ollama',    badge: '19GB' },
+    { id: 'Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf', label: 'Llama 3.1 8B',  provider: 'local', badge: '4.7GB' },
+    { id: 'SecurityLLM-7B-Q4_K_M.gguf',             label: 'SecurityLLM 7B', provider: 'local', badge: '4.2GB' },
 ]
+
+const LOCAL_MODEL_IDS = new Set(
+    CLOUD_MODELS.filter(m => m.provider === 'local' || m.provider === 'ollama').map(m => m.id)
+)
 
 const PROVIDER_COLORS = {
     openai: '#10a37f',
     google: '#4285f4',
     anthropic: '#d97706',
     local: '#8b5cf6',
+    ollama: '#ff6b35',
+}
+
+const PROVIDER_LABEL = {
+    openai: 'OpenAI',
+    google: 'Google',
+    anthropic: 'Anthropic',
+    local: 'LocalAI',
+    ollama: 'Ollama',
 }
 
 const SUGGESTED_PROMPTS = [
@@ -81,7 +91,6 @@ function directSaveSession(sessionId, messages) {
     } catch { }
 }
 
-// ─── MessageBubble ────────────────────────────────────────────────────────────
 const MessageBubble = memo(function MessageBubble({ m, msgKey, isLastStreaming, copiedMsgId, onCopy }) {
     const isBot = m.role === 'assistant'
     const isStreaming = !!m._streaming
@@ -157,7 +166,6 @@ const MessageBubble = memo(function MessageBubble({ m, msgKey, isLastStreaming, 
     )
 })
 
-// ─── ModelDropdown ────────────────────────────────────────────────────────────
 const ModelDropdown = memo(function ModelDropdown({
     selectedModel, modelDropdown, focusedModelIdx,
     onToggle, onSelect, onKeyDown, modelBtnRef, dropdownRef
@@ -190,30 +198,46 @@ const ModelDropdown = memo(function ModelDropdown({
                     onKeyDown={onKeyDown}
                 >
                     <div className={styles.modelDropdownTitle}>Select AI Model</div>
-                    {CLOUD_MODELS.map((m, idx) => (
-                        <button
-                            key={m.id}
-                            id={`model-opt-${m.id}`}
-                            type="button"
-                            role="option"
-                            aria-selected={selectedModel === m.id}
-                            className={`${styles.modelOption} ${selectedModel === m.id ? styles.modelOptionActive : ''} ${focusedModelIdx === idx ? styles.modelOptionFocused : ''}`}
-                            onClick={() => onSelect(m.id)}
-                            onMouseEnter={() => { }}
-                        >
-                            <span className={styles.modelDot} style={{ background: PROVIDER_COLORS[m.provider] }} />
-                            <span className={styles.modelOptionName}>{m.label}</span>
-                            {m.badge && <span className={styles.modelBadge}>{m.badge}</span>}
-                            <span className={styles.modelProviderTag} style={{ color: PROVIDER_COLORS[m.provider] }}>{m.provider}</span>
-                        </button>
-                    ))}
+                    {CLOUD_MODELS.map((m, idx) => {
+                        const prevProvider = idx > 0 ? CLOUD_MODELS[idx - 1].provider : null
+                        const showOllamaDivider = m.provider === 'ollama' && prevProvider !== 'ollama'
+                        const showLocalDivider  = m.provider === 'local'  && prevProvider !== 'local'
+                        return (
+                            <div key={m.id}>
+                                {showOllamaDivider && (
+                                    <div className={styles.modelDropdownDivider} style={{ color: PROVIDER_COLORS.ollama }}>
+                                        <span>🦙 Ollama (Gemma 3/4 · 100% Local)</span>
+                                    </div>
+                                )}
+                                {showLocalDivider && (
+                                    <div className={styles.modelDropdownDivider}>
+                                        <span>🖥️ LocalAI (Llama · SecurityLLM)</span>
+                                    </div>
+                                )}
+                                <button
+                                    id={`model-opt-${m.id}`}
+                                    type="button"
+                                    role="option"
+                                    aria-selected={selectedModel === m.id}
+                                    className={`${styles.modelOption} ${selectedModel === m.id ? styles.modelOptionActive : ''} ${focusedModelIdx === idx ? styles.modelOptionFocused : ''}`}
+                                    onClick={() => onSelect(m.id)}
+                                >
+                                    <span className={styles.modelDot} style={{ background: PROVIDER_COLORS[m.provider] }} />
+                                    <span className={styles.modelOptionName}>{m.label}</span>
+                                    {m.badge && <span className={styles.modelBadge}>{m.badge}</span>}
+                                    <span className={styles.modelProviderTag} style={{ color: PROVIDER_COLORS[m.provider] }}>
+                                        {PROVIDER_LABEL[m.provider] || m.provider}
+                                    </span>
+                                </button>
+                            </div>
+                        )
+                    })}
                 </div>
             )}
         </div>
     )
 })
 
-// ─── SessionList ──────────────────────────────────────────────────────────────
 const SessionList = memo(function SessionList({ sessions, activeId, onOpen, onRemove, onNew, onClose, onClearAll }) {
     const [search, setSearch] = useState('')
 
@@ -283,7 +307,6 @@ const SessionList = memo(function SessionList({ sessions, activeId, onOpen, onRe
     )
 })
 
-// ─── ChatbotPage ──────────────────────────────────────────────────────────────
 export default function ChatbotPage() {
     const [sessions, setSessions] = useState([])
     const [activeId, setActiveId] = useState(null)
@@ -357,7 +380,7 @@ export default function ChatbotPage() {
             fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: pending.userMessage, session_id: pending.sessionId, model: savedModel, prefer_cloud: savedModel !== 'localai' }),
+                body: JSON.stringify({ message: pending.userMessage, session_id: pending.sessionId, model: LOCAL_MODEL_IDS.has(savedModel) ? savedModel : savedModel, prefer_cloud: !LOCAL_MODEL_IDS.has(savedModel) }),
                 signal: controller.signal
             })
                 .then(r => r.json())
@@ -392,7 +415,6 @@ export default function ChatbotPage() {
     useEffect(() => { if (ready) lsSet(SESSIONS_KEY, sessions) }, [sessions, ready])
     useEffect(() => { if (ready) lsSet(ACTIVE_KEY, activeId) }, [activeId, ready])
 
-    // Scroll only when a new message is added
     useEffect(() => {
         if (msgs.length > prevMsgLenRef.current) {
             endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -481,7 +503,7 @@ export default function ChatbotPage() {
         setInput('')
         setSending(true)
         updateSessions(next, id)
-        const isLocalAI = selectedModel === 'localai'
+        const isLocal = LOCAL_MODEL_IDS.has(selectedModel)
         lsSet(PENDING_KEY, { sessionId: id, userMessage: text.trim(), currentMessages: next, done: false })
         setStatusText('Đang xử lý...')
         const controller = new AbortController()
@@ -491,7 +513,7 @@ export default function ChatbotPage() {
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text.trim(), session_id: id, model: isLocalAI ? '' : selectedModel, prefer_cloud: !isLocalAI }),
+                body: JSON.stringify({ message: text.trim(), session_id: id, model: selectedModel, prefer_cloud: !isLocal }),
                 signal: controller.signal
             })
             clearTimeout(timeoutId)
@@ -547,7 +569,7 @@ export default function ChatbotPage() {
                         content: botContent,
                         time: now(),
                         model: finalData.model,
-                        requestedModel: isLocalAI ? 'localai' : selectedModel,
+                        requestedModel: selectedModel,
                         provider: finalData.provider,
                         searchUsed: finalData.search_used,
                         ragUsed: finalData.rag_used,
@@ -573,7 +595,7 @@ export default function ChatbotPage() {
                     content: data.error ? (data.response || 'Model không khả dụng.') : (data.response || 'Không có phản hồi.'),
                     time: now(),
                     model: data.model,
-                    requestedModel: isLocalAI ? 'localai' : selectedModel,
+                    requestedModel: selectedModel,
                     provider: data.provider,
                     searchUsed: data.search_used,
                     ragUsed: data.rag_used,

@@ -7,9 +7,8 @@ on:
     branches: [main, develop]
 
 jobs:
-  # ── Job 1: Backend linting ────────────────────────────────────────────────
   backend-lint:
-    name: Backend Lint & Type Check
+    name: Backend Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,26 +18,23 @@ jobs:
           python-version: '3.11'
           cache: pip
 
-      - name: Install lint dependencies
+      - name: Install ruff
         run: pip install ruff
 
-      - name: Lint with ruff
+      - name: Lint
         run: cd backend && ruff check . --select E,W,F --ignore E501,W503
-        # E501 = line too long (many AI prompts are long strings, skip)
-        # W503 = line break before binary operator (style preference)
 
-      - name: Type check (non-blocking)
-        run: pip install mypy types-requests && cd backend && mypy . --ignore-missing-imports || true
-
-  # ── Job 2: Backend tests ──────────────────────────────────────────────────
   backend-test:
     name: Backend Tests
     runs-on: ubuntu-latest
     env:
-      # Provide a valid JWT secret so config.py passes validation in test env
       JWT_SECRET: ci-test-secret-key-32chars-minimum
       DEBUG: "true"
       DATA_PATH: /tmp/cyberai-test-data
+      LOCALAI_URL: http://localhost:8080
+      CLOUD_API_KEYS: ci-placeholder-key
+      CLOUD_LLM_API_URL: http://localhost:9999/v1
+      CLOUD_MODEL_NAME: gpt-test
     steps:
       - uses: actions/checkout@v4
 
@@ -47,14 +43,19 @@ jobs:
           python-version: '3.11'
           cache: pip
 
-      - name: Install dependencies
+      - name: Install system deps for weasyprint
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libpango-1.0-0 libpangocairo-1.0-0 libcairo2 \
+            libgdk-pixbuf2.0-0 libffi-dev libglib2.0-0
+
+      - name: Install Python deps
         run: pip install -r backend/requirements.txt pytest pytest-asyncio httpx
 
       - name: Run tests
-        # Non-blocking until test suite is fully established
-        run: cd backend && python -m pytest tests/ -v --tb=short || true
+        run: cd backend && python -m pytest tests/ -v --tb=short
 
-  # ── Job 3: Frontend build check ───────────────────────────────────────────
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest
@@ -67,7 +68,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend-next/package-lock.json
 
-      - name: Install dependencies
+      - name: Install deps
         run: cd frontend-next && npm ci
 
       - name: Build
@@ -75,15 +76,68 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
 
-  # ── Job 4: Docker Compose validation ──────────────────────────────────────
   docker-validate:
     name: Docker Compose Validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create stub .env for compose validation
+        run: |
+          cp .env.example .env
+          echo "MODEL_NAME=Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf" >> .env
+          echo "CLOUD_API_KEYS=ci-placeholder" >> .env
+
       - name: Validate docker-compose.yml
         run: docker compose config --quiet
 
       - name: Validate docker-compose.prod.yml
         run: docker compose -f docker-compose.prod.yml config --quiet
+
+  model-yaml-validate:
+    name: Model YAML Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pyyaml
+        run: pip install pyyaml
+
+      - name: Validate model YAML configs
+        run: |
+          python - <<'EOF'
+          import yaml, os, sys
+          REQUIRED_KEYS = {"name", "backend", "parameters"}
+          PARAM_REQUIRED = {"model"}
+          errors = []
+          models_dir = "models/llm"
+          for fname in sorted(os.listdir(models_dir)):
+              if not fname.endswith(".yaml"):
+                  continue
+              path = os.path.join(models_dir, fname)
+              try:
+                  with open(path) as f:
+                      cfg = yaml.safe_load(f)
+                  missing = REQUIRED_KEYS - set(cfg or {})
+                  if missing:
+                      errors.append(f"{fname}: missing top-level keys: {missing}")
+                  params = (cfg or {}).get("parameters", {}) or {}
+                  missing_p = PARAM_REQUIRED - set(params)
+                  if missing_p:
+                      errors.append(f"{fname}: missing parameters: {missing_p}")
+                  else:
+                      print(f"  OK  {fname}  (model={params.get('model')})")
+              except Exception as e:
+                  errors.append(f"{fname}: parse error: {e}")
+          if errors:
+              print("\nYAML validation FAILED:")
+              for e in errors:
+                  print(f"  ERROR: {e}")
+              sys.exit(1)
+          else:
+              print(f"\nAll {sum(1 for f in os.listdir(models_dir) if f.endswith('.yaml'))} YAML configs valid.")
+          EOF

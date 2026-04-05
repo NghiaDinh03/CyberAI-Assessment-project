@@ -7,34 +7,26 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # LocalAI
       - LOCALAI_URL=http://localai:8080
+      - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
       - MODEL_NAME=${MODEL_NAME}
       - SECURITY_MODEL_NAME=${SECURITY_MODEL_NAME:-${MODEL_NAME}}
       - MAX_TOKENS=-1
       - PREFER_LOCAL=${PREFER_LOCAL:-false}
-      # Cloud LLM (Open Claude)
       - CLOUD_LLM_API_URL=${CLOUD_LLM_API_URL:-https://open-claude.com/v1}
       - CLOUD_MODEL_NAME=${CLOUD_MODEL_NAME:-gpt-5.2}
       - CLOUD_API_KEYS=${CLOUD_API_KEYS}
-      # Data paths
       - ISO_DOCS_PATH=/data/iso_documents
       - VECTOR_STORE_PATH=/data/vector_store
       - DATA_PATH=/data
-      # Logging
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - DEBUG=${DEBUG:-true}
-      # Security
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
-      # JWT_SECRET: use a real secret in .env file for production.
-      # Dev default triggers a warning (not a hard error) because DEBUG=true.
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
-      # Rate Limiting
       - RATE_LIMIT_CHAT=${RATE_LIMIT_CHAT:-10/minute}
       - RATE_LIMIT_ASSESS=${RATE_LIMIT_ASSESS:-3/minute}
       - RATE_LIMIT_BENCHMARK=${RATE_LIMIT_BENCHMARK:-5/minute}
-      # Performance
-      - INFERENCE_TIMEOUT=${INFERENCE_TIMEOUT:-300}
+      - INFERENCE_TIMEOUT=${INFERENCE_TIMEOUT:-600}
       - CLOUD_TIMEOUT=${CLOUD_TIMEOUT:-60}
     networks:
       - phobert-network
@@ -51,6 +43,8 @@ services:
       - ./data/uploads:/data/uploads
     depends_on:
       localai:
+        condition: service_started
+      ollama:
         condition: service_started
     restart: unless-stopped
     deploy:
@@ -126,6 +120,37 @@ services:
       timeout: 10s
       retries: 3
       start_period: 120s
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: phobert-ollama
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull gemma3n:e4b; wait"]
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_MAX_LOADED_MODELS=1
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - phobert-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 12G
+        reservations:
+          memory: 2G
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  ollama_data:
 
 networks:
   phobert-network:

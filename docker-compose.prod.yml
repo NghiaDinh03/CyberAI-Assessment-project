@@ -91,7 +91,9 @@ services:
           memory: 1G
 
   localai:
-    image: localai/localai:v2.24.2-cublas-cuda12
+    # Latest tag for full Gemma 3/4 support via up-to-date llama.cpp.
+    # Switch to a versioned CUDA tag once a stable release ships gemma3 + CUDA support.
+    image: localai/localai:latest
     container_name: cyberai-localai
     ports:
       - "8080:8080"

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Link from 'next/link'
@@ -12,7 +12,20 @@ import { ASSESSMENT_TEMPLATES } from '../../data/templates'
 import StepProgress from '@/components/StepProgress'
 import { Shield, ChevronRight, ChevronLeft } from 'lucide-react'
 
-const POLL_INTERVAL = 10000
+const POLL_INTERVAL = 8000
+
+// Map standard id → display label for all supported standards
+const STANDARD_LABEL_MAP = {
+    iso27001:  'ISO 27001:2022',
+    tcvn11930: 'TCVN 11930:2017',
+    nd13:      'Nghị định 13/2023',
+    nist_csf:  'NIST CSF 2.0',
+    pci_dss:   'PCI DSS 4.0',
+    hipaa:     'HIPAA Security Rule',
+    gdpr:      'GDPR',
+    soc2:      'SOC 2',
+}
+const getStdLabel = (stdId) => STANDARD_LABEL_MAP[stdId] || stdId || 'ISO 27001:2022'
 
 const WEIGHT_LABEL = { critical: 'Tối quan trọng', high: 'Quan trọng', medium: 'Trung bình', low: 'Thấp' }
 const WEIGHT_COLOR = { critical: 'var(--accent-red)', high: 'var(--accent-amber,#f59e0b)', medium: 'var(--accent-blue)', low: 'var(--text-dim)' }
@@ -59,6 +72,7 @@ export default function FormISOPage() {
     const router = useRouter()
     const [step, setStep] = useState(1)
     const [form, setForm] = useState(EMPTY_FORM)
+    // result: { id, status, report, model_used, json_data, progress, compliance_percent, standard, org_name, error }
     const [result, setResult] = useState(null)
     const [loading, setLoading] = useState(false)
     const [activeTab, setActiveTab] = useState('form')
@@ -73,9 +87,14 @@ export default function FormISOPage() {
     const [evidencePreviews, setEvidencePreviews] = useState({})
     const [previewLoading, setPreviewLoading] = useState(null)
     const [isDragging, setIsDragging] = useState(false)
+    const [deletingId, setDeletingId] = useState(null)
 
     const [tplFilter, setTplFilter] = useState('all')
     const [showTplInfo, setShowTplInfo] = useState(false)
+
+    // Stable ref for polling — avoids stale closure bugs
+    const pollingRef = useRef(null)
+    const pollingIdRef = useRef(null)
 
     const uploadEvidence = async (controlId, files) => {
         if (!files || files.length === 0) return
@@ -268,51 +287,116 @@ export default function FormISOPage() {
         fetchHistory()
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-    const fetchHistory = async () => {
+    // ── fetchHistory: handles paginated envelope {items,...} OR flat array ─────
+    const fetchHistory = useCallback(async () => {
         try {
-            const res = await fetch('/api/iso27001/assessments')
-            if (res.ok) {
-                const serverHistory = await res.json()
-                const mapped = serverHistory.map(h => ({
-                    id: h.id,
-                    date: new Date(h.created_at).toLocaleDateString('vi-VN') + ' ' + new Date(h.created_at).toLocaleTimeString('vi-VN'),
-                    org: h.org_name,
-                    standard: h.standard === 'tcvn11930' ? 'TCVN 11930:2017' : 'ISO 27001:2022',
-                    status: h.status,
-                    compliance_percent: h.compliance_percent ?? null
-                }))
-                setAssessmentHistory(mapped)
-            }
-        } catch (e) {
-            const saved = localStorage.getItem('assessment_history')
-            if (saved) {
-                try { setAssessmentHistory(JSON.parse(saved)) } catch (_) { }
-            }
+            // ?page_size=50 fetches last 50 entries; backend also supports ?flat=true
+            const res = await fetch('/api/iso27001/assessments?page_size=50')
+            if (!res.ok) return
+            const payload = await res.json()
+            // Backend returns { items: [...], total, ... } OR plain array (flat=true)
+            const rawList = Array.isArray(payload) ? payload : (payload.items || [])
+            const mapped = rawList.map(h => ({
+                id: h.id,
+                date: h.created_at
+                    ? new Date(h.created_at).toLocaleDateString('vi-VN') + ' ' +
+                      new Date(h.created_at).toLocaleTimeString('vi-VN')
+                    : '—',
+                org: h.org_name || 'Không rõ',
+                standard: getStdLabel(h.standard),
+                status: h.status || 'unknown',
+                compliance_percent: h.compliance_percent ?? null,
+            }))
+            setAssessmentHistory(mapped)
+        } catch (_) {
+            // Fallback to localStorage if API is unreachable
+            try {
+                const saved = localStorage.getItem('assessment_history')
+                if (saved) setAssessmentHistory(JSON.parse(saved))
+            } catch (__) {}
         }
-    }
+    }, [])
 
-    useEffect(() => {
-        if (!result || result.status !== 'processing') return
-        const timer = setInterval(() => refreshStatus(), POLL_INTERVAL)
-        return () => clearInterval(timer)
-    }, [result])
+    // ── Stable polling engine — ref-based to avoid stale closures ──────────────
+    const stopPolling = useCallback(() => {
+        if (pollingRef.current) {
+            clearInterval(pollingRef.current)
+            pollingRef.current = null
+        }
+        pollingIdRef.current = null
+    }, [])
 
+    const startPolling = useCallback((id) => {
+        stopPolling()
+        pollingIdRef.current = id
+
+        const poll = async () => {
+            const targetId = pollingIdRef.current
+            if (!targetId) return
+            try {
+                const res = await fetch(`/api/iso27001/assessments/${targetId}`)
+                if (!res.ok) return
+                const data = await res.json()
+
+                if (data.status === 'completed' || data.status === 'failed') {
+                    stopPolling()
+                    setResult({
+                        id: data.id,
+                        status: data.status,
+                        report: data.result?.report || data.error || 'Lỗi không xác định.',
+                        model_used: data.result?.model_used,
+                        json_data: data.result?.json_data || null,
+                        // BUG 5 FIX: use server-stored compliance_percent, not form-derived
+                        compliance_percent: data.compliance_percent ?? null,
+                        standard: data.standard || data.system_info?.assessment_standard,
+                        org_name: data.system_info?.organization?.name || '',
+                        progress: null,
+                    })
+                    setActiveTab('result')
+                    fetchHistory()
+                } else if (data.status === 'processing' || data.status === 'pending') {
+                    setResult(prev =>
+                        prev?.id === targetId
+                            ? { ...prev, status: data.status, progress: data.progress || prev.progress }
+                            : prev
+                    )
+                }
+            } catch (e) {
+                console.warn('[Poll] Error fetching assessment status:', e)
+            }
+        }
+
+        // Poll immediately once, then on interval
+        poll()
+        pollingRef.current = setInterval(poll, POLL_INTERVAL)
+    }, [stopPolling, fetchHistory]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Clean up polling on unmount
+    useEffect(() => () => stopPolling(), [stopPolling])
+
+    // Start/stop polling when result.id or result.status changes
     useEffect(() => {
-        if (activeTab === 'result' && result?.id && result?.status === 'processing') {
-            refreshStatus(result.id)
+        if (result?.id && (result.status === 'processing' || result.status === 'pending')) {
+            startPolling(result.id)
+        } else {
+            stopPolling()
         }
-        if (activeTab === 'history') {
-            fetchHistory()
-        }
-    }, [activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [result?.id, result?.status]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Refresh history when switching to history tab; also poll history if items are processing
+    useEffect(() => {
+        if (activeTab === 'history') fetchHistory()
+    }, [activeTab, fetchHistory])
 
     useEffect(() => {
         if (activeTab !== 'history') return
-        const hasProcessing = assessmentHistory.some(h => h.status === 'processing' || h.status === 'pending')
+        const hasProcessing = assessmentHistory.some(
+            h => h.status === 'processing' || h.status === 'pending'
+        )
         if (!hasProcessing) return
-        const timer = setInterval(() => fetchHistory(), POLL_INTERVAL)
+        const timer = setInterval(fetchHistory, POLL_INTERVAL)
         return () => clearInterval(timer)
-    }, [activeTab, assessmentHistory])
+    }, [activeTab, assessmentHistory, fetchHistory])
 
     const set = (key, val) => setForm(p => ({ ...p, [key]: val }))
 
@@ -383,6 +467,7 @@ export default function FormISOPage() {
     const submit = async () => {
         setLoading(true)
         setResult(null)
+        stopPolling()
         try {
             const evidenceSummary = buildEvidenceSummary()
             const scopeNote = form.assessment_scope !== 'full'
@@ -405,13 +490,20 @@ export default function FormISOPage() {
             const data = await res.json()
             if (data.status === 'accepted') {
                 clearDraft()
+                // Seed result with all info available at submit time
                 setResult({
                     id: data.id,
                     status: 'processing',
-                    report: 'Hệ thống đã tiếp nhận yêu cầu. Model RAG đang phân tích dữ liệu.\n\nBạn có thể sang tab khác, sau đó quay lại tab **Lịch sử** để xem báo cáo khi hoàn thành.'
+                    report: '',
+                    progress: { message: 'Hệ thống đã tiếp nhận yêu cầu, đang khởi động...', percent: 0 },
+                    compliance_percent: null,
+                    standard: form.assessment_standard,
+                    org_name: form.org_name,
                 })
                 setActiveTab('result')
                 fetchHistory()
+                // Start stable ref-based polling immediately
+                startPolling(data.id)
             } else {
                 setResult({ error: true, report: data.error || 'Server error' })
                 setActiveTab('result')
@@ -423,33 +515,63 @@ export default function FormISOPage() {
         }
     }
 
-    const refreshStatus = useCallback(async (idToRefresh = null) => {
-        const targetId = idToRefresh || (result && result.id)
-        if (!targetId) return
-
+    // BUG 4 FIX: loadAssessmentById — fetches any completed/running assessment by id
+    // Completely independent of current result state to avoid stale closures
+    const loadAssessmentById = useCallback(async (id) => {
+        if (!id) return
         try {
-            const res = await fetch(`/api/iso27001/assessments/${targetId}`)
+            const res = await fetch(`/api/iso27001/assessments/${id}`)
+            if (!res.ok) return
             const data = await res.json()
             if (data.status === 'completed' || data.status === 'failed') {
                 setResult({
                     id: data.id,
                     status: data.status,
-                    report: data.result?.report || data.error,
+                    report: data.result?.report || data.error || '',
                     model_used: data.result?.model_used,
-                    json_data: data.result?.json_data || null
+                    json_data: data.result?.json_data || null,
+                    // BUG 5 FIX: use server-stored compliance_percent, not form-derived
+                    compliance_percent: data.compliance_percent ?? null,
+                    standard: data.standard || data.system_info?.assessment_standard,
+                    org_name: data.system_info?.organization?.name || '',
+                    progress: null,
                 })
                 setActiveTab('result')
-                fetchHistory()
-            } else if (data.status === 'processing' && data.progress) {
-                setResult(prev => prev?.id === data.id
-                    ? { ...prev, progress: data.progress }
-                    : prev
-                )
+            } else if (data.status === 'processing' || data.status === 'pending') {
+                setResult({
+                    id: data.id,
+                    status: data.status,
+                    report: '',
+                    progress: data.progress || { message: 'Đang xử lý...', percent: 0 },
+                    compliance_percent: data.compliance_percent ?? null,
+                    standard: data.standard || data.system_info?.assessment_standard,
+                    org_name: data.system_info?.organization?.name || '',
+                })
+                setActiveTab('result')
+                startPolling(id)
             }
         } catch (e) {
-            console.error('Failed to refresh status:', e)
+            console.error('[loadAssessmentById] Error:', e)
         }
-    }, [result])
+    }, [startPolling]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    // deleteAssessment — called from history tab with inline confirmation
+    const deleteAssessment = useCallback(async (id) => {
+        if (!id) return
+        setDeletingId(id)
+        try {
+            const res = await fetch(`/api/iso27001/assessments/${id}`, { method: 'DELETE' })
+            if (res.ok) {
+                setAssessmentHistory(prev => prev.filter(h => h.id !== id))
+                // Clear result panel if viewing deleted assessment
+                setResult(prev => prev?.id === id ? null : prev)
+            }
+        } catch (e) {
+            console.error('[deleteAssessment] Error:', e)
+        } finally {
+            setDeletingId(null)
+        }
+    }, [])
 
     const renderStepContent = () => {
         switch (step) {
@@ -1157,7 +1279,7 @@ export default function FormISOPage() {
                                 </button>
                             </div>
                         </div>
-                    ) : result.status === 'processing' ? (
+                    ) : (result.status === 'processing' || result.status === 'pending') ? (
                         <div className={styles.processingCard}>
                             <div className={styles.processingSpinner}>
                                 <div className={styles.spinnerRing} />
@@ -1171,109 +1293,138 @@ export default function FormISOPage() {
                                     tự động cập nhật khi xong. Quay lại tab <strong>Lịch sử</strong> để xem kết quả.
                                 </span>
                             </div>
-                            {result.progress && (
-                                <div className={styles.processingProgressWrap}>
-                                    <div className={styles.processingProgressBar}>
-                                        <div
-                                            className={styles.processingProgressFill}
-                                            style={{ width: `${result.progress.percent || 0}%` }}
-                                        />
-                                    </div>
-                                    <span className={styles.processingProgressMsg}>
-                                        {result.progress.message || 'Đang xử lý...'}
-                                        <span className={styles.processingProgressPct}> {result.progress.percent || 0}%</span>
-                                    </span>
+                            {/* BUG 2 FIX: progress bar driven by server polling data */}
+                            <div className={styles.processingProgressWrap}>
+                                <div className={styles.processingProgressBar}>
+                                    <div
+                                        className={styles.processingProgressFill}
+                                        style={{ width: `${result.progress?.percent || 0}%` }}
+                                    />
                                 </div>
-                            )}
+                                <span className={styles.processingProgressMsg}>
+                                    {result.progress?.message || (result.status === 'pending' ? 'Đang xếp hàng...' : 'Đang khởi động...')}
+                                    <span className={styles.processingProgressPct}> {result.progress?.percent || 0}%</span>
+                                </span>
+                            </div>
                             <p className={styles.processingDesc}>
-                                Đang đánh giá <strong>{form.implemented_controls.length}/{totalControls} controls</strong> ({compliancePercent}%).
+                                Tổ chức: <strong>{result.org_name || form.org_name || '—'}</strong> ·{' '}
+                                {getStdLabel(result.standard || form.assessment_standard)} ·{' '}
                                 {form.model_mode === 'local'
-                                    ? ' Local AI (4 category chunks) — thường mất 2–5 phút.'
+                                    ? 'Local AI — thường mất 2–5 phút.'
                                     : form.model_mode === 'hybrid'
-                                    ? ' Hybrid (SecurityLM local + Cloud format) — thường mất 1–3 phút.'
-                                    : ' Cloud AI — thường mất 30–60 giây.'}
+                                    ? 'Hybrid — thường mất 1–3 phút.'
+                                    : 'Cloud AI — thường mất 30–60 giây.'}
                             </p>
+                            {/* BUG 2 FIX: step indicators driven by progress.percent, not hardcoded */}
                             <div className={styles.processingSteps}>
-                                <div className={styles.procStep}>
-                                    <span className={styles.procStepNum} style={{ background: 'var(--accent-green)', color: '#fff' }}>✓</span>
-                                    <div className={styles.procStepText}>
-                                        <span className={styles.procStepLabel}>RAG Lookup</span>
-                                        <span className={styles.procStepDesc}>ChromaDB — {currentStandard.name.split('(')[0].trim()}</span>
-                                    </div>
-                                </div>
-                                <div className={styles.procStep}>
-                                    <span className={`${styles.procStepNum} ${styles.procStepNumAnim}`}>2</span>
-                                    <div className={styles.procStepText}>
-                                        <span className={styles.procStepLabel}>Phase 1 — SecurityLM</span>
-                                        <span className={styles.procStepDesc}>Phân tích GAP theo từng category controls</span>
-                                    </div>
-                                </div>
-                                <div className={styles.procStep} style={{ opacity: 0.4 }}>
-                                    <span className={styles.procStepNum}>3</span>
-                                    <div className={styles.procStepText}>
-                                        <span className={styles.procStepLabel}>Phase 2 — {form.model_mode === 'local' ? 'Meta-Llama 8B' : 'OpenClaude'}</span>
-                                        <span className={styles.procStepDesc}>Định dạng báo cáo Markdown + Risk Register</span>
-                                    </div>
-                                </div>
+                                {(() => {
+                                    const pct = result.progress?.percent || 0
+                                    // Phase thresholds: RAG done at ≥5%, P1 active 5-80%, P1 done ≥80%, P2 active >80%
+                                    const ragDone  = pct >= 5
+                                    const p1Active = pct >= 5  && pct < 80
+                                    const p1Done   = pct >= 80
+                                    const p2Active = pct >= 80 && pct < 100
+                                    return (<>
+                                        <div className={styles.procStep}>
+                                            <span className={styles.procStepNum} style={ragDone ? { background: 'var(--accent-green)', color: '#fff' } : {}}>
+                                                {ragDone ? '✓' : '1'}
+                                            </span>
+                                            <div className={styles.procStepText}>
+                                                <span className={styles.procStepLabel}>RAG Lookup</span>
+                                                <span className={styles.procStepDesc}>ChromaDB — {getStdLabel(result.standard || form.assessment_standard).split('(')[0].trim()}</span>
+                                            </div>
+                                        </div>
+                                        <div className={styles.procStep} style={!ragDone ? { opacity: 0.4 } : {}}>
+                                            <span className={`${styles.procStepNum} ${p1Active ? styles.procStepNumAnim : ''}`}
+                                                style={p1Done ? { background: 'var(--accent-green)', color: '#fff' } : {}}>
+                                                {p1Done ? '✓' : '2'}
+                                            </span>
+                                            <div className={styles.procStepText}>
+                                                <span className={styles.procStepLabel}>Phase 1 — SecurityLM</span>
+                                                <span className={styles.procStepDesc}>Phân tích GAP theo từng category controls</span>
+                                            </div>
+                                        </div>
+                                        <div className={styles.procStep} style={!p1Done ? { opacity: 0.4 } : {}}>
+                                            <span className={`${styles.procStepNum} ${p2Active ? styles.procStepNumAnim : ''}`}>3</span>
+                                            <div className={styles.procStepText}>
+                                                <span className={styles.procStepLabel}>Phase 2 — {form.model_mode === 'local' ? 'Meta-Llama 8B' : 'OpenClaude'}</span>
+                                                <span className={styles.procStepDesc}>Định dạng báo cáo Markdown + Risk Register</span>
+                                            </div>
+                                        </div>
+                                    </>)
+                                })()}
                             </div>
                             <div className={styles.pollingInfo} style={{ justifyContent: 'center', marginTop: '0.75rem' }}>
                                 <span className={styles.pollingDot} />
-                                <span>Tự động kiểm tra mỗi 10 giây · ID: <code style={{fontSize:'0.72rem',opacity:0.7}}>{result.id?.slice(0,8)}</code></span>
+                                <span>Tự động kiểm tra mỗi {POLL_INTERVAL/1000} giây · ID: <code style={{fontSize:'0.72rem',opacity:0.7}}>{result.id?.slice(0,8)}</code></span>
                             </div>
                         </div>
                     ) : (
                         <>
+                            {/* BUG 5 FIX: use server-stored result.compliance_percent, fall back to form-derived */}
+                            {(() => {
+                                const displayPct = result.compliance_percent != null
+                                    ? parseFloat(result.compliance_percent)
+                                    : parseFloat(compliancePercent)
+                                const displayPctStr = displayPct.toFixed(1)
+                                // Use result.json_data counts if available (loaded from server), else form counts
+                                const implCount = result.json_data?.compliance?.implemented_count ?? form.implemented_controls.length
+                                const missingCount = result.json_data?.compliance?.missing_count ?? (totalControls - form.implemented_controls.length)
+                                const totalCount = (implCount + missingCount) || totalControls
+                                const displayOrg = result.org_name || form.org_name || 'Tổ chức'
+                                const displayStd = getStdLabel(result.standard || form.assessment_standard)
+                                return (
                             <div className={styles.scoreHero}>
                                 <div className={styles.scoreHeroLeft}>
                                     <div className={styles.svgGaugeWrap}>
                                         <SvgGauge
-                                            percent={compliancePercent}
+                                            percent={displayPct}
                                             size={120}
                                             color={
-                                                parseFloat(compliancePercent) >= 80 ? 'var(--accent-green)' :
-                                                parseFloat(compliancePercent) >= 50 ? 'var(--accent-blue)' :
-                                                parseFloat(compliancePercent) >= 25 ? 'var(--accent-amber,#f59e0b)' :
+                                                displayPct >= 80 ? 'var(--accent-green)' :
+                                                displayPct >= 50 ? 'var(--accent-blue)' :
+                                                displayPct >= 25 ? 'var(--accent-amber,#f59e0b)' :
                                                 'var(--accent-red)'
                                             }
                                         />
                                         <div className={styles.svgGaugeOverlay}>
                                             <span className={`${styles.scoreNum} ${
-                                                parseFloat(compliancePercent) >= 80 ? styles.scoreNumFull :
-                                                parseFloat(compliancePercent) >= 50 ? styles.scoreNumMostly :
-                                                parseFloat(compliancePercent) >= 25 ? styles.scoreNumPartial :
+                                                displayPct >= 80 ? styles.scoreNumFull :
+                                                displayPct >= 50 ? styles.scoreNumMostly :
+                                                displayPct >= 25 ? styles.scoreNumPartial :
                                                 styles.scoreNumLow
-                                            }`}>{compliancePercent}%</span>
+                                            }`}>{displayPctStr}%</span>
                                             <span className={styles.scoreUnit}>Tuân thủ</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div className={styles.scoreHeroRight}>
-                                    <div className={styles.scoreOrg}>{form.org_name || 'Tổ chức chưa đặt tên'}</div>
-                                    <div className={styles.scoreStd}>{currentStandard.name}</div>
+                                    <div className={styles.scoreOrg}>{displayOrg}</div>
+                                    <div className={styles.scoreStd}>{displayStd}</div>
                                     <div className={`${styles.complianceBadge} ${
-                                        parseFloat(compliancePercent) >= 80 ? styles.badgeFull :
-                                        parseFloat(compliancePercent) >= 50 ? styles.badgeMostly :
-                                        parseFloat(compliancePercent) >= 25 ? styles.badgePartial :
+                                        displayPct >= 80 ? styles.badgeFull :
+                                        displayPct >= 50 ? styles.badgeMostly :
+                                        displayPct >= 25 ? styles.badgePartial :
                                         styles.badgeLow
                                     }`}>
-                                        {parseFloat(compliancePercent) >= 80 ? '✅ Tuân thủ cao' :
-                                         parseFloat(compliancePercent) >= 50 ? '🟡 Tuân thủ một phần' :
-                                         parseFloat(compliancePercent) >= 25 ? '🟠 Tuân thủ thấp' :
+                                        {displayPct >= 80 ? '✅ Tuân thủ cao' :
+                                         displayPct >= 50 ? '🟡 Tuân thủ một phần' :
+                                         displayPct >= 25 ? '🟠 Tuân thủ thấp' :
                                          '🔴 Không tuân thủ'}
                                     </div>
                                     <div className={styles.scoreStats}>
                                         <div className={styles.scoreStat}>
-                                            <span className={styles.scoreStatNum}>{form.implemented_controls.length}</span>
+                                            <span className={styles.scoreStatNum}>{implCount}</span>
                                             <span className={styles.scoreStatLabel}>Controls đạt</span>
                                         </div>
                                         <div className={styles.scoreStatDivider} />
                                         <div className={styles.scoreStat}>
-                                            <span className={styles.scoreStatNum}>{totalControls - form.implemented_controls.length}</span>
+                                            <span className={styles.scoreStatNum}>{missingCount}</span>
                                             <span className={styles.scoreStatLabel}>Còn thiếu</span>
                                         </div>
                                         <div className={styles.scoreStatDivider} />
                                         <div className={styles.scoreStat}>
-                                            <span className={styles.scoreStatNum}>{totalControls}</span>
+                                            <span className={styles.scoreStatNum}>{totalCount}</span>
                                             <span className={styles.scoreStatLabel}>Tổng controls</span>
                                         </div>
                                     </div>
@@ -1285,6 +1436,8 @@ export default function FormISOPage() {
                                     )}
                                 </div>
                             </div>
+                                )
+                            })()}
 
                             <div className={styles.breakdownPanel}>
                                 <h4 className={styles.breakdownTitle}>Phân tích theo Category (Weighted)</h4>
@@ -1411,18 +1564,29 @@ export default function FormISOPage() {
                                     Copy report
                                 </button>
                                 <button className={styles.reportActionBtn} onClick={() => {
+                                    // BUG 5 FIX: use server-stored compliance_percent from result
+                                    const pdfPct = result.compliance_percent != null
+                                        ? parseFloat(result.compliance_percent)
+                                        : parseFloat(compliancePercent)
+                                    const pdfPctStr = pdfPct.toFixed(1)
+                                    const pdfOrg = result.org_name || form.org_name || 'Tổ chức'
+                                    const pdfStd = getStdLabel(result.standard || form.assessment_standard)
+                                    const pdfPctColor = pdfPct >= 80 ? '#10b981' : pdfPct >= 50 ? '#3b82f6' : pdfPct >= 25 ? '#f59e0b' : '#ef4444'
+                                    const implCount = result.json_data?.compliance?.implemented_count ?? form.implemented_controls.length
+                                    const totalCount = (result.json_data?.compliance?.implemented_count ?? 0) +
+                                                       (result.json_data?.compliance?.missing_count ?? 0) || totalControls
                                     const reportHtml = `<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Báo cáo Đánh giá - ${form.org_name || 'Tổ chức'}</title>
+<title>Báo cáo Đánh giá - ${pdfOrg}</title>
 <style>
   body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 860px; margin: 40px auto; padding: 0 24px; color: #1e293b; line-height: 1.7; font-size: 14px; }
   h1 { font-size: 22px; font-weight: 800; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; margin-bottom: 4px; }
   h2 { font-size: 16px; font-weight: 700; color: #3b82f6; margin-top: 24px; border-left: 3px solid #3b82f6; padding-left: 8px; }
   h3 { font-size: 14px; font-weight: 600; color: #475569; margin-top: 16px; }
   .hero { display: flex; align-items: center; gap: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin: 16px 0; }
-  .pct { font-size: 36px; font-weight: 900; color: ${parseFloat(compliancePercent) >= 80 ? '#10b981' : parseFloat(compliancePercent) >= 50 ? '#3b82f6' : parseFloat(compliancePercent) >= 25 ? '#f59e0b' : '#ef4444'}; min-width: 90px; text-align: center; }
+  .pct { font-size: 36px; font-weight: 900; color: ${pdfPctColor}; min-width: 90px; text-align: center; }
   .meta { flex: 1; }
   .meta strong { display: block; font-size: 16px; }
   .meta span { color: #64748b; font-size: 13px; }
@@ -1444,10 +1608,10 @@ export default function FormISOPage() {
   <button onclick="window.print()" style="float:right;padding:6px 14px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">🖨️ In / Lưu PDF</button>
 </div>
 <div class="hero">
-  <div class="pct">${compliancePercent}%</div>
+  <div class="pct">${pdfPctStr}%</div>
   <div class="meta">
-    <strong>${form.org_name || 'Tổ chức'}</strong>
-    <span>${currentStandard.name} &nbsp;·&nbsp; ${form.implemented_controls.length}/${totalControls} Controls đạt &nbsp;·&nbsp; Điểm trọng số: ${weightedScore.achieved}/${weightedScore.maxScore}</span>
+    <strong>${pdfOrg}</strong>
+    <span>${pdfStd} &nbsp;·&nbsp; ${implCount}/${totalCount} Controls đạt</span>
   </div>
 </div>
 ${escHtml(result.report || '')}
@@ -1499,22 +1663,35 @@ ${escHtml(result.report || '')}
                 <div className={styles.historyWrap}>
                     <div className={styles.historyHeader}>
                         <h2 className={styles.sectionTitle}>Lịch sử Báo cáo</h2>
-                        <button className={styles.refreshBtn} onClick={fetchHistory}>Làm mới</button>
+                        <button className={styles.refreshBtn} onClick={fetchHistory}>🔄 Làm mới</button>
                     </div>
-                    <p className={styles.helperText}>Hệ thống RAG xử lý ngầm. Báo cáo được lưu theo Thread ID trên máy chủ.</p>
+                    <p className={styles.helperText}>
+                        Hệ thống RAG xử lý ngầm. Báo cáo được lưu trên máy chủ · Tổng: <strong>{assessmentHistory.length}</strong> đánh giá
+                    </p>
 
                     {assessmentHistory.length === 0 ? (
-                        <div className={styles.emptyHistory}>Chưa có lịch sử đánh giá nào.</div>
+                        <div className={styles.emptyHistory}>
+                            Chưa có lịch sử đánh giá nào.<br />
+                            <small style={{ opacity: 0.5 }}>Hãy hoàn thành đánh giá đầu tiên từ tab Nhập liệu.</small>
+                        </div>
                     ) : (
                         <div className={styles.historyList}>
-                            {assessmentHistory.map((hist, idx) => (
-                                <div key={idx} className={styles.historyItem}>
+                            {assessmentHistory.map((hist) => (
+                                // BUG 6 FIX: hist.standard already uses getStdLabel() from fetchHistory
+                                <div key={hist.id || hist.date} className={styles.historyItem}>
                                     <div className={styles.histInfo}>
                                         <div className={styles.histTitle}>
                                             {hist.org}
                                             <span className={styles.histDate}>{hist.date}</span>
                                         </div>
-                                        <div className={styles.histStd}>Tiêu chuẩn: <strong>{hist.standard}</strong></div>
+                                        <div className={styles.histStd}>
+                                            Tiêu chuẩn: <strong>{hist.standard}</strong>
+                                            {hist.id && (
+                                                <span style={{ marginLeft: '0.5rem', opacity: 0.4, fontSize: '0.68rem', fontFamily: 'monospace' }}>
+                                                    #{hist.id.slice(0, 8)}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className={styles.histPercent}>
                                         {hist.compliance_percent != null ? (
@@ -1534,18 +1711,44 @@ ${escHtml(result.report || '')}
                                     <div className={styles.histAction}>
                                         <span className={`${styles.statusBadge} ${styles[`status_${hist.status}`]}`}>
                                             {hist.status === 'completed' ? '✅ Hoàn thành' :
-                                             hist.status === 'failed' ? '❌ Thất bại' :
-                                             hist.status === 'processing' ? '⏳ Xử lý...' : '🔄 Chờ'}
+                                             hist.status === 'failed'    ? '❌ Thất bại' :
+                                             hist.status === 'processing'? '⏳ Xử lý...' : '🔄 Chờ'}
                                         </span>
-                                        {hist.status === 'completed' && (
-                                            <button className={styles.btnSmall} onClick={() => refreshStatus(hist.id)}>Xem →</button>
+                                        {/* BUG 4 FIX: use loadAssessmentById — fully independent of stale result state */}
+                                        {hist.status === 'completed' && hist.id && (
+                                            <button className={styles.btnSmall}
+                                                onClick={() => loadAssessmentById(hist.id)}>
+                                                Xem →
+                                            </button>
                                         )}
-                                        {(hist.status === 'processing' || hist.status === 'pending') && (
-                                            <button className={styles.btnSmall} onClick={() => refreshStatus(hist.id)}>Kiểm tra</button>
+                                        {(hist.status === 'processing' || hist.status === 'pending') && hist.id && (
+                                            <button className={styles.btnSmall}
+                                                onClick={() => loadAssessmentById(hist.id)}>
+                                                Theo dõi →
+                                            </button>
                                         )}
                                         {hist.status === 'failed' && (
-                                            <button className={styles.btnSmall} style={{ color: 'var(--accent-amber,#f59e0b)' }}
-                                                onClick={() => { setActiveTab('form'); setStep(4) }}>Thử lại</button>
+                                            <button className={styles.btnSmall}
+                                                style={{ color: 'var(--accent-amber,#f59e0b)' }}
+                                                onClick={() => { setActiveTab('form'); setStep(4) }}>
+                                                Thử lại
+                                            </button>
+                                        )}
+                                        {/* Enhancement 9: delete with inline confirm */}
+                                        {hist.id && (
+                                            <button
+                                                className={styles.btnSmall}
+                                                style={{ color: 'var(--accent-red)', opacity: deletingId === hist.id ? 0.5 : 1 }}
+                                                disabled={deletingId === hist.id}
+                                                onClick={() => {
+                                                    if (window.confirm(`Xóa đánh giá của "${hist.org}" (${hist.date})?\nThao tác này không thể hoàn tác.`)) {
+                                                        deleteAssessment(hist.id)
+                                                    }
+                                                }}
+                                                title="Xóa đánh giá này"
+                                            >
+                                                {deletingId === hist.id ? '⏳' : '🗑️'}
+                                            </button>
                                         )}
                                     </div>
                                 </div>

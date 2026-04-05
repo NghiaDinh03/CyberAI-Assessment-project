@@ -1,15 +1,4 @@
-"""Cloud LLM Service — Open Claude (primary) with LocalAI fallback.
-
-Model routing:
-  chat            → gpt-5.2              (balanced chat)
-  iso_local       → LocalAI only         (ISO assessment pre-processing)
-  iso_analysis    → gpt-5.2             (deep ISO analysis)
-  complex         → gpt-5.2             (any heavy task)
-  default         → gpt-5.2
-
-Auto-fallback chain: when a cloud model fails (429/500/503), automatically
-retry with next model in FALLBACK_CHAIN until one succeeds.
-"""
+"""Cloud LLM Service — routes to Cloud (Open Claude), LocalAI, or Ollama."""
 
 import time
 import logging
@@ -23,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 MIN_MAX_TOKENS = 10000
 
-# Task-type → preferred model on Open Claude
 TASK_MODEL_MAP: Dict[str, str] = {
     "iso_analysis":   "gemini-3-flash-preview",
     "complex":        "gemini-3-pro-preview",
@@ -31,8 +19,6 @@ TASK_MODEL_MAP: Dict[str, str] = {
     "default":        "gemini-3-flash-preview",
 }
 
-# Auto-fallback chain: if primary model fails, try these in order
-# Model IDs verified against GET /v1/models endpoint
 FALLBACK_CHAIN: list = [
     "gemini-3-flash-preview",
     "gemini-3-pro-preview",
@@ -41,8 +27,13 @@ FALLBACK_CHAIN: list = [
     "gpt-5",
 ]
 
-# Tasks that must go to LocalAI only (never Cloud)
 LOCAL_ONLY_TASKS = {"iso_local"}
+
+_LOCALAI_TO_OLLAMA: Dict[str, str] = {
+    "gemma-3-4b-it":  "gemma3:4b",
+    "gemma-3-12b-it": "gemma3:12b",
+    "gemma-4-31b-it": "gemma4:31b",
+}
 
 
 class CloudLLMService:
@@ -62,7 +53,6 @@ class CloudLLMService:
 
     @classmethod
     def _resolve_model(cls, task_type: str = None, model_override: str = None) -> str:
-        """Return the best model for a given task_type."""
         if model_override:
             return model_override
         if task_type and task_type in TASK_MODEL_MAP:
@@ -73,7 +63,6 @@ class CloudLLMService:
     def _call_open_claude(cls, messages: List[Dict], temperature: float = 0.7,
                           max_tokens: int = 8192, model: str = None,
                           task_type: str = None) -> Dict[str, Any]:
-        """Call Open Claude. Auto-fallback through FALLBACK_CHAIN on 404/500/503."""
         requested_model = model or cls._resolve_model(task_type)
         keys = settings.cloud_api_key_list
         if not keys:
@@ -81,7 +70,6 @@ class CloudLLMService:
 
         effective_max_tokens = max(max_tokens, MIN_MAX_TOKENS)
 
-        # Build fallback chain starting from requested model
         fallback_models = [requested_model]
         for m in FALLBACK_CHAIN:
             if m != requested_model:
@@ -144,12 +132,12 @@ class CloudLLMService:
                 if response.status_code in (404, 400):
                     logger.warning(f"[OpenClaude] {response.status_code} for model='{current_model}' — trying next fallback")
                     last_error = f"Model unavailable ({response.status_code}): {current_model}"
-                    break  # break key loop → try next model in fallback chain
+                    break
 
                 if response.status_code in (500, 502, 503):
                     logger.warning(f"[OpenClaude] Server error {response.status_code} for model='{current_model}' — trying next fallback")
                     last_error = f"Server error ({response.status_code})"
-                    break  # break key loop → try next model in fallback chain
+                    break
 
                 if response.status_code != 200:
                     logger.error(f"[OpenClaude] HTTP {response.status_code}: {response.text[:300]}")
@@ -187,9 +175,6 @@ class CloudLLMService:
 
     @classmethod
     def localai_health_check(cls, model: str = None, timeout: int = 10) -> bool:
-        """Quick health check — verify LocalAI is up and model is loadable.
-        Returns True if healthy, False otherwise.
-        """
         check_model = model or settings.SECURITY_MODEL_NAME
         try:
             response = requests.post(
@@ -216,11 +201,8 @@ class CloudLLMService:
     @classmethod
     def _call_localai(cls, model: str, messages: List[Dict], temperature: float = 0.7,
                       priority: bool = False) -> Dict[str, Any]:
-        """Call LocalAI. priority=True is reserved for high-priority tasks (e.g. ISO assessments)."""
         logger.info(f"[LocalAI] Requesting model={model}, messages={len(messages)}, priority={priority}")
 
-        # Cap max_tokens for small models to avoid OOM
-        # If user sets MAX_TOKENS>0 use that; else default 2048 for local
         effective_max_tokens = settings.MAX_TOKENS if settings.MAX_TOKENS > 0 else 2048
 
         payload = {
@@ -244,7 +226,6 @@ class CloudLLMService:
             raise Exception(f"[LocalAI] Connection error: {e}")
         if response.status_code != 200:
             err_text = response.text[:300]
-            # Detect model-load failures specifically
             if "could not load model" in err_text or "rpc error" in err_text or "Canceled" in err_text:
                 raise Exception(f"[LocalAI] Model load failed (OOM/RPC): {err_text[:150]}")
             raise Exception(f"[LocalAI] HTTP {response.status_code}: {err_text}")
@@ -263,23 +244,79 @@ class CloudLLMService:
         }
 
     @classmethod
+    def _call_ollama(cls, model: str, messages: List[Dict], temperature: float = 0.7) -> Dict[str, Any]:
+        ollama_url = settings.OLLAMA_URL
+        logger.info(f"[Ollama] Requesting model={model}, messages={len(messages)}")
+        effective_max_tokens = settings.MAX_TOKENS if settings.MAX_TOKENS > 0 else 512
+        try:
+            response = requests.post(
+                f"{ollama_url}/v1/chat/completions",
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "temperature": temperature,
+                    "max_tokens": effective_max_tokens,
+                    "stream": False,
+                },
+                timeout=settings.INFERENCE_TIMEOUT,
+            )
+        except requests.exceptions.Timeout:
+            raise Exception(f"[Ollama] Timeout after {settings.INFERENCE_TIMEOUT}s")
+        except Exception as e:
+            raise Exception(f"[Ollama] Connection error: {e}")
+
+        if response.status_code != 200:
+            err_text = response.text[:300]
+            raise Exception(f"[Ollama] HTTP {response.status_code}: {err_text}")
+
+        data = response.json()
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        if not content:
+            logger.warning(f"[Ollama] Empty content: {str(data)[:200]}")
+
+        logger.info(f"[Ollama] OK — model={model}, output_len={len(content)}")
+        return {
+            "content": content.strip() if content else "",
+            "usage": data.get("usage", {}),
+            "model": model,
+            "provider": "ollama",
+        }
+
+    @classmethod
+    def ollama_health_check(cls, model: str = None, timeout: int = 5) -> bool:
+        try:
+            response = requests.get(
+                f"{settings.OLLAMA_URL}/api/tags",
+                timeout=timeout,
+            )
+            if response.status_code == 200:
+                data = response.json()
+                models = [m.get("name", "") for m in data.get("models", [])]
+                logger.info(f"[Ollama] Health check OK — {len(models)} model(s) available: {models[:5]}")
+                return True
+            return False
+        except Exception as e:
+            logger.warning(f"[Ollama] Health check failed: {e}")
+            return False
+
+    @classmethod
     def chat_completion(cls, messages: List[Dict], temperature: float = 0.7,
                         max_tokens: int = 8192, prefer_cloud: bool = True,
                         local_model: str = None, task_type: str = None,
                         cloud_model: str = None) -> Dict[str, Any]:
-        """Route to the best model based on task_type.
-
-        cloud_model: explicit cloud model name from user selection (e.g. gpt-5.2).
-                     Takes priority over TASK_MODEL_MAP routing.
-        """
         local_model = local_model or settings.MODEL_NAME
         errors = []
 
-        # If user explicitly selected LocalAI (prefer_cloud=False, no cloud_model) → force local path
-        force_local = not prefer_cloud and not cloud_model
+        OLLAMA_MODEL_PREFIXES = ("gemma3:", "gemma3n:", "gemma4:", "phi4:", "llama3:", "mistral:", "qwen3:")
+        LOCALAI_GEMMA_IDS = {"gemma-3-4b-it", "gemma-3-12b-it", "gemma-4-31b-it"}
+        is_ollama_model = (
+            any(local_model.startswith(p) for p in OLLAMA_MODEL_PREFIXES) or
+            local_model in LOCALAI_GEMMA_IDS
+        )
+
+        force_local = not prefer_cloud
         effective_prefer_cloud = prefer_cloud and not settings.PREFER_LOCAL and not force_local
 
-        # ISO local: try LocalAI first; if model fails to load, auto-fallback to cloud
         if task_type in LOCAL_ONLY_TASKS:
             logger.info(f"[ChatCompletion] task_type={task_type} → LocalAI (priority), cloud fallback on load-fail")
             try:
@@ -292,7 +329,6 @@ class CloudLLMService:
                 errors.append(f"LocalAI: {err_str}")
                 logger.warning(f"[ChatCompletion] LocalAI failed: {err_str}")
 
-                # If model couldn't load (OOM/RPC error) AND cloud keys exist → fallback gracefully
                 is_load_error = any(kw in err_str for kw in [
                     "Model load failed", "could not load model", "rpc error", "Canceled",
                     "HTTP 500", "Connection error"
@@ -319,7 +355,6 @@ class CloudLLMService:
         if settings.LOCAL_ONLY_MODE and not ModelGuard.is_ready():
             raise Exception("Local-only mode enabled nhưng thiếu file model. Kiểm tra thư mục ./models")
 
-        # In LOCAL_ONLY_MODE → force LocalAI path; cloud is never attempted
         if settings.LOCAL_ONLY_MODE:
             try:
                 result = cls._call_localai(local_model, messages, temperature)
@@ -330,19 +365,28 @@ class CloudLLMService:
                 errors.append(f"Local-only: {e}")
             raise Exception(f"Local-only mode: LocalAI failed: {' | '.join(errors)}")
 
-        # Branch A: prefer_local=True OR user explicitly chose LocalAI → LocalAI first
         if settings.PREFER_LOCAL or force_local:
-            try:
-                result = cls._call_localai(local_model, messages, temperature)
-                if result.get("content"):
-                    return result
-                logger.warning("[ChatCompletion] LocalAI returned empty content, trying cloud")
-                errors.append("LocalAI: empty content")
-            except Exception as e:
-                errors.append(f"LocalAI: {e}")
-                logger.warning(f"[ChatCompletion] LocalAI failed: {e}")
+            if is_ollama_model:
+                try:
+                    ollama_model = local_model if ":" in local_model else _LOCALAI_TO_OLLAMA.get(local_model, local_model)
+                    result = cls._call_ollama(ollama_model, messages, temperature)
+                    if result.get("content"):
+                        return result
+                    errors.append("Ollama: empty content")
+                except Exception as e:
+                    errors.append(f"Ollama: {e}")
+                    logger.warning(f"[ChatCompletion] Ollama failed for {local_model}: {e}")
+            else:
+                try:
+                    result = cls._call_localai(local_model, messages, temperature)
+                    if result.get("content"):
+                        return result
+                    logger.warning("[ChatCompletion] LocalAI returned empty content, trying cloud")
+                    errors.append("LocalAI: empty content")
+                except Exception as e:
+                    errors.append(f"LocalAI: {e}")
+                    logger.warning(f"[ChatCompletion] LocalAI failed: {e}")
 
-            # If user explicitly chose LocalAI (force_local), don't silently fallback to cloud
             if force_local:
                 err_msg = " | ".join(errors)
                 raise Exception(
@@ -363,7 +407,6 @@ class CloudLLMService:
                     errors.append(f"Open Claude: {e}")
                     logger.warning(f"[ChatCompletion] Open Claude failed after LocalAI: {e}")
 
-        # Branch B: prefer_cloud=True (and prefer_local=False) → Cloud first
         else:
             if settings.cloud_api_key_list:
                 try:
@@ -429,7 +472,6 @@ class CloudLLMService:
 
         if status["open_claude"]["configured"]:
             try:
-                # Lightweight connectivity check — GET /models (no LLM call, no rate-limit risk)
                 keys = settings.cloud_api_key_list
                 if keys:
                     resp = httpx.get(

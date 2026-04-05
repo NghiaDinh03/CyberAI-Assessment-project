@@ -47,6 +47,8 @@ class Settings:
     # Default to 8B to avoid OOM in LocalAI containers (12–16GB). 70B requires much higher RAM.
     MODEL_NAME: str = os.getenv("MODEL_NAME", "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf")
     SECURITY_MODEL_NAME: str = os.getenv("SECURITY_MODEL_NAME", os.getenv("MODEL_NAME", "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf"))
+    # Ollama — OpenAI-compatible local inference for Gemma 3/4 (full gemma3 arch support)
+    OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://ollama:11434")
     MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "-1"))
     LOCAL_ONLY_MODE: bool = os.getenv("LOCAL_ONLY_MODE", "false").lower() == "true"
     # Prefer running on LocalAI first to keep data on-prem (cloud as fallback only if needed)

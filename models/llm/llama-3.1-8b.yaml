@@ -11,9 +11,6 @@ parameters:
   ctx_size: 8192
   mmap: true
 
-# LocalAI auto-downloads this file on first startup if missing
-url: "huggingface://bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf"
-
 template:
   chat: |
     <|begin_of_text|><|start_header_id|>system<|end_header_id|>
