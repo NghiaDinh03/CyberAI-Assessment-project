@@ -336,13 +336,17 @@ export default function AnalyticsPage() {
     const gemmaInfo = aiStatus?.ollama?.gemma3n_e4b
     const gemmaSize = gemmaInfo?.size ? `${(gemmaInfo.size / (1024 ** 3)).toFixed(1)} GB` : '—'
 
+    // Models default to "Ready" when LocalAI engine is available (files on disk)
+    const localaiUp = services?.localai?.ready
+    const ollamaReady = ollamaStatus || (aiStatus && !aiStatus.ollama?.status?.startsWith?.('unreachable'))
+
     const SERVICE_ROWS = [
         { name: 'FastAPI Backend', detail: 'Core API Service · Port 8000', ready: services?.backend?.ready, status: services?.backend?.status },
-        { name: 'LocalAI Engine', detail: 'Model Server · Port 8080 · CPU Mode', ready: services?.localai?.ready, status: services?.localai?.status },
+        { name: 'LocalAI Engine', detail: 'Model Server · Port 8080 · CPU Mode', ready: localaiUp, status: services?.localai?.status },
         { name: 'ChromaDB', detail: 'Vector Database · RAG · cosine similarity', ready: services?.backend?.ready, status: services?.backend?.status },
-        { name: 'Llama 3.1 8B', detail: 'LLM General · Q4_K_M · 4.9 GB', ready: services?.localai?.ready, loading: !services?.localai?.ready },
-        { name: 'SecurityLLM 7B', detail: 'LLM ISO Assessor · Q4_K_M · 4.4 GB', ready: services?.localai?.ready, loading: !services?.localai?.ready },
-        { name: 'Ollama Engine', detail: `Gemma 3n E4B · ${gemmaSize} · Port 11434`, ready: ollamaStatus, status: ollamaStatus ? 'Running' : 'Offline', loading: !aiStatus },
+        { name: 'Llama 3.1 8B', detail: 'LLM General · Q4_K_M · 4.9 GB', ready: localaiUp, status: localaiUp ? 'Ready' : undefined, loading: !services },
+        { name: 'SecurityLLM 7B', detail: 'LLM ISO Assessor · Q4_K_M · 4.4 GB', ready: localaiUp, status: localaiUp ? 'Ready' : undefined, loading: !services },
+        { name: 'Ollama Engine', detail: `Gemma 3n E4B · ${gemmaSize} · Port 11434`, ready: ollamaReady, status: ollamaReady ? 'Running' : (aiStatus ? 'Offline' : undefined), loading: !aiStatus },
     ]
 
     return (

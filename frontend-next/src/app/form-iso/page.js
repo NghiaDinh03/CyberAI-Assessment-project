@@ -1194,20 +1194,6 @@ export default function FormISOPage() {
                         </div>
                     )}
 
-                    <div className={styles.stepper}>
-                        {[1, 2, 3, 4].map((s, idx) => (
-                            <div key={s} className={styles.stepGroup}>
-                                <div className={`${styles.stepIndicator} ${step === s ? styles.stepCurrent : step > s ? styles.stepCompleted : ''}`}>
-                                    <div className={styles.stepCircle}>{step > s ? '✓' : s}</div>
-                                    <div className={styles.stepLabel}>
-                                        {s === 1 ? 'Tổ chức' : s === 2 ? 'Hạ tầng' : s === 3 ? 'Controls' : 'Mô tả'}
-                                    </div>
-                                </div>
-                                {idx < 3 && <div className={`${styles.stepLine} ${step > s ? styles.stepLineActive : ''}`} />}
-                            </div>
-                        ))}
-                    </div>
-
                     <div className={styles.stepBanner}>
                         <span className={styles.stepBannerCount}>Bước {step} / 4</span>
                         <span className={styles.stepBannerSep}>—</span>
@@ -1217,10 +1203,6 @@ export default function FormISOPage() {
                              step === 3 ? 'Biện pháp kiểm soát (Controls)' :
                              'Mô tả hệ thống & Tổng kết'}
                         </span>
-                    </div>
-
-                    <div className={styles.progressBar}>
-                        <div className={styles.progressFill} style={{ width: `${((step - 1) / 3) * 100}%` }} />
                     </div>
 
                     <div className={styles.stepContainer}>

@@ -12,7 +12,7 @@
 }
 
 .subtitle {
-    color: var(--text-dim);
+    color: var(--text-muted);
     font-size: 0.82rem;
     line-height: 1.5;
 }
@@ -47,7 +47,7 @@
     font-size: 0.78rem;
     font-weight: 500;
     background: transparent;
-    color: var(--text-dim);
+    color: var(--text-muted);
     cursor: pointer;
     transition: all 0.18s;
     font-family: inherit;
@@ -171,9 +171,9 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin: 0.5rem 0 0.75rem;
+    margin: 0 0 1.25rem;
     font-size: 0.8rem;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     animation: fadeIn 0.2s ease;
 }
 
@@ -189,7 +189,7 @@
 }
 
 .stepBannerSep {
-    color: var(--text-dim);
+    color: var(--text-muted);
     font-size: 0.7rem;
 }
 
@@ -258,13 +258,13 @@
 
 .helperText {
     font-size: 0.82rem;
-    color: var(--text-dim);
+    color: var(--text-muted);
     margin-bottom: 1.15rem;
     line-height: 1.6;
 }
 
 .helperText strong {
-    color: var(--text-muted);
+    color: var(--text-secondary);
 }
 
 .grid {
@@ -389,13 +389,13 @@
 
 .summaryBox li {
     font-size: 0.84rem;
-    color: var(--text-dim);
+    color: var(--text-muted);
     margin-bottom: 0.3rem;
     line-height: 1.5;
 }
 
 .summaryBox li strong {
-    color: var(--text-muted);
+    color: var(--text-secondary);
 }
 
 .stepActions {
@@ -2513,7 +2513,7 @@
 ═══════════════════════════════════════════════════ */
 .evidenceHelpText {
     font-size: 0.78rem;
-    color: var(--text-dim);
+    color: var(--text-muted);
     line-height: 1.55;
     margin: 0 0 10px;
     padding: 8px 12px;
@@ -3562,7 +3562,7 @@
 }
 
 .scopeOptionText span {
-    color: var(--text-dim);
+    color: var(--text-muted);
     font-size: 0.75rem;
     line-height: 1.4;
 }
