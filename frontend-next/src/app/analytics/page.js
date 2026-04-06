@@ -122,6 +122,7 @@ export default function AnalyticsPage() {
     const [benchmarkMode, setBenchmarkMode] = useState('hybrid')
     const [benchmarkCompare, setBenchmarkCompare] = useState(false)
     const [services, setServices] = useState(null)
+    const [aiStatus, setAiStatus] = useState(null)
     const [assessments, setAssessments] = useState([])
     const [loading, setLoading] = useState(true)
     const [selectedAssessment, setSelectedAssessment] = useState(null)
@@ -287,11 +288,13 @@ export default function AnalyticsPage() {
                     if (sysRes.ok) localaiReady = true
                 } catch { }
                 try {
+                    const aiRes = await fetch('/api/system/ai-status')
+                    if (aiRes.ok) setAiStatus(await aiRes.json())
+                } catch { }
+                try {
                     const assessRes = await fetch('/api/iso27001/assessments')
                     if (assessRes.ok) {
                         const assessData = await assessRes.json()
-                        // API may return paginated object { assessments: [...], total, page }
-                        // or plain array (legacy). Normalise to always be an array.
                         setAssessments(Array.isArray(assessData)
                             ? assessData
                             : Array.isArray(assessData?.assessments)
@@ -329,12 +332,17 @@ export default function AnalyticsPage() {
         pct >= 25 ? 'var(--accent-amber)' :
         'var(--accent-red)'
 
+    const ollamaStatus = aiStatus?.ollama?.status === 'healthy'
+    const gemmaInfo = aiStatus?.ollama?.gemma3n_e4b
+    const gemmaSize = gemmaInfo?.size ? `${(gemmaInfo.size / (1024 ** 3)).toFixed(1)} GB` : '—'
+
     const SERVICE_ROWS = [
         { name: 'FastAPI Backend', detail: 'Core API Service · Port 8000', ready: services?.backend?.ready, status: services?.backend?.status },
         { name: 'LocalAI Engine', detail: 'Model Server · Port 8080 · CPU Mode', ready: services?.localai?.ready, status: services?.localai?.status },
         { name: 'ChromaDB', detail: 'Vector Database · RAG · cosine similarity', ready: services?.backend?.ready, status: services?.backend?.status },
         { name: 'Llama 3.1 8B', detail: 'LLM General · Q4_K_M · 4.9 GB', ready: services?.localai?.ready, loading: !services?.localai?.ready },
         { name: 'SecurityLLM 7B', detail: 'LLM ISO Assessor · Q4_K_M · 4.4 GB', ready: services?.localai?.ready, loading: !services?.localai?.ready },
+        { name: 'Ollama Engine', detail: `Gemma 3n E4B · ${gemmaSize} · Port 11434`, ready: ollamaStatus, status: ollamaStatus ? 'Running' : 'Offline', loading: !aiStatus },
     ]
 
     return (

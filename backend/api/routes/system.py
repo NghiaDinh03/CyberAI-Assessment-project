@@ -140,6 +140,7 @@ def ai_status():
         "model_guard": ModelGuard.status(),
         "localai": health.get("localai", {}),
         "open_claude": health.get("open_claude", {}),
+        "ollama": health.get("ollama", {}),
     }
 
 

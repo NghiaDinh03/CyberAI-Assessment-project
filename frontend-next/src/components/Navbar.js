@@ -13,7 +13,6 @@ const NAV_ITEMS = [
     { href: '/form-iso', label: 'Assessment', icon: Shield },
     { href: '/standards', label: 'Standards', icon: BookOpen },
     { href: '/analytics', label: 'Analytics', icon: BarChart2 },
-    { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
 const TIMEZONES = [

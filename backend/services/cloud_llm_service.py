@@ -494,4 +494,24 @@ class CloudLLMService:
         except Exception as e:
             status["localai"]["status"] = f"unreachable: {e}"
 
+        status["ollama"] = {"configured": True, "url": settings.OLLAMA_URL}
+        try:
+            resp = requests.get(f"{settings.OLLAMA_URL}/api/tags", timeout=5)
+            if resp.status_code == 200:
+                data = resp.json()
+                models = data.get("models", [])
+                model_names = [m.get("name", "") for m in models]
+                gemma_model = next((m for m in models if "gemma3n" in m.get("name", "") or "gemma3n:e4b" in m.get("name", "")), None)
+                status["ollama"]["status"] = "healthy"
+                status["ollama"]["models"] = model_names
+                status["ollama"]["gemma3n_e4b"] = {
+                    "available": gemma_model is not None,
+                    "name": gemma_model.get("name", "") if gemma_model else "gemma3n:e4b",
+                    "size": gemma_model.get("size", 0) if gemma_model else 0,
+                }
+            else:
+                status["ollama"]["status"] = f"unhealthy ({resp.status_code})"
+        except Exception as e:
+            status["ollama"]["status"] = f"unreachable: {e}"
+
         return status
