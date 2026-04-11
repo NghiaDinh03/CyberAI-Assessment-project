@@ -15,6 +15,44 @@ The CyberAI Assessment Platform is an AI-powered cybersecurity assessment system
 
 ## 2. Container Architecture
 
+### System Topology
+
+```mermaid
+flowchart LR
+    Browser(["🖥️ Browser"])
+
+    subgraph PROD["⚡ Production Only"]
+        Nginx["cyberai-nginx\nnginx:alpine\n:80 / :443"]
+    end
+
+    subgraph DOCKER["🐳 Docker Network"]
+        Frontend["🎨 phobert-frontend\nNext.js 15.1\n:3000"]
+        Backend["⚙️ phobert-backend\nFastAPI\n:8000"]
+        LocalAI["🧠 phobert-localai\nLocalAI v2.24.2\n:8080"]
+        Ollama["🦙 phobert-ollama\nOllama\n:11434"]
+    end
+
+    Cloud(["☁️ Cloud LLM\nOpen Claude"])
+
+    Browser -- "HTTPS" --> Nginx
+    Browser -- "HTTP dev" --> Frontend
+    Nginx -- "proxy_pass" --> Frontend
+    Nginx -- "/api/*" --> Backend
+    Frontend -- "rewrite /api/*" --> Backend
+    Backend -- "OpenAI API" --> LocalAI
+    Backend -- "OpenAI API" --> Ollama
+    Backend -. "Fallback" .-> Cloud
+
+    style Nginx fill:#f59e0b,stroke:#d97706,color:#000
+    style Frontend fill:#3b82f6,stroke:#2563eb,color:#fff
+    style Backend fill:#10b981,stroke:#059669,color:#fff
+    style LocalAI fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style Ollama fill:#ef4444,stroke:#dc2626,color:#fff
+    style Cloud fill:#6366f1,stroke:#4f46e5,color:#fff
+    style PROD fill:#fef3c7,stroke:#f59e0b
+    style DOCKER fill:#dbeafe,stroke:#93c5fd
+```
+
 | Container | Image | Port | Memory Limit | Memory Reserved | Health Check |
 |-----------|-------|------|-------------|-----------------|-------------|
 | `phobert-backend` | Python 3.10-slim (FastAPI) | 8000 | 6 GB | 2 GB | `curl -f http://localhost:8000/health` every 30s |
@@ -36,6 +74,38 @@ The CyberAI Assessment Platform is an AI-powered cybersecurity assessment system
 ## 3. Dual Local Inference Architecture
 
 The platform runs **two independent local inference engines** to maximize model compatibility and avoid single-point-of-failure:
+
+```mermaid
+flowchart TB
+    BE(["⚙️ phobert-backend\nFastAPI :8000"])
+
+    subgraph LOCAL_AI["🧠 LocalAI :8080"]
+        L1["Meta-Llama 3.1 8B\nQ4_K_M · ~4.9 GB\nReport formatting & Chat"]
+        L2["SecurityLLM 7B\nQ4_K_M · ~4.2 GB\nGAP Analysis"]
+    end
+
+    subgraph OLLAMA["🦙 Ollama :11434"]
+        O1["Gemma 3n E4B\nAuto-pull on startup"]
+        O2["gemma3:4b / 12b\ngemma4:31b\nManual pull"]
+    end
+
+    subgraph CLOUD["☁️ Cloud Fallback — Open Claude"]
+        direction TB
+        C1["1. gemini-3-flash-preview"] --> C2["2. gemini-3-pro-preview"]
+        C2 --> C3["3. gpt-5-mini"]
+        C3 --> C4["4. claude-sonnet-4"]
+        C4 --> C5["5. gpt-5"]
+    end
+
+    BE -- "OpenAI API" --> LOCAL_AI
+    BE -- "OpenAI API" --> OLLAMA
+    BE -. "Fallback on error" .-> CLOUD
+
+    style BE fill:#10b981,stroke:#059669,color:#fff
+    style LOCAL_AI fill:#ede9fe,stroke:#8b5cf6
+    style OLLAMA fill:#fee2e2,stroke:#ef4444
+    style CLOUD fill:#e0f2fe,stroke:#0ea5e9
+```
 
 ### LocalAI (port 8080)
 
@@ -189,110 +259,112 @@ Order matters — outermost middleware executes first:
 
 ### Chat Request Flow
 
-```
-User Input
-    │
-    ▼
-┌─────────────┐    /api/chat     ┌──────────────┐
-│   Frontend   │ ─────────────── │   Backend    │
-│  (Next.js)   │   SSE stream    │  (FastAPI)   │
-└─────────────┘  ◄────────────── └──────┬───────┘
-                                        │
-                                 ┌──────▼───────┐
-                                 │ ModelRouter   │
-                                 │ (intent +     │
-                                 │  keyword)     │
-                                 └──────┬───────┘
-                                        │
-                    ┌───────────┬───────┴───────┬───────────┐
-                    ▼           ▼               ▼           ▼
-              ┌──────────┐ ┌────────┐   ┌──────────┐ ┌──────────┐
-              │ RAG      │ │ Web    │   │ Session  │ │ Prompt   │
-              │ Service  │ │ Search │   │ Memory   │ │ Injection│
-              │ (ChromaDB)│ │(ddgs)  │   │ (10 msg) │ │ Detection│
-              └────┬─────┘ └───┬────┘   └────┬─────┘ └──────────┘
-                   └───────────┴──────────────┘
-                                │
-                         ┌──────▼───────┐
-                         │ CloudLLM     │
-                         │ Service      │
-                         └──────┬───────┘
-                                │
-              ┌─────────────────┼─────────────────┐
-              ▼                 ▼                  ▼
-        ┌──────────┐    ┌──────────┐       ┌──────────┐
-        │ LocalAI  │    │  Ollama  │       │  Cloud   │
-        │ :8080    │    │  :11434  │       │ (Open    │
-        │ (GGUF)   │    │ (Gemma)  │       │  Claude) │
-        └──────────┘    └──────────┘       └──────────┘
+```mermaid
+flowchart TD
+    User(["\u{1F464} User Input"])
+    User --> FE
+
+    FE["\u{1F3A8} Frontend\nNext.js :3000"]
+    FE -- "/api/chat (SSE)" --> BE
+
+    BE["\u2699\uFE0F Backend\nFastAPI :8000"]
+    BE --> Router["\u{1F500} ModelRouter\nintent + keyword"]
+
+    subgraph CONTEXT["Context Building"]
+        RAG["\u{1F4DA} RAG Service\nChromaDB"]
+        WS["\u{1F310} Web Search\nDuckDuckGo"]
+        MEM["\u{1F4BE} Session Memory\n10 messages"]
+        SEC["\u{1F6E1}\uFE0F Prompt Injection\nDetection"]
+    end
+
+    Router --> RAG
+    Router --> WS
+    Router --> MEM
+    Router --> SEC
+
+    RAG & WS & MEM --> LLM
+
+    subgraph LLM["\u2601\uFE0F CloudLLM Service \u2014 Inference Routing"]
+        LAI["\u{1F9E0} LocalAI :8080\nGGUF models"]
+        OLL["\u{1F999} Ollama :11434\nGemma 3n"]
+        CLD["\u2601\uFE0F Open Claude\nCloud Fallback"]
+    end
+
+    LLM -- "SSE stream" --> FE
+
+    style User fill:#fbbf24,stroke:#f59e0b,color:#000
+    style FE fill:#3b82f6,stroke:#2563eb,color:#fff
+    style BE fill:#10b981,stroke:#059669,color:#fff
+    style Router fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style CONTEXT fill:#f0fdf4,stroke:#86efac
+    style LLM fill:#dbeafe,stroke:#93c5fd
+    style CLD fill:#6366f1,stroke:#4f46e5,color:#fff
 ```
 
 ### Assessment Pipeline
 
-```
-Form Submit (ISO 27001 controls)
-    │
-    ▼
-┌──────────────────────────────────┐
-│  Phase 1: GAP Analysis           │
-│  - Chunked prompts               │
-│  - SecurityLLM via LocalAI       │
-│  - JSON validation per chunk     │
-│  - Severity normalization        │
-│  - Anti-hallucination checks     │
-└──────────────┬───────────────────┘
-               │
-               ▼
-┌──────────────────────────────────┐
-│  Phase 2: Report Generation      │
-│  - Meta-Llama 3.1 8B            │
-│  - Executive summary             │
-│  - Recommendations               │
-│  - Structured JSON output        │
-└──────────────┬───────────────────┘
-               │
-               ▼
-┌──────────────────────────────────┐
-│  Output                          │
-│  - JSON saved to /data/          │
-│    assessments/{uuid}.json       │
-│  - PDF/HTML export to            │
-│    /data/exports/                │
-└──────────────────────────────────┘
+```mermaid
+flowchart TD
+    Submit(["\u{1F4DD} Form Submit\nISO 27001 controls list"])
+    Submit --> P1A
+
+    subgraph Phase1["\u{1F50D} Phase 1 \u2014 GAP Analysis"]
+        P1A["Chunked prompts"]
+        P1B["SecurityLLM 7B\nvia LocalAI :8080"]
+        P1C["JSON validation per chunk"]
+        P1D["Severity normalization\nCritical / High / Medium / Low"]
+        P1E["Anti-hallucination checks"]
+        P1A --> P1B --> P1C --> P1D --> P1E
+    end
+
+    P1E --> P2A
+
+    subgraph Phase2["\u{1F4CA} Phase 2 \u2014 Report Generation"]
+        P2A["Meta-Llama 3.1 8B\nvia LocalAI :8080"]
+        P2B["Executive summary"]
+        P2C["Recommendations"]
+        P2D["Structured JSON output"]
+        P2A --> P2B --> P2C --> P2D
+    end
+
+    P2D --> O1
+    P2D --> O2
+
+    O1["\u{1F4C4} /data/assessments\n{uuid}.json"]
+    O2["\u{1F4E6} /data/exports\nPDF / HTML"]
+
+    style Submit fill:#fbbf24,stroke:#f59e0b,color:#000
+    style Phase1 fill:#fee2e2,stroke:#fca5a5
+    style Phase2 fill:#dbeafe,stroke:#93c5fd
+    style O1 fill:#d1fae5,stroke:#6ee7b7
+    style O2 fill:#d1fae5,stroke:#6ee7b7
 ```
 
 ### RAG Retrieval Flow
 
-```
-User Query
-    │
-    ▼
-┌──────────────────────────────────┐
-│  Multi-Query Expansion           │
-│  (VectorStore.multi_query_search)│
-└──────────────┬───────────────────┘
-               │
-               ▼
-┌──────────────────────────────────┐
-│  ChromaDB Cosine Similarity      │
-│  - Domain-scoped collection      │
-│  - Header-aware chunks           │
-│  - Top-K results                 │
-└──────────────┬───────────────────┘
-               │
-               ▼
-┌──────────────────────────────────┐
-│  Confidence Filter (≥ 0.35)      │
-│  - score = 1 - cosine_distance   │
-│  - Prometheus: hit / miss        │
-└──────────────┬───────────────────┘
-               │
-               ▼
-┌──────────────────────────────────┐
-│  Context Injection               │
-│  - Source attribution            │
-│  - Injected into LLM prompt     │
-└──────────────────────────────────┘
+```mermaid
+flowchart LR
+    Query(["\u{1F50D} User Query"])
+    Query --> MQ
+
+    MQ["\u{1F4DD} Multi-Query Expansion\nVectorStore.multi_query_search"]
+    MQ --> DB
+
+    DB["\u{1F5C4}\uFE0F ChromaDB\nCosine Similarity\n\u00B7 Domain-scoped collections\n\u00B7 Header-aware chunking\n\u00B7 600 chars / 150 overlap\n\u00B7 Top-K results"]
+    DB --> CF
+
+    CF{"\u2696\uFE0F Confidence \u2265 0.35?\nscore = 1 \u2212 distance"}
+    CF -- "\u2705 hit" --> CTX
+    CF -- "\u274C miss" --> PROM
+
+    CTX["\u{1F4CE} Context Injection\n\u00B7 Source attribution\n\u00B7 Inject into LLM prompt"]
+    PROM["\u{1F4CA} Prometheus\ncyberai_rag_queries_total\nlabel: miss"]
+
+    style Query fill:#fbbf24,stroke:#f59e0b,color:#000
+    style DB fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style CF fill:#f59e0b,stroke:#d97706,color:#000
+    style CTX fill:#10b981,stroke:#059669,color:#fff
+    style PROM fill:#6366f1,stroke:#4f46e5,color:#fff
 ```
 
 ---

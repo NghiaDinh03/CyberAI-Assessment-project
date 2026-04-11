@@ -2,6 +2,50 @@
 
 ---
 
+## 🎯 Quick Introduction — What Does This Project Do?
+
+> **New to AI/Chatbot?** Read this section first.
+
+### CyberAI Chatbot works like a virtual cybersecurity expert
+
+Imagine you have an **ISO 27001 consultant** available 24/7. You ask any security question, and the consultant will:
+
+1. **Search** 21+ security standard documents (ISO, NIST, PCI DSS, Vietnamese regulations...) for relevant information
+2. **Synthesize** information from multiple sources
+3. **Answer** in plain language, with citations to source documents
+
+This is **RAG (Retrieval-Augmented Generation)** — in simple terms, "AI with a reference library."
+
+### Real-World Example — 3 Chat Modes
+
+| You ask | Chatbot auto-selects | What happens behind the scenes |
+|---------|---------------------|-------------------------------|
+| *"What does ISO 27001 A.9 say about access control?"* | 🔒 **Security** | Searches 21+ ISO documents → finds 5 most relevant passages → AI synthesizes into a response |
+| *"Latest ransomware news?"* | 🌐 **Search** | Searches DuckDuckGo → gets top 5 results → AI summarizes |
+| *"Hello, what can you do?"* | 💬 **General** | No search needed → AI responds directly |
+
+> 💡 **The chatbot automatically detects question type** — you don't need to manually select a mode.
+
+### What is RAG? — Simple Explanation
+
+Think about the difference between two types of AI:
+
+| | Standard AI (e.g., ChatGPT alone) | AI + RAG (CyberAI Chatbot) |
+|---|---|---|
+| **Real-world analogy** | An expert with general knowledge but **no reference books** | An expert **with a library of 21+ specialized books** — searches before answering |
+| **When asked about ISO 27001** | Answers from "memory" → may be wrong or outdated | Searches actual ISO 27001 documents → cites specific clauses |
+| **When asked about local laws** | May fabricate non-existent laws | Searches real Vietnamese Cybersecurity Law 2018, Decree 13/2023 → cites specific articles |
+| **Reliability** | ⚠️ May "hallucinate" (invent facts) | ✅ Cites sources, minimizes hallucination |
+
+### SSE Streaming — Why Does Text Appear Word by Word?
+
+When you chat, the response appears **word by word** (like ChatGPT). This technique is called **SSE (Server-Sent Events)**:
+- ⏱️ You see a response **immediately** — no waiting 10-30 seconds
+- 📖 You can read the beginning while AI is still writing the rest
+- 🔄 If the response is wrong, you can stop early without wasting time
+
+---
+
 ## 1. Chatbot Architecture
 
 ### Multi-Model Support

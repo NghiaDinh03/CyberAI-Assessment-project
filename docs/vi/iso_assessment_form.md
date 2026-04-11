@@ -25,6 +25,22 @@
 
 ## 🔍 1. Tổng Quan
 
+> 💡 **Tính năng này làm gì?** Hệ thống đánh giá ISO giúp bạn kiểm tra xem tổ chức/công ty đang **tuân thủ bao nhiêu phần trăm** các tiêu chuẩn bảo mật quốc tế (ISO 27001, NIST, PCI DSS...). AI sẽ tự động:
+> 1. **Tìm khoảng cách (GAP)** — So sánh "những gì bạn đã làm" vs "những gì tiêu chuẩn yêu cầu" → chỉ ra bạn đang thiếu gì
+> 2. **Đánh giá rủi ro** — Mỗi thiếu sót được AI phân tích: "Nếu thiếu biện pháp này, rủi ro là gì? Nghiêm trọng cỡ nào?"
+> 3. **Tạo báo cáo** — Tự động sinh báo cáo chuyên nghiệp: điểm tuân thủ, sổ đăng ký rủi ro, kế hoạch hành động
+>
+> **Ví dụ thực tế:** Công ty ACME muốn biết "Chúng tôi tuân thủ ISO 27001 được bao nhiêu % rồi?". Họ điền form 4 bước → AI phân tích → Kết quả: "62.5% tuân thủ, thiếu 2 biện pháp nghiêm trọng về mã hóa và quản lý malware".
+
+### GAP Analysis là gì? — Giải thích đơn giản
+
+> 🎯 **GAP = Khoảng cách.** Hãy tưởng tượng:
+> - **Tiêu chuẩn ISO 27001** yêu cầu 93 biện pháp bảo mật (ví dụ: phải có tường lửa, phải mã hóa dữ liệu, phải đào tạo nhân viên...)
+> - **Công ty bạn** đã thực hiện được 50 biện pháp
+> - **GAP** = 43 biện pháp chưa làm → Đó là "khoảng cách" cần cải thiện
+>
+> AI sẽ phân tích từng GAP: "Thiếu biện pháp A.8.7 (quản lý malware) → Rủi ro: hacker có thể cài mã độc → Mức nghiêm trọng: Critical → Khuyến nghị: triển khai antivirus trong 30 ngày"
+
 Wizard (Trình hướng dẫn) 4 bước dành cho Assessment (Đánh giá) Compliance (Tuân thủ) an ninh mạng toàn diện. Hỗ trợ **ISO 27001:2022**, **TCVN 11930:2017**, và **tiêu chuẩn tùy chỉnh tải lên**.
 
 Frontend: [`/form-iso`](../../frontend-next/src/app/form-iso/page.js) với điều hướng [`StepProgress`](../../frontend-next/src/components/StepProgress.js).

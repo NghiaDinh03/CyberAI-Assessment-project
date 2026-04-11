@@ -27,6 +27,48 @@
 4. [🌐 Tích Hợp Tìm Kiếm Web](#4--tích-hợp-tìm-kiếm-web)
 5. [💬 Luồng Chat (Chat Flow)](#5--luồng-chat-chat-flow)
 
+## 🎯 Giới Thiệu Nhanh — Project Này Làm Gì?
+
+> **Bạn chưa quen với AI/Chatbot?** Hãy đọc phần này trước.
+
+### Chatbot CyberAI hoạt động giống như một chuyên gia an ninh mạng ảo
+
+Hãy tưởng tượng bạn có một **chuyên gia tư vấn ISO 27001** ngồi cạnh 24/7. Bạn hỏi bất kỳ câu hỏi nào về bảo mật thông tin, chuyên gia đó sẽ:
+
+1. **Tra cứu** 21+ tài liệu tiêu chuẩn bảo mật (ISO, NIST, PCI DSS, luật Việt Nam...) để tìm thông tin liên quan
+2. **Tổng hợp** thông tin từ nhiều nguồn
+3. **Trả lời** bằng ngôn ngữ dễ hiểu, kèm trích dẫn nguồn tài liệu
+
+Đó chính là **RAG (Retrieval-Augmented Generation)** — dịch nôm na là "AI có thư viện tra cứu".
+
+### Ví dụ thực tế — 3 chế độ chat
+
+| Bạn hỏi | Chatbot tự động chọn chế độ | Chatbot làm gì phía sau |
+|----------|----------------------------|------------------------|
+| *"ISO 27001 A.9 nói gì về kiểm soát truy cập?"* | 🔒 **Security** — Hỏi về bảo mật | Tìm trong 21+ tài liệu ISO → lấy 5 đoạn liên quan nhất → AI tổng hợp thành câu trả lời |
+| *"Tin tức ransomware mới nhất?"* | 🌐 **Search** — Tìm trên internet | Tìm kiếm DuckDuckGo → lấy 5 kết quả → AI tổng hợp thành câu trả lời |
+| *"Xin chào, bạn giúp gì được?"* | 💬 **General** — Chat thường | Không cần tra cứu → AI trả lời trực tiếp |
+
+> 💡 **Chatbot tự động nhận diện loại câu hỏi** — bạn không cần chọn chế độ thủ công.
+
+### RAG là gì? — Giải thích đơn giản bằng ví dụ
+
+Hãy nghĩ về sự khác biệt giữa 2 loại AI:
+
+| | AI thông thường (ví dụ: ChatGPT thuần) | AI + RAG (CyberAI Chatbot) |
+|---|---|---|
+| **Ví dụ đời thực** | Một chuyên gia nhớ kiến thức tổng quát nhưng **không mang theo sách** | Một chuyên gia **có cả thư viện 21+ cuốn sách chuyên ngành** — tra cứu trước khi trả lời |
+| **Khi hỏi về ISO 27001** | Trả lời từ "trí nhớ" → có thể sai hoặc lỗi thời | Tra cứu tài liệu ISO 27001 thật → trích dẫn chính xác từng điều khoản |
+| **Khi hỏi về luật VN** | Có thể bịa ra luật không tồn tại | Tra cứu Luật An ninh Mạng 2018, NĐ 13/2023 thật → trích dẫn điều khoản cụ thể |
+| **Độ tin cậy** | ⚠️ Có thể "ảo giác" (hallucination) | ✅ Trích dẫn có nguồn, giảm thiểu ảo giác |
+
+### SSE Streaming — Tại sao chữ hiện từng từ một?
+
+Khi bạn chat, câu trả lời hiện ra **từ từ từng từ** (giống ChatGPT). Kỹ thuật này gọi là **SSE (Server-Sent Events)**:
+- ⏱️ Bạn thấy phản hồi **ngay** — không phải chờ 10-30 giây
+- 📖 Có thể đọc phần đầu trong khi AI vẫn đang viết phần sau
+- 🔄 Nếu câu trả lời không đúng, bạn có thể dừng sớm mà không phí thời gian
+
 ---
 
 ## 1. 🏗️ Kiến Trúc Chatbot
@@ -151,7 +193,11 @@ Input: "Làm thế nào để viết hàm Python?"
 
 ## 3. 🔍 RAG Pipeline (Tìm kiếm tăng cường sinh)
 
+> 💡 **Hiểu đơn giản:** RAG Pipeline giống như quá trình bạn đi thư viện: (1) cắt sách thành từng trang nhỏ cho dễ tìm, (2) dùng mục lục để tìm trang liên quan, (3) lọc bỏ trang không liên quan, (4) đưa cho chuyên gia đọc và tổng hợp câu trả lời.
+
 ### Nạp Tài Liệu (Document Ingestion)
+
+> 🤔 **Tại sao phải "cắt" tài liệu?** Vì AI chỉ có thể đọc một lượng text giới hạn mỗi lần (gọi là "context window"). Một tài liệu ISO 27001 dài 50 trang không thể nhét hết vào AI. Nên ta phải cắt ra thành nhiều "đoạn nhỏ" (chunk), rồi chỉ gửi những đoạn liên quan nhất cho AI.
 
 **Nguồn:** 21+ file markdown trong [`/data/iso_documents/`](../../data/iso_documents/).
 

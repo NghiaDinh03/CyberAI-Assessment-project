@@ -4,6 +4,22 @@
 
 ## 1. Overview
 
+> 💡 **What does this feature do?** The ISO Assessment system helps you check **how compliant** your organization is with international security standards (ISO 27001, NIST, PCI DSS...). AI will automatically:
+> 1. **Find gaps** — Compare "what you've done" vs "what the standard requires" → show what's missing
+> 2. **Assess risks** — Each gap is analyzed by AI: "If this control is missing, what's the risk? How severe?"
+> 3. **Generate report** — Automatically produce a professional report: compliance score, risk register, action plan
+>
+> **Real-world example:** ACME Corp wants to know "How compliant are we with ISO 27001?". They fill in a 4-step form → AI analyzes → Result: "62.5% compliant, missing 2 critical controls for encryption and malware management."
+
+### What is GAP Analysis? — Simple Explanation
+
+> 🎯 **GAP = the distance between where you are and where you should be.** Imagine:
+> - **ISO 27001** requires 93 security controls (e.g., must have firewall, must encrypt data, must train staff...)
+> - **Your company** has implemented 50 controls
+> - **GAP** = 43 controls not yet done → That's the "gap" to improve
+>
+> AI analyzes each GAP: "Missing control A.8.7 (malware management) → Risk: hackers can install malware → Severity: Critical → Recommendation: deploy antivirus within 30 days"
+
 4-step wizard for comprehensive cybersecurity compliance assessment. Supports **ISO 27001:2022**, **TCVN 11930:2017**, and **custom uploaded standards**.
 
 Frontend: [`/form-iso`](frontend-next/src/app/form-iso/page.js) with [`StepProgress`](frontend-next/src/components/StepProgress.js) navigation.
