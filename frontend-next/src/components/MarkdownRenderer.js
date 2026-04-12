@@ -186,12 +186,33 @@ function MermaidBlock({ content }) {
         const svg = ref.current?.querySelector('svg')
         if (!svg) return
         
-        // Đảm bảo có thuộc tính xmlns
-        if (!svg.getAttribute('xmlns')) {
-            svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+        // Dùng cloneNode để không ảnh hưởng trang web
+        const clonedSvg = svg.cloneNode(true)
+        if (!clonedSvg.getAttribute('xmlns')) {
+            clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
         }
         
-        const svgData = new XMLSerializer().serializeToString(svg)
+        // Trích xuất kích thước từ viewBox
+        const viewBoxStr = clonedSvg.getAttribute('viewBox')
+        let w = 800, h = 400
+        if (viewBoxStr) {
+            const parts = viewBoxStr.split(/[\s,]+/)
+            if (parts.length >= 4) {
+                w = parseFloat(parts[2])
+                h = parseFloat(parts[3])
+            }
+        }
+        
+        // Nhân 5 lần độ phân giải (scale = 5) để nét
+        const exportScale = 5
+        clonedSvg.setAttribute('width', (w * exportScale) + 'px')
+        clonedSvg.setAttribute('height', (h * exportScale) + 'px')
+        
+        // Lấy tên theo title trong đồ thị hoặc tên mặc định
+        const titleMatch = content.match(/title\s+(.+)/i)
+        const customName = titleMatch ? titleMatch[1].trim().replace(/[^a-zA-Z0-9]/g, '_').toLowerCase() : 'mermaid_model'
+        
+        const svgData = new XMLSerializer().serializeToString(clonedSvg)
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')
         const img = new Image()
@@ -200,17 +221,17 @@ function MermaidBlock({ content }) {
         const url = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)))
         
         img.onload = () => {
-            const scale = 2
-            canvas.width = img.naturalWidth * scale
-            canvas.height = img.naturalHeight * scale
-            ctx.fillStyle = '#0f172a'
+            canvas.width = w * exportScale
+            canvas.height = h * exportScale
+            
+            ctx.fillStyle = '#0f172a' // Background dark mode
             ctx.fillRect(0, 0, canvas.width, canvas.height)
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
             try {
-                const pngUrl = canvas.toDataURL('image/png')
+                const pngUrl = canvas.toDataURL('image/png', 1.0)
                 const a = document.createElement('a')
                 a.href = pngUrl
-                a.download = `diagram_${Date.now()}.png`
+                a.download = `CyberAI_${customName}_${Date.now()}.png`
                 a.click()
             } catch (err) {
                 console.error('Export failed due to tainted canvas:', err)
@@ -218,7 +239,7 @@ function MermaidBlock({ content }) {
             }
         }
         img.src = url
-    }, [])
+    }, [content])
 
     if (error) {
         return (
