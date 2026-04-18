@@ -29,8 +29,8 @@ Enterprise-grade cybersecurity assessment platform combining multi-model RAG cha
 **One-command setup** on a fresh clone (works on Linux / macOS / Windows):
 
 ```bash
-git clone https://github.com/your-org/phobert-chatbot-project.git
-cd phobert-chatbot-project
+git clone https://github.com/NghiaDinh03/CyberAI-Assessment-project.git
+cd CyberAI-Assessment-project
 ```
 
 ```bash

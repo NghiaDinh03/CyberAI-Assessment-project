@@ -42,8 +42,8 @@ Nền tảng đánh giá an ninh mạng cấp doanh nghiệp, kết hợp chatbo
 **Setup 1 lệnh** trên máy mới (Linux / macOS / Windows):
 
 ```bash
-git clone https://github.com/your-org/phobert-chatbot-project.git
-cd phobert-chatbot-project
+git clone https://github.com/NghiaDinh03/CyberAI-Assessment-project.git
+cd CyberAI-Assessment-project
 ```
 
 ```bash
