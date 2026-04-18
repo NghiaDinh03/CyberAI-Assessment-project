@@ -324,7 +324,9 @@ export default function AnalyticsPage() {
             }
         }
         fetchData()
-        const interval = setInterval(fetchData, 15000)
+        // Poll every 60s instead of 15s — analytics page hits 4 endpoints per cycle,
+        // backend has 30s health cache, so faster polling was pure waste.
+        const interval = setInterval(fetchData, 60000)
         return () => clearInterval(interval)
     }, [])
 

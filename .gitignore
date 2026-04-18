@@ -1,4 +1,21 @@
-# Python
+# ================================================================
+# CyberAI Assessment Platform — .gitignore
+# ================================================================
+# Policy: push 100% of repo (including AI assistant configs and skills)
+# so new dev machines can clone and immediately continue working.
+# Only exclude: secrets, user-data runtime artifacts, build outputs, large models.
+# ================================================================
+
+# ====== Secrets (NEVER commit) ======
+.env
+frontend-next/.env.local
+*.key
+*.pem
+*.cert
+*.p12
+*.secret
+
+# ====== Python ======
 __pycache__/
 *.py[cod]
 *$py.class
@@ -8,8 +25,28 @@ venv/
 env/
 ENV/
 *.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Runtime data — không commit lên GitHub (sinh ra khi chạy ứng dụng)
+# ====== Node.js / Next.js build output ======
+node_modules/
+.next/
+frontend-next/.next/
+frontend-next/node_modules/
+out/
+.turbo/
+
+# ====== Large model weights (too big for git) ======
+models/
+*.gguf
+*.bin
+*.safetensors
+*.onnx
+*.pt
+*.pth
+
+# ====== Runtime user data (generated at runtime — each machine has its own) ======
 data/sessions/*
 !data/sessions/.gitkeep
 data/uploads/*
@@ -28,53 +65,20 @@ data/translations/*.json
 data/standards/*
 !data/standards/.gitkeep
 
-# Vector store runtime files (rebuilt on startup via reindex)
+# ====== Vector store runtime (rebuilt on startup via reindex) ======
 data/vector_store/*.faiss
 data/vector_store/chroma.sqlite3
 data/vector_store/*/
 
-# Models (large files)
-models/
-*.gguf
-*.bin
-*.safetensors
-
-# Dev/AI assistant context files (không liên quan đến source code đề tài)
-context.md
-.claude/
-.cursor/
-.roo/
-
-# IDE
+# ====== IDE / OS / Misc ======
 .vscode/
 .idea/
+.vs/
 *.swp
 *.swo
-
-# OS
 .DS_Store
 Thumbs.db
-
-# Environment (chứa API keys — KHÔNG commit)
-.env
-
-# Docker
-.dockerignore
-
-# Node.js / Next.js
-node_modules/
-.next/
-frontend-next/.next/
-frontend-next/node_modules/
-frontend-next/.env.local
-
-# Sensitive files
-*.key
-*.pem
-*.cert
-*.secret
-*.p12
-
-# Misc
 hash.txt
-.vs/
+
+# ====== Docker ======
+.dockerignore

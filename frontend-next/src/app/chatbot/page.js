@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
-    Send, Copy, Plus, Trash2, ChevronDown, Bot, User, Loader2, ArrowDown, Check
+    Send, Copy, Plus, Trash2, ChevronDown, Bot, User, Loader2, ArrowDown, Check, GripHorizontal
 } from 'lucide-react'
 import { useTranslation } from '@/components/LanguageProvider'
 import styles from './page.module.css'
@@ -26,9 +26,9 @@ const CLOUD_MODELS = [
     { id: 'claude-opus-4.5',        label: 'Claude Opus 4.5', provider: 'anthropic', badge: 'Pro' },
     { id: 'claude-opus-4.6',        label: 'Claude Opus 4.6', provider: 'anthropic', badge: 'New' },
     { id: 'claude-sonnet-4',        label: 'Claude Sonnet 4', provider: 'anthropic', badge: 'Fast' },
-    { id: 'gemma4:latest',          label: 'Gemma 4',         provider: 'ollama',    badge: '9.6GB · New' },
-    { id: 'gemma3n:e4b',            label: 'Gemma 3n E4B',    provider: 'ollama',    badge: '4.2GB' },
-    { id: 'gemma3n:e2b',            label: 'Gemma 3n E2B',    provider: 'ollama',    badge: '2.1GB · Fast' },
+    { id: 'gemma3n:e2b',            label: 'Gemma 3n E2B',    provider: 'ollama',    badge: '5.6GB · Fastest local' },
+    { id: 'gemma3n:e4b',            label: 'Gemma 3n E4B',    provider: 'ollama',    badge: '7.5GB · Balanced' },
+    { id: 'gemma4:latest',          label: 'Gemma 4',         provider: 'ollama',    badge: '9.6GB · SLOW on 2-CPU' },
     { id: 'Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf', label: 'Llama 3.1 8B',  provider: 'local', badge: '4.7GB' },
     { id: 'SecurityLLM-7B-Q4_K_M.gguf',             label: 'SecurityLLM 7B', provider: 'local', badge: '4.2GB' },
 ]
@@ -42,6 +42,13 @@ const OLLAMA_ID_MAP = {
 const LOCAL_MODEL_IDS = new Set(
     CLOUD_MODELS.filter(m => m.provider === 'local' || m.provider === 'ollama').map(m => m.id)
 )
+
+// Map raw model IDs to friendly labels for display
+const MODEL_LABEL_MAP = Object.fromEntries(CLOUD_MODELS.map(m => [m.id, m.label]))
+function getModelLabel(modelId) {
+    if (!modelId) return ''
+    return MODEL_LABEL_MAP[modelId] || modelId.replace(/-Q\d.*\.gguf$/i, '').replace(/-/g, ' ')
+}
 
 const PROVIDER_COLORS = {
     openai: '#10a37f',
@@ -107,7 +114,7 @@ const MessageBubble = memo(function MessageBubble({ m, msgKey, isLastStreaming, 
                         : <Bot size={14} />}
                 </div>
             )}
-            <div className={`${styles.bubble} ${isBot ? styles.bubbleBot : styles.bubbleUser}`}>
+            <div className={`${styles.bubble} ${isBot ? styles.bubbleBot : styles.bubbleUser} ${m.isError ? styles.bubbleError : ''}`}>
                 {isBot ? (
                     isStreaming && content === '' ? (
                         <div className={styles.skeletonWrap}>
@@ -140,14 +147,15 @@ const MessageBubble = memo(function MessageBubble({ m, msgKey, isLastStreaming, 
                     <div className={styles.msgMeta}>
                         {m.ragUsed && <span className={styles.badge}>RAG</span>}
                         {m.searchUsed && <span className={styles.badge}>Web</span>}
-                        {m.model && (
+                        {(m.model || m.requestedModel) && (
                             <span
                                 className={styles.badge}
-                                title={m.requestedModel && m.requestedModel !== m.model
-                                    ? `Requested: ${m.requestedModel} → Fallback: ${m.model}`
-                                    : m.model}
+                                title={m.requestedModel && m.model && m.requestedModel !== m.model
+                                    ? `Yêu cầu: ${getModelLabel(m.requestedModel)} → Phản hồi: ${getModelLabel(m.model)}`
+                                    : (m.model || m.requestedModel)}
                             >
-                                {m.model}{m.requestedModel && m.requestedModel !== m.model ? ' ↩' : ''}
+                                {getModelLabel(m.model || m.requestedModel)}
+                                {m.requestedModel && m.model && m.requestedModel !== m.model ? ' ↩' : ''}
                             </span>
                         )}
                         <span className={styles.time}>{m.time}</span>
@@ -331,15 +339,71 @@ const SessionList = memo(function SessionList({ sessions, activeId, onOpen, onRe
     )
 })
 
-function useAutoResizeTextarea(ref, value) {
+const MIN_TEXTAREA_H = 48
+const MAX_TEXTAREA_H_RATIO = 0.6
+
+function useAutoResizeTextarea(ref, value, manualHeight) {
     useEffect(() => {
+        if (manualHeight > 0) return
         const el = ref.current
         if (!el) return
-        el.style.height = 'auto'
-        const maxH = Math.floor(window.innerHeight * 0.5)
-        const newH = Math.min(el.scrollHeight, maxH)
-        el.style.height = Math.max(newH, 42) + 'px'
-    }, [ref, value])
+        const prevOverflow = el.style.overflow
+        el.style.overflow = 'hidden'
+        el.style.height = MIN_TEXTAREA_H + 'px'
+        const maxH = Math.floor(window.innerHeight * MAX_TEXTAREA_H_RATIO)
+        const scrollH = el.scrollHeight
+        const newH = Math.max(MIN_TEXTAREA_H, Math.min(scrollH, maxH))
+        el.style.height = newH + 'px'
+        el.style.overflow = newH >= maxH ? 'auto' : prevOverflow
+    }, [ref, value, manualHeight])
+}
+
+function useDragResize(textareaRef) {
+    const [manualHeight, setManualHeight] = useState(0)
+    const dragging = useRef(false)
+    const startY = useRef(0)
+    const startH = useRef(0)
+
+    const onPointerDown = useCallback((e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        const el = textareaRef.current
+        if (!el) return
+        dragging.current = true
+        startY.current = e.clientY
+        startH.current = el.getBoundingClientRect().height
+        document.body.style.cursor = 'ns-resize'
+        document.body.style.userSelect = 'none'
+
+        const onMove = (ev) => {
+            if (!dragging.current) return
+            ev.preventDefault()
+            const delta = startY.current - ev.clientY
+            const maxH = Math.floor(window.innerHeight * MAX_TEXTAREA_H_RATIO)
+            const next = Math.max(MIN_TEXTAREA_H, Math.min(startH.current + delta, maxH))
+            setManualHeight(next)
+            const textarea = textareaRef.current
+            if (textarea) {
+                textarea.style.height = next + 'px'
+                textarea.style.overflow = next >= maxH ? 'auto' : 'hidden'
+            }
+        }
+
+        const onUp = () => {
+            dragging.current = false
+            document.body.style.cursor = ''
+            document.body.style.userSelect = ''
+            window.removeEventListener('pointermove', onMove, true)
+            window.removeEventListener('pointerup', onUp, true)
+        }
+
+        window.addEventListener('pointermove', onMove, true)
+        window.addEventListener('pointerup', onUp, true)
+    }, [textareaRef])
+
+    const resetManual = useCallback(() => setManualHeight(0), [])
+
+    return { manualHeight, onPointerDown, resetManual }
 }
 
 export default function ChatbotPage() {
@@ -375,7 +439,9 @@ export default function ChatbotPage() {
     }, [selectedModel])
     const warnThreshold = maxInput - WARN_OFFSET
 
-    useAutoResizeTextarea(inputRef, input)
+    const { manualHeight, onPointerDown, resetManual } = useDragResize(inputRef)
+
+    useAutoResizeTextarea(inputRef, input, manualHeight)
 
     useEffect(() => {
         const area = chatAreaRef.current
@@ -413,7 +479,8 @@ export default function ChatbotPage() {
             } catch { }
         }
         fetchStatus()
-        const timer = setInterval(fetchStatus, 15000)
+        // Poll every 60s instead of 15s — backend now caches for 30s, no need to spam
+        const timer = setInterval(fetchStatus, 60000)
         return () => { cancelled = true; clearInterval(timer) }
     }, [])
 
@@ -640,20 +707,22 @@ export default function ChatbotPage() {
                 if (buffer.trim()) parseLine(buffer.trim())
 
                 if (finalData) {
-                    const botContent = finalData.error
+                    const isError = !!finalData.error
+                    const botContent = isError
                         ? (finalData.response || t('chatbot.modelUnavailable'))
                         : (finalData.response || t('chatbot.noResponse'))
                     const botMsg = {
                         role: 'assistant',
                         content: botContent,
                         time: now(),
-                        model: finalData.model,
+                        model: isError ? selectedModel : finalData.model,
                         requestedModel: selectedModel,
                         provider: finalData.provider,
                         searchUsed: finalData.search_used,
                         ragUsed: finalData.rag_used,
                         webSources: finalData.web_sources,
                         sources: finalData.sources,
+                        isError,
                     }
                     if (mountedRef.current) {
                         setMsgs(prev => {
@@ -680,17 +749,19 @@ export default function ChatbotPage() {
                 }
             } else {
                 const data = await res.json()
+                const isError = !!data.error
                 const botMsg = {
                     role: 'assistant',
-                    content: data.error ? (data.response || t('chatbot.modelUnavailable')) : (data.response || t('chatbot.noResponse')),
+                    content: isError ? (data.response || t('chatbot.modelUnavailable')) : (data.response || t('chatbot.noResponse')),
                     time: now(),
-                    model: data.model,
+                    model: isError ? selectedModel : data.model,
                     requestedModel: selectedModel,
                     provider: data.provider,
                     searchUsed: data.search_used,
                     ragUsed: data.rag_used,
                     webSources: data.web_sources,
                     sources: data.sources,
+                    isError,
                 }
                 const final = [...next, botMsg]
                 directSaveSession(id, final)
@@ -853,6 +924,17 @@ export default function ChatbotPage() {
                 </div>
 
                 <div className={styles.inputFooter}>
+                    {/* Drag handle — top edge, resize upward */}
+                    <div
+                        className={styles.resizeHandle}
+                        onPointerDown={onPointerDown}
+                        title="Drag to resize"
+                        role="separator"
+                        aria-orientation="horizontal"
+                        aria-label="Resize input area"
+                    >
+                        <GripHorizontal size={14} />
+                    </div>
                     <div className={styles.inputToolbar} onClick={e => e.stopPropagation()}>
                         <ModelDropdown
                             selectedModel={selectedModel}
@@ -872,7 +954,7 @@ export default function ChatbotPage() {
                             <textarea
                                 ref={inputRef}
                                 value={input}
-                                onChange={e => setInput(e.target.value.slice(0, maxInput))}
+                                onChange={e => { resetManual(); setInput(e.target.value.slice(0, maxInput)) }}
                                 onKeyDown={handleKeyDown}
                                 placeholder={t('chatbot.inputPlaceholder')}
                                 disabled={sending}

@@ -43,7 +43,13 @@ _LOCALAI_TO_OLLAMA: Dict[str, str] = {
 _ollama_models_cache: List[str] = []
 _ollama_cache_lock = threading.Lock()
 _ollama_cache_ts: float = 0
-_OLLAMA_CACHE_TTL = 30  # seconds
+_OLLAMA_CACHE_TTL = 60  # seconds — reduce polling of Ollama /api/tags
+
+# Health check result cache — avoids hitting OpenClaude/LocalAI/Ollama on every poll
+_health_cache: Dict[str, Any] = {}
+_health_cache_ts: float = 0
+_health_cache_lock = threading.Lock()
+_HEALTH_CACHE_TTL = 30  # seconds
 
 
 def get_ollama_models(timeout: int = 5) -> List[str]:
@@ -211,7 +217,11 @@ class CloudLLMService:
                     continue
 
                 data = response.json()
-                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                msg = data.get("choices", [{}])[0].get("message", {})
+                content = msg.get("content", "")
+                # Some models use "reasoning" field (thinking mode) with empty content
+                if not content and msg.get("reasoning"):
+                    content = msg["reasoning"]
 
                 if not content:
                     logger.error(f"[OpenClaude] 200 OK but empty content — model={current_model}")
@@ -334,10 +344,14 @@ class CloudLLMService:
                 trimmed[i] = {**msg, "content": msg["content"][:MAX_PROMPT_CHARS] + "\n\n[... nội dung đã rút gọn để phù hợp context model local ...]"}
                 logger.info(f"[Ollama] Truncated user message {original_len} → {MAX_PROMPT_CHARS} chars")
 
-        # Cap at 1024 tokens for CPU inference — balances quality vs latency
-        effective_max_tokens = max(64, min(1024, max_tokens))
+        # Cap at 2048 tokens for CPU inference — log analysis needs structured output
+        effective_max_tokens = max(64, min(2048, max_tokens))
         total_chars = sum(len(m.get("content", "")) for m in trimmed)
-        logger.info(f"[Ollama] Requesting model={resolved}, messages={len(trimmed)}, total_chars={total_chars}, max_tokens={effective_max_tokens}")
+
+        # Use full INFERENCE_TIMEOUT (default 1200s = 20min) for Ollama.
+        # Large models like Gemma 4 (9.4GB) need 5-10min to load + generate on CPU.
+        ollama_timeout = settings.INFERENCE_TIMEOUT
+        logger.info(f"[Ollama] Requesting model={resolved}, messages={len(trimmed)}, total_chars={total_chars}, max_tokens={effective_max_tokens}, timeout={ollama_timeout}s")
         model = resolved
         try:
             response = requests.post(
@@ -349,10 +363,10 @@ class CloudLLMService:
                     "max_tokens": effective_max_tokens,
                     "stream": False,
                 },
-                timeout=settings.INFERENCE_TIMEOUT,
+                timeout=ollama_timeout,
             )
         except requests.exceptions.Timeout:
-            raise Exception(f"[Ollama] Timeout after {settings.INFERENCE_TIMEOUT}s")
+            raise Exception(f"[Ollama] Timeout sau {ollama_timeout}s — model '{resolved}' cần thêm thời gian hoặc server không đủ RAM ({resolved}).")
         except Exception as e:
             raise Exception(f"[Ollama] Connection error: {e}")
 
@@ -366,7 +380,13 @@ class CloudLLMService:
             raise Exception(f"[Ollama] HTTP {response.status_code}: {err_text}")
 
         data = response.json()
-        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        msg = data.get("choices", [{}])[0].get("message", {})
+        content = msg.get("content", "")
+        # Gemma 4 uses "reasoning" field for thinking mode — content may be empty
+        reasoning = msg.get("reasoning", "")
+        if not content and reasoning:
+            content = reasoning
+            logger.info(f"[Ollama] Using 'reasoning' field as content (Gemma 4 thinking mode)")
         if not content:
             logger.warning(f"[Ollama] Empty content: {str(data)[:200]}")
 
@@ -463,38 +483,32 @@ class CloudLLMService:
 
         if settings.PREFER_LOCAL or force_local:
             if is_ollama_model:
+                ollama_model = local_model if ":" in local_model else _LOCALAI_TO_OLLAMA.get(local_model, local_model)
                 try:
-                    # resolve_ollama_model (inside _call_ollama) auto-detects available
-                    # models and falls back to an installed one when the requested model
-                    # is not present in Ollama.
-                    ollama_model = local_model if ":" in local_model else _LOCALAI_TO_OLLAMA.get(local_model, local_model)
                     result = cls._call_ollama(ollama_model, messages, temperature)
                     if result.get("content"):
                         return result
-                    errors.append("Ollama: empty content")
+                    errors.append(f"Ollama ({ollama_model}): empty content")
                 except Exception as e:
-                    errors.append(f"Ollama: {e}")
-                    logger.warning(f"[ChatCompletion] Ollama failed for {local_model}: {e}")
+                    errors.append(f"Ollama ({ollama_model}): {e}")
+                    logger.warning(f"[ChatCompletion] Ollama failed for {ollama_model}: {e}")
             else:
                 try:
                     result = cls._call_localai(local_model, messages, temperature)
                     if result.get("content"):
                         return result
                     logger.warning("[ChatCompletion] LocalAI returned empty content, trying cloud")
-                    errors.append("LocalAI: empty content")
+                    errors.append(f"LocalAI ({local_model}): empty content")
                 except Exception as e:
-                    errors.append(f"LocalAI: {e}")
+                    errors.append(f"LocalAI ({local_model}): {e}")
                     logger.warning(f"[ChatCompletion] LocalAI failed: {e}")
 
             if force_local:
                 err_msg = " | ".join(errors)
-                available_ollama = get_ollama_models()
-                if available_ollama:
-                    hint = f" Ollama có sẵn model: {', '.join(available_ollama)}. Hãy chọn model đó từ dropdown."
-                else:
-                    hint = " Không có model nào trong Ollama. Chạy 'ollama pull <model>' hoặc chọn model Cloud ở dropdown."
+                provider_label = "Ollama" if is_ollama_model else "LocalAI"
+                model_label = ollama_model if is_ollama_model else local_model
                 raise Exception(
-                    f"⚠️ LocalAI không khả dụng: {err_msg}.{hint}"
+                    f"⚠️ {provider_label} ({model_label}) không phản hồi: {err_msg}"
                 )
 
             if settings.cloud_api_key_list:
@@ -558,6 +572,24 @@ class CloudLLMService:
 
     @classmethod
     def health_check(cls) -> Dict[str, Any]:
+        # Return cached result if fresh — prevents hammering OpenClaude/LocalAI/Ollama
+        # every 15s when frontend polls /api/system/ai-status from multiple pages.
+        global _health_cache, _health_cache_ts
+        now = time.time()
+        if _health_cache and (now - _health_cache_ts) < _HEALTH_CACHE_TTL:
+            return _health_cache
+
+        with _health_cache_lock:
+            # Double-check inside lock
+            if _health_cache and (time.time() - _health_cache_ts) < _HEALTH_CACHE_TTL:
+                return _health_cache
+            result = cls._build_health_status()
+            _health_cache = result
+            _health_cache_ts = time.time()
+            return result
+
+    @classmethod
+    def _build_health_status(cls) -> Dict[str, Any]:
         status = {
             "open_claude": {
                 "configured": bool(settings.cloud_api_key_list),

@@ -494,6 +494,15 @@
     box-shadow: var(--shadow-sm);
 }
 
+.bubbleError {
+    border-color: rgba(239, 68, 68, 0.5) !important;
+    background: rgba(239, 68, 68, 0.08) !important;
+}
+
+.bubbleError:hover {
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.15);
+}
+
 /* BUG N FIX: user bubble timestamp was nearly invisible (white on blue gradient) */
 .bubbleUser .time {
     color: rgba(255, 255, 255, 0.6);
@@ -777,13 +786,43 @@
 .inputFooter {
     display: flex;
     flex-direction: column;
-    border-top: 1px solid var(--border);
     flex-shrink: 0;
     background: var(--bg-primary);
     position: sticky;
     bottom: 0;
     z-index: 10;
     padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Resize handle (top edge) ───────────────────────────────────────────────── */
+
+.resizeHandle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 18px;
+    cursor: ns-resize;
+    color: var(--text-dim);
+    opacity: 0.35;
+    transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+    border-top: 1px solid var(--border);
+    touch-action: none;
+    flex-shrink: 0;
+    user-select: none;
+    z-index: 11;
+    position: relative;
+}
+
+.resizeHandle:hover {
+    opacity: 1;
+    background: rgba(79, 142, 247, 0.06);
+    color: var(--accent-blue);
+}
+
+.resizeHandle:active {
+    opacity: 1;
+    background: rgba(79, 142, 247, 0.1);
+    color: var(--accent-blue);
 }
 
 .inputToolbar {
@@ -1006,28 +1045,27 @@
 .inputWrap {
     flex: 1;
     position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+    min-width: 0;
 }
 
 .inputWrap textarea {
-    flex: 1;
+    width: 100%;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 10px 14px;
+    padding: 12px 14px;
     padding-right: 60px;
     color: var(--text-primary);
     font-size: 0.86rem;
     outline: none;
     font-family: inherit;
     transition: border-color 0.18s ease, box-shadow 0.18s ease;
-    line-height: 1.5;
+    line-height: 1.55;
     resize: none;
-    min-height: 42px;
-    max-height: 50vh;
-    overflow-y: auto;
+    min-height: 48px;
+    max-height: 60vh;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .inputWrap textarea:focus {

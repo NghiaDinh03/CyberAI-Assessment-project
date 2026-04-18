@@ -26,20 +26,36 @@ Enterprise-grade cybersecurity assessment platform combining multi-model RAG cha
 
 ## 1. Quick Start
 
+**One-command setup** on a fresh clone (works on Linux / macOS / Windows):
+
 ```bash
 git clone https://github.com/your-org/phobert-chatbot-project.git
 cd phobert-chatbot-project
-cp .env.example .env
 ```
 
 ```bash
-# Optional: download local models
+# Linux / macOS
+bash scripts/setup.sh
+
+# Windows (cmd / PowerShell)
+scripts\setup.bat
+```
+
+The script auto-creates `.env`, generates a secure `JWT_SECRET`, creates runtime data folders, builds containers, and waits for the backend to become healthy. Total time on first run: **5-15 minutes** (depending on internet speed for model pulls).
+
+**Manual alternative** (if you prefer to review each step):
+
+```bash
+cp .env.example .env                                     # edit CLOUD_API_KEYS if needed
+docker compose up -d --build                             # build + start stack
+curl http://localhost:8000/health                        # verify backend
+```
+
+**Optional — pre-download LocalAI models** (not required; cloud fallback works immediately):
+
+```bash
 pip install huggingface_hub hf_transfer
 python scripts/download_models.py --model llama --model security
-```
-
-```bash
-docker compose up -d
 ```
 
 | Service | URL |

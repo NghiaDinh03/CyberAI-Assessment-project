@@ -16,6 +16,14 @@ logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
+# Silence noisy HTTP client libraries even in DEBUG mode — they flood logs
+# with connection/TLS/request/response detail on every health poll (15s × 2-3
+# pages = 6k+ debug lines/hour of pure noise).
+for noisy in ("httpcore", "httpcore.connection", "httpcore.http11",
+              "urllib3", "urllib3.connectionpool",
+              "h2", "h2.codec.framed_write", "h2.proto.connection",
+              "httpx", "chromadb.utils.embedding_functions.onnx_mini_lm_l6_v2"):
+    logging.getLogger(noisy).setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 try:

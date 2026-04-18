@@ -39,28 +39,39 @@ Nền tảng đánh giá an ninh mạng cấp doanh nghiệp, kết hợp chatbo
 
 ## 1. 🚀 Khởi động nhanh
 
+**Setup 1 lệnh** trên máy mới (Linux / macOS / Windows):
+
 ```bash
 git clone https://github.com/your-org/phobert-chatbot-project.git
 cd phobert-chatbot-project
-cp .env.example .env
 ```
 
+```bash
+# Linux / macOS
+bash scripts/setup.sh
+
+# Windows (cmd / PowerShell)
+scripts\setup.bat
+```
+
+Script tự động: tạo `.env` từ template, sinh `JWT_SECRET` ngẫu nhiên, tạo thư mục `data/`, build container, chờ backend healthy. Lần đầu mất **5-15 phút** (tùy tốc độ mạng để pull model).
+
 <details>
-<summary>📦 <strong>Tùy chọn: Tải model cục bộ</strong></summary>
+<summary>📦 <strong>Cách thủ công / Tùy chọn tải model cục bộ</strong></summary>
 
 ```bash
-# Cài đặt công cụ tải model
+cp .env.example .env                                     # sửa CLOUD_API_KEYS nếu cần
+docker compose up -d --build                             # build và khởi động
+curl http://localhost:8000/health                        # kiểm tra backend
+```
+
+```bash
+# Tùy chọn: pre-download model LocalAI (không bắt buộc)
 pip install huggingface_hub hf_transfer
-# Tải model Llama và Security
 python scripts/download_models.py --model llama --model security
 ```
 
 </details>
-
-```bash
-# Khởi động tất cả dịch vụ
-docker compose up -d
-```
 
 ### 🌐 Bảng dịch vụ
 

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /c/Users/AI/Downloads/\"Docker project\"/phobert-chatbot-project)",
+      "Bash(ls:*)",
+      "Bash(grep -E \"\\\\.\\(yml|yaml|sh|py\\)$\")",
+      "Bash(find frontend-next/src -type f -name \"*.module.css\" -exec wc -l {} +)"
+    ]
+  }
+}

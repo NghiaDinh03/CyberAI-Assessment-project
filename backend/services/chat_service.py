@@ -78,9 +78,110 @@ class ChatService:
                     cls._session_store = SessionStore()
         return cls._session_store
 
+    # LocalAI GGUF model IDs — CPU-bound, need short prompts and no RAG
+    _LOCALAI_GGUF_IDS = {
+        "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf",
+        "SecurityLLM-7B-Q4_K_M.gguf",
+    }
+
+    _OLLAMA_PREFIXES = ("gemma3:", "gemma3n:", "gemma4:", "phi4:", "llama3:", "mistral:", "qwen3:")
+
+    @classmethod
+    def _is_local_model(cls, model_name: str) -> bool:
+        """Check if a model is a local/Ollama model (CPU-bound, needs short prompts)."""
+        if not model_name:
+            return False
+        if any(model_name.startswith(p) for p in cls._OLLAMA_PREFIXES):
+            return True
+        if model_name in cls._LOCALAI_GGUF_IDS:
+            return True
+        if model_name.endswith(".gguf"):
+            return True
+        return False
+
     @staticmethod
     def clean_response(text: str) -> str:
         return SPECIAL_TOKENS.sub('', text).strip()
+
+    @staticmethod
+    def _is_log_analysis(message: str) -> bool:
+        """Detect if the user is requesting log/event analysis."""
+        msg_lower = message.lower()
+        # Check for log analysis keywords
+        log_keywords = [
+            "phân tích log", "analyze log", "event id", "eventid",
+            "sự kiện", "windows event", "syslog", "security log",
+            "audit log", "process creation", "logon", "logoff",
+            "firewall log", "access log", "error log", "phân tích sự kiện",
+        ]
+        # Check for log-like patterns (Event ID, timestamps, field:value)
+        import re
+        log_patterns = [
+            r"Event\s*ID[:\s]*\d+",
+            r"Source[:\s]*(Microsoft|Security|System|Application)",
+            r"Token\s*Elevation\s*Type",
+            r"Process\s*(Name|ID|Command\s*Line)[:\s]",
+            r"Logon\s*Type[:\s]*\d+",
+            r"Subject[:\s]",
+            r"Creator\s*Process",
+            r"New\s*Process\s*Name",
+            r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}",
+            r"Mandatory\s*Label",
+            r"Account\s*Name[:\s]",
+        ]
+        if any(kw in msg_lower for kw in log_keywords):
+            return True
+        for pattern in log_patterns:
+            if re.search(pattern, message, re.IGNORECASE):
+                return True
+        return False
+
+    # Structured output template for log/event analysis
+    _LOG_ANALYSIS_PROMPT = (
+        "Bạn là SOC Analyst Level 3 chuyên phân tích log/event an ninh.\n"
+        "NHIỆM VỤ DUY NHẤT: phân tích log, trích xuất TẤT CẢ field quan trọng theo "
+        "định dạng `**Field**: Value`, đưa ra nhận định True Positive / False Positive.\n\n"
+        "## FORMAT OUTPUT BẮT BUỘC (tuân thủ CHÍNH XÁC):\n\n"
+        "### 1. Thông tin sự kiện\n"
+        "Trích xuất TẤT CẢ field có trong log, mỗi field một dòng:\n"
+        "- **Event ID**: `<giá trị>` — <giải thích ngắn ý nghĩa>\n"
+        "- **Source**: `<giá trị>` — <giải thích>\n"
+        "- **TimeCreated**: `<giá trị>`\n"
+        "- **Computer**: `<giá trị>`\n"
+        "- **Account Name**: `<giá trị>`\n"
+        "- **Account Domain**: `<giá trị>`\n"
+        "- **Process ID**: `<giá trị>`\n"
+        "- **Process Name**: `<giá trị>` — <giải thích process này là gì>\n"
+        "- **Command Line**: `<giá trị>` — <giải thích lệnh làm gì>\n"
+        "- **Parent Process**: `<giá trị>` — <giải thích>\n"
+        "- **Token Elevation Type**: `<giá trị>` — <Type 1/2/3 nghĩa là gì>\n"
+        "- (liệt kê TẤT CẢ field khác có trong log gốc, KHÔNG bỏ sót)\n\n"
+        "### 2. Nhận định\n"
+        "- **Nhận định**: `True Positive` HOẶC `False Positive` HOẶC `Cần điều tra thêm`\n"
+        "  - `False Positive` → Khi đây là tiến trình hệ thống/user bình thường, "
+        "không có dấu hiệu bất thường.\n"
+        "  - `True Positive` → Khi có dấu hiệu độc hại rõ ràng và CẦN điều tra mở rộng.\n"
+        "  - `Cần điều tra thêm` → Khi chưa đủ context để kết luận.\n"
+        "- **Mức độ**: `Critical` / `High` / `Medium` / `Low` / `Informational`\n"
+        "- **Lý do**: <2-4 câu giải thích cụ thể DỰA TRÊN các field ở trên>\n\n"
+        "### 3. MITRE ATT&CK\n"
+        "- **Technique ID**: `<Txxxx.xxx>` — `<tên technique>`\n"
+        "- **Tactic**: `<tên tactic>`\n"
+        "- (nếu không match MITRE thì ghi: **MITRE ATT&CK**: `N/A`)\n\n"
+        "### 4. Khuyến nghị điều tra mở rộng\n"
+        "CHỈ đưa ra nếu Nhận định là `True Positive` hoặc `Cần điều tra thêm`.\n"
+        "Nếu `False Positive` → ghi: **Khuyến nghị**: `Không cần hành động — đây là hoạt động bình thường.`\n\n"
+        "Nếu cần điều tra, liệt kê cụ thể:\n"
+        "- **Log cần kiểm tra thêm**: <Event ID cụ thể, ví dụ: 4624, 4672, 4697>\n"
+        "- **Truy vấn đề xuất**: `<KQL/SPL/câu lệnh cụ thể>`\n"
+        "- **IOCs cần tra**: <file hash, IP, domain, user, machine>\n\n"
+        "## QUY TẮC CỨNG:\n"
+        "1. **LUÔN tiếng Việt.** Tên field giữ nguyên tiếng Anh (Event ID, Process Name...).\n"
+        "2. **KHÔNG thêm lời mở đầu/kết thúc** kiểu \"Chào bạn, tôi sẽ...\". Đi thẳng vào phân tích.\n"
+        "3. **KHÔNG lặp lại nội dung log gốc**.\n"
+        "4. Chỉ ghi field có trong log. Nếu field không có trong log → bỏ hẳn dòng đó (không ghi `N/A`).\n"
+        "5. Giữ đúng 4 section: `### 1. Thông tin sự kiện` → `### 2. Nhận định` → `### 3. MITRE ATT&CK` → `### 4. Khuyến nghị điều tra mở rộng`.\n"
+    )
 
     @staticmethod
     def _build_messages(message: str, routing: dict, context: str = "",
@@ -89,9 +190,19 @@ class ChatService:
         use_rag = routing["use_rag"]
         use_search = routing.get("use_search", False)
 
-        # Short system prompt for local CPU models to minimize token count
+        # Detect log analysis requests — use specialized structured prompt
+        is_log = ChatService._is_log_analysis(message)
+
+        # Short system prompt for local CPU models — no RAG context, minimal tokens
         if is_local:
-            system_prompt = "Bạn là trợ lý AI về an ninh mạng. Trả lời ngắn gọn bằng tiếng Việt."
+            if is_log:
+                system_prompt = ChatService._LOG_ANALYSIS_PROMPT
+            else:
+                system_prompt = (
+                    "Bạn là trợ lý AI chuyên gia về an ninh mạng và bảo mật thông tin.\n"
+                    "Trả lời bằng tiếng Việt, rõ ràng, đầy đủ nội dung.\n"
+                    "Dùng Markdown: heading, bullet list, bold cho thuật ngữ quan trọng."
+                )
             user_content = message
             messages = [{"role": "system", "content": system_prompt}]
             if history:
@@ -99,64 +210,67 @@ class ChatService:
             messages.append({"role": "user", "content": user_content})
             return messages
 
-        if use_rag and context:
+        # Log analysis takes priority — use structured prompt regardless of RAG/search
+        if is_log:
+            system_prompt = ChatService._LOG_ANALYSIS_PROMPT
+            user_content = message
+        # Cloud model with RAG context from knowledge base
+        elif use_rag and context:
             system_prompt = (
-                "Bạn là chuyên gia đánh giá ISO 27001:2022, an toàn thông tin và an ninh mạng.\n\n"
-                "## Quy tắc bắt buộc\n"
+                "Bạn là trợ lý AI chuyên gia về an ninh mạng, bảo mật thông tin, "
+                "ISO 27001, TCVN và các tiêu chuẩn an toàn thông tin.\n\n"
+                "## Quy tắc\n"
                 "1. **LUÔN trả lời bằng tiếng Việt.**\n"
-                "2. **Chỉ trả lời dựa trên tài liệu tham chiếu được cung cấp.** "
-                "Không bịa đặt, không suy đoán ngoài nội dung tài liệu.\n"
-                "3. Nếu tài liệu không chứa câu trả lời, nói rõ: "
-                "\"Tài liệu hiện có không đề cập đến vấn đề này.\"\n"
-                "4. **Trích dẫn nguồn**: ghi tên tài liệu hoặc mục (ví dụ: *Annex A.8.1*, "
-                "*TCVN 11930:2017 §5.2*) khi đưa ra thông tin.\n\n"
-                "## Định dạng trả lời (Markdown)\n"
-                "- Dùng **## tiêu đề** cho các phần chính.\n"
-                "- Dùng **bullet list** hoặc **numbered list** cho danh sách.\n"
-                "- Dùng **bold** cho thuật ngữ quan trọng.\n"
-                "- Dùng bảng khi so sánh nhiều mục.\n"
-                "- Dùng `code block` cho mã hoặc lệnh kỹ thuật.\n"
-                "- Giữ câu trả lời ngắn gọn nhưng đầy đủ."
+                "2. Ưu tiên thông tin từ tài liệu tham chiếu. "
+                "Có thể bổ sung kiến thức chuyên môn nếu tài liệu chưa đủ.\n"
+                "3. Trích dẫn nguồn khi dùng tài liệu (ví dụ: *Annex A.8.1*).\n"
+                "4. Nếu tài liệu không liên quan, trả lời từ kiến thức chuyên môn "
+                "và ghi chú \"(từ kiến thức chuyên môn)\".\n\n"
+                "## Định dạng (Markdown)\n"
+                "- `## tiêu đề` cho phần chính\n"
+                "- **Bullet list** / **numbered list** cho danh sách\n"
+                "- **Bold** cho thuật ngữ quan trọng\n"
+                "- Bảng khi so sánh nhiều mục\n"
+                "- `code block` cho lệnh/cấu hình kỹ thuật\n"
+                "- Trả lời ĐẦY ĐỦ, không cắt xén nội dung."
             )
             user_content = f"Tài liệu tham chiếu:\n{context}\n\nCâu hỏi: {message}"
+        # Cloud model with web search results
         elif use_search and search_context:
             system_prompt = (
-                "Bạn là trợ lý AI chuyên phân tích và tổng hợp thông tin từ kết quả tìm kiếm web.\n\n"
-                "## Quy tắc bắt buộc\n"
+                "Bạn là trợ lý AI chuyên phân tích và tổng hợp thông tin.\n\n"
+                "## Quy tắc\n"
                 "1. **LUÔN trả lời bằng tiếng Việt.**\n"
-                "2. **Chỉ tổng hợp từ kết quả tìm kiếm được cung cấp.** "
-                "Không thêm thông tin ngoài nguồn.\n"
-                "3. Nếu kết quả tìm kiếm không đủ để trả lời, nói rõ: "
-                "\"Kết quả tìm kiếm hiện tại không đủ thông tin để trả lời chính xác.\"\n"
-                "4. **Trích dẫn nguồn**: luôn ghi URL nguồn dạng [tiêu đề](url) "
-                "sau mỗi thông tin quan trọng.\n\n"
-                "## Định dạng trả lời (Markdown)\n"
-                "- Dùng **## tiêu đề** cho các phần chính.\n"
-                "- Dùng **bullet list** hoặc **numbered list** cho danh sách.\n"
-                "- Dùng **bold** cho thuật ngữ quan trọng.\n"
-                "- Dùng bảng khi so sánh nhiều mục.\n"
-                "- Cuối câu trả lời, liệt kê tất cả nguồn trong mục **## Nguồn tham khảo**.\n"
-                "- Giữ câu trả lời ngắn gọn nhưng đầy đủ."
+                "2. Tổng hợp từ kết quả tìm kiếm, bổ sung kiến thức nếu cần.\n"
+                "3. Trích dẫn nguồn: [tiêu đề](url) sau mỗi thông tin quan trọng.\n"
+                "4. Nếu kết quả tìm kiếm không đủ, nói rõ.\n\n"
+                "## Định dạng (Markdown)\n"
+                "- `## tiêu đề` cho phần chính\n"
+                "- **Bullet list** / **numbered list** cho danh sách\n"
+                "- **Bold** cho thuật ngữ quan trọng\n"
+                "- Bảng khi so sánh nhiều mục\n"
+                "- Cuối: **## Nguồn tham khảo** liệt kê tất cả URL\n"
+                "- Trả lời ĐẦY ĐỦ, không cắt xén nội dung."
             )
             user_content = f"Kết quả tìm kiếm:\n{search_context}\n\nCâu hỏi: {message}"
+        # Cloud model — general knowledge, no RAG/search
         else:
             system_prompt = (
-                "Bạn là trợ lý AI chuyên gia về an ninh mạng, bảo mật thông tin và công nghệ thông tin.\n\n"
-                "## Quy tắc bắt buộc\n"
+                "Bạn là trợ lý AI chuyên gia về an ninh mạng, bảo mật thông tin, "
+                "ISO 27001, NIST, TCVN và công nghệ thông tin.\n\n"
+                "## Quy tắc\n"
                 "1. **LUÔN trả lời bằng tiếng Việt.**\n"
-                "2. **Chỉ trả lời những gì bạn biết chắc chắn.** "
-                "Không bịa đặt, không hallucinate.\n"
-                "3. Nếu không biết hoặc không chắc chắn, nói rõ: "
-                "\"Tôi không có đủ thông tin để trả lời chính xác câu hỏi này.\"\n"
-                "4. Khi đề cập tiêu chuẩn/quy định, ghi rõ tên và phiên bản "
+                "2. Trả lời chính xác, đầy đủ từ kiến thức chuyên môn.\n"
+                "3. Không bịa đặt. Nếu không chắc, nói rõ.\n"
+                "4. Ghi rõ tên/phiên bản tiêu chuẩn khi đề cập "
                 "(ví dụ: *ISO 27001:2022*, *NIST CSF 2.0*).\n\n"
-                "## Định dạng trả lời (Markdown)\n"
-                "- Dùng **## tiêu đề** cho các phần chính.\n"
-                "- Dùng **bullet list** hoặc **numbered list** cho danh sách.\n"
-                "- Dùng **bold** cho thuật ngữ quan trọng.\n"
-                "- Dùng bảng khi so sánh nhiều mục.\n"
-                "- Dùng `code block` cho mã hoặc lệnh kỹ thuật.\n"
-                "- Giữ câu trả lời ngắn gọn nhưng đầy đủ."
+                "## Định dạng (Markdown)\n"
+                "- `## tiêu đề` cho phần chính\n"
+                "- **Bullet list** / **numbered list** cho danh sách\n"
+                "- **Bold** cho thuật ngữ quan trọng\n"
+                "- Bảng khi so sánh nhiều mục\n"
+                "- `code block` cho lệnh/cấu hình kỹ thuật\n"
+                "- Trả lời ĐẦY ĐỦ, chi tiết, không cắt xén nội dung."
             )
             user_content = message
 
@@ -180,6 +294,12 @@ class ChatService:
             use_rag = routing["use_rag"]
             use_search = routing.get("use_search", False)
 
+            # Disable RAG for local CPU models — keeps context small, avoids timeouts
+            # Web search is kept active as a useful chatbot feature
+            is_local = ChatService._is_local_model(model_name)
+            if is_local:
+                use_rag = False
+
             context, search_context = "", ""
             sources, web_sources = [], []
 
@@ -197,8 +317,9 @@ class ChatService:
                     web_sources = [{"title": r["title"], "url": r["url"]} for r in search_results]
 
             ss = ChatService.get_session_store()
-            history = ss.get_context_messages(session_id, max_messages=10)
-            messages = ChatService._build_messages(message, routing, context, search_context, history)
+            max_hist = 2 if is_local else 10
+            history = ss.get_context_messages(session_id, max_messages=max_hist)
+            messages = ChatService._build_messages(message, routing, context, search_context, history, is_local=is_local)
 
             # cloud_model must only be set when prefer_cloud=True
             result = await asyncio.to_thread(
@@ -239,7 +360,7 @@ class ChatService:
         except Exception as e:
             logger.error(f"Chat error: {e}")
             return {
-                "response": f"Lỗi: {str(e)}", "model": settings.MODEL_NAME,
+                "response": f"Lỗi: {str(e)}", "model": model_name if 'model_name' in locals() else settings.MODEL_NAME,
                 "provider": "error", "session_id": session_id, "error": True,
             }
 
@@ -247,6 +368,7 @@ class ChatService:
     def generate_response_stream(message: str, session_id: str = "default",
                                   model_override: str = None, prefer_cloud: bool = True) -> Generator:
         message = sanitize_user_input(message)
+        _error_model = model_override or settings.MODEL_NAME
         guard_error = ChatService._local_only_guard(stream=True, session_id=session_id)
         if guard_error:
             yield guard_error
@@ -259,13 +381,11 @@ class ChatService:
             use_rag = routing["use_rag"]
             use_search = routing.get("use_search", False)
 
-            # For local Ollama models: disable RAG and web search to keep context small.
-            # CPU inference is ~1 tok/s — large contexts cause timeouts.
-            OLLAMA_PREFIXES = ("gemma3:", "gemma3n:", "gemma4:", "phi4:", "llama3:", "mistral:", "qwen3:")
-            is_ollama = any(model_name.startswith(p) for p in OLLAMA_PREFIXES) if model_name else False
-            if is_ollama:
+            # Disable RAG for ALL local CPU models (Ollama + LocalAI GGUF)
+            # Web search is kept active as a useful chatbot feature
+            is_local = ChatService._is_local_model(model_name)
+            if is_local:
                 use_rag = False
-                use_search = False
 
             context, search_context = "", ""
             sources, web_sources = [], []
@@ -273,9 +393,7 @@ class ChatService:
             if use_rag:
                 yield {"step": "rag", "message": "📚 Đang tra cứu tài liệu nội bộ..."}
                 vs = ChatService.get_vector_store()
-                # Limit to 2 RAG results to keep context small
-                rag_top_k = 2 if not is_ollama else 0
-                results = vs.search(message, top_k=rag_top_k)
+                results = vs.search(message, top_k=2)
                 if results:
                     context = "\n\n---\n\n".join([r["text"] for r in results])
                     sources = [r.get("source", "") for r in results]
@@ -292,10 +410,9 @@ class ChatService:
             yield {"step": "thinking", "message": f"🤖 Đang tạo câu trả lời ({display_model})..."}
 
             ss = ChatService.get_session_store()
-            # Limit history: local Ollama uses 2 messages, cloud uses 10
-            max_hist = 2 if is_ollama else 10
+            max_hist = 2 if is_local else 10
             history = ss.get_context_messages(session_id, max_messages=max_hist)
-            messages = ChatService._build_messages(message, routing, context, search_context, history, is_local=is_ollama)
+            messages = ChatService._build_messages(message, routing, context, search_context, history, is_local=is_local)
 
             # Pass cloud_model ONLY when prefer_cloud=True (cloud model selected).
             # When prefer_cloud=False the model_override is a LocalAI model ID — do NOT
@@ -335,7 +452,7 @@ class ChatService:
             logger.error(f"Stream chat error: {e}")
             yield {
                 "step": "error",
-                "data": {"response": f"Lỗi: {str(e)}", "model": settings.MODEL_NAME,
+                "data": {"response": f"Lỗi: {str(e)}", "model": _error_model,
                          "session_id": session_id, "error": True},
             }
 
