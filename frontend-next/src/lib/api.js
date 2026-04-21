@@ -62,3 +62,34 @@ export function getEvidencePreviewUrl(controlId, filename) {
     if (!controlId || !filename) return ''
     return `/api/iso27001/evidence/${encodeURIComponent(controlId)}/${encodeURIComponent(filename)}/preview`
 }
+
+// ── Template Evidence helpers ─────────────────────────────────────────
+export async function uploadTemplateEvidence(templateId, file) {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch(`/api/templates/${encodeURIComponent(templateId)}/evidence/upload`, {
+        method: 'POST',
+        body: form,
+    })
+    if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(`Upload failed (${res.status}): ${txt}`)
+    }
+    return res.json()
+}
+
+export async function getTemplateEvidence(templateId) {
+    const res = await fetch(`/api/templates/${encodeURIComponent(templateId)}/evidence`)
+    if (!res.ok) throw new Error(`Failed to fetch evidence (${res.status})`)
+    return res.json()
+}
+
+export function getTemplateEvidenceRawUrl(templateId, docId) {
+    if (!templateId || !docId) return ''
+    return `/api/templates/${encodeURIComponent(templateId)}/evidence/${encodeURIComponent(docId)}/raw`
+}
+
+export function getTemplateEvidenceTextUrl(templateId, docId) {
+    if (!templateId || !docId) return ''
+    return `/api/templates/${encodeURIComponent(templateId)}/evidence/${encodeURIComponent(docId)}/text`
+}

@@ -163,3 +163,7 @@ temp/
 
 # ====== Runtime data (writable per-machine) ======
 backend/data/
+
+# ====== Karpathy guidelines (local skill, not for repo) ======
+.roo/skills/karpathy-guidelines/
+temp-karpathy-skills/

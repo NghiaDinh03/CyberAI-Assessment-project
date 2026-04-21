@@ -178,6 +178,7 @@ export default function DetailDrawer({
                                         <div className={styles.block}>
                                             <div className={styles.blockLabel}>
                                                 {t('assessment.requiredEvidence')}
+                                                <span className={styles.required} aria-hidden="true"> *</span>
                                                 <span className={styles.countPill}>{desc.evidence.length} {t('assessment.documentTypes')}</span>
                                             </div>
                                             <ul className={styles.evList}>

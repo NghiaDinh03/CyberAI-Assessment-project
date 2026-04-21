@@ -783,3 +783,40 @@ async def export_pdf(assessment_id: str):
             filename=html_filename,
             headers={"X-PDF-Fallback": "true", "X-Error": str(e)[:200]},
         )
+
+
+# ── SoA Exporter (Phase 3) ──────────────────────────────────────────
+
+
+class SoAExportRequest(BaseModel):
+    """Optional body for POST /iso27001/soa/export."""
+    assessment_id: Optional[str] = None
+    implemented_controls: Optional[List[str]] = None
+    org_name: str = ""
+
+
+@router.post("/iso27001/soa/export")
+async def export_soa(body: SoAExportRequest = SoAExportRequest()):
+    """Generate and download a Statement of Applicability .xlsx file.
+
+    Accepts an optional ``assessment_id`` to pull scoring data from a
+    completed assessment, or a plain ``implemented_controls`` list.
+    If neither is provided, exports a blank SoA template.
+    """
+    from fastapi.responses import Response
+    from services.soa_exporter import generate_soa_xlsx
+
+    xlsx_bytes = generate_soa_xlsx(
+        assessment_id=body.assessment_id,
+        implemented_controls=body.implemented_controls,
+        org_name=body.org_name,
+    )
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")
+    filename = f"SoA_ISO27001_{timestamp}.xlsx"
+
+    return Response(
+        content=xlsx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

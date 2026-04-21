@@ -170,10 +170,12 @@ async def limit_request_size(request: Request, call_next):
         "/api/standards/upload",
         "/api/standards/validate",
         "/api/iso27001/evidence/",
+        "/api/templates/",
         "/api/v1/documents/upload",
         "/api/v1/standards/upload",
         "/api/v1/standards/validate",
         "/api/v1/iso27001/evidence/",
+        "/api/v1/templates/",
     ]
     if not any(request.url.path.startswith(p) for p in exempt_prefixes):
         content_length = request.headers.get("content-length")
@@ -255,7 +257,7 @@ async def not_found_handler(request: Request, exc):
     )
 
 
-from api.routes import chat, document, health, iso27001, system, standards, benchmark, prompts, ollama  # noqa: E402
+from api.routes import chat, document, health, iso27001, system, standards, benchmark, prompts, ollama, risks, templates  # noqa: E402
 from api.routes.metrics import router as metrics_router  # noqa: E402
 
 app.include_router(metrics_router, prefix="", tags=["Observability"])
@@ -269,6 +271,8 @@ app.include_router(system.router,     prefix="/api/v1", tags=["System v1"])
 app.include_router(benchmark.router,  prefix="/api/v1", tags=["Benchmark v1"])
 app.include_router(prompts.router,    prefix="/api/v1", tags=["Prompts v1"])
 app.include_router(ollama.router,     prefix="/api/v1", tags=["Ollama v1"])
+app.include_router(risks.router,      prefix="/api/v1", tags=["Risk Register v1"])
+app.include_router(templates.router,  prefix="/api/v1", tags=["Templates v1"])
 
 app.include_router(health.router,     prefix="/api", tags=["Health"])
 app.include_router(chat.router,       prefix="/api", tags=["Chat"])
@@ -279,6 +283,8 @@ app.include_router(system.router,     prefix="/api", tags=["System"])
 app.include_router(benchmark.router,  prefix="/api", tags=["Benchmark"])
 app.include_router(prompts.router,    prefix="/api", tags=["Prompts"])
 app.include_router(ollama.router,     prefix="/api", tags=["Ollama"])
+app.include_router(risks.router,      prefix="/api", tags=["Risk Register"])
+app.include_router(templates.router,  prefix="/api", tags=["Templates"])
 
 
 from fastapi import BackgroundTasks as _BT  # noqa: E402

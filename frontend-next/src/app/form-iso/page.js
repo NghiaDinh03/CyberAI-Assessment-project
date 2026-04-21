@@ -1838,6 +1838,7 @@ ${escHtml(result.report || '')}
                                             <div className={styles.panelSection}>
                                                 <div className={styles.panelSectionTitle}>
                                                     {t('assessment.requiredEvidence')}
+                                                    <span className={styles.required} aria-hidden="true"> *</span>
                                                     <span className={styles.panelEvidenceCount}>{desc.evidence.length} {t('assessment.documentTypes')}</span>
                                                 </div>
                                                 <ul className={styles.panelEvidenceList}>

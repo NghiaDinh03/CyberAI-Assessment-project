@@ -652,11 +652,30 @@
     font-style: italic;
 }
 
-/* Hide stray horizontal rules that some local models (Gemma) inject before
-   summary blocks despite the "no ---" rule in the system prompt. The 4 section
-   headings already provide visual separation. */
+/* Defense-in-depth: chat answer is now strict `Field: Value` plain text.
+   Suppress every markdown decoration the model might still emit despite the
+   prompt's "no heading / no rule / no bold label" rules. */
 .md hr {
     display: none;
+}
+
+/* Strip setext-style underlines (text === or text ---) which GFM renders as h1/h2
+   with border-bottom. Model sometimes emits "Tóm tắt\n===" → looks like a title bar. */
+.md h1,
+.md h2,
+.md h3,
+.md h4,
+.md h5,
+.md h6 {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0.35rem 0 0.15rem !important;
+    font-size: inherit !important;
+    font-weight: 600 !important;
+    color: var(--text-primary);
+    line-height: 1.4;
+    box-shadow: none !important;
 }
 
 /* ── Message meta (badges + time) ─────────────────────────────────────────────
@@ -684,7 +703,7 @@
 .msgMeta > .elapsedBadge,
 .msgMeta > .copyBtn {
     height: 22px;
-    line-height: 1;
+    line-height: 22px;      /* match height to kill glyph baseline drift */
     padding: 0 10px;
     border-radius: 999px;
     font-size: 0.66rem;
@@ -698,19 +717,33 @@
     margin: 0;
     white-space: nowrap;
     vertical-align: middle;
+    /* Lock to a single font stack — NO emoji fallback.
+       Emoji glyphs use a different metric box (Segoe UI Emoji / Apple Color
+       Emoji) and drag the baseline up ~1-2px, making adjacent text-only chips
+       look tilted. Since icons were removed from the JSX, forcing text font
+       guarantees every chip renders on the same baseline. */
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+                 Arial, sans-serif;
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1, "lnum" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: geometricPrecision;
 }
 
 .time {
     display: inline-flex;
     align-items: center;
     height: 22px;
+    line-height: 22px;
     font-size: 0.66rem;
     font-weight: 500;
     color: #94a3b8;
     letter-spacing: 0.2px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+                 Arial, sans-serif;
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
     margin-left: auto; /* push time to the right edge of the meta row */
 }
 

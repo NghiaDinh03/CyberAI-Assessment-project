@@ -1,6 +1,7 @@
 """Chat Service — Conversation routing with session memory and Cloud-first strategy."""
 
 import asyncio
+import json
 import re
 import logging
 import threading
@@ -111,89 +112,256 @@ class ChatService:
     def clean_response(text: str) -> str:
         return SPECIAL_TOKENS.sub('', text).strip()
 
+    # Keys that strongly indicate a SIEM / EDR / firewall / access log payload.
+    # Matched substring-wise so both flat ("agent.ip":) and nested JSON formats hit.
+    _LOG_JSON_KEY_HINTS = (
+        '"rule"', '"agent"', '"manager"', '"decoder"',        # Wazuh
+        '"event_src"', '"behavior_type"', '"behavior_category"',  # NCS/EDR
+        '"srcip"', '"dstip"', '"src_port"', '"dst_port"',     # firewall
+        '"action":"allow"', '"action":"deny"', '"action":"block"',
+        '"http_method"', '"status_code"', '"user_agent"', '"request_uri"',
+        '"syscall"', '"auid"', '"ses"', '"exe"',              # auditd
+        '"EventID"', '"EventCode"', '"Computer"', '"Channel"',  # Windows Event
+        '"full_log"', '"@timestamp"', '"_source"',            # ELK/OpenSearch
+    )
+
     @staticmethod
     def _is_log_analysis(message: str) -> bool:
-        """Detect if the user is requesting log/event analysis."""
+        """Detect if the user is requesting log/event analysis.
+
+        Returns True for:
+        - Natural-language requests mentioning log/event analysis.
+        - Text-format logs (Windows Event IDs, ISO timestamps, field:value blocks).
+        - JSON payloads from SIEM/EDR/firewall/auditd/access-log systems.
+        """
+        if not message:
+            return False
         msg_lower = message.lower()
-        # Check for log analysis keywords
-        log_keywords = [
+        log_keywords = (
             "phân tích log", "analyze log", "event id", "eventid",
             "sự kiện", "windows event", "syslog", "security log",
             "audit log", "process creation", "logon", "logoff",
             "firewall log", "access log", "error log", "phân tích sự kiện",
-        ]
-        # Check for log-like patterns (Event ID, timestamps, field:value)
-        import re
-        log_patterns = [
+            "raw log", "alert", "siem log", "edr log",
+        )
+        if any(kw in msg_lower for kw in log_keywords):
+            return True
+
+        # JSON-shaped payload with any known log key hint.
+        stripped = message.lstrip()
+        if stripped.startswith(('{', '[')):
+            for hint in ChatService._LOG_JSON_KEY_HINTS:
+                if hint in message:
+                    return True
+
+        # Regex fallbacks for plain-text logs.
+        log_patterns = (
             r"Event\s*ID[:\s]*\d+",
             r"Source[:\s]*(Microsoft|Security|System|Application)",
             r"Token\s*Elevation\s*Type",
             r"Process\s*(Name|ID|Command\s*Line)[:\s]",
             r"Logon\s*Type[:\s]*\d+",
-            r"Subject[:\s]",
             r"Creator\s*Process",
             r"New\s*Process\s*Name",
             r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}",
             r"Mandatory\s*Label",
             r"Account\s*Name[:\s]",
-        ]
-        if any(kw in msg_lower for kw in log_keywords):
-            return True
+            # firewall / access / auditd
+            r"\bsrc(?:ip|_ip)?\s*=\s*\d+\.\d+\.\d+\.\d+",
+            r"\bdst(?:ip|_ip)?\s*=\s*\d+\.\d+\.\d+\.\d+",
+            r"\b(?:GET|POST|PUT|DELETE|PATCH)\s+/\S+\s+HTTP/\d",
+            r"type=SYSCALL\s+msg=audit",
+        )
         for pattern in log_patterns:
             if re.search(pattern, message, re.IGNORECASE):
                 return True
+        return False
+
+    # Field keys to drop when flattening (noise for SOC analysis).
+    _FLATTEN_SKIP_KEYS = frozenset({
+        "_index", "_id", "_version", "_score", "_type",
+        "fields", "highlight", "sort", "location", "input",
+    })
+    _FLATTEN_MAX_FIELDS = 40
+    _FLATTEN_MAX_VAL_LEN = 400
+
+    @staticmethod
+    def _flatten_log_to_fields(message: str) -> str:
+        """Convert a JSON log payload to plain `field: value` lines.
+
+        No-op (returns original message) when the input is not valid JSON or
+        cannot be flattened. Small/local models struggle with deeply nested
+        JSON; pre-flattening dramatically improves prompt adherence.
+        """
+        if not message:
+            return message
+        stripped = message.strip()
+        if not stripped.startswith(('{', '[')):
+            return message
+        try:
+            data = json.loads(stripped)
+        except (json.JSONDecodeError, ValueError):
+            return message
+
+        # If list → flatten first element only (typical for alert arrays).
+        if isinstance(data, list):
+            if not data:
+                return message
+            data = data[0]
+        if not isinstance(data, dict):
+            return message
+
+        # Prefer the `_source` sub-object when present (ELK/OpenSearch shape).
+        if isinstance(data.get("_source"), dict):
+            data = data["_source"]
+
+        lines: List[str] = []
+        seen: set = set()
+
+        def _walk(obj: Any, prefix: str = "") -> None:
+            if len(lines) >= ChatService._FLATTEN_MAX_FIELDS:
+                return
+            if isinstance(obj, dict):
+                for k, v in obj.items():
+                    if k in ChatService._FLATTEN_SKIP_KEYS:
+                        continue
+                    key = f"{prefix}.{k}" if prefix else str(k)
+                    _walk(v, key)
+            elif isinstance(obj, list):
+                if obj and all(not isinstance(x, (dict, list)) for x in obj):
+                    _emit(prefix, ", ".join(str(x) for x in obj))
+                else:
+                    for i, item in enumerate(obj[:3]):
+                        _walk(item, f"{prefix}[{i}]")
+            else:
+                _emit(prefix, obj)
+
+        def _emit(key: str, value: Any) -> None:
+            if value is None or value == "":
+                return
+            sval = str(value).strip()
+            if not sval or sval in {"-", "N/A", "null"}:
+                return
+            # De-duplicate identical (key,value) pairs caused by raw_log + parsed fields.
+            sig = (key, sval[:80])
+            if sig in seen:
+                return
+            seen.add(sig)
+            if len(sval) > ChatService._FLATTEN_MAX_VAL_LEN:
+                sval = sval[: ChatService._FLATTEN_MAX_VAL_LEN] + "…"
+            lines.append(f"{key}: {sval}")
+
+        _walk(data)
+
+        if len(lines) < 3:
+            return message
+        header = "Log đã chuẩn hoá (field: value) — phân tích theo format bắt buộc:\n"
+        return header + "\n".join(lines[: ChatService._FLATTEN_MAX_FIELDS])
+
+    # Markdown artefacts the model sometimes emits despite the strict prompt.
+    _NORMALIZE_HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s+", re.MULTILINE)
+    # Horizontal rules — ASCII runs (---, ___, ***, ===, ~~~) and Unicode box/drawing
+    # characters (━ ─ ═ ▬ ⎯ ⸻ ▀ ■ ◼ •) repeated 3+ times. Matches anywhere on the
+    # line (full-line divider) including inline trailing dividers.
+    _NORMALIZE_HRULE_RE = re.compile(
+        r"^\s{0,3}[-_*=~\u2014\u2015\u2500\u2501\u2550\u25AC\u23AF\u2E3B\u2580\u25A0\u25FC\u2022]{3,}\s*$",
+        re.MULTILINE,
+    )
+    # Inline dividers at end of line (e.g. a title followed by `━━━━━━` on same line)
+    _NORMALIZE_INLINE_DIVIDER_RE = re.compile(
+        r"[\u2014\u2015\u2500\u2501\u2550\u25AC\u23AF\u2E3B]{3,}"
+    )
+    _NORMALIZE_BULLET_RE = re.compile(r"^\s{0,3}[-*+•]\s+(?=[A-Za-zÀ-ỹ])", re.MULTILINE)
+    _NORMALIZE_BOLD_LABEL_RE = re.compile(r"^\s*\*\*([^*\n:]{1,60})\*\*\s*:", re.MULTILINE)
+    # Strip leading emoji/pictograph cluster at start of a line (e.g. "🚨 BÁO CÁO")
+    _NORMALIZE_LEADING_EMOJI_RE = re.compile(
+        r"^\s*[\U0001F300-\U0001FAFF\U00002600-\U000027BF\u2B00-\u2BFF]+\s*",
+        re.MULTILINE,
+    )
+
+    @staticmethod
+    def _normalize_log_output(text: str) -> str:
+        """Strip markdown artefacts from a log-analysis response.
+
+        Small local models (gemma, phi, llama3-8B) often ignore the
+        "no markdown" rule and emit headings, tables, or bullets.  This is a
+        defensive post-processor: cheap, idempotent, only runs when log mode
+        was triggered.
+        """
+        if not text:
+            return text
+        out = ChatService._NORMALIZE_HEADING_RE.sub("", text)
+        out = ChatService._NORMALIZE_HRULE_RE.sub("", out)
+        out = ChatService._NORMALIZE_INLINE_DIVIDER_RE.sub("", out)
+        out = ChatService._NORMALIZE_LEADING_EMOJI_RE.sub("", out)
+        out = ChatService._NORMALIZE_BULLET_RE.sub("", out)
+        out = ChatService._NORMALIZE_BOLD_LABEL_RE.sub(r"\1:", out)
+        # Strip any remaining **bold** spans (keep inner text).
+        out = re.sub(r"\*\*([^*\n]{1,120})\*\*", r"\1", out)
+        # Strip trailing whitespace on each line.
+        out = re.sub(r"[ \t]+\n", "\n", out)
+        # Collapse runs of 3+ blank lines.
+        out = re.sub(r"\n{3,}", "\n\n", out)
+        return out.strip()
+
+    # Vietnamese diacritics — detection for language enforcement.
+    _VN_DIACRITIC_RE = re.compile(
+        r"[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]",
+        re.IGNORECASE,
+    )
+
+    @staticmethod
+    def _is_vietnamese(text: str) -> bool:
+        """Heuristic: text contains Vietnamese diacritics → treat as VN."""
+        if not text:
+            return False
+        return bool(ChatService._VN_DIACRITIC_RE.search(text))
+
+    # Marker fields in a prior log-analysis response — used to detect sticky mode.
+    _LOG_RESPONSE_MARKERS = (
+        "Nhận định:", "Mức độ:", "Technique:", "Tactic:",
+        "Log cần kiểm tra:", "Truy vấn gợi ý:", "IOCs:",
+    )
+
+    @staticmethod
+    def _session_in_log_mode(history: List[Dict[str, str]]) -> bool:
+        """True if the most recent assistant reply looks like log analysis.
+
+        Lets follow-up questions ("dịch đoạn trên", "giải thích thêm") keep
+        the strict field:value format instead of falling back to generic chat.
+        """
+        if not history:
+            return False
+        for msg in reversed(history):
+            if msg.get("role") != "assistant":
+                continue
+            content = msg.get("content", "") or ""
+            hits = sum(1 for m in ChatService._LOG_RESPONSE_MARKERS if m in content)
+            return hits >= 2
         return False
 
     # ── Structured output template for log/event analysis ────────────────
     # Source of truth lives in :mod:`prompts.defaults` (key ``chat.log_analysis``).
     # The literal below is kept ONLY as a fallback when the prompt registry
     # cannot be loaded (e.g. test environments without DATA_PATH).
+    # Kept in sync with prompts.defaults.CHAT_LOG_ANALYSIS (field:value plain format).
+    # Source of truth is prompts/defaults.py; this mirror is used only when the
+    # prompt registry is unavailable (e.g. tests without DATA_PATH).
     _LOG_ANALYSIS_PROMPT_FALLBACK = (
-        "Bạn là SOC Analyst Level 3. Phân tích log an ninh theo TEMPLATE CỐ ĐỊNH dưới đây.\n"
-        "**KHÔNG được tự ý đổi tên section hoặc thứ tự**. Copy nguyên văn các heading `## 1.` ... `## 4.`\n\n"
-        "═══════════════════════════════════════════════════════════\n"
-        "## 1. 📋 Thông tin sự kiện\n"
-        "Liệt kê các field CÓ GIÁ TRỊ THỰC trong log, mỗi field một dòng theo format:\n"
-        "`- **<Field>**: \\`<value>\\` — <giải thích 1 câu>`\n\n"
-        "**QUY TẮC**:\n"
-        "- BỎ HẲN field rỗng / `-` / `N/A` / `null` / không xuất hiện trong log gốc.\n"
-        "- Field hash dài (MD5/SHA256/IMPHASH): mỗi hash một dòng riêng.\n"
-        "- KHÔNG paste lại nguyên block log gốc.\n\n"
-        "## 2. 🎯 Nhận định\n"
-        "**BẮT BUỘC phải có section này, không được bỏ.** Format:\n\n"
-        "- **Kết luận**: ⚠️ **True Positive** HOẶC ✅ **False Positive** HOẶC ❓ **Cần điều tra thêm**\n"
-        "- **Mức độ**: `Critical` / `High` / `Medium` / `Low` / `Informational`\n"
-        "- **Lý do**: <2-3 câu giải thích dựa trên field ở section 1>\n\n"
-        "Hướng dẫn chọn nhãn:\n"
-        "  • ⚠️ **True Positive** → có dấu hiệu độc hại rõ ràng, CẦN điều tra mở rộng (ví dụ: "
-        "PowerShell với `-ExecutionPolicy Bypass`, script từ `\\Downloads\\` hoặc `\\Temp\\`, hash lạ, "
-        "process ẩn danh, logon bất thường).\n"
-        "  • ✅ **False Positive** → tiến trình hệ thống hoặc user hợp lệ chạy bình thường, "
-        "KHÔNG cần hành động.\n"
-        "  • ❓ **Cần điều tra thêm** → chưa đủ context.\n\n"
-        "## 3. 🗺️ MITRE ATT&CK\n"
-        "Một dòng duy nhất:\n"
-        "`- **Technique**: \\`Txxxx.xxx\\` — <tên technique> | **Tactic**: <tên tactic>`\n\n"
-        "Nếu không match thì ghi: `- **MITRE**: N/A`\n\n"
-        "## 4. 🛡️ Khuyến nghị\n"
-        "- Nếu ✅ **False Positive** → chỉ ghi 1 dòng: "
-        "`Không cần hành động — hoạt động bình thường của hệ thống.` → DỪNG.\n"
-        "- Nếu ⚠️ **True Positive** / ❓ **Cần điều tra thêm** → liệt kê cụ thể:\n"
-        "  - **Log cần kiểm tra**: <Event ID, ví dụ 4624, 4672, 4697>\n"
-        "  - **Truy vấn gợi ý**: `<KQL hoặc SPL>`\n"
-        "  - **IOCs cần tra**: <hash, IP, domain, user, host>\n"
-        "═══════════════════════════════════════════════════════════\n\n"
-        "## QUY TẮC CỨNG:\n"
-        "1. **TIẾNG VIỆT** toàn bộ. Tên field giữ tiếng Anh (Event ID, Process Name, Command Line...).\n"
-        "2. **KHÔNG thêm intro/outro xã giao** (\"Chào bạn\", \"Tôi sẽ phân tích\", \"Hy vọng giúp ích\"). "
-        "Bắt đầu NGAY bằng `## 1. 📋 Thông tin sự kiện`.\n"
-        "3. **KHÔNG dùng `---` (horizontal rule) giữa các section** — các heading `## N.` đã đủ tách.\n"
-        "4. **KHÔNG đổi tên section** sang \"Phân tích sự kiện\", \"Chi tiết kỹ thuật\", etc. "
-        "Dùng CHÍNH XÁC 4 heading: `## 1. 📋 Thông tin sự kiện`, `## 2. 🎯 Nhận định`, "
-        "`## 3. 🗺️ MITRE ATT&CK`, `## 4. 🛡️ Khuyến nghị`.\n"
-        "5. **Section 2 (Nhận định) là QUAN TRỌNG NHẤT** — phải có nhãn ⚠️/✅/❓ rõ ràng.\n"
-        "6. **KHÔNG dùng bảng (table)** cho section 1 — dùng bullet list để tránh tràn UI.\n"
-        "7. Output NGẮN GỌN — bỏ field rỗng, không giải thích dài dòng.\n"
+        "Bạn là SOC Analyst Level 3. Phân tích log và trả về dạng `Field: Value` thuần. "
+        "KHÔNG heading markdown, KHÔNG emoji, KHÔNG bullet, KHÔNG horizontal rule, "
+        "KHÔNG intro/outro.\n\n"
+        "Format: mỗi dòng 1 field `<Field>: <value>`. Label KHÔNG in đậm.\n\n"
+        "Bắt buộc có các dòng:\n"
+        "- `Nhận định: True Positive | False Positive | Cần điều tra thêm`\n"
+        "- `Mức độ: Critical | High | Medium | Low | Informational`\n"
+        "- `Lý do: <2-3 câu>`\n"
+        "- `Technique: Txxxx.xxx - <tên>` và `Tactic: <tên>` (hoặc `MITRE: N/A`)\n"
+        "- Nếu False Positive → `Khuyến nghị: Không cần hành động - hoạt động bình thường.`\n"
+        "- Nếu TP/Cần điều tra → `Log cần kiểm tra:`, `Truy vấn gợi ý:`, `IOCs:`\n\n"
+        "QUY TẮC CỨNG: KHÔNG `#`/`##`/`###`, KHÔNG `**bold label**:`, KHÔNG emoji, KHÔNG `---`, "
+        "KHÔNG `===`, KHÔNG bullet `-`/`*` đầu dòng field, KHÔNG bảng, KHÔNG subtitle "
+        "(`Tóm tắt`, `Phân tích kỹ thuật`). Dùng label cũ `Kết luận` = SAI."
     )
 
     @staticmethod
@@ -212,22 +380,41 @@ class ChatService:
         use_rag = routing["use_rag"]
         use_search = routing.get("use_search", False)
 
-        # Detect log analysis requests — use specialized structured prompt
-        is_log = ChatService._is_log_analysis(message)
+        # Detect log analysis requests — use specialized structured prompt.
+        # Sticky mode: if previous assistant reply in session was log-analysis,
+        # keep strict format for follow-ups (translate/summarize/explain).
+        is_log = (
+            ChatService._is_log_analysis(message)
+            or ChatService._session_in_log_mode(history or [])
+        )
         log_prompt = ChatService._safe_prompt(
             "chat.log_analysis", ChatService._LOG_ANALYSIS_PROMPT_FALLBACK,
+        )
+        # Language lock — force Vietnamese output when user writes VN,
+        # even if raw log content is English.
+        if ChatService._is_vietnamese(message):
+            log_prompt = log_prompt + (
+                "\n\nNGÔN NGỮ BẮT BUỘC: Toàn bộ giải thích/nhận định/khuyến nghị "
+                "PHẢI viết TIẾNG VIỆT, kể cả khi log gốc tiếng Anh. Chỉ giữ nguyên "
+                "tên field, rule name, IOC, command, MITRE ID."
+            )
+        # Pre-flatten JSON logs → field:value. Small local models obey the
+        # strict format much better when they receive a pre-parsed log.
+        log_message = (
+            ChatService._flatten_log_to_fields(message) if is_log else message
         )
 
         # Short system prompt for local CPU models — no RAG context, minimal tokens
         if is_local:
             if is_log:
                 system_prompt = log_prompt
+                user_content = log_message
             else:
                 system_prompt = ChatService._safe_prompt(
                     "chat.local_default",
                     "Bạn là trợ lý AI chuyên gia về an ninh mạng và bảo mật thông tin.",
                 )
-            user_content = message
+                user_content = message
             messages = [{"role": "system", "content": system_prompt}]
             if history:
                 messages.extend(history[-2:])
@@ -237,7 +424,7 @@ class ChatService:
         # Log analysis takes priority — use structured prompt regardless of RAG/search
         if is_log:
             system_prompt = log_prompt
-            user_content = message
+            user_content = log_message
         # Cloud model with RAG context from knowledge base
         elif use_rag and context:
             system_prompt = ChatService._safe_prompt("chat.rag", "")
@@ -296,6 +483,10 @@ class ChatService:
             ss = ChatService.get_session_store()
             max_hist = 2 if is_local else 10
             history = ss.get_context_messages(session_id, max_messages=max_hist)
+            is_log = (
+                ChatService._is_log_analysis(message)
+                or ChatService._session_in_log_mode(history or [])
+            )
             messages = ChatService._build_messages(message, routing, context, search_context, history, is_local=is_local)
 
             # cloud_model must only be set when prefer_cloud=True
@@ -308,6 +499,8 @@ class ChatService:
                 cloud_model=model_override if prefer_cloud else None,
             )
             response_text = ChatService.clean_response(result["content"]) if result.get("content") else ""
+            if is_log and response_text:
+                response_text = ChatService._normalize_log_output(response_text)
 
             if background_tasks is not None:
                 background_tasks.add_task(ss.add_message, session_id, "user", message)
@@ -394,6 +587,10 @@ class ChatService:
             ss = ChatService.get_session_store()
             max_hist = 2 if is_local else 10
             history = ss.get_context_messages(session_id, max_messages=max_hist)
+            is_log = (
+                ChatService._is_log_analysis(message)
+                or ChatService._session_in_log_mode(history or [])
+            )
             messages = ChatService._build_messages(message, routing, context, search_context, history, is_local=is_local)
 
             # Decide streaming path: only Ollama models support live token streaming here.
@@ -439,6 +636,9 @@ class ChatService:
                     "provider": result.get("provider", "unknown"),
                     "usage": result.get("usage", {}),
                 }
+
+            if is_log and response_text:
+                response_text = ChatService._normalize_log_output(response_text)
 
             ss.add_message(session_id, "user", message)
             if response_text:

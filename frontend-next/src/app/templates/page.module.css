@@ -397,3 +397,296 @@
         font-size: 1.25rem;
     }
 }
+
+/* ── Evidence section in template cards ─────────────────────────── */
+
+.evidenceSection {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border, #2a2a4a);
+}
+
+.evidenceHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.evidenceTitle {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary, #e0e0e0);
+}
+
+.evidenceCount {
+    font-size: 0.7rem;
+    color: var(--text-muted, #888);
+}
+
+.evidenceList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.evidenceItem {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 6px;
+    background: var(--surface-raised, rgba(255, 255, 255, 0.03));
+    transition: background 0.15s ease;
+}
+
+.evidenceItem:hover {
+    background: rgba(59, 130, 246, 0.08);
+}
+
+.evidenceIcon {
+    flex-shrink: 0;
+    color: var(--accent-blue, #3b82f6);
+}
+
+.evidenceName {
+    flex: 1;
+    font-size: 0.72rem;
+    color: var(--text-muted, #888);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.evidencePreviewBtn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted, #888);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.evidencePreviewBtn:hover {
+    border-color: var(--accent-blue, #3b82f6);
+    color: var(--accent-blue, #3b82f6);
+    background: rgba(59, 130, 246, 0.08);
+}
+
+/* ── Preview modal (shared across template cards) ──────────────── */
+
+.previewBackdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    z-index: 1000;
+}
+
+.previewModal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(90vw, 900px);
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface, #1a1a2e);
+    border: 1px solid var(--border, #2a2a4a);
+    border-radius: 12px;
+    z-index: 1001;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.previewHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid var(--border, #2a2a4a);
+    flex-shrink: 0;
+}
+
+.previewLabel {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #888);
+}
+
+.previewTitle {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary, #e0e0e0);
+    margin: 0.15rem 0 0;
+}
+
+.previewActions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.previewDownload,
+.previewClose {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid var(--border, #2a2a4a);
+    background: transparent;
+    color: var(--text-muted, #888);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.previewDownload:hover {
+    border-color: var(--accent-green, #22c55e);
+    color: var(--accent-green, #22c55e);
+}
+
+.previewClose:hover {
+    border-color: var(--accent-red, #ef4444);
+    color: var(--accent-red, #ef4444);
+}
+
+.previewBody {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.25rem;
+}
+
+.previewMarkdown {
+    font-size: 0.85rem;
+    line-height: 1.65;
+    color: var(--text-primary, #e0e0e0);
+}
+
+.previewMarkdown table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75rem 0;
+    font-size: 0.8rem;
+}
+
+.previewMarkdown th,
+.previewMarkdown td {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border, #2a2a4a);
+    text-align: left;
+}
+
+.previewMarkdown th {
+    background: var(--surface-raised, rgba(255, 255, 255, 0.03));
+    font-weight: 600;
+}
+
+.previewMarkdown h1 { font-size: 1.3rem; margin: 0.5rem 0; }
+.previewMarkdown h2 { font-size: 1.1rem; margin: 1rem 0 0.5rem; }
+.previewMarkdown h3 { font-size: 0.95rem; margin: 0.75rem 0 0.35rem; }
+
+.previewMarkdown pre {
+    background: var(--surface-raised, rgba(255, 255, 255, 0.03));
+    padding: 0.75rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.78rem;
+}
+
+.previewMarkdown code {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.82em;
+}
+
+.previewMarkdown ul,
+.previewMarkdown ol {
+    padding-left: 1.25rem;
+}
+
+/* ── Upload zone in template cards ─────────────────────────────── */
+
+.uploadZone {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px dashed var(--border, #2a2a4a);
+    border-radius: 6px;
+    background: var(--surface-raised, rgba(255, 255, 255, 0.02));
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    margin-bottom: 0.4rem;
+}
+
+.uploadZone:hover,
+.uploadZone:focus-visible {
+    border-color: var(--accent-blue, #3b82f6);
+    background: rgba(59, 130, 246, 0.05);
+    outline: none;
+}
+
+.uploadIcon {
+    flex-shrink: 0;
+    color: var(--text-dim, #666);
+}
+
+.uploadText {
+    font-size: 0.72rem;
+    color: var(--text-dim, #666);
+    font-weight: 500;
+}
+
+.uploadInput {
+    display: none;
+}
+
+.uploadErrorMsg {
+    font-size: 0.7rem;
+    color: var(--accent-red, #ef4444);
+    margin: 0.2rem 0 0.4rem;
+    padding: 0;
+}
+
+.evidenceSize {
+    flex-shrink: 0;
+    font-size: 0.65rem;
+    color: var(--text-dim, #666);
+    font-variant-numeric: tabular-nums;
+    margin-left: auto;
+    margin-right: 0.25rem;
+}
+
+.noEvidence {
+    font-size: 0.72rem;
+    color: var(--text-dim, #666);
+    margin: 0.25rem 0 0;
+    font-style: italic;
+}
+
+.downloadLink {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.9rem;
+    background: var(--green-subtle);
+    color: var(--accent-green);
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.downloadLink:hover {
+    background: rgba(52, 211, 153, 0.15);
+    border-color: rgba(52, 211, 153, 0.3);
+}
