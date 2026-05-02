@@ -1,14 +1,175 @@
 services:
-  vane:
-    image: itzcrazykns1337/vane:latest
+  # ── CyberAI Frontend (formerly Vane) ──────────────────────────────────
+  cyberai-frontend:
     build:
       context: .
+      dockerfile: Dockerfile
+    container_name: cyberai-frontend
     ports:
       - '3001:3000'
+    environment:
+      - NEXT_PUBLIC_API_URL=http://cyberai-backend:8000
+      - API_URL=http://cyberai-backend:8000
+      - NODE_ENV=production
+      - SEARXNG_API_URL=http://localhost:8080
     volumes:
-      - data:/home/vane/data
+      - cyberai-data:/home/vane/data
+      - ../docs:/app/docs:ro
+    networks:
+      - cyberai-network
+    depends_on:
+      cyberai-backend:
+        condition: service_started
     restart: unless-stopped
 
+  # ── CyberAI Backend (FastAPI) ─────────────────────────────────────────
+  cyberai-backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: cyberai-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - LOCALAI_URL=http://cyberai-localai:8080
+      - OLLAMA_URL=${OLLAMA_URL:-http://cyberai-ollama:11434}
+      - MODEL_NAME=${MODEL_NAME}
+      - SECURITY_MODEL_NAME=${SECURITY_MODEL_NAME:-${MODEL_NAME}}
+      - MAX_TOKENS=-1
+      - PREFER_LOCAL=${PREFER_LOCAL:-false}
+      - CLOUD_LLM_API_URL=${CLOUD_LLM_API_URL:-https://open-claude.com/v1}
+      - CLOUD_MODEL_NAME=${CLOUD_MODEL_NAME:-gemini-3.1-pro-preview}
+      - CLOUD_API_KEYS=${CLOUD_API_KEYS}
+      - GOOGLE_AI_STUDIO_API_KEY=${GOOGLE_AI_STUDIO_API_KEY:-}
+      - GOOGLE_AI_STUDIO_MODEL=${GOOGLE_AI_STUDIO_MODEL:-gemini-2.0-flash}
+      - GOOGLE_AI_STUDIO_URL=${GOOGLE_AI_STUDIO_URL:-https://generativelanguage.googleapis.com/v1beta}
+      - ISO_DOCS_PATH=/data/iso_documents
+      - VECTOR_STORE_PATH=/data/vector_store
+      - DATA_PATH=/data
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DEBUG=${DEBUG:-true}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3001}
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - RATE_LIMIT_CHAT=${RATE_LIMIT_CHAT:-10/minute}
+      - RATE_LIMIT_ASSESS=${RATE_LIMIT_ASSESS:-3/minute}
+      - RATE_LIMIT_BENCHMARK=${RATE_LIMIT_BENCHMARK:-5/minute}
+      - INFERENCE_TIMEOUT=${INFERENCE_TIMEOUT:-1800}
+      - CLOUD_TIMEOUT=${CLOUD_TIMEOUT:-60}
+      - MODELS_PATH=/app/models
+    networks:
+      - cyberai-network
+    volumes:
+      - ../backend:/app
+      - ../models/llm:/app/models
+      - ../data/iso_documents:/data/iso_documents
+      - ../data/vector_store:/data/vector_store
+      - ../data/assessments:/data/assessments
+      - ../data/evidence:/data/evidence
+      - ../data/exports:/data/exports
+      - ../data/sessions:/data/sessions
+      - ../data/standards:/data/standards
+      - ../data/knowledge_base:/data/knowledge_base
+      - ../data/uploads:/data/uploads
+    depends_on:
+      cyberai-localai:
+        condition: service_started
+      cyberai-ollama:
+        condition: service_started
+    restart: unless-stopped
+    mem_limit: 6g
+    mem_reservation: 2g
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+        reservations:
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── LocalAI (Local LLM Engine) ────────────────────────────────────────
+  cyberai-localai:
+    image: localai/localai:v2.24.2
+    container_name: cyberai-localai
+    ports:
+      - "8080:8080"
+    environment:
+      - DEBUG=true
+      - THREADS=${THREADS:-10}
+      - CONTEXT_SIZE=${CONTEXT_SIZE:-8192}
+      - PARALLEL_REQUESTS=false
+      - MLOCK=false
+      - MMAP=true
+    ulimits:
+      memlock: -1
+    volumes:
+      - ../models/llm:/build/models
+    networks:
+      - cyberai-network
+    restart: unless-stopped
+    mem_limit: 14g
+    mem_reservation: 4g
+    deploy:
+      resources:
+        limits:
+          cpus: "10"
+          memory: 14G
+        reservations:
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/readyz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # ── Ollama (Local LLM Runner) ─────────────────────────────────────────
+  cyberai-ollama:
+    image: ollama/ollama:latest
+    container_name: cyberai-ollama
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull gemma3n:e2b && ollama pull gemma3n:e4b && ollama pull gemma4:latest && ollama pull gemma3:27b; wait"]
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_NUM_PARALLEL=2
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_LOAD_TIMEOUT=20m
+      - OLLAMA_MAX_QUEUE=10
+      - OLLAMA_FLASH_ATTENTION=true
+      - OLLAMA_CONTEXT_LENGTH=4096
+      - OLLAMA_DEBUG=INFO
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - cyberai-network
+    restart: unless-stopped
+    mem_limit: 18g
+    mem_reservation: 6g
+    deploy:
+      resources:
+        limits:
+          cpus: "10"
+          memory: 18G
+        reservations:
+          memory: 6G
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
 volumes:
-  data:
-    name: 'vane-data'
+  cyberai-data:
+    name: cyberai-frontend-data
+  ollama_data:
+
+networks:
+  cyberai-network:
+    driver: bridge

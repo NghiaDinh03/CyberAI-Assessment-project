@@ -30,6 +30,43 @@ const nextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  // Proxy CyberAI backend API calls
+  async rewrites() {
+    return [
+      {
+        source: '/api/health',
+        destination: `${process.env.API_URL || 'http://cyberai-backend:8000'}/api/health`,
+      },
+      {
+        source: '/api/system/:path*',
+        destination: `${process.env.API_URL || 'http://cyberai-backend:8000'}/api/system/:path*`,
+      },
+      {
+        source: '/api/iso27001/:path*',
+        destination: `${process.env.API_URL || 'http://cyberai-backend:8000'}/api/iso27001/:path*`,
+      },
+      {
+        source: '/api/standards/:path*',
+        destination: `${process.env.API_URL || 'http://cyberai-backend:8000'}/api/standards/:path*`,
+      },
+      {
+        source: '/api/benchmark/:path*',
+        destination: `${process.env.API_URL || 'http://cyberai-backend:8000'}/api/benchmark/:path*`,
+      },
+      {
+        source: '/api/ollama/:path*',
+        destination: `${process.env.API_URL || 'http://cyberai-backend:8000'}/api/ollama/:path*`,
+      },
+      {
+        source: '/api/prompts/:path*',
+        destination: `${process.env.API_URL || 'http://cyberai-backend:8000'}/api/prompts/:path*`,
+      },
+      {
+        source: '/api/docs/:path*',
+        destination: `${process.env.API_URL || 'http://cyberai-backend:8000'}/api/docs/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
