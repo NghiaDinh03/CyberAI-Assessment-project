@@ -1,0 +1,871 @@
+/* ── Guide Page Layout ────────────────────────────────────────────────────── */
+
+.header {
+    padding: 1rem 0 1.5rem;
+}
+
+.backLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-bottom: 1rem;
+    transition: color 0.15s ease;
+}
+
+.backLink:hover {
+    color: var(--accent-blue);
+}
+
+.headerContent {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.headerIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--blue-subtle);
+    color: var(--accent-blue);
+    flex-shrink: 0;
+}
+
+.title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
+    line-height: 1.3;
+}
+
+.subtitle {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* ── Two-column layout ───────────────────────────────────────────────────── */
+
+.layout {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    padding-bottom: 3rem;
+}
+
+/* ── Table of Contents ───────────────────────────────────────────────────── */
+
+.toc {
+    position: sticky;
+    top: 80px;
+    width: 240px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.tocTitle {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-dim);
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 0.3rem;
+}
+
+.tocItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+    width: 100%;
+}
+
+.tocItem svg {
+    flex-shrink: 0;
+}
+
+.tocItem span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tocItem:hover {
+    background: var(--bg-muted);
+    color: var(--accent-blue);
+}
+
+/* ── Main content ────────────────────────────────────────────────────────── */
+
+.content {
+    flex: 1;
+    min-width: 0;
+}
+
+.section {
+    margin-bottom: 1.5rem;
+    animation: sectionFadeIn 0.3s ease both;
+    scroll-margin-top: 80px;
+}
+
+@keyframes sectionFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.sectionTitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: -0.2px;
+}
+
+.sectionTitle svg {
+    color: var(--accent-blue);
+    flex-shrink: 0;
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.paragraph {
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 0.75rem;
+}
+
+.subHeading {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-top: 1.25rem;
+    margin-bottom: 0.6rem;
+    letter-spacing: -0.1px;
+}
+
+/* ── Lists ────────────────────────────────────────────────────────────────── */
+
+.bulletList {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.75rem;
+}
+
+.bulletList li {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    padding: 3px 0 3px 18px;
+    position: relative;
+}
+
+.bulletList li::before {
+    content: '•';
+    position: absolute;
+    left: 4px;
+    color: var(--accent-blue);
+    font-weight: 700;
+}
+
+.orderedList {
+    padding-left: 1.25rem;
+    margin: 0 0 0.75rem;
+}
+
+.orderedList li {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    padding: 3px 0;
+}
+
+.orderedList li code,
+.bulletList li code,
+.paragraph code {
+    background: var(--code-bg);
+    color: var(--code-color);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ── Tables ───────────────────────────────────────────────────────────────── */
+
+.tableWrap {
+    overflow-x: auto;
+    margin: 0.5rem 0 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.table th,
+.table td {
+    padding: 9px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.table th {
+    background: var(--md-th-bg);
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.table td {
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.table td strong {
+    color: var(--text-primary);
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table tbody tr:hover {
+    background: var(--hover);
+}
+
+.totalRow {
+    background: var(--md-th-bg) !important;
+}
+
+.totalRow td {
+    font-weight: 600;
+    color: var(--text-primary) !important;
+}
+
+.required {
+    color: var(--accent-red);
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+/* ── Highlight / Tip / Warning / Example boxes ───────────────────────────── */
+
+.highlightBox {
+    background: var(--blue-subtle);
+    border: 1px solid var(--border-active);
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    margin: 0.75rem 0;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.highlightBox strong {
+    color: var(--accent-blue);
+}
+
+.highlightBox .bulletList {
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+}
+
+.tipBox {
+    background: var(--green-subtle);
+    border-left: 3px solid var(--accent-green);
+    border-radius: 0 8px 8px 0;
+    padding: 0.85rem 1rem;
+    margin: 0.75rem 0;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.tipBox strong {
+    color: var(--accent-green);
+}
+
+.tipBox code {
+    background: var(--code-bg);
+    color: var(--code-color);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.78rem;
+}
+
+.warningBox {
+    background: var(--red-subtle);
+    border-left: 3px solid var(--accent-red);
+    border-radius: 0 8px 8px 0;
+    padding: 0.85rem 1rem;
+    margin: 0.75rem 0;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.warningBox strong {
+    color: var(--accent-red);
+}
+
+.exampleBox {
+    background: var(--purple-subtle);
+    border: 1px solid rgba(139, 108, 247, 0.15);
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    margin: 0.75rem 0;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.exampleBox > strong {
+    color: var(--accent-purple);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+/* ── Code block ──────────────────────────────────────────────────────────── */
+
+.codeBlock {
+    background: var(--pre-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.76rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-x: auto;
+    margin-top: 0.5rem;
+}
+
+/* ── Steps Flow (workflow visualization) ─────────────────────────────────── */
+
+.stepsFlow {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 1rem 0;
+}
+
+.stepFlowItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex: 1;
+    min-width: 160px;
+}
+
+.stepFlowNum {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+}
+
+.stepFlowNum2 { background: var(--accent-purple); }
+.stepFlowNum3 { background: var(--accent-green); }
+.stepFlowNum4 { background: var(--accent-amber); }
+
+.stepFlowContent {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.stepFlowContent strong {
+    font-size: 0.82rem;
+    color: var(--text-primary);
+}
+
+.stepFlowContent span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+
+.stepFlowArrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    padding: 4px 6px;
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+/* ── AI Mode Grid ────────────────────────────────────────────────────────── */
+
+.aiModeGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.aiModeCard {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.15rem;
+    transition: var(--transition);
+}
+
+.aiModeCard:hover {
+    border-color: var(--border-light);
+    box-shadow: var(--shadow-sm);
+}
+
+.aiModeLocal { border-left: 3px solid var(--accent-green); }
+.aiModeHybrid { border-left: 3px solid var(--accent-blue); }
+.aiModeCloud { border-left: 3px solid var(--accent-purple); }
+
+.aiModeHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.aiModeHeader h4 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.aiModeHeader svg {
+    color: var(--text-muted);
+}
+
+.aiModeBadge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--bg-muted);
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.aiModeBadgeRecommend {
+    background: var(--blue-subtle);
+    color: var(--accent-blue);
+}
+
+.aiModeFlow {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    background: var(--bg-subtle);
+    border-radius: 6px;
+}
+
+.flowLocal {
+    color: var(--accent-green);
+    font-weight: 600;
+}
+
+.flowCloud {
+    color: var(--accent-purple);
+    font-weight: 600;
+}
+
+.aiModeDetails {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.aiModeDetails li {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    padding: 2px 0;
+}
+
+.aiModeDetails li strong {
+    color: var(--text-secondary);
+}
+
+/* ── Weight badges ───────────────────────────────────────────────────────── */
+
+.weightCritical {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--accent-red);
+    color: var(--accent-red);
+}
+
+.weightHigh {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--accent-amber);
+    color: var(--accent-amber);
+}
+
+.weightMedium {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.weightLow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--text-dim);
+    color: var(--text-dim);
+}
+
+/* ── Score colors ────────────────────────────────────────────────────────── */
+
+.scoreGreen { color: var(--accent-green); font-weight: 700; }
+.scoreBlue { color: var(--accent-blue); font-weight: 700; }
+.scoreAmber { color: var(--accent-amber); font-weight: 700; }
+.scoreRed { color: var(--accent-red); font-weight: 700; }
+
+/* ── Summary preview ─────────────────────────────────────────────────────── */
+
+.summaryPreview {
+    background: var(--bg-subtle);
+    border-left: 3px solid var(--accent-blue);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.15rem;
+    margin: 0.75rem 0;
+}
+
+.summaryItem {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+}
+
+.summaryItem strong {
+    color: var(--text-primary);
+}
+
+/* ── Formula box ─────────────────────────────────────────────────────────── */
+
+.formulaBox {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    margin: 0.75rem 0;
+}
+
+.formulaBox h4 {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.formulaBox p {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+}
+
+.formula {
+    text-align: center;
+    padding: 0.6rem 0;
+}
+
+.formula code {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--accent-blue);
+    background: var(--blue-subtle);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ── File formats ────────────────────────────────────────────────────────── */
+
+.fileFormats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0.5rem 0 0.75rem;
+}
+
+.formatBadge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--bg-muted);
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ── Collapse (FAQ) ──────────────────────────────────────────────────────── */
+
+.collapse {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.collapse:hover {
+    border-color: var(--border-light);
+}
+
+.collapseOpen {
+    border-color: var(--border-active);
+}
+
+.collapseHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s ease;
+}
+
+.collapseHeader:hover {
+    background: var(--hover);
+}
+
+.collapseTitle {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: left;
+}
+
+.collapseHeader svg {
+    color: var(--text-dim);
+    flex-shrink: 0;
+}
+
+.collapseBody {
+    padding: 0 1rem 1rem;
+    animation: collapseIn 0.2s ease;
+}
+
+@keyframes collapseIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── CTA Section ─────────────────────────────────────────────────────────── */
+
+.ctaSection {
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+}
+
+.ctaCard {
+    background: linear-gradient(135deg, var(--blue-subtle), var(--purple-subtle));
+    border: 1px solid var(--border-active);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    text-align: center;
+}
+
+.ctaCard h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.4rem;
+}
+
+.ctaCard p {
+    font-size: 0.84rem;
+    color: var(--text-muted);
+    margin-bottom: 1.25rem;
+}
+
+.ctaActions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.ctaPrimary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: var(--accent-blue);
+    color: #fff;
+    font-size: 0.84rem;
+    font-weight: 600;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.ctaPrimary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.ctaSecondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.84rem;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.ctaSecondary:hover {
+    background: var(--bg-muted);
+    color: var(--text-primary);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+    .layout {
+        flex-direction: column;
+    }
+
+    .toc {
+        position: static;
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 0.75rem;
+    }
+
+    .tocTitle {
+        width: 100%;
+        margin-bottom: 0.2rem;
+    }
+
+    .tocItem {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+
+    .aiModeGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .stepsFlow {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .stepFlowArrow {
+        transform: rotate(90deg);
+        padding: 0;
+        margin: 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .headerContent {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .title {
+        font-size: 1.1rem;
+    }
+
+    .card {
+        padding: 1rem;
+    }
+
+    .tableWrap {
+        font-size: 0.75rem;
+    }
+
+    .table th,
+    .table td {
+        padding: 6px 8px;
+    }
+}

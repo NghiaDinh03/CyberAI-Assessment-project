@@ -1,0 +1,10 @@
+.wrapper { display: flex; align-items: center; gap: 0; margin-bottom: 1.5rem; padding: 1rem 0; }
+.step { display: flex; align-items: center; gap: 6px; position: relative; flex: 1; }
+.icon { display: flex; align-items: center; color: var(--text-muted, #64748b); }
+.done .icon { color: var(--success, #22c55e); }
+.active .icon { color: var(--accent, #3b82f6); }
+.label { font-size: 0.75rem; color: var(--text-muted, #64748b); white-space: nowrap; }
+.done .label { color: var(--success, #22c55e); }
+.active .label { color: var(--accent, #3b82f6); font-weight: 600; }
+.connector { flex: 1; height: 1px; background: var(--border, #2a3a50); margin: 0 4px; }
+.done .connector { background: var(--success, #22c55e); }

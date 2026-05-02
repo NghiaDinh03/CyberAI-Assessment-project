@@ -1,0 +1,297 @@
+/* PromptManager — shared CSS for chat/assessment prompt editor pages */
+
+.wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 1.5rem 3rem;
+    color: var(--text);
+}
+
+.header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg-soft);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: background .15s ease;
+}
+.back:hover { background: var(--bg-elev); }
+
+.title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0 0 4px;
+}
+.desc {
+    font-size: 0.86rem;
+    color: var(--text-muted);
+    margin: 0;
+    max-width: 720px;
+}
+
+.errorBox,
+.loading,
+.empty {
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-size: 0.86rem;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+}
+
+.errorBox {
+    color: #fca5a5;
+    border-color: rgba(248, 113, 113, 0.4);
+    background: rgba(239, 68, 68, 0.10);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 1rem;
+    align-items: stretch;
+    min-height: 60vh;
+}
+
+@media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+}
+
+/* ── Sidebar list ───────────────────────────────────────────── */
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 10px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    overflow-y: auto;
+    max-height: 70vh;
+}
+
+.listItem {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: background .12s ease, border-color .12s ease;
+}
+.listItem:hover { background: var(--bg-elev); }
+
+.listItemActive {
+    background: color-mix(in srgb, var(--accent-blue, #38bdf8) 14%, transparent);
+    border-color: color-mix(in srgb, var(--accent-blue, #38bdf8) 38%, transparent);
+}
+
+.listTitle {
+    font-size: 0.84rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.listMeta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 0.66rem;
+    color: var(--text-muted);
+}
+
+.badgeOverride {
+    background: rgba(168, 85, 247, 0.18);
+    color: #c4b5fd;
+    border: 1px solid rgba(168, 85, 247, 0.45);
+    padding: 1px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    font-weight: 600;
+}
+
+.badgeDefault {
+    background: rgba(148, 163, 184, 0.14);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    padding: 1px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    font-weight: 600;
+}
+
+.listLen {
+    font-variant-numeric: tabular-nums;
+    opacity: 0.8;
+}
+
+/* ── Editor pane ────────────────────────────────────────────── */
+.editor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    min-height: 60vh;
+}
+
+.editorHead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.editorTitle {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 4px;
+}
+
+.editorDesc {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0 0 6px;
+    max-width: 640px;
+}
+
+.placeholderHint {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.ph {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.7rem;
+    background: rgba(56, 189, 248, 0.14);
+    color: #7dd3fc;
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid rgba(125, 211, 252, 0.35);
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.btnPrimary,
+.btnSecondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: opacity .15s ease, background .15s ease;
+}
+
+.btnPrimary {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    color: white;
+    border-color: rgba(14, 165, 233, 0.6);
+}
+.btnPrimary:hover:not(:disabled) { filter: brightness(1.1); }
+
+.btnSecondary {
+    background: var(--bg-elev);
+    color: var(--text);
+    border-color: var(--border);
+}
+.btnSecondary:hover:not(:disabled) { background: var(--bg-soft); }
+
+.btnPrimary:disabled,
+.btnSecondary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.flash {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+}
+
+.flashOk {
+    background: rgba(34, 197, 94, 0.14);
+    color: #86efac;
+    border: 1px solid rgba(74, 222, 128, 0.38);
+}
+
+.flashError {
+    background: rgba(239, 68, 68, 0.12);
+    color: #fca5a5;
+    border: 1px solid rgba(248, 113, 113, 0.4);
+}
+
+.textarea {
+    width: 100%;
+    min-height: 420px;
+    flex: 1;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    resize: vertical;
+    tab-size: 2;
+}
+.textarea:focus {
+    outline: 2px solid color-mix(in srgb, var(--accent-blue, #38bdf8) 60%, transparent);
+    outline-offset: 0;
+}
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.counter { font-variant-numeric: tabular-nums; }
+
+.dirty {
+    color: #fbbf24;
+    font-weight: 600;
+}

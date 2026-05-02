@@ -1,0 +1,14 @@
+services:
+  vane:
+    image: itzcrazykns1337/vane:latest
+    build:
+      context: .
+    ports:
+      - '3001:3000'
+    volumes:
+      - data:/home/vane/data
+    restart: unless-stopped
+
+volumes:
+  data:
+    name: 'vane-data'
