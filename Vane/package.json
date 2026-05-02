@@ -1,8 +1,8 @@
 {
-  "name": "vane",
-  "version": "1.12.2",
+  "name": "cyberai-assessment",
+  "version": "2.0.0",
   "license": "MIT",
-  "author": "ItzCrazyKns",
+  "author": "CyberAI Team",
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
