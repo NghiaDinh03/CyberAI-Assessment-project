@@ -47,8 +47,8 @@ const SetupWizard = ({
                 className="text-4xl md:text-6xl xl:text-8xl font-normal font-['Instrument_Serif'] tracking-tight"
               >
                 Welcome to
-                <span className="text-[#24A0ED] italic font-['PP_Editorial']">
-                  Vane
+                <span className="text-[#4f8ef7] italic font-['Instrument_Serif']">
+                  CyberAI
                 </span>
               </motion.h2>
               <motion.p
@@ -57,8 +57,8 @@ const SetupWizard = ({
                 animate={{ opacity: 1 }}
                 className="text-black/70 dark:text-white/70 text-sm md:text-lg xl:text-2xl mt-2"
               >
-                <span className="font-light">Web search,</span>{' '}
-                <span className="font-light font-['PP_Editorial'] italic">
+                <span className="font-light">Compliance assessment,</span>{' '}
+                <span className="font-light font-['Instrument_Serif'] italic">
                   reimagined
                 </span>
               </motion.p>
@@ -92,8 +92,8 @@ const SetupWizard = ({
                   className="text-2xl md:text-4xl xl:text-6xl font-normal font-['Instrument_Serif'] tracking-tight"
                 >
                   Let us get
-                  <span className="text-[#24A0ED] italic font-['PP_Editorial']">
-                    Vane
+                  <span className="text-[#4f8ef7] italic font-['Instrument_Serif']">
+                    CyberAI
                   </span>{' '}
                   set up for you
                 </motion.p>

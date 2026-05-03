@@ -8,6 +8,7 @@ services:
     ports:
       - '3001:3000'
     environment:
+      - HOSTNAME=0.0.0.0
       - NEXT_PUBLIC_API_URL=http://cyberai-backend:8000
       - API_URL=http://cyberai-backend:8000
       - NODE_ENV=production

@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Vane - Direct Your Curiosity',
-    short_name: 'Vane',
-    description: 'Vane is an AI powered answering engine.',
+    name: 'CyberAI Assessment Platform',
+    short_name: 'CyberAI',
+    description: 'Advanced AI platform for ISO 27001:2022 & TCVN 14423 compliance assessment.',
     start_url: '/',
     display: 'standalone',
     background_color: '#0a0a0a',
