@@ -4191,3 +4191,474 @@
         margin-top: 1.5rem;
     }
 }
+
+/* ── Live System Engine Status Bar ── */
+.systemStatusBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    padding: 8px 16px;
+    border-radius: 10px;
+    margin-bottom: 1.25rem;
+    backdrop-filter: blur(8px);
+}
+
+.systemStatusLeft {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.statusLivePulse {
+    width: 10px;
+    height: 10px;
+    background-color: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: livePulse 2s infinite;
+}
+
+@keyframes livePulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+.statusLiveText {
+    font-size: 0.82rem;
+    color: #e2e8f0;
+}
+
+.statusLiveText strong {
+    color: #34d399;
+    font-weight: 700;
+}
+
+.systemStatusRight {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.statusStatBadge {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.statusStatBadge strong {
+    color: #f1f5f9;
+}
+
+/* ── Modern Stepper Navigation Bar ── */
+.inlineSteps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.inlineStep {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.inlineStep:hover:not(:disabled) {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.inlineStep:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.inlineStepActive {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(30, 41, 59, 0.8) 100%);
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 16px rgba(59, 130, 246, 0.25);
+    opacity: 1 !important;
+}
+
+.inlineStepDone {
+    border-color: rgba(16, 185, 129, 0.4);
+    opacity: 0.9;
+}
+
+.inlineStepNum {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.88rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+.inlineStepActive .inlineStepNum {
+    background: #3b82f6;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+}
+
+.inlineStepDone .inlineStepNum {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.inlineStepTextBox {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.inlineStepLabel {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.inlineStepSub {
+    font-size: 0.72rem;
+    color: #64748b;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.inlineStepActive .inlineStepSub {
+    color: #93c5fd;
+}
+
+/* ── Standard Framework Card Selector ── */
+.standardCardGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.standardCard {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+}
+
+.standardCard:hover {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(59, 130, 246, 0.4);
+    transform: translateY(-2px);
+}
+
+.standardCardActive {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border-color: #3b82f6;
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+}
+
+.stdCardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stdBadge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.stdCtrlCount {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.stdCardTitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.stdCardDesc {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    line-height: 1.45;
+}
+
+.stdSelectedCheck {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #34d399;
+    margin-top: 4px;
+}
+
+/* ── Section Dividers & Headers ── */
+.stepHeaderBox {
+    margin-bottom: 1.25rem;
+}
+
+.sectionSub {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+.formSectionDivider {
+    display: flex;
+    align-items: center;
+    margin: 1.75rem 0 1rem 0;
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.formSectionDivider::before,
+.formSectionDivider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.formSectionDivider span {
+    padding: 0 12px;
+    color: #94a3b8;
+}
+
+/* ── Step 2 Infrastructure Cards ── */
+.infraCardsWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.infraCard {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.infraCardHeader h4 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #93c5fd;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.vpnToggleBox {
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    margin-top: 4px;
+}
+
+/* ── Step 4 Pre-Flight Audit Executive Table ── */
+.execSummaryCard {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 1.5rem;
+}
+
+.execSummaryHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 10px;
+}
+
+.execSummaryHeader h4 {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #f1f5f9;
+}
+
+.execStatusBadge {
+    font-size: 0.76rem;
+    font-weight: 700;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #6ee7b7;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+.execTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.execTable tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.execTable tr:last-child {
+    border-bottom: none;
+}
+
+.execKey {
+    padding: 10px 12px 10px 0;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    width: 240px;
+    font-weight: 600;
+}
+
+.execVal {
+    padding: 10px 0;
+    font-size: 0.84rem;
+    color: #e2e8f0;
+}
+
+.execHighlight {
+    color: #60a5fa;
+    font-weight: 700;
+}
+
+.riskPillCrit {
+    font-size: 0.74rem;
+    font-weight: 700;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-right: 8px;
+}
+
+.riskPillHigh {
+    font-size: 0.74rem;
+    font-weight: 700;
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #fde68a;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-right: 8px;
+}
+
+.riskPillMed {
+    font-size: 0.74rem;
+    font-weight: 700;
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    color: #93c5fd;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+/* ── Step 4 Model Grid ── */
+.modelGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+    margin-top: 10px;
+}
+
+.modelOptionCard {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.modelOptionCard:hover {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.modelOptionActive {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border-color: #3b82f6;
+    box-shadow: 0 0 16px rgba(59, 130, 246, 0.2);
+}
+
+.modelOptionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modelOptionHeader strong {
+    font-size: 0.88rem;
+    color: #f1f5f9;
+}
+
+.modelBadge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.modelOptionCard p {
+    font-size: 0.76rem;
+    color: #94a3b8;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.modelSelectedTag {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #34d399;
+    margin-top: 4px;
+}
