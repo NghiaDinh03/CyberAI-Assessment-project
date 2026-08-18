@@ -6,8 +6,8 @@ import remarkGfm from 'remark-gfm'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import styles from './page.module.css'
-import { ASSESSMENT_STANDARDS, calcWeightedScore, calcCategoryBreakdown, WEIGHT_SCORE, mergeCustomStandard } from '../../data/standards'
-import { useControlDescriptions, useAssessmentTemplates } from '../../data'
+import { calcWeightedScore, calcCategoryBreakdown, WEIGHT_SCORE, mergeCustomStandard } from '../../data/standards'
+import { useControlDescriptions, useAssessmentTemplates, useAssessmentStandards } from '../../data'
 import StepProgress from '@/components/StepProgress'
 import { useTranslation } from '@/components/LanguageProvider'
 import { Shield, ChevronRight, ChevronLeft } from 'lucide-react'
@@ -46,36 +46,51 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
 
-function SvgGauge({ percent, size = 110, color = 'var(--accent-blue)' }) {
+function SvgGauge({ percent, size = 110, color = 'var(--accent-blue)', locale = 'vi' }) {
     const r = (size - 14) / 2
     const circ = 2 * Math.PI * r
-    const dash = (Math.min(Math.max(percent, 0), 100) / 100) * circ
+    const strokeDashoffset = circ - (percent / 100) * circ
     return (
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }} role="img" aria-label={`${percent}% compliance score`}>
-            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth="7" />
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
             <circle
-                cx={size / 2} cy={size / 2} r={r}
-                fill="none" stroke={color} strokeWidth="7"
-                strokeDasharray={`${dash} ${circ}`}
+                cx={size / 2} cy={size / 2} r={r} fill="none"
+                stroke={color} strokeWidth="8"
+                strokeDasharray={circ}
+                strokeDashoffset={strokeDashoffset}
                 strokeLinecap="round"
-                style={{ transition: 'stroke-dasharray 0.6s ease' }}
+                transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                style={{ transition: 'stroke-dashoffset 0.8s ease' }}
             />
+            <text x="50%" y="46%" dominantBaseline="central" textAnchor="middle" fill="#fff" fontSize="18" fontWeight="800">
+                {percent}%
+            </text>
+            <text x="50%" y="64%" dominantBaseline="central" textAnchor="middle" fill="var(--text-muted)" fontSize="9" fontWeight="600">
+                {locale === 'vi' ? 'TUÂN THỦ' : 'COMPLIANCE'}
+            </text>
         </svg>
     )
 }
 
-const FORM_DRAFT_KEY = 'iso_form_draft_v2'
+
+const FORM_DRAFT_KEY = 'form-iso-draft'
 
 const EMPTY_FORM = {
+    org_name: '',
+    org_size: 'medium',
+    industry: '',
+    iso_status: 'planning',
+    servers: 1,
+    cloud_provider: '',
+    firewalls: '',
+    antivirus: '',
+    backup_solution: '',
+    siem: '',
+    incidents_12m: 0,
+    vpn: false,
     assessment_standard: 'iso27001',
-    org_name: '', org_size: '', industry: '',
-    employees: 0, it_staff: 0,
-    servers: 0, firewalls: '', vpn: false,
-    cloud_provider: '', antivirus: '', backup_solution: '',
-    siem: '', network_diagram: '',
     implemented_controls: [],
-    incidents_12m: 0, iso_status: '', notes: '',
-    model_mode: 'hybrid',
+    notes: '',
     assessment_scope: 'full',
     scope_description: ''
 }
@@ -85,6 +100,7 @@ export default function FormISOPage() {
     const { t, locale } = useTranslation()
     const CONTROL_DESCRIPTIONS = useControlDescriptions()
     const ASSESSMENT_TEMPLATES = useAssessmentTemplates()
+    const availableStandards = useAssessmentStandards()
     const [step, setStep] = useState(1)
     const [form, setForm] = useState(EMPTY_FORM)
     // result: { id, status, report, model_used, json_data, progress, compliance_percent, standard, org_name, error }
@@ -95,7 +111,6 @@ export default function FormISOPage() {
     const [expandedCategory, setExpandedCategory] = useState(null)
     const [activeTooltip, setActiveTooltip] = useState(null)
     const [customDescriptions, setCustomDescriptions] = useState({})
-    const [availableStandards, setAvailableStandards] = useState(ASSESSMENT_STANDARDS)
     const [standardsLoading, setStandardsLoading] = useState(false)
     const [evidenceMap, setEvidenceMap] = useState({})
     const [evidenceUploading, setEvidenceUploading] = useState(null)
@@ -321,7 +336,6 @@ export default function FormISOPage() {
                             console.warn(`Failed to load custom standard ${std.id}:`, e)
                         }
                     }
-                    setAvailableStandards([...ASSESSMENT_STANDARDS])
                 }
             } catch (e) {
                 console.warn('Failed to fetch custom standards:', e)
@@ -329,6 +343,7 @@ export default function FormISOPage() {
                 setStandardsLoading(false)
             }
         }
+
         fetchCustomStandards()
     }, [])
 
