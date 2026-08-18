@@ -34,7 +34,7 @@ Dự án hỗ trợ chạy hoàn toàn cục bộ (**100% Offline / On-Premise**
 | 2 | [✨ Tổng quan tính năng](#2--tổng-quan-tính-năng) | 3 tính năng cốt lõi và các phân hệ hỗ trợ |
 | 3 | [🏗️ Kiến trúc hệ thống](#3-️-kiến-trúc-hệ-thống) | Sơ đồ Docker network & Luồng xử lý dữ liệu |
 | 4 | [🧠 Thuật toán & Mô hình Nghiên cứu](#4--thuật-toán--mô-hình-nghiên-cứu) | 4 thuật toán cốt lõi cho Đồ án nghiên cứu |
-| 5 | [📊 Dữ liệu Thực nghiệm (EVNTPC)](#5--dữ-liệu-thực-nghiệm-evntpc) | Nghiên cứu điển hình trên hạ tầng thực tế |
+| 5 | [📊 Đánh Giá Thực Nghiệm (Enterprise Benchmark)](#5--đánh-giá-thực-nghiệm-trên-hạ-tầng-doanh-nghiệp-enterprise-benchmark) | Nghiên cứu điển hình trên hạ tầng thực nghiệm |
 | 6 | [⚙️ Biến môi trường](#6-️-biến-môi-trường) | Cấu hình `.env` đầy đủ |
 | 7 | [📚 Tài liệu](#7--tài-liệu) | Liên kết đến tài liệu chi tiết |
 | 8 | [📄 Giấy phép](#-giấy-phép) | MIT License |
@@ -164,11 +164,11 @@ Dự án CyberAI được xây dựng dựa trên 4 thuật toán và mô hình 
 
 ---
 
-## 5. 📊 Dữ liệu Thực nghiệm (EVNTPC Case Study)
+## 5. 📊 Đánh Giá Thực Nghiệm Trên Hạ Tầng Doanh Nghiệp (Enterprise Benchmark)
 
-Nền tảng được kiểm thử và xác thực thực nghiệm dựa trên gói dữ liệu kiểm toán hệ thống thông tin thực tế **EVNTPC - Nhà máy Nhiệt điện Thủ Đức (`4.Q2_2026_LẦN4`)**:
-- **Dữ liệu đầu vào thực tế:** 9 tệp log quét máy chủ (`10.140.0.11.txt` - Domain Controller DC01, `10.140.0.5.txt` - Server ứng dụng SRV05,...) chứa thông tin hệ điều hành Windows Server 2016, 43 bản vá Hotfix, cấu hình tường lửa và phần mềm bảo vệ điểm cuối Kaspersky.
-- **Báo cáo chuẩn đầu ra:** Tự động sinh báo cáo kiểm toán lỗ hổng tương đương mẫu báo cáo kiểm toán thực tế `PRJ_EVNTPC_BAO CAO_VA_DOT4_2026.docx`, đưa ra danh mục GAP và kế hoạch hành động khắc phục cụ thể cho từng địa chỉ IP.
+Nền tảng được kiểm thử và xác thực thực nghiệm dựa trên bộ dữ liệu kiểm toán hệ thống thông tin quy mô doanh nghiệp (**Enterprise Infrastructure Benchmark**):
+- **Dữ liệu cấu hình thực tế:** Bộ nhật ký quét máy chủ gồm Domain Controller, Server ứng dụng nghiệp vụ, cấu hình hệ điều hành Windows Server, lịch sử cập nhật Hotfix, chính sách tường lửa nội bộ và phần mềm bảo vệ điểm cuối (EDR/Antivirus).
+- **Chuẩn hóa báo cáo đầu ra:** Tự động tổng hợp dữ liệu kỹ thuật thành báo cáo kiểm toán tuân thủ chính thức, phân loại danh mục GAP, rủi ro an ninh và kế hoạch khắc phục có cấu trúc cho từng phân vùng mạng.
 
 ---
 
@@ -183,13 +183,6 @@ Các biến chính từ [`.env.example`](.env.example):
 |------|----------|--------|
 | `OLLAMA_URL` | `http://cyberai-ollama:11434` | Endpoint Ollama nội bộ |
 | `OLLAMA_MODEL` | `gemma4:latest` | Mô hình suy luận cục bộ chính (9.6GB) |
-| `LOCAL_NUM_THREADS` | `12` | Số luồng CPU ưu tiên suy luận |
-| `PREFER_LOCAL` | `true` | Ưu tiên suy luận cục bộ (100% Offline) |
-
-</details>
-
-<details>
-<summary>☁️ <strong>Cấu hình Cloud AI Gateway</strong></summary>
 
 | Biến | Mặc định | Mô tả |
 |------|----------|--------|
@@ -224,7 +217,7 @@ Các biến chính từ [`.env.example`](.env.example):
 | [📋 Form đánh giá ISO](docs/vi/iso_assessment_form.md) | Wizard đánh giá, pipeline 4 bước, chấm điểm |
 | [🧮 Thuật toán](docs/vi/algorithms.md) | Thuật toán chấm điểm, mapping bằng chứng, tối ưu token |
 | [📈 Benchmark](docs/vi/benchmark.md) | Benchmark hiệu năng và so sánh model |
-| [📝 Case Studies](docs/vi/case_studies.md) | Dữ liệu thực tế EVNTPC và phân tích kết quả |
+| [📝 Case Studies](docs/vi/case_studies.md) | Nghiên cứu điển hình kiểm toán hạ tầng doanh nghiệp |
 
 ### 🇬🇧 Tài liệu tiếng Anh
 | Tài liệu | Mô tả |
@@ -236,7 +229,8 @@ Các biến chính từ [`.env.example`](.env.example):
 | [ISO Assessment Form](docs/en/iso_assessment_form.md) | Assessment wizard, 4-step pipeline, scoring |
 | [Algorithms](docs/en/algorithms.md) | Scoring algorithms, evidence mapping, token optimizer |
 | [Benchmark](docs/en/benchmark.md) | Performance benchmarks and model comparisons |
-| [Case Studies](docs/en/case_studies.md) | EVNTPC real-world assessment case study |
+| [Case Studies](docs/en/case_studies.md) | Enterprise infrastructure assessment case study |
+
 
 ---
 

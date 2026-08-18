@@ -301,16 +301,17 @@ Viettel is unique in Vietnam as a military-owned enterprise operating commercial
 | **BKAV Corporation** | Anti-malware development; ISO 27001 | Vietnam's first antivirus company; provides endpoint protection to government agencies; operates BKAV Threat Intelligence |
 | **SecurityBox (now Cyradar)** | Threat intelligence platform | AI-powered threat detection; serves government and enterprise clients |
 
-### 5.5 Empirical Case Study: EVNTPC — Critical Energy Infrastructure Assessment (`4.Q2_2026_LẦN4`)
+### 5.5 Empirical Case Study: Critical Energy & Enterprise Server Infrastructure Assessment
 
 | Attribute | Empirical Specification |
 |---|---|
-| **Organization** | Thu Duc Thermal Power Plant — EVNGENCO 3 (EVNTPC) |
-| **Applied Framework** | ISO/IEC 27001:2022 & TCVN 11930:2017 (Level 3 for National Critical Energy Infrastructure) |
-| **Scope** | Enterprise core segment `10.140.0.0/24`, Primary Domain Controller `DC01` (`10.140.0.11`), Application Servers `TDUCPPSRV03..08`, Core Firewall and SCADA gateway |
-| **Empirical Source** | Audit bundle `.AI_CONTEXT/4.Q2_2026_LẦN4` (9 raw PowerShell scan logs and formal `.docx` report deliverable) |
-| **Baseline Findings** | • OS: Windows Server 2016 Standard Build 14393<br>• Patching: 33–43 Hotfixes installed, significant patch backlog from KB5065687 onward<br>• Defense: Kaspersky Endpoint Security v11.16/v12.4, Network Agent v15<br>• Firewall: `netsh advfirewall` exposing WMI, File & Printer Sharing, and Remote Administration |
-| **CyberAI Analytics Outcome** | • Automated mapping to Control A.8.8 (Vulnerability Management), A.8.7 (Malware Protection), A.8.20 (Network Security)<br>• High-severity alert: Privilege escalation risk on Domain Controller DC01 due to unpatched cumulative update cycle<br>• Synthesized formal audit deliverable matching `PRJ_EVNTPC_BAO CAO_VA_DOT4_2026.docx` with prioritized P0 remediation plan |
+| **Sector** | National Critical Energy & Industrial Manufacturing Infrastructure |
+| **Applied Framework** | ISO/IEC 27001:2022 & TCVN 11930:2017 (Level 3 for Critical Information Infrastructure) |
+| **Scope** | Enterprise server core segment, Primary Domain Controller, Application Server cluster, Core Firewall and SCADA monitoring nodes |
+| **Empirical Source** | Experimental server configuration dumps including PowerShell `systeminfo`, `Get-Hotfix`, `netsh advfirewall` and centralized EDR policies |
+| **Baseline Findings** | • OS: Windows Server 2016 Standard Build 14393<br>• Patching: Cumulative base patches installed, security patch backlog observed<br>• Defense: Centralized EDR/Antivirus endpoint protection and Network Agent monitoring<br>• Firewall: Local host firewall policies configured for remote management and administrative shares |
+| **CyberAI Analytics Outcome** | • Automated mapping to Control A.8.8 (Vulnerability Management), A.8.7 (Malware Protection), A.8.20 (Network Security)<br>• High-severity alert: Privilege escalation risk on Domain Controller DC01 due to unpatched update cycles<br>• Synthesized structured formal compliance gap analysis and prioritized P0/P1/P2 action plan |
+
 
 ---
 

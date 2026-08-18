@@ -18,8 +18,13 @@ gcp-key*.json
 *.pfx
 *.p12
 
+# ====== AI Agent Context & Local Memory (CRITICAL: NEVER PUSH TO GIT) ======
+.AI_CONTEXT/
+.AI_CONTEXT/*
+agent_memory/
+agent_memory/*
+
 # ====== Sensitive Enterprise Audit Data ======
-.AI_CONTEXT/4.Q2_2026_LẦN4/
 *.docx
 !docs/**/*.docx
 

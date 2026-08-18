@@ -34,7 +34,7 @@ The platform supports **100% Offline / On-Premise** execution via Ollama (`gemma
 | 2 | [✨ Key Features](#2--key-features) | 3 Core Pillars and Supporting Subsystems |
 | 3 | [🏗️ System Architecture](#3-️-system-architecture) | Docker Network Topology & Inference Fallback |
 | 4 | [🧠 Research & Core Algorithms](#4--research--core-algorithms) | 4 Key Algorithms for Academic Theses |
-| 5 | [📊 Empirical Evaluation (EVNTPC)](#5--empirical-evaluation-evntpc-case-study) | Real-world Power Plant Assessment |
+| 5 | [📊 Empirical Evaluation (Enterprise Benchmark)](#6--empirical-evaluation-enterprise-benchmark) | Enterprise Infrastructure Assessment |
 | 6 | [⚙️ Environment Variables](#6-️-environment-variables) | `.env` Reference |
 | 7 | [📚 Documentation](#7--documentation) | Links to Full Technical Guides |
 | 8 | [📄 License](#-license) | MIT License |
@@ -157,11 +157,11 @@ CyberAI is engineered with 4 core mathematical and algorithmic mechanisms suitab
 
 ---
 
-## 6. 📊 Empirical Evaluation (EVNTPC Case Study)
+## 6. 📊 Empirical Evaluation (Enterprise Benchmark)
 
-The platform is evaluated using real-world empirical audit data from **EVNTPC - Thu Duc Thermal Power Plant (`4.Q2_2026_LẦN4`)**:
-- **Empirical Input:** 9 server scan logs (`10.140.0.11.txt` - DC01 Domain Controller, `10.140.0.5.txt` - Application Server SRV05,...) containing Windows Server 2016 system configurations, 43 Hotfix patches, firewall policies, and Kaspersky endpoint state.
-- **Formal Output:** Automatically produces professional audit gap reports matching formal enterprise deliverables (`PRJ_EVNTPC_BAO CAO_VA_DOT4_2026.docx`), outputting host-specific remediation actions.
+The platform is evaluated using enterprise-grade infrastructure audit benchmarks:
+- **Empirical Configuration Data:** Host configuration scan logs from Primary Domain Controllers and application servers containing Windows Server environment metrics, cumulative Hotfix patch states, internal firewall rule bases, and endpoint defense (EDR/Antivirus) configurations.
+- **Standardized Formal Output:** Automatically synthesizes unstructured technical dumps into formal compliance gap deliverables, categorizing risks and prioritizing actionable P0/P1/P2 remediation steps.
 
 ---
 
@@ -192,12 +192,13 @@ Key variables from [`.env.example`](.env.example):
 | [ISO Assessment Form (EN)](docs/en/iso_assessment_form.md) / [ISO Assessment Form (VI)](docs/vi/iso_assessment_form.md) | 4-step assessment wizard and scoring logic |
 | [Algorithms (EN)](docs/en/algorithms.md) / [Algorithms (VI)](docs/vi/algorithms.md) | Detailed algorithmic and mathematical formulation |
 | [Benchmark (EN)](docs/en/benchmark.md) / [Benchmark (VI)](docs/vi/benchmark.md) | Performance metrics and model evaluation |
-| [Case Studies (EN)](docs/en/case_studies.md) / [Case Studies (VI)](docs/vi/case_studies.md) | EVNTPC real-world empirical audit case study |
+| [Case Studies (EN)](docs/en/case_studies.md) / [Case Studies (VI)](docs/vi/case_studies.md) | Enterprise infrastructure assessment case study |
 
 ---
 
 ## 📄 License
 
 MIT — see [LICENSE](LICENSE) for details.
+
 
 

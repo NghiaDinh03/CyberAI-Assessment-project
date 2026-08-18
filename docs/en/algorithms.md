@@ -822,7 +822,8 @@ Each phase has **3 retry attempts** with JSON validation between attempts.
 Source: [`backend/services/evidence_mapper.py`](../../backend/services/evidence_mapper.py)
 
 ### 8.1 Problem Statement
-In real-world IT audits, technical dump files (such as host configuration scans `10.140.0.11.txt`) simultaneously contain proof for multiple security controls (e.g. Hotfix list maps to A.8.8, Kaspersky EDR maps to A.8.7, Firewall rules map to A.8.20). The algorithm automatically maps unstructured log text to multi-target compliance controls with confidence index $C \in [0.0, 1.0]$.
+In real-world IT audits, technical dump files (such as host configuration scans `server_dc01_config.txt`) simultaneously contain proof for multiple security controls (e.g. Hotfix list maps to A.8.8, Endpoint EDR maps to A.8.7, Firewall rules map to A.8.20). The algorithm automatically maps unstructured log text to multi-target compliance controls with confidence index $C \in [0.0, 1.0]$.
+
 
 ### 8.2 Hybrid Multi-Label Scoring Formula
 For each evidence artifact $E$ and compliance control $C_i$:

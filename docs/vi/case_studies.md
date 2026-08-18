@@ -504,16 +504,17 @@ Viettel là trường hợp đặc biệt tại Việt Nam — doanh nghiệp qu
 
 **Nguồn:** Website và thông cáo báo chí các công ty; Danh bạ công nhận CREST; Danh bạ thành viên Hiệp hội An toàn thông tin Việt Nam (VNISA).
 
-### 5.5 Tình huống Thực nghiệm: EVNTPC — Đánh giá Lỗ hổng Hạ tầng Năng lượng Trọng yếu (`4.Q2_2026_LẦN4`)
+### 5.5 Tình huống Thực nghiệm: Đánh giá Lỗ hổng Hạ tầng Năng lượng & Máy chủ Doanh nghiệp
 
 | Thuộc tính | Chi tiết Thực nghiệm |
 |-----------|----------------------|
-| **Tổ chức** | Công ty Nhiệt điện Thủ Đức — Tổng Công ty Phát điện 3 (EVNTPC) |
-| **Tiêu chuẩn áp dụng** | ISO/IEC 27001:2022 & TCVN 11930:2017 (Cấp độ 3 cho Hạ tầng Năng lượng Quốc gia) |
-| **Phạm vi đánh giá** | Hệ thống mạng lõi `10.140.0.0/24`, Domain Controller `DC01` (`10.140.0.11`), Server ứng dụng `TDUCPPSRV03..08`, Firewall Core và trạm SCADA |
-| **Nguồn dữ liệu thực tế** | Gói dữ liệu kiểm toán `.AI_CONTEXT/4.Q2_2026_LẦN4` (9 tệp scan log PowerShell và báo cáo `.docx` thực tế) |
-| **Hiện trạng kỹ thuật** | • HĐH: Windows Server 2016 Standard Build 14393<br>• Bản vá: Đã cài 33–43 Hotfixes, tồn đọng thiếu bản vá từ KB5065687 trở đi<br>• Phòng thủ: Kaspersky Endpoint Security v11.16/v12.4, Network Agent v15<br>• Tường lửa: Cấu hình `netsh advfirewall` mở cổng WMI, File & Printer Sharing và Remote Admin |
-| **Kết quả CyberAI phân tích** | • Tự động ánh xạ log sang Control A.8.8 (Quản lý lỗ hổng), A.8.7 (Chống mã độc), A.8.20 (Bảo mật mạng)<br>• Phát hiện rủi ro Critical: Nguy cơ leo thang đặc quyền do chậm cập nhật Hotfix trên Primary Domain Controller<br>• Tự động sinh Báo cáo GAP và Kế hoạch hành động P0 (Vá khẩn cấp trong 14 ngày) khớp mẫu báo cáo thực tế `PRJ_EVNTPC_BAO CAO_VA_DOT4_2026.docx` |
+| **Lĩnh vực tổ chức** | Doanh nghiệp Hạ tầng Năng lượng & Sản xuất Công nghiệp Trọng yếu |
+| **Tiêu chuẩn áp dụng** | ISO/IEC 27001:2022 & TCVN 11930:2017 (Cấp độ 3 cho Hạ tầng Trọng yếu) |
+| **Phạm vi đánh giá** | Phân vùng mạng lõi máy chủ, Primary Domain Controller, Máy chủ ứng dụng nghiệp vụ, Firewall Core và trạm giám sát OT/SCADA |
+| **Nguồn dữ liệu kiểm thử** | Bộ nhật ký cấu hình thực nghiệm gồm log quét PowerShell `systeminfo`, `Get-Hotfix`, `netsh advfirewall` và chính sách EDR |
+| **Hiện trạng kỹ thuật** | • HĐH: Windows Server 2016 Standard Build 14393<br>• Bản vá: Đã cài đặt tích lũy các bản vá nền tảng, tồn đọng thiếu bản vá bảo mật định kỳ<br>• Phòng thủ: Giải pháp bảo vệ điểm cuối EDR/Antivirus tập trung, Network Agent giám sát<br>• Tường lửa: Cấu hình tường lửa cục bộ cho phép các luồng quản trị từ xa và chia sẻ tệp |
+| **Kết quả CyberAI phân tích** | • Tự động ánh xạ log sang Control A.8.8 (Quản lý lỗ hổng), A.8.7 (Chống mã độc), A.8.20 (Bảo mật mạng)<br>• Phát hiện cảnh báo Critical: Nguy cơ leo thang đặc quyền do tồn đọng chu kỳ vá lỗi trên Domain Controller<br>• Tự động sinh Báo cáo GAP và Kế hoạch hành động P0 (Vá khẩn cấp trong 14 ngày) với độ chính xác cao |
+
 
 ---
 

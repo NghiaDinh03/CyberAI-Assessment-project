@@ -851,7 +851,8 @@ Mỗi giai đoạn có **3 lần thử lại** với kiểm tra JSON hợp lệ 
 Nguồn: [`backend/services/evidence_mapper.py`](../../backend/services/evidence_mapper.py)
 
 ### 8.1 Bài toán Khoa học
-Trong kiểm toán ATTT thực tế, một tệp nhật ký quét cấu hình máy chủ (ví dụ `10.140.0.11.txt` của EVNTPC) không bao giờ chỉ ứng với 1 biện pháp kiểm soát đơn lẻ, mà chứa dữ liệu minh chứng đồng thời cho nhiều biện pháp (Hotfix liên quan A.8.8, Kaspersky liên quan A.8.7, Netsh Firewall liên quan A.8.20). Thuật toán cần tự động trích xuất và gán nhãn đa tầng với điểm tin cậy $C \in [0.0, 1.0]$.
+Trong kiểm toán ATTT thực tế, một tệp nhật ký quét cấu hình máy chủ (ví dụ `server_dc01_config.txt`) không bao giờ chỉ ứng với 1 biện pháp kiểm soát đơn lẻ, mà chứa dữ liệu minh chứng đồng thời cho nhiều biện pháp (Hotfix liên quan A.8.8, Endpoint EDR liên quan A.8.7, Netsh Firewall liên quan A.8.20). Thuật toán cần tự động trích xuất và gán nhãn đa tầng với điểm tin cậy $C \in [0.0, 1.0]$.
+
 
 ### 8.2 Công thức Ánh xạ Lai (Hybrid Multi-Label Scoring)
 Với mỗi tệp bằng chứng $E$ và biện pháp kiểm soát $C_i$:
