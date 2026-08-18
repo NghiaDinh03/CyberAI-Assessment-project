@@ -1,6 +1,7 @@
 import re as _re_val
-from fastapi import APIRouter, BackgroundTasks, UploadFile, File, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, UploadFile, File, HTTPException, Query, Header, Request
 from fastapi.responses import FileResponse
+
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 from services.chat_service import ChatService
