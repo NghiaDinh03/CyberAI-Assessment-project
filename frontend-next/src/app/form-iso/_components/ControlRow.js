@@ -6,11 +6,9 @@ import { useTranslation } from '@/components/LanguageProvider'
 import { CONTROL_DESCRIPTIONS as VI_DESCRIPTIONS } from '@/data/controlDescriptions.vi'
 import { CONTROL_DESCRIPTIONS_EN as EN_DESCRIPTIONS } from '@/data/controlDescriptions.en'
 
-
-
 /**
- * Compact one-line row representing a single control inside the center list.
- * Includes Smart Audit Guide popover with requirements, evidence hints, and audit pitfalls.
+ * Full-width enterprise control row.
+ * Displays full unabbreviated control name, weight tag, requirement snippet, evidence action button, and audit guide.
  */
 export default function ControlRow({
     control,
@@ -27,15 +25,20 @@ export default function ControlRow({
     const [showAuditGuide, setShowAuditGuide] = useState(false)
     const hintTimerRef = useRef(null)
     const popoverRef = useRef(null)
+    const infoBtnRef = useRef(null)
 
     useEffect(() => () => {
         if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
     }, [])
 
-    // Close popover when clicking outside
     useEffect(() => {
         const handleClickOutside = (e) => {
-            if (popoverRef.current && !popoverRef.current.contains(e.target)) {
+            if (
+                popoverRef.current && 
+                !popoverRef.current.contains(e.target) &&
+                infoBtnRef.current && 
+                !infoBtnRef.current.contains(e.target)
+            ) {
                 setShowAuditGuide(false)
             }
         }
@@ -47,7 +50,8 @@ export default function ControlRow({
         }
     }, [showAuditGuide])
 
-    const handleToggle = () => {
+    const handleToggle = (e) => {
+        e.stopPropagation()
         if (!implemented && evidenceCount < 1) {
             setShowHint(true)
             if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
@@ -58,9 +62,6 @@ export default function ControlRow({
         onToggleImplemented?.(control.id)
     }
 
-    const verdictKey = verdict || 'neutral'
-    const verdictLabel = t(`assessment.verdict.${verdictKey}`)
-
     const descriptions = locale === 'vi' ? VI_DESCRIPTIONS : EN_DESCRIPTIONS
     const meta = descriptions[control.id] || {}
 
@@ -68,64 +69,70 @@ export default function ControlRow({
         <div
             className={`${styles.row} ${implemented ? styles.rowOn : ''}`}
             data-control-id={control.id}
+            onClick={() => onOpenDrawer?.(control.id)}
         >
-            <label className={styles.toggle}>
+            <div className={styles.toggleWrap} onClick={(e) => e.stopPropagation()}>
                 <input
                     type="checkbox"
                     checked={implemented}
                     onChange={handleToggle}
                     aria-label={t('assessment.markImplemented')}
+                    className={styles.checkbox}
                 />
-            </label>
+            </div>
 
             <div className={styles.body}>
-                <div className={styles.idRow}>
+                <div className={styles.headerLine}>
                     <span className={styles.id}>{control.id}</span>
                     {control.weight && (
                         <span className={`${styles.weight} ${styles[`w_${control.weight}`] || ''}`}>
                             {control.weight}
                         </span>
                     )}
-                    <button
-                        type="button"
-                        className={styles.infoBtn}
-                        onClick={() => setShowAuditGuide(!showAuditGuide)}
-                        title={locale === 'vi' ? 'Xem hướng dẫn kiểm toán & bằng chứng' : 'View audit guidance & evidence hints'}
-                        aria-label="Audit Guide"
-                    >
-                        ⓘ
-                    </button>
+                    <span className={styles.label}>{control.label}</span>
                 </div>
-                <div className={styles.label}>{control.label}</div>
+                {meta.requirement && (
+                    <div className={styles.requirementSnippet}>
+                        {meta.requirement}
+                    </div>
+                )}
             </div>
 
-            <div className={styles.meta}>
-                <span
-                    className={styles.evidence}
-                    title={`${evidenceCount} ${t('assessment.filesUploaded')}`}
-                >
-                    📎 {evidenceCount}
-                </span>
-                <span
-                    className={`${styles.verdict} ${styles[`v_${verdictKey}`] || ''}`}
-                    title={verdictLabel}
-                >
-                    {verdictLabel}
-                </span>
+            <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
                 <button
                     type="button"
-                    className={styles.expand}
+                    className={`${styles.evidenceBtn} ${evidenceCount > 0 ? styles.evidenceBtnActive : ''}`}
                     onClick={() => onOpenDrawer?.(control.id)}
-                    aria-label={t('formIso.expandControl')}
-                    title={t('formIso.expandControl')}
+                    title={locale === 'vi' ? 'Quản lý tệp bằng chứng' : 'Manage evidence files'}
                 >
-                    ›
+                    📎 {evidenceCount > 0 ? `${evidenceCount} ${locale === 'vi' ? 'tệp' : 'files'}` : (locale === 'vi' ? 'Đính kèm' : 'Attach')}
                 </button>
+
+                <button
+                    type="button"
+                    ref={infoBtnRef}
+                    className={`${styles.infoBtn} ${showAuditGuide ? styles.infoBtnActive : ''}`}
+                    onClick={() => setShowAuditGuide(!showAuditGuide)}
+                    title={locale === 'vi' ? 'Xem hướng dẫn kiểm toán & lỗi thường gặp' : 'View audit guidance & pitfalls'}
+                >
+                    ⓘ {locale === 'vi' ? 'Hướng dẫn' : 'Guide'}
+                </button>
+
+                {verdict && (
+                    <span className={`${styles.verdict} ${styles[`v_${verdict}`] || ''}`}>
+                        {t(`assessment.verdict.${verdict}`)}
+                    </span>
+                )}
             </div>
 
             {/* Smart Audit Guide Popover */}
             {showAuditGuide && (
-                <div className={styles.guidePopover} ref={popoverRef}>
+                <div 
+                    className={styles.guidePopover} 
+                    ref={popoverRef}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className={styles.popoverArrow} />
                     <div className={styles.guideHeader}>
                         <div className={styles.guideTitle}>
                             <span>🛡️ {control.id}</span> — {control.label}
@@ -165,11 +172,12 @@ export default function ControlRow({
             )}
 
             {showHint && (
-                <div className={styles.gateHint} role="status" aria-live="polite">
+                <div className={styles.gateHint} role="status" aria-live="polite" onClick={(e) => e.stopPropagation()}>
                     {t('formIso.evidenceRequiredHint')}
                 </div>
             )}
         </div>
     )
 }
+
 

@@ -116,9 +116,14 @@ export default function FormISOPage() {
     const [tplFilter, setTplFilter] = useState('all')
     const [showTplInfo, setShowTplInfo] = useState(false)
 
+    // ── Search & Filter State for Controls (UX Overhaul) ──
+    const [controlSearch, setControlSearch] = useState('')
+    const [filterTag, setFilterTag] = useState('all')
+
     // Stable ref for polling — avoids stale closure bugs
     const pollingRef = useRef(null)
     const pollingIdRef = useRef(null)
+
 
     const uploadEvidence = async (controlId, files) => {
         if (!files || files.length === 0) return
@@ -346,6 +351,33 @@ export default function FormISOPage() {
     }, [result?.implemented_controls, result?.standard, form.assessment_standard, availableStandards, currentStandard])
 
     const compliancePercent = weightedScore.percent
+
+    const allControls = useMemo(() => {
+        return (currentStandard?.controls || []).flatMap(c => c.controls || [])
+    }, [currentStandard])
+
+    const riskStats = useMemo(() => {
+        const stats = {
+            critical: { total: 0, done: 0 },
+            high: { total: 0, done: 0 },
+            medium: { total: 0, done: 0 },
+            low: { total: 0, done: 0 },
+            missingEvidence: 0,
+            implementedTotal: form.implemented_controls.length
+        }
+
+        allControls.forEach(ctrl => {
+            const w = ctrl.weight || 'medium'
+            if (stats[w]) stats[w].total += 1
+            const isDone = form.implemented_controls.includes(ctrl.id)
+            if (isDone && stats[w]) stats[w].done += 1
+            const evCount = (evidenceMap[ctrl.id] || []).length
+            if (evCount === 0) stats.missingEvidence += 1
+        })
+
+        return stats
+    }, [allControls, form.implemented_controls, evidenceMap])
+
 
     const applyTemplateData = (parsed, keepModelMode = false, currentModelMode = 'hybrid') => {
         return {
@@ -912,6 +944,26 @@ export default function FormISOPage() {
                             <span className={styles.complianceLabel}>{t('assessment.controlsCompliancePct', { percent: compliancePercent })}</span>
                         </div>
 
+                        {/* ── Risk Breakdown Summary Badges ── */}
+                        <div className={styles.riskBadgeRow}>
+                            <div className={`${styles.riskBadge} ${styles.riskBadgeCrit}`}>
+                                <span className={styles.riskDot}></span>
+                                <strong>Critical:</strong> {riskStats.critical.done}/{riskStats.critical.total} {locale === 'vi' ? 'Đạt' : 'Passed'}
+                            </div>
+                            <div className={`${styles.riskBadge} ${styles.riskBadgeHigh}`}>
+                                <span className={styles.riskDot}></span>
+                                <strong>High:</strong> {riskStats.high.done}/{riskStats.high.total} {locale === 'vi' ? 'Đạt' : 'Passed'}
+                            </div>
+                            <div className={`${styles.riskBadge} ${styles.riskBadgeMed}`}>
+                                <span className={styles.riskDot}></span>
+                                <strong>Medium:</strong> {riskStats.medium.done}/{riskStats.medium.total} {locale === 'vi' ? 'Đạt' : 'Passed'}
+                            </div>
+                            <div className={`${styles.riskBadge} ${styles.riskBadgeEvidence}`}>
+                                <span>📎</span>
+                                <strong>{locale === 'vi' ? 'Chưa có tệp:' : 'No Files:'}</strong> {riskStats.missingEvidence}
+                            </div>
+                        </div>
+
                         {/* ── Batch Evidence & Scan Log Ingest Banner ── */}
                         <div className={styles.batchIngestCard}>
                             <div className={styles.batchIngestHeader}>
@@ -974,20 +1026,106 @@ export default function FormISOPage() {
                             )}
                         </div>
 
+                        {/* ── Smart Search & Filter Toolbar ── */}
+                        <div className={styles.controlToolbar}>
+                            <div className={styles.searchWrap}>
+                                <span className={styles.searchIcon}>🔍</span>
+                                <input
+                                    type="text"
+                                    className={styles.searchInput}
+                                    placeholder={locale === 'vi' ? 'Tìm kiếm theo mã, tên biện pháp (firewall, backup, hotfix, mật khẩu)...' : 'Search controls by ID, name, keyword...'}
+                                    value={controlSearch}
+                                    onChange={(e) => setControlSearch(e.target.value)}
+                                />
+                                {controlSearch && (
+                                    <button 
+                                        type="button" 
+                                        className={styles.clearSearchBtn} 
+                                        onClick={() => setControlSearch('')}
+                                    >✕</button>
+                                )}
+                            </div>
+
+                            <div className={styles.filterChips}>
+                                <button
+                                    type="button"
+                                    className={`${styles.filterChip} ${filterTag === 'all' ? styles.filterChipActive : ''}`}
+                                    onClick={() => setFilterTag('all')}
+                                >
+                                    {locale === 'vi' ? 'Tất cả' : 'All'} ({allControls.length})
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${styles.filterChip} ${filterTag === 'critical' ? styles.filterChipActiveCrit : ''}`}
+                                    onClick={() => setFilterTag('critical')}
+                                >
+                                    🔴 Critical ({riskStats.critical.total})
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${styles.filterChip} ${filterTag === 'high' ? styles.filterChipActiveHigh : ''}`}
+                                    onClick={() => setFilterTag('high')}
+                                >
+                                    🟠 High ({riskStats.high.total})
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${styles.filterChip} ${filterTag === 'no_evidence' ? styles.filterChipActiveEv : ''}`}
+                                    onClick={() => setFilterTag('no_evidence')}
+                                >
+                                    📎 {locale === 'vi' ? 'Chưa có tệp' : 'No Files'} ({riskStats.missingEvidence})
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${styles.filterChip} ${filterTag === 'implemented' ? styles.filterChipActiveDone : ''}`}
+                                    onClick={() => setFilterTag('implemented')}
+                                >
+                                    ✅ {locale === 'vi' ? 'Đã tick' : 'Checked'} ({form.implemented_controls.length})
+                                </button>
+                            </div>
+                        </div>
+
                         <p className={styles.helperText} dangerouslySetInnerHTML={{ __html: t('assessment.controlsHelp') }} />
 
                         <div className={styles.accordionContainer}>
                             {currentStandard.controls.map((category, catIdx) => {
-                                const isExpanded = expandedCategory === catIdx
                                 const catControlIds = category.controls.map(c => c.id)
                                 const selectedInCat = form.implemented_controls.filter(id => catControlIds.includes(id)).length
                                 const isAllSelected = selectedInCat === category.controls.length
+
+                                // Filter controls by search query and active filter chip
+                                const filteredControls = category.controls.filter(ctrl => {
+                                    if (controlSearch.trim()) {
+                                        const q = controlSearch.toLowerCase().trim()
+                                        const idMatch = ctrl.id.toLowerCase().includes(q)
+                                        const labelMatch = (ctrl.label || '').toLowerCase().includes(q)
+                                        const catMatch = (category.category || '').toLowerCase().includes(q)
+                                        if (!idMatch && !labelMatch && !catMatch) return false
+                                    }
+                                    if (filterTag === 'critical' && ctrl.weight !== 'critical') return false
+                                    if (filterTag === 'high' && ctrl.weight !== 'high') return false
+                                    if (filterTag === 'no_evidence') {
+                                        const evCount = (evidenceMap[ctrl.id] || []).length
+                                        if (evCount > 0) return false
+                                    }
+                                    if (filterTag === 'implemented') {
+                                        if (!form.implemented_controls.includes(ctrl.id)) return false
+                                    }
+                                    return true
+                                })
+
+                                if (filteredControls.length === 0 && (controlSearch.trim() || filterTag !== 'all')) {
+                                    return null
+                                }
+
+                                const isAutoExpanded = (controlSearch.trim() || filterTag !== 'all') && filteredControls.length > 0
+                                const isExpanded = isAutoExpanded || expandedCategory === catIdx
 
                                 return (
                                     <div key={catIdx} className={`${styles.accordionItem} ${isExpanded ? styles.expanded : ''}`}>
                                         <div
                                             className={styles.accordionHeader}
-                                            onClick={() => setExpandedCategory(isExpanded ? null : catIdx)}
+                                            onClick={() => setExpandedCategory(isExpanded && !isAutoExpanded ? null : catIdx)}
                                         >
                                             <div className={styles.accTitle}>
                                                 <span className={styles.accIcon}>{isExpanded ? '📂' : '📁'}</span>
@@ -1013,8 +1151,8 @@ export default function FormISOPage() {
                                                         <strong>{t('assessment.selectAllGroup')}</strong>
                                                     </label>
                                                 </div>
-                                                <div className={styles.controlGrid}>
-                                                    {category.controls.map(ctrl => {
+                                                <div className={styles.controlList}>
+                                                    {filteredControls.map(ctrl => {
                                                         const implemented = form.implemented_controls.includes(ctrl.id)
                                                         const evCount = (evidenceMap[ctrl.id] || []).length
                                                         return (

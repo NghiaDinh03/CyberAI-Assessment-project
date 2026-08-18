@@ -3992,3 +3992,169 @@
     border-radius: 6px;
     font-size: 0.75rem;
 }
+
+/* ── Risk Breakdown Summary Badges ── */
+.riskBadgeRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 0.65rem;
+    margin-bottom: 1.15rem;
+}
+
+.riskBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+}
+
+.riskDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.riskBadgeCrit .riskDot { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+.riskBadgeHigh .riskDot { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+.riskBadgeMed .riskDot  { background: #3b82f6; box-shadow: 0 0 6px #3b82f6; }
+
+.riskBadgeCrit { border-color: rgba(239, 68, 68, 0.3); color: #fca5a5; }
+.riskBadgeHigh { border-color: rgba(245, 158, 11, 0.3); color: #fde68a; }
+.riskBadgeMed  { border-color: rgba(59, 130, 246, 0.3); color: #bfdbfe; }
+.riskBadgeEvidence { border-color: rgba(148, 163, 184, 0.25); color: #94a3b8; }
+
+/* ── Smart Search & Filter Toolbar ── */
+.controlToolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 1.25rem;
+    backdrop-filter: blur(10px);
+}
+
+.searchWrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 12px;
+    font-size: 0.95rem;
+    color: #64748b;
+    pointer-events: none;
+}
+
+.searchInput {
+    width: 100%;
+    background: rgba(2, 6, 23, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 9px 36px 9px 38px;
+    color: #f1f5f9;
+    font-size: 0.88rem;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.searchInput:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    background: rgba(15, 23, 42, 0.9);
+}
+
+.searchInput::placeholder {
+    color: #64748b;
+}
+
+.clearSearchBtn {
+    position: absolute;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.clearSearchBtn:hover {
+    color: #ffffff;
+}
+
+.filterChips {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.filterChip {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.filterChip:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+}
+
+.filterChipActive {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: #3b82f6;
+    color: #93c5fd;
+}
+
+.filterChipActiveCrit {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+    color: #fca5a5;
+}
+
+.filterChipActiveHigh {
+    background: rgba(245, 158, 11, 0.25);
+    border-color: #f59e0b;
+    color: #fde68a;
+}
+
+.filterChipActiveEv {
+    background: rgba(148, 163, 184, 0.25);
+    border-color: #94a3b8;
+    color: #f1f5f9;
+}
+
+.filterChipActiveDone {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: #10b981;
+    color: #6ee7b7;
+}
+
+/* ── 1-Column Full-Width Control List ── */
+.controlList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
