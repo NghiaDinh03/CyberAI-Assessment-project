@@ -1357,10 +1357,9 @@ export default function FormISOPage() {
                         </div>
                     </div>
                 )
-
-                )
             default:
                 return null
+
         }
     }
 
