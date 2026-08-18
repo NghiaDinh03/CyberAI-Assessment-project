@@ -12,10 +12,8 @@ import StepProgress from '@/components/StepProgress'
 import { useTranslation } from '@/components/LanguageProvider'
 import { Shield, ChevronRight, ChevronLeft } from 'lucide-react'
 import ControlRow from './_components/ControlRow'
-import ControlInspector from './_components/ControlInspector'
 import DetailDrawer from './_components/DetailDrawer'
 import EvidencePreviewModal from './_components/EvidencePreviewModal'
-
 
 const POLL_INTERVAL = 8000
 const ASSESSMENT_MODE_KEY = 'cyberai.assessmentMode'
@@ -379,13 +377,6 @@ export default function FormISOPage() {
 
         return stats
     }, [allControls, form.implemented_controls, evidenceMap])
-
-    const [selectedControlId, setSelectedControlId] = useState(null)
-    const activeControlId = selectedControlId || allControls[0]?.id
-    const selectedControlObj = useMemo(() => {
-        return allControls.find(c => c.id === activeControlId) || allControls[0]
-    }, [allControls, activeControlId])
-
 
 
     const applyTemplateData = (parsed, keepModelMode = false, currentModelMode = 'hybrid') => {
@@ -755,48 +746,27 @@ export default function FormISOPage() {
             case 1:
                 return (
                     <div className={styles.stepContent}>
-                        <div className={styles.stepHeaderBox}>
-                            <h2 className={styles.sectionTitle}>{t('assessment.step1Title')}</h2>
-                            <p className={styles.sectionSub}>Xác định khung tiêu chuẩn tuân thủ và thông tin hồ sơ của tổ chức/doanh nghiệp.</p>
-                        </div>
-
-                        {/* ── Standard Framework Card Selector ── */}
-                        <div className={styles.fieldFull}>
-                            <label className={styles.highlightLabel}>
-                                {t('assessment.standardLabel')} <span className={styles.required}>*</span>
-                            </label>
-                            <div className={styles.standardCardGrid}>
-                                {availableStandards.map(s => {
-                                    const isSelected = form.assessment_standard === s.id
-                                    const totalCtrls = s.controls ? s.controls.reduce((a, b) => a + b.controls.length, 0) : (s.id === 'iso27001' ? 93 : 34)
-                                    return (
-                                        <div
-                                            key={s.id}
-                                            className={`${styles.standardCard} ${isSelected ? styles.standardCardActive : ''}`}
-                                            onClick={() => handleStandardChange(s.id)}
-                                        >
-                                            <div className={styles.stdCardHeader}>
-                                                <span className={styles.stdBadge}>{s.id.toUpperCase()}</span>
-                                                <span className={styles.stdCtrlCount}>{totalCtrls} {locale === 'vi' ? 'Biện pháp kiểm soát' : 'Controls'}</span>
-                                            </div>
-                                            <div className={styles.stdCardTitle}>{s.name}</div>
-                                            <div className={styles.stdCardDesc}>
-                                                {s.id === 'iso27001' 
-                                                    ? (locale === 'vi' ? 'Tiêu chuẩn Quốc tế về Hệ thống Quản lý An toàn Thông tin (ISMS) gồm 4 nhóm: Tổ chức, Con người, Vật lý, Kỹ thuật.' : 'International standard for Information Security Management Systems (ISMS) version 2022.')
-                                                    : (locale === 'vi' ? 'Bộ tiêu chuẩn Quốc gia Việt Nam đánh giá an toàn hệ thống thông tin theo 5 cấp độ bảo đảm kỹ thuật và quản lý.' : 'Vietnam National Standard for Information System Security Levels.')}
-                                            </div>
-                                            {isSelected && <span className={styles.stdSelectedCheck}>✓ {locale === 'vi' ? 'Đang áp dụng' : 'Active Framework'}</span>}
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-
-                        <div className={styles.formSectionDivider}>
-                            <span>Hồ sơ & Quy mô Tổ chức</span>
-                        </div>
-
+                        <h2 className={styles.sectionTitle}>
+                            {t('assessment.step1Title')}
+                        </h2>
                         <div className={styles.grid}>
+                            <div className={styles.fieldFull}>
+                                <label className={styles.highlightLabel}>
+                                    {t('assessment.standardLabel')} <span className={styles.required}>*</span>
+                                </label>
+                                <select
+                                    className={styles.standardSelect}
+                                    value={form.assessment_standard}
+                                    onChange={e => handleStandardChange(e.target.value)}
+                                >
+                                    {availableStandards.map(s => (
+                                        <option key={s.id} value={s.id}>{s.name}{s.source === 'custom' ? ' (custom)' : ''}</option>
+                                    ))}
+                                    {standardsLoading && <option disabled>Loading standards...</option>}
+                                </select>
+                                <small className={styles.helperText} dangerouslySetInnerHTML={{ __html: t('assessment.standardHelp') }} />
+                            </div>
+
                             <div className={styles.field}>
                                 <label>{t('assessment.orgName')} <span className={styles.required}>*</span></label>
                                 <input value={form.org_name} onChange={e => set('org_name', e.target.value)} placeholder={t('assessment.orgNamePlaceholder')} />
@@ -834,13 +804,23 @@ export default function FormISOPage() {
 
                             <div className={styles.fieldFull}>
                                 <div className={styles.scopeSection}>
-                                    <label className={styles.highlightLabel}>{t('assessment.scopeTitle')}</label>
-                                    <p className={styles.helperText}>{t('assessment.scopeHelp')}</p>
+                                    <div className={styles.labelWithInfo}>
+                                        <label className={styles.highlightLabel}>{t('assessment.scopeTitle')}</label>
+                                        <button
+                                            type="button"
+                                            className={`${styles.infoIcon} ${activeTooltip === 'scope_guide' ? styles.infoIconActive : ''}`}
+                                            onClick={() => setActiveTooltip(activeTooltip === 'scope_guide' ? null : 'scope_guide')}
+                                            title={t('assessment.scopeGuideTooltipTitle')}
+                                        >ⓘ</button>
+                                    </div>
+                                    <p className={styles.helperText}>
+                                        {t('assessment.scopeHelp')}
+                                    </p>
                                     <div className={styles.scopeOptions}>
                                         {[
-                                            { value: 'full', title: 'Toàn bộ tổ chức', label: t('assessment.scopeFull'), desc: t('assessment.scopeFullDesc') },
-                                            { value: 'by_department', title: 'Theo phòng ban', label: t('assessment.scopeDepartment'), desc: t('assessment.scopeDepartmentDesc') },
-                                            { value: 'by_system', title: 'Theo hệ thống', label: t('assessment.scopeSystem'), desc: t('assessment.scopeSystemDesc') }
+                                            { value: 'full', icon: '🏢', label: t('assessment.scopeFull'), desc: t('assessment.scopeFullDesc') },
+                                            { value: 'by_department', icon: '👥', label: t('assessment.scopeDepartment'), desc: t('assessment.scopeDepartmentDesc') },
+                                            { value: 'by_system', icon: '🖥️', label: t('assessment.scopeSystem'), desc: t('assessment.scopeSystemDesc') }
                                         ].map(opt => (
                                             <label
                                                 key={opt.value}
@@ -854,6 +834,7 @@ export default function FormISOPage() {
                                                     onChange={() => set('assessment_scope', opt.value)}
                                                     hidden
                                                 />
+                                                <span className={styles.scopeOptionIcon}>{opt.icon}</span>
                                                 <div className={styles.scopeOptionText}>
                                                     <strong>{opt.label}</strong>
                                                     <span>{opt.desc}</span>
@@ -866,12 +847,14 @@ export default function FormISOPage() {
                                     </div>
                                     {form.assessment_scope !== 'full' && (
                                         <div className={styles.scopeDescWrap}>
-                                            <label>
-                                                {form.assessment_scope === 'by_department'
-                                                    ? t('assessment.scopeDeptLabel')
-                                                    : t('assessment.scopeSysLabel')}
-                                                <span className={styles.required}> *</span>
-                                            </label>
+                                            <div className={styles.labelWithInfo}>
+                                                <label>
+                                                    {form.assessment_scope === 'by_department'
+                                                        ? t('assessment.scopeDeptLabel')
+                                                        : t('assessment.scopeSysLabel')}
+                                                    <span className={styles.required}> *</span>
+                                                </label>
+                                            </div>
                                             <input
                                                 className={styles.scopeDescInput}
                                                 value={form.scope_description}
@@ -880,6 +863,11 @@ export default function FormISOPage() {
                                                     ? t('assessment.scopeDeptPlaceholder')
                                                     : t('assessment.scopeSysPlaceholder')}
                                             />
+                                            <p className={styles.helperText} style={{ marginBottom: 0 }}>
+                                                {form.assessment_scope === 'by_department'
+                                                    ? t('assessment.scopeDeptHelp')
+                                                    : t('assessment.scopeSysHelp')}
+                                            </p>
                                         </div>
                                     )}
                                 </div>
@@ -890,79 +878,47 @@ export default function FormISOPage() {
             case 2:
                 return (
                     <div className={styles.stepContent}>
-                        <div className={styles.stepHeaderBox}>
-                            <h2 className={styles.sectionTitle}>{t('assessment.step2Title')}</h2>
-                            <p className={styles.sectionSub}>Khai báo hiện trạng kiến trúc máy chủ, phân vùng mạng và các giải pháp an ninh đang vận hành.</p>
-                        </div>
-
-                        <div className={styles.infraCardsWrap}>
-                            {/* Card A: Compute & Cloud */}
-                            <div className={styles.infraCard}>
-                                <div className={styles.infraCardHeader}>
-                                    <h4>1. Máy Chủ & Nền Tảng Đám Mây (Compute & Hosting)</h4>
-                                </div>
-                                <div className={styles.grid}>
-                                    <div className={styles.field}>
-                                        <label>{t('assessment.serversLabel')}</label>
-                                        <input type="number" value={form.servers || ''} onChange={e => set('servers', parseInt(e.target.value) || 0)} placeholder="0" />
-                                    </div>
-                                    <div className={styles.field}>
-                                        <label>{t('assessment.cloudLabel')}</label>
-                                        <input value={form.cloud_provider} onChange={e => set('cloud_provider', e.target.value)} placeholder="VD: AWS, Azure, On-Premise, Viettel Cloud..." />
-                                    </div>
-                                </div>
+                        <h2 className={styles.sectionTitle}>
+                            {t('assessment.step2Title')}
+                        </h2>
+                        <div className={styles.grid}>
+                            <div className={styles.field}>
+                                <label>{t('assessment.serversLabel')}</label>
+                                <input type="number" value={form.servers || ''} onChange={e => set('servers', parseInt(e.target.value) || 0)} placeholder="0" />
                             </div>
-
-                            {/* Card B: Perimeter & Network Security */}
-                            <div className={styles.infraCard}>
-                                <div className={styles.infraCardHeader}>
-                                    <h4>2. An Ninh Mạng & Tường Lửa (Network & Perimeter Defense)</h4>
-                                </div>
-                                <div className={styles.grid}>
-                                    <div className={styles.field}>
-                                        <label>{t('assessment.firewallLabel')}</label>
-                                        <input value={form.firewalls} onChange={e => set('firewalls', e.target.value)} placeholder="VD: Fortinet FortiGate 100F, Palo Alto, pfSense..." />
-                                    </div>
-                                    <div className={styles.field}>
-                                        <label>{t('assessment.vpnLabel')}</label>
-                                        <div className={styles.vpnToggleBox}>
-                                            <label className={styles.checkLabel}>
-                                                <input type="checkbox" checked={form.vpn} onChange={e => set('vpn', e.target.checked)} />
-                                                <strong>{form.vpn ? 'Có sử dụng kết nối VPN mã hóa' : 'Không sử dụng kết nối VPN từ xa'}</strong>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div className={styles.field}>
+                                <label>{t('assessment.firewallLabel')}</label>
+                                <textarea className={styles.autoTextarea} value={form.firewalls} onChange={e => set('firewalls', e.target.value)} placeholder={t('assessment.firewallPlaceholder')} rows={2} />
                             </div>
-
-                            {/* Card C: Data Protection, Antivirus & SIEM */}
-                            <div className={styles.infraCard}>
-                                <div className={styles.infraCardHeader}>
-                                    <h4>3. Bảo Vệ Dữ Liệu & Giám Sát (Data, Endpoint & SIEM)</h4>
-                                </div>
-                                <div className={styles.grid}>
-                                    <div className={styles.field}>
-                                        <label>{t('assessment.antivirusLabel')}</label>
-                                        <input value={form.antivirus} onChange={e => set('antivirus', e.target.value)} placeholder="VD: Windows Defender, Kaspersky Endpoint, CrowdStrike..." />
-                                    </div>
-                                    <div className={styles.field}>
-                                        <label>{t('assessment.backupLabel')}</label>
-                                        <input value={form.backup_solution} onChange={e => set('backup_solution', e.target.value)} placeholder="VD: Veeam Backup & Replication, NAS Synology 3-2-1..." />
-                                    </div>
-                                    <div className={styles.field}>
-                                        <label>{t('assessment.siemLabel')}</label>
-                                        <input value={form.siem} onChange={e => set('siem', e.target.value)} placeholder="VD: Wazuh SIEM, Splunk, Elastic Security, Chưa có..." />
-                                    </div>
-                                    <div className={styles.field}>
-                                        <label>{t('assessment.incidentsLabel')}</label>
-                                        <input type="number" value={form.incidents_12m || ''} onChange={e => set('incidents_12m', parseInt(e.target.value) || 0)} placeholder="0" />
-                                    </div>
-                                </div>
+                            <div className={styles.field}>
+                                <label>{t('assessment.cloudLabel')}</label>
+                                <textarea className={styles.autoTextarea} value={form.cloud_provider} onChange={e => set('cloud_provider', e.target.value)} placeholder={t('assessment.cloudPlaceholder')} rows={2} />
+                            </div>
+                            <div className={styles.field}>
+                                <label>{t('assessment.antivirusLabel')}</label>
+                                <textarea className={styles.autoTextarea} value={form.antivirus} onChange={e => set('antivirus', e.target.value)} placeholder={t('assessment.antivirusPlaceholder')} rows={2} />
+                            </div>
+                            <div className={styles.field}>
+                                <label>{t('assessment.backupLabel')}</label>
+                                <textarea className={styles.autoTextarea} value={form.backup_solution} onChange={e => set('backup_solution', e.target.value)} placeholder={t('assessment.backupPlaceholder')} rows={2} />
+                            </div>
+                            <div className={styles.field}>
+                                <label>{t('assessment.siemLabel')}</label>
+                                <textarea className={styles.autoTextarea} value={form.siem} onChange={e => set('siem', e.target.value)} placeholder={t('assessment.siemPlaceholder')} rows={2} />
+                            </div>
+                            <div className={styles.field}>
+                                <label>{t('assessment.incidentsLabel')}</label>
+                                <input type="number" value={form.incidents_12m || ''} onChange={e => set('incidents_12m', parseInt(e.target.value) || 0)} placeholder="0" />
+                            </div>
+                            <div className={styles.fieldCheckbox}>
+                                <label className={styles.checkLabel}>
+                                    <input type="checkbox" checked={form.vpn} onChange={e => set('vpn', e.target.checked)} />
+                                    <span>{t('assessment.vpnLabel')}</span>
+                                </label>
                             </div>
                         </div>
                     </div>
                 )
-
             case 3:
                 return (
                     <div className={styles.stepContent}>
@@ -1131,235 +1087,204 @@ export default function FormISOPage() {
 
                         <p className={styles.helperText} dangerouslySetInnerHTML={{ __html: t('assessment.controlsHelp') }} />
 
-                        {/* ── Split-Pane Master-Detail Workspace ── */}
-                        <div className={styles.splitAssessmentLayout}>
-                            {/* Left List Pane (60%) */}
-                            <div className={styles.leftListPane}>
-                                <div className={styles.accordionContainer}>
-                                    {currentStandard.controls.map((category, catIdx) => {
-                                        const catControlIds = category.controls.map(c => c.id)
-                                        const selectedInCat = form.implemented_controls.filter(id => catControlIds.includes(id)).length
-                                        const isAllSelected = selectedInCat === category.controls.length
+                        <div className={styles.accordionContainer}>
+                            {currentStandard.controls.map((category, catIdx) => {
+                                const catControlIds = category.controls.map(c => c.id)
+                                const selectedInCat = form.implemented_controls.filter(id => catControlIds.includes(id)).length
+                                const isAllSelected = selectedInCat === category.controls.length
 
-                                        // Filter controls by search query and active filter chip
-                                        const filteredControls = category.controls.filter(ctrl => {
-                                            if (controlSearch.trim()) {
-                                                const q = controlSearch.toLowerCase().trim()
-                                                const idMatch = ctrl.id.toLowerCase().includes(q)
-                                                const labelMatch = (ctrl.label || '').toLowerCase().includes(q)
-                                                const catMatch = (category.category || '').toLowerCase().includes(q)
-                                                if (!idMatch && !labelMatch && !catMatch) return false
-                                            }
-                                            if (filterTag === 'critical' && ctrl.weight !== 'critical') return false
-                                            if (filterTag === 'high' && ctrl.weight !== 'high') return false
-                                            if (filterTag === 'no_evidence') {
-                                                const evCount = (evidenceMap[ctrl.id] || []).length
-                                                if (evCount > 0) return false
-                                            }
-                                            if (filterTag === 'implemented') {
-                                                if (!form.implemented_controls.includes(ctrl.id)) return false
-                                            }
-                                            return true
-                                        })
+                                // Filter controls by search query and active filter chip
+                                const filteredControls = category.controls.filter(ctrl => {
+                                    if (controlSearch.trim()) {
+                                        const q = controlSearch.toLowerCase().trim()
+                                        const idMatch = ctrl.id.toLowerCase().includes(q)
+                                        const labelMatch = (ctrl.label || '').toLowerCase().includes(q)
+                                        const catMatch = (category.category || '').toLowerCase().includes(q)
+                                        if (!idMatch && !labelMatch && !catMatch) return false
+                                    }
+                                    if (filterTag === 'critical' && ctrl.weight !== 'critical') return false
+                                    if (filterTag === 'high' && ctrl.weight !== 'high') return false
+                                    if (filterTag === 'no_evidence') {
+                                        const evCount = (evidenceMap[ctrl.id] || []).length
+                                        if (evCount > 0) return false
+                                    }
+                                    if (filterTag === 'implemented') {
+                                        if (!form.implemented_controls.includes(ctrl.id)) return false
+                                    }
+                                    return true
+                                })
 
-                                        if (filteredControls.length === 0 && (controlSearch.trim() || filterTag !== 'all')) {
-                                            return null
-                                        }
+                                if (filteredControls.length === 0 && (controlSearch.trim() || filterTag !== 'all')) {
+                                    return null
+                                }
 
-                                        const isAutoExpanded = (controlSearch.trim() || filterTag !== 'all') && filteredControls.length > 0
-                                        const isExpanded = isAutoExpanded || expandedCategory === catIdx
+                                const isAutoExpanded = (controlSearch.trim() || filterTag !== 'all') && filteredControls.length > 0
+                                const isExpanded = isAutoExpanded || expandedCategory === catIdx
 
-                                        return (
-                                            <div key={catIdx} className={`${styles.accordionItem} ${isExpanded ? styles.expanded : ''}`}>
-                                                <div
-                                                    className={styles.accordionHeader}
-                                                    onClick={() => setExpandedCategory(isExpanded && !isAutoExpanded ? null : catIdx)}
-                                                >
-                                                    <div className={styles.accTitle}>
-                                                        <span className={styles.accIcon}>{isExpanded ? '📂' : '📁'}</span>
-                                                        {category.category}
-                                                    </div>
-                                                    <div className={styles.accMeta}>
-                                                        <span className={`${styles.accCount} ${selectedInCat === category.controls.length ? styles.accCountFull : ''}`}>
-                                                            {selectedInCat}/{category.controls.length}
-                                                        </span>
-                                                        <span className={styles.accArrow}>{isExpanded ? '▲' : '▼'}</span>
-                                                    </div>
-                                                </div>
-
-                                                {isExpanded && (
-                                                    <div className={styles.accordionBody}>
-                                                        <div className={styles.selectAllBox}>
-                                                            <label className={styles.checkLabel}>
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={isAllSelected}
-                                                                    onChange={() => toggleCategoryAll(category.controls, isAllSelected)}
-                                                                />
-                                                                <strong>{t('assessment.selectAllGroup')}</strong>
-                                                            </label>
-                                                        </div>
-                                                        <div className={styles.controlList}>
-                                                            {filteredControls.map(ctrl => {
-                                                                const implemented = form.implemented_controls.includes(ctrl.id)
-                                                                const evCount = (evidenceMap[ctrl.id] || []).length
-                                                                const isSelected = activeControlId === ctrl.id
-                                                                return (
-                                                                    <ControlRow
-                                                                        key={ctrl.id}
-                                                                        control={ctrl}
-                                                                        state={{ implemented }}
-                                                                        isSelected={isSelected}
-                                                                        onToggleImplemented={toggleControl}
-                                                                        onSelectControl={(id) => {
-                                                                            setSelectedControlId(id)
-                                                                            fetchEvidenceForControl(id)
-                                                                        }}
-                                                                        evidenceCount={evCount}
-                                                                        verdict={undefined}
-                                                                    />
-                                                                )
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                )}
+                                return (
+                                    <div key={catIdx} className={`${styles.accordionItem} ${isExpanded ? styles.expanded : ''}`}>
+                                        <div
+                                            className={styles.accordionHeader}
+                                            onClick={() => setExpandedCategory(isExpanded && !isAutoExpanded ? null : catIdx)}
+                                        >
+                                            <div className={styles.accTitle}>
+                                                <span className={styles.accIcon}>{isExpanded ? '📂' : '📁'}</span>
+                                                {category.category}
                                             </div>
-                                        )
-                                    })}
-                                </div>
-                            </div>
+                                            <div className={styles.accMeta}>
+                                                <span className={`${styles.accCount} ${selectedInCat === category.controls.length ? styles.accCountFull : ''}`}>
+                                                    {selectedInCat}/{category.controls.length}
+                                                </span>
+                                                <span className={styles.accArrow}>{isExpanded ? '▲' : '▼'}</span>
+                                            </div>
+                                        </div>
 
-                            {/* Right Docked Inspector Pane (40%) */}
-                            <div className={styles.rightInspectorPane}>
-                                <ControlInspector
-                                    control={selectedControlObj}
-                                    state={{
-                                        implemented: form.implemented_controls.includes(selectedControlObj?.id),
-                                        evidenceFiles: evidenceMap[selectedControlObj?.id] || [],
-                                        description: allDescriptions[selectedControlObj?.id]
-                                    }}
-                                    onToggleImplemented={toggleControl}
-                                    onUploadFiles={uploadEvidence}
-                                    onDeleteFile={deleteEvidence}
-                                    onExpandFile={setPreviewFile}
-                                    isDocked={true}
-                                />
-                            </div>
+                                        {isExpanded && (
+                                            <div className={styles.accordionBody}>
+                                                <div className={styles.selectAllBox}>
+                                                    <label className={styles.checkLabel}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isAllSelected}
+                                                            onChange={() => toggleCategoryAll(category.controls, isAllSelected)}
+                                                        />
+                                                        <strong>{t('assessment.selectAllGroup')}</strong>
+                                                    </label>
+                                                </div>
+                                                <div className={styles.controlList}>
+                                                    {filteredControls.map(ctrl => {
+                                                        const implemented = form.implemented_controls.includes(ctrl.id)
+                                                        const evCount = (evidenceMap[ctrl.id] || []).length
+                                                        return (
+                                                            <ControlRow
+                                                                key={ctrl.id}
+                                                                control={ctrl}
+                                                                state={{ implemented }}
+                                                                onToggleImplemented={toggleControl}
+                                                                onOpenDrawer={(id) => {
+                                                                    drawerReturnFocusRef.current =
+                                                                        document.activeElement instanceof HTMLElement
+                                                                            ? document.activeElement
+                                                                            : null
+                                                                    setDrawerControlId(id)
+                                                                    fetchEvidenceForControl(id)
+                                                                }}
+                                                                evidenceCount={evCount}
+                                                                verdict={undefined}
+                                                            />
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
                         </div>
                     </div>
-
                 )
             case 4:
                 return (
                     <div className={styles.stepContent}>
-                        <div className={styles.stepHeaderBox}>
-                            <h2 className={styles.sectionTitle}>{t('assessment.step4Title')}</h2>
-                            <p className={styles.sectionSub}>Rà soát tổng hợp hồ sơ, cấu hình mô hình AI đánh giá và tiến hành thẩm định xuất báo cáo chính thức.</p>
-                        </div>
+                        <h2 className={styles.sectionTitle}>
+                            {t('assessment.step4Title')}
+                        </h2>
+                        <p className={styles.helperText}>{t('assessment.step4Desc')}</p>
 
-                        {/* ── Executive Pre-Flight Audit Summary Table ── */}
-                        <div className={styles.execSummaryCard}>
-                            <div className={styles.execSummaryHeader}>
-                                <h4>Bảng Thẩm Định Hồ Sơ & Độ Sẵn Sàng Tuân Thủ (Pre-Flight Audit)</h4>
-                                <span className={styles.execStatusBadge}>
-                                    {compliancePercent >= 80 ? 'Đủ điều kiện xuất sắc' : compliancePercent >= 50 ? 'Mức độ Trung bình' : 'Nguy cơ GAP cao'}
-                                </span>
-                            </div>
-
-                            <table className={styles.execTable}>
-                                <tbody>
-                                    <tr>
-                                        <td className={styles.execKey}>Khung Tiêu Chuẩn Áp Dụng</td>
-                                        <td className={styles.execVal}><strong>{currentStandard.name}</strong> ({totalControls} Controls)</td>
-                                    </tr>
-                                    <tr>
-                                        <td className={styles.execKey}>Tổ Chức / Doanh Nghiệp</td>
-                                        <td className={styles.execVal}>{form.org_name || 'Chưa đặt tên'} • {form.industry || 'Lĩnh vực chung'}</td>
-                                    </tr>
-                                    <tr>
-                                        <td className={styles.execKey}>Quy Mô & Hạ Tầng</td>
-                                        <td className={styles.execVal}>{form.employees || 0} Nhân sự • {form.it_staff || 0} Nhân sự IT/Bảo mật • {form.servers || 0} Máy chủ</td>
-                                    </tr>
-                                    <tr>
-                                        <td className={styles.execKey}>Phạm Vi Đánh Giá (Scope)</td>
-                                        <td className={styles.execVal}>
-                                            {form.assessment_scope === 'full' ? 'Toàn bộ tổ chức (Toàn diện)' :
-                                             form.assessment_scope === 'by_department' ? `Theo phòng ban: ${form.scope_description || 'Chưa ghi'}` :
-                                             `Theo hệ thống thông tin: ${form.scope_description || 'Chưa ghi'}`}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className={styles.execKey}>Biện Pháp Đã Đánh Dấu Đạt</td>
-                                        <td className={styles.execVal}>
-                                            <span className={styles.execHighlight}>{form.implemented_controls.length} / {totalControls} Biện pháp</span> ({compliancePercent}% Tuân thủ)
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className={styles.execKey}>Tập Trung Rủi Ro Đạt Được</td>
-                                        <td className={styles.execVal}>
-                                            <span className={styles.riskPillCrit}>Critical: {riskStats.critical.done}/{riskStats.critical.total}</span>
-                                            <span className={styles.riskPillHigh}>High: {riskStats.high.done}/{riskStats.high.total}</span>
-                                            <span className={styles.riskPillMed}>Medium: {riskStats.medium.done}/{riskStats.medium.total}</span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* ── Additional Notes & Diagrams ── */}
-                        <div className={styles.grid}>
-                            <div className={styles.fieldFull}>
+                        <div className={styles.fieldFull}>
+                            <div className={styles.labelWithInfo}>
                                 <label>{t('assessment.networkTopology')}</label>
-                                <textarea
-                                    className={styles.textarea}
-                                    value={form.network_diagram}
-                                    onChange={e => set('network_diagram', e.target.value)}
-                                    placeholder="Mô tả phân vùng mạng (DMZ, LAN, VLAN) hoặc dán link sơ đồ kiến trúc hệ thống..."
-                                    rows={4}
-                                />
+                                <button
+                                    type="button"
+                                    className={`${styles.infoIcon} ${activeTooltip === 'topology_guide' ? styles.infoIconActive : ''}`}
+                                    onClick={() => setActiveTooltip(activeTooltip === 'topology_guide' ? null : 'topology_guide')}
+                                    title={t('assessment.topologyGuideTooltipTitle')}
+                                >ⓘ</button>
                             </div>
-
-                            <div className={styles.fieldFull}>
-                                <label>{t('assessment.additionalNotes')}</label>
-                                <textarea
-                                    className={styles.textarea}
-                                    value={form.notes}
-                                    onChange={e => set('notes', e.target.value)}
-                                    placeholder="Ghi chú đặc thù về hệ thống, ngoại lệ kiểm toán hoặc yêu cầu đánh giá riêng..."
-                                    rows={2}
-                                />
-                            </div>
+                            <textarea
+                                className={styles.textarea}
+                                value={form.network_diagram}
+                                onChange={e => set('network_diagram', e.target.value)}
+                                placeholder={t('assessment.networkTopologyPlaceholder')}
+                                rows={6}
+                            />
                         </div>
 
-                        {/* ── Model Selection Cards ── */}
+                        <div className={styles.fieldFull}>
+                            <div className={styles.labelWithInfo}>
+                                <label>{t('assessment.additionalNotes')}</label>
+                                <button
+                                    type="button"
+                                    className={`${styles.infoIcon} ${activeTooltip === 'notes_guide' ? styles.infoIconActive : ''}`}
+                                    onClick={() => setActiveTooltip(activeTooltip === 'notes_guide' ? null : 'notes_guide')}
+                                    title={t('assessment.notesGuideTooltipTitle')}
+                                >ⓘ</button>
+                            </div>
+                            <textarea
+                                className={styles.textarea}
+                                value={form.notes}
+                                onChange={e => set('notes', e.target.value)}
+                                placeholder={t('assessment.notesPlaceholder')}
+                                rows={3}
+                            />
+                        </div>
+
                         <div className={styles.modelSelectorWrap}>
-                            <h4 className={styles.modelSelectorTitle}>Chế Độ Phân Tích & Mô Hình AI Auditor</h4>
-                            <div className={styles.modelGrid}>
+                            <div className={styles.modelSelectorHeader}>
+                                <h4 className={styles.modelSelectorTitle}>{t('assessment.aiMode')}</h4>
+                                <button
+                                    type="button"
+                                    className={`${styles.infoIcon} ${activeTooltip === 'model_info' ? styles.infoIconActive : ''}`}
+                                    onClick={() => setActiveTooltip(activeTooltip === 'model_info' ? null : 'model_info')}
+                                    title={t('assessment.aiModeDetailTitle')}
+                                >ⓘ</button>
+                            </div>
+                            <div className={styles.modelCompactRow}>
                                 {[
-                                    { id: 'hybrid', title: 'Chế Độ Hybrid (Khuyến nghị)', badge: 'CÂN BẰNG & CHUẨN XÁC', desc: 'Sử dụng Gemma 2B bóc tách dữ liệu nhạy cảm cục bộ và gọi Claude 4.5 tổng hợp báo cáo kiểm toán chuyên sâu.' },
-                                    { id: 'local', title: 'Chế Độ Local Offline', badge: 'BẢO MẬT TUYỆT ĐỐI', desc: 'Chạy hoàn toàn trên máy chủ nội bộ qua Ollama (Gemma 2B / Qwen 2.5). Không gửi bất kỳ dữ liệu nào ra Internet.' },
-                                    { id: 'cloud', title: 'Chế Độ Cloud High-Precision', badge: 'ĐỘ SÂU TỐI ĐA', desc: 'Phân tích trực tiếp với mô hình Claude 4.5 để đưa ra các phân tích GAP, rủi ro và khuyến nghị chi tiết nhất.' }
+                                    { id: 'local', icon: '🔒', label: t('assessment.aiModeLocal'), badge: t('assessment.aiModeLocalBadge'), badgeColor: styles.modelBadgeSafe },
+                                    { id: 'hybrid', icon: '⚡', label: t('assessment.aiModeHybrid'), badge: t('assessment.aiModeHybridBadge'), badgeColor: styles.modelBadgeDefault },
+                                    { id: 'cloud', icon: '☁️', label: t('assessment.aiModeCloud'), badge: t('assessment.aiModeCloudBadge'), badgeColor: styles.modelBadgeCloud }
                                 ].map(opt => (
-                                    <div
+                                    <button
                                         key={opt.id}
-                                        className={`${styles.modelOptionCard} ${form.model_mode === opt.id ? styles.modelOptionActive : ''}`}
+                                        type="button"
+                                        className={`${styles.modelCompactBtn} ${form.model_mode === opt.id ? styles.modelCompactActive : ''}`}
                                         onClick={() => set('model_mode', opt.id)}
                                     >
-                                        <div className={styles.modelOptionHeader}>
-                                            <strong>{opt.title}</strong>
-                                            <span className={styles.modelBadge}>{opt.badge}</span>
-                                        </div>
-                                        <p>{opt.desc}</p>
-                                        {form.model_mode === opt.id && <span className={styles.modelSelectedTag}>✓ Đang chọn</span>}
-                                    </div>
+                                        <span className={styles.modelCompactIcon}>{opt.icon}</span>
+                                        <span className={styles.modelCompactLabel}>{opt.label}</span>
+                                        {form.model_mode === opt.id && (
+                                            <span className={`${styles.modelCompactBadge} ${opt.badgeColor}`}>{opt.badge}</span>
+                                        )}
+                                    </button>
                                 ))}
                             </div>
+
+                        </div>
+
+                        <div className={styles.summaryBox}>
+                            <h4>{t('assessment.preSubmitCheck')}</h4>
+                            <ul>
+                                <li>{t('assessment.preSubmitStandard')}: <strong>{currentStandard.name}</strong></li>
+                                <li>{t('assessment.preSubmitOrg')}: <strong>{form.org_name || t('assessment.preSubmitOrgEmpty')}</strong></li>
+                                <li>{t('assessment.preSubmitSize')}: <strong>{t('assessment.preSubmitEmployees', { count: form.employees })}</strong> ({t('assessment.preSubmitServers', { count: form.servers })})</li>
+                                <li>{t('assessment.preSubmitScope')}: <strong>
+                                    {form.assessment_scope === 'full' ? t('assessment.preSubmitScopeFull') :
+                                     form.assessment_scope === 'by_department' ? `${t('assessment.preSubmitScopeDept')}${form.scope_description ? ` — ${form.scope_description}` : ''}` :
+                                     `${t('assessment.preSubmitScopeSystem')}${form.scope_description ? ` — ${form.scope_description}` : ''}`}
+                                </strong></li>
+                                <li>{t('assessment.preSubmitCompliance')}: <strong>{t('assessment.preSubmitControls', { implemented: form.implemented_controls.length, total: totalControls })}</strong> ({compliancePercent}%)</li>
+                                <li>{t('assessment.preSubmitAiMode')}: <strong>
+                                    {form.model_mode === 'local' ? t('assessment.preSubmitAiLocal') :
+                                     form.model_mode === 'cloud' ? t('assessment.preSubmitAiCloud') :
+                                     t('assessment.preSubmitAiHybrid')}
+                                </strong></li>
+                            </ul>
                         </div>
                     </div>
                 )
             default:
                 return null
-
         }
     }
 
@@ -1385,11 +1310,11 @@ export default function FormISOPage() {
         return { implemented, total }
     }
 
-    const STEP_ITEMS = [
-        { num: 1, title: locale === 'vi' ? '1. Hồ Sơ & Tiêu Chuẩn' : '1. Organization & Framework', sub: currentStandard.name },
-        { num: 2, title: locale === 'vi' ? '2. Hạ Tầng Kỹ Thuật' : '2. Digital Infrastructure', sub: `${form.servers || 0} Servers` },
-        { num: 3, title: locale === 'vi' ? '3. Ma Trận Kiểm Soát' : '3. Compliance Matrix', sub: `${form.implemented_controls.length}/${totalControls} Done` },
-        { num: 4, title: locale === 'vi' ? '4. Thẩm Định & Báo Cáo' : '4. Audit Review & Submit', sub: 'AI Auditor Engine' },
+    const STEP_TITLES = [
+        t('assessment.step1Title'),
+        t('assessment.step2Title'),
+        t('assessment.step3Title'),
+        t('assessment.step4Title'),
     ]
 
     const WEIGHT_LABEL = {
@@ -1401,24 +1326,6 @@ export default function FormISOPage() {
 
     return (
         <div className="page-container">
-            {/* ── Live System Engine Status Bar ── */}
-            <div className={styles.systemStatusBar}>
-                <div className={styles.systemStatusLeft}>
-                    <span className={styles.statusLivePulse} />
-                    <span className={styles.statusLiveText}>
-                        <strong>{locale === 'vi' ? 'HỆ THỐNG SẴN SÀNG' : 'SYSTEM ONLINE'}</strong> • AI Auditor Engine Active • SQLite Storage Connected
-                    </span>
-                </div>
-                <div className={styles.systemStatusRight}>
-                    <span className={styles.statusStatBadge}>
-                        {locale === 'vi' ? 'Tiêu chuẩn:' : 'Framework:'} <strong>{currentStandard.name}</strong> ({totalControls} Controls)
-                    </span>
-                    <span className={styles.statusStatBadge}>
-                        {locale === 'vi' ? 'Đã tick:' : 'Checked:'} <strong>{form.implemented_controls.length} / {totalControls}</strong> ({compliancePercent}%)
-                    </span>
-                </div>
-            </div>
-
             <div className={styles.compactHeader}>
                 <div className={styles.headerRow}>
                     <h1 className={styles.title}>{t('assessment.pageTitle')}</h1>
@@ -1427,23 +1334,23 @@ export default function FormISOPage() {
 
                 <div className={styles.tabs}>
                     <button className={`${styles.tab} ${activeTab === 'form' ? styles.tabActive : ''}`} onClick={() => setActiveTab('form')}>
-                        📋 {t('assessment.tabForm')}
+                        {t('assessment.tabForm')}
                     </button>
                     <button className={`${styles.tab} ${activeTab === 'result' ? styles.tabActive : ''}`} onClick={() => setActiveTab('result')} disabled={!result}>
-                        📊 {t('assessment.tabResult')} {result && !result.error ? '✓' : ''}
+                        {t('assessment.tabResult')} {result && !result.error ? '✓' : ''}
                     </button>
                     <button className={`${styles.tab} ${activeTab === 'history' ? styles.tabActive : ''}`} onClick={() => setActiveTab('history')}>
-                        🕒 {t('assessment.tabHistory')}
+                        {t('assessment.tabHistory')}
                     </button>
                     <button className={`${styles.tab} ${activeTab === 'templates' ? styles.tabActive : ''}`} onClick={() => setActiveTab('templates')}>
-                        📑 {t('assessment.tabTemplates')}
+                        {t('assessment.tabTemplates')}
                     </button>
                 </div>
 
                 {activeTab === 'form' && (
                     <div className={styles.inlineSteps}>
-                        {STEP_ITEMS.map((item, i) => {
-                            const idx = item.num
+                        {STEP_TITLES.map((label, i) => {
+                            const idx = i + 1
                             const done = idx < step
                             const active = idx === step
                             return (
@@ -1455,17 +1362,13 @@ export default function FormISOPage() {
                                     disabled={!done && !active}
                                 >
                                     <span className={styles.inlineStepNum}>{done ? '✓' : idx}</span>
-                                    <div className={styles.inlineStepTextBox}>
-                                        <span className={styles.inlineStepLabel}>{item.title}</span>
-                                        <span className={styles.inlineStepSub}>{item.sub}</span>
-                                    </div>
+                                    <span className={styles.inlineStepLabel}>{label}</span>
                                 </button>
                             )
                         })}
                     </div>
                 )}
             </div>
-
 
             {activeTab === 'form' && (
                 <div className={styles.formWrap}>
@@ -1486,10 +1389,9 @@ export default function FormISOPage() {
                         <span className={styles.stepBannerCount}>{t('assessment.stepOf', { current: step, total: 4 })}</span>
                         <span className={styles.stepBannerSep}>—</span>
                         <span className={styles.stepBannerTitle}>
-                            {STEP_ITEMS[step - 1]?.title}
+                            {STEP_TITLES[step - 1]}
                         </span>
                     </div>
-
 
                     <div className={styles.stepContainer}>
                         {renderStepContent()}
