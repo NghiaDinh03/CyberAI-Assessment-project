@@ -23,32 +23,86 @@ import { useTranslation } from '@/components/LanguageProvider'
  *  - onExpandFile(file)   // Step 5: full modal preview
  *  - returnFocusRef?: ref to element that triggered the drawer (to restore focus)
  */
-const COMMAND_MAP = {
-    'NW.02': 'netsh advfirewall show allprofiles\nGet-NetFirewallRule -Enabled True | Select DisplayName, Direction, Action',
-    'A.8.20': 'netsh advfirewall show allprofiles\nGet-NetFirewallRule -Enabled True | Select DisplayName, Direction, Action',
-    'SV.07': 'Get-Hotfix | Sort-Object InstalledOn -Descending | Select-Object -First 10',
+const TECHNICAL_COMMANDS = {
+    // Firewall & Network
+    'A.8.20': 'netsh advfirewall show allprofiles\nGet-NetFirewallRule -Enabled True | Select-Object DisplayName, Direction, Action',
+    'NW.02': 'netsh advfirewall show allprofiles\nGet-NetFirewallRule -Enabled True | Select-Object DisplayName, Direction, Action',
+    'A.8.22': 'route print\nGet-NetIPConfiguration',
+    'NW.01': 'route print\nGet-NetIPConfiguration',
+    'A.8.24': 'manage-bde -status\nGet-TlsCipherSuite | Select-Object -First 5',
+    'NW.04': 'manage-bde -status\nGet-TlsCipherSuite | Select-Object -First 5',
+
+    // Patch & Vulnerability Management
     'A.8.8': 'Get-Hotfix | Sort-Object InstalledOn -Descending | Select-Object -First 10',
-    'SV.02': 'Get-MpComputerStatus | Select-Object AMServiceEnabled, AntispywareSignatureVersion, RealTimeProtectionEnabled',
+    'SV.07': 'Get-Hotfix | Sort-Object InstalledOn -Descending | Select-Object -First 10',
+    'SV.06': 'wmic qfe list brief /format:table',
+
+    // Antivirus & Malware Protection
     'A.8.7': 'Get-MpComputerStatus | Select-Object AMServiceEnabled, AntispywareSignatureVersion, RealTimeProtectionEnabled',
-    'SV.01': 'net accounts\nGet-ADDefaultDomainPasswordPolicy',
+    'SV.02': 'Get-MpComputerStatus | Select-Object AMServiceEnabled, AntispywareSignatureVersion, RealTimeProtectionEnabled',
+
+    // Passwords, Authentication & Access Rights
     'A.8.5': 'net accounts\nGet-ADDefaultDomainPasswordPolicy',
-    'DAT.01': 'wbadmin get status\nwbadmin get versions',
+    'SV.01': 'net accounts\nGet-ADDefaultDomainPasswordPolicy',
+    'A.8.2': 'Get-LocalGroupMember -Group "Administrators" | Select-Object Name, PrincipalSource',
+    'AC.01': 'Get-LocalGroupMember -Group "Administrators" | Select-Object Name, PrincipalSource',
+
+    // Backup & Recovery
     'A.8.13': 'wbadmin get status\nwbadmin get versions',
-    'AC.01': 'Get-LocalGroupMember -Group "Administrators"',
-    'A.5.15': 'Get-LocalGroupMember -Group "Administrators"',
+    'DAT.01': 'wbadmin get status\nwbadmin get versions',
+
+    // Logging & Monitoring
+    'A.8.15': 'wevtutil gl Security\nauditpol /get /category:*',
+    'SV.08': 'wevtutil gl Security\nauditpol /get /category:*',
+    'A.8.16': 'Get-EventLog -LogName System -Newest 10 -EntryType Error,Warning',
+    'SV.09': 'Get-EventLog -LogName System -Newest 10 -EntryType Error,Warning',
+
+    // Configuration & Endpoint
+    'A.8.9': 'systeminfo | Select-String "OS Name", "OS Version", "System Type"',
+    'SV.04': 'systeminfo | Select-String "OS Name", "OS Version", "System Type"',
+    'A.8.1': 'Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System',
+    'SV.03': 'Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System',
 }
 
-const PITFALL_MAP = {
-    'NW.02': 'Mở port nhạy cảm (3389/RDP, 445/SMB, 22/SSH) trực tiếp ra Internet mà không qua VPN/Bastion Host.',
-    'A.8.20': 'Mở port nhạy cảm (3389/RDP, 445/SMB, 22/SSH) trực tiếp ra Internet mà không qua VPN/Bastion Host.',
-    'SV.07': 'Hơn 60 ngày chưa cập nhật bản vá bảo mật hàng tháng (Windows Cumulative Update / Linux yum update).',
-    'A.8.8': 'Hơn 60 ngày chưa cập nhật bản vá bảo mật hàng tháng (Windows Cumulative Update / Linux yum update).',
-    'SV.02': 'Tắt Real-Time Protection hoặc Antivirus Signature hết hạn quá 7 ngày.',
-    'A.8.7': 'Tắt Real-Time Protection hoặc Antivirus Signature hết hạn quá 7 ngày.',
-    'SV.01': 'Cho phép mật khẩu đơn giản dưới 8 ký tự, không khóa tài khoản khi nhập sai quá 5 lần.',
-    'A.8.5': 'Cho phép mật khẩu đơn giản dưới 8 ký tự, không khóa tài khoản khi nhập sai quá 5 lần.',
-    'DAT.01': 'Chưa kiểm thử khôi phục dữ liệu định kỳ (Restore Drill) hoặc lưu bản backup cùng trên cùng 1 ổ đĩa sản xuất.',
-    'A.8.13': 'Chưa kiểm thử khôi phục dữ liệu định kỳ (Restore Drill) hoặc lưu bản backup cùng trên cùng 1 ổ đĩa sản xuất.',
+const getPitfallText = (id, locale) => {
+    if (id.startsWith('A.5') || id.startsWith('QL')) {
+        return locale === 'vi'
+            ? 'Văn bản chính sách chưa có chữ ký phê duyệt chính thức của lãnh đạo, ban hành dưới dạng dự thảo, hoặc quá 12 tháng chưa được rà soát cập nhật định kỳ.'
+            : 'Policy draft unapproved by management, missing signature, or not reviewed within the last 12 months.'
+    }
+    if (id.startsWith('A.6') || id.startsWith('NS')) {
+        return locale === 'vi'
+            ? 'Nhân viên mới chưa ký cam kết bảo mật thông tin (NDA) trước khi cấp quyền truy cập, hoặc chưa hoàn thành khóa đào tạo nhận thức an toàn thông tin hàng năm.'
+            : 'New employees missing signed NDA before access grant, or annual security awareness training records missing.'
+    }
+    if (id.startsWith('A.7') || id.startsWith('VL')) {
+        return locale === 'vi'
+            ? 'Không có camera hoặc nhật ký ghi nhận người ra vào phòng máy chủ / Data Center; thiết bị PCCC hoặc nguồn điện dự phòng UPS không được kiểm tra định kỳ.'
+            : 'No access log or CCTV for server room; fire suppression and UPS power untested periodically.'
+    }
+    if (id.includes('8.20') || id.includes('NW.02')) {
+        return locale === 'vi'
+            ? 'Mở cổng dịch vụ quản trị (3389/RDP, 22/SSH, 445/SMB) trực tiếp ra ngoài Internet mà không qua kênh truyền mã hóa VPN.'
+            : 'Sensitive ports (3389/RDP, 22/SSH, 445) exposed directly to public internet without VPN.'
+    }
+    if (id.includes('8.8') || id.includes('SV.07')) {
+        return locale === 'vi'
+            ? 'Máy chủ còn tồn tại bản vá bảo mật chậm cập nhật quá 30-60 ngày kể từ khi nhà cung cấp phát hành (Cumulative Update).'
+            : 'Security patches overdue by more than 30-60 days from vendor release.'
+    }
+    if (id.includes('8.7') || id.includes('SV.02')) {
+        return locale === 'vi'
+            ? 'Phần mềm diệt virus bị tắt tính năng quét thời gian thực (Real-time Protection) hoặc cơ sở dữ liệu mẫu nhận diện virus quá 7 ngày chưa cập nhật.'
+            : 'Real-time antivirus protection disabled or signatures outdated by more than 7 days.'
+    }
+    if (id.includes('8.13') || id.includes('DAT.01')) {
+        return locale === 'vi'
+            ? 'Lưu trữ bản sao lưu (Backup) trên cùng ổ đĩa chứa dữ liệu sản xuất, hoặc chưa từng thực hiện diễn tập khôi phục (Restore Drill) để kiểm tra tính toàn vẹn.'
+            : 'Backups stored on the same production disk, or disaster recovery restore drill never tested.'
+    }
+    return locale === 'vi'
+        ? 'Thiếu bằng chứng xác thực (ảnh chụp cấu hình, văn bản phê duyệt hoặc log hệ thống) để chứng minh biện pháp đã được triển khai hiệu quả.'
+        : 'Lack of tangible verification proof (configuration export, approval document, or system log).'
 }
 
 export default function DetailDrawer({
@@ -113,18 +167,25 @@ export default function DetailDrawer({
     const desc = state?.description
     const evidenceFiles = state?.evidenceFiles || []
     const implemented = !!state?.implemented
-    const verdict = state?.evidence_verdict
-    const missingItems = state?.missing_items || []
-    const confidence = state?.confidence
-    const aiNotes = state?.ai_notes || ''
 
-    const sampleCommand = COMMAND_MAP[control.id] || `auditpol /get /category:* \nGet-Service | Where-Object {$_.Status -eq "Running"}`
-    const pitfall = PITFALL_MAP[control.id] || (locale === 'vi' 
-        ? 'Chưa ban hành văn bản chính thức, thiếu chữ ký phê duyệt của cấp quản lý, hoặc cấu hình trên máy chủ không đồng bộ với chính sách.' 
-        : 'Missing executive approval, unreleased policy drafts, or server configurations inconsistent with stated policy.')
+    const isTechnical = (
+        control.id.startsWith('A.8') ||
+        control.id.startsWith('NW') ||
+        control.id.startsWith('SV') ||
+        control.id.startsWith('DAT') ||
+        control.id.startsWith('APP') ||
+        control.id.startsWith('AC')
+    )
+    const isPolicy = control.id.startsWith('A.5') || control.id.startsWith('QL')
+    const isHR = control.id.startsWith('A.6') || control.id.startsWith('NS')
+    const isPhysical = control.id.startsWith('A.7') || control.id.startsWith('VL')
+
+    const technicalCmd = TECHNICAL_COMMANDS[control.id] || (isTechnical ? `auditpol /get /category:*\nGet-Service | Where-Object {$_.Status -eq "Running"}` : null)
+    const pitfall = getPitfallText(control.id, locale)
 
     const copyCommand = () => {
-        navigator.clipboard.writeText(sampleCommand)
+        if (!technicalCmd) return
+        navigator.clipboard.writeText(technicalCmd)
         setCopiedCmd(true)
         setTimeout(() => setCopiedCmd(false), 2000)
     }
@@ -158,11 +219,6 @@ export default function DetailDrawer({
                                     ? (locale === 'vi' ? '✓ ĐÃ TRIỂN KHAI' : '✓ IMPLEMENTED')
                                     : (locale === 'vi' ? 'CHƯA TRIỂN KHAI' : 'NOT IMPLEMENTED')}
                             </span>
-                            {verdict && (
-                                <span className={`${styles.chip} ${styles[`v_${verdict}`] || ''}`}>
-                                    {t(`assessment.verdict.${verdict}`)}
-                                </span>
-                            )}
                         </div>
                         <h2 id={headingId} className={styles.title}>
                             {control.id}
@@ -180,8 +236,8 @@ export default function DetailDrawer({
                 <nav className={styles.tabs} role="tablist" aria-label={t('formIso.drawerTabs')}>
                     {[
                         { id: 'criteria', label: locale === 'vi' ? 'Tiêu chí & Hướng dẫn' : 'Criteria & Guidance' },
-                        { id: 'evidence', label: `${locale === 'vi' ? 'Bằng chứng' : 'Evidence'} (${evidenceFiles.length})` },
-                        { id: 'ai', label: 'AI Copilot' }
+                        { id: 'evidence', label: `${locale === 'vi' ? 'Tệp bằng chứng' : 'Evidence'} (${evidenceFiles.length})` },
+                        { id: 'ai', label: locale === 'vi' ? 'Trợ lý AI' : 'AI Assistant' }
                     ].map(tObj => (
                         <button
                             key={tObj.id}
@@ -207,26 +263,46 @@ export default function DetailDrawer({
                                         <p className={styles.text}>{desc.requirement}</p>
                                     </div>
 
-                                    {/* 2. Assessment Criteria & Audit Verification */}
+                                    {/* 2. Assessment Criteria */}
                                     <div className={styles.block}>
                                         <div className={styles.blockLabel}>{locale === 'vi' ? 'TIÊU CHÍ ĐÁNH GIÁ & NGHIỆM THU' : 'ASSESSMENT CRITERIA'}</div>
                                         <p className={styles.text}>{desc.criteria}</p>
                                     </div>
 
-                                    {/* 3. Sample Technical Commands for Audit Ingestion */}
-                                    <div className={styles.block}>
-                                        <div className={styles.blockLabelRow}>
-                                            <div className={styles.blockLabel}>{locale === 'vi' ? 'LỆNH KỸ THUẬT THU THẬP BẰNG CHỨNG' : 'TECHNICAL SCAN COMMANDS'}</div>
-                                            <button type="button" className={styles.copyCmdBtn} onClick={copyCommand}>
-                                                {copiedCmd ? '✓ Đã sao chép' : '📋 Sao chép lệnh'}
-                                            </button>
+                                    {/* 3. Technical Commands OR Non-technical Guidance Notice */}
+                                    {isTechnical && technicalCmd ? (
+                                        <div className={styles.block}>
+                                            <div className={styles.blockLabelRow}>
+                                                <div className={styles.blockLabel}>{locale === 'vi' ? 'LỆNH KỸ THUẬT THU THẬP BẰNG CHỨNG' : 'TECHNICAL SCAN COMMANDS'}</div>
+                                                <button type="button" className={styles.copyCmdBtn} onClick={copyCommand}>
+                                                    {copiedCmd ? (locale === 'vi' ? '✓ Đã sao chép' : '✓ Copied') : (locale === 'vi' ? 'Sao chép lệnh' : 'Copy Script')}
+                                                </button>
+                                            </div>
+                                            <pre className={styles.codeBlock}><code>{technicalCmd}</code></pre>
                                         </div>
-                                        <pre className={styles.codeBlock}><code>{sampleCommand}</code></pre>
-                                    </div>
+                                    ) : (
+                                        <div className={styles.block}>
+                                            <div className={styles.blockLabel}>{locale === 'vi' ? 'HÌNH THỨC THU THẬP BẰNG CHỨNG' : 'EVIDENCE COLLECTION TYPE'}</div>
+                                            <div className={styles.nonTechNotice}>
+                                                {isPolicy && (locale === 'vi' 
+                                                    ? 'Biện pháp Quản lý & Quy định: Không áp dụng lệnh máy chủ. Bằng chứng cần thu thập là văn bản quy định, quy chế ISMS có chữ ký phê duyệt của ban lãnh đạo hoặc biên bản họp rà soát định kỳ.'
+                                                    : 'Management & Governance Control: No server command applicable. Provide signed policy documents, ISMS charter, or review meeting minutes.')}
+                                                {isHR && (locale === 'vi' 
+                                                    ? 'Biện pháp Nhân sự: Không áp dụng lệnh máy chủ. Bằng chứng cần thu thập là cam kết bảo mật thông tin (NDA) có chữ ký, hồ sơ đào tạo nhận thức an toàn thông tin, hoặc biên bản bàn giao khi thôi việc.'
+                                                    : 'Human Resources Control: No server command applicable. Provide signed NDA agreements, security awareness training logs, or exit checklists.')}
+                                                {isPhysical && (locale === 'vi' 
+                                                    ? 'Biện pháp Vật lý & Môi trường: Không áp dụng lệnh máy chủ. Bằng chứng cần thu thập là sơ đồ phòng máy chủ, biên bản kiểm tra PCCC/UPS định kỳ hoặc trích xuất nhật ký quẹt thẻ cửa từ/camera giám sát.'
+                                                    : 'Physical Security Control: No server command applicable. Provide data center layout diagrams, fire suppression test logs, or badge access logs.')}
+                                                {!isPolicy && !isHR && !isPhysical && (locale === 'vi'
+                                                    ? 'Biện pháp Quản lý/Vận hành: Thu thập tài liệu quy trình, biên bản họp hoặc ảnh chụp màn hình minh chứng thực tế.'
+                                                    : 'Operational Control: Provide procedural documents, meeting notes, or verified configuration screenshots.')}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* 4. Common Pitfalls / GAP Triggers */}
                                     <div className={styles.block}>
-                                        <div className={styles.blockLabel}>{locale === 'vi' ? '⚠️ LỖI GAP THƯỜNG GẶP (DỄ BỊ ĐÁNH TRƯỢT)' : '⚠️ COMMON AUDIT PITFALLS'}</div>
+                                        <div className={styles.blockLabel}>{locale === 'vi' ? 'LỖI GAP THƯỜNG GẶP (DỄ BỊ ĐÁNH TRƯỢT)' : 'COMMON AUDIT PITFALLS'}</div>
                                         <div className={styles.pitfallBox}>
                                             {pitfall}
                                         </div>
@@ -253,8 +329,8 @@ export default function DetailDrawer({
                                         <p className={styles.hint}>
                                             {desc.hint ||
                                                 (implemented
-                                                    ? 'Biện pháp này đã được đánh dấu triển khai. Hãy đảm bảo tài liệu bằng chứng được cập nhật và lưu trữ đúng nơi.'
-                                                    : 'Cần rà soát chính sách, cấu hình máy chủ hoặc tài liệu liên quan trước khi đánh dấu đạt.')}
+                                                    ? (locale === 'vi' ? 'Biện pháp này đã được đánh dấu triển khai. Hãy đảm bảo tài liệu bằng chứng được cập nhật và lưu trữ đúng nơi.' : 'Control marked as implemented.')
+                                                    : (locale === 'vi' ? 'Cần rà soát chính sách, cấu hình máy chủ hoặc tài liệu liên quan trước khi đánh dấu đạt.' : 'Review policies and system settings before marking completed.'))}
                                         </p>
                                     </div>
                                 </>
@@ -264,19 +340,16 @@ export default function DetailDrawer({
                         </div>
                     )}
 
-
                     {tab === 'evidence' && (
                         <div className={styles.section}>
-                            {/* STEP-5-PLACEHOLDER: mandatory-evidence gate will highlight this zone when empty */}
                             <div
                                 className={styles.drop}
                                 onDrop={handleDrop}
                                 onDragOver={handleDragOver}
                             >
-                                <span className={styles.dropIcon} aria-hidden="true">📂</span>
-                                <span className={styles.dropText}>{t('assessment.dragDropFiles')}</span>
+                                <span className={styles.dropText}>{locale === 'vi' ? 'Kéo thả tệp bằng chứng vào đây hoặc bấm' : 'Drag & drop evidence files here or'}</span>
                                 <label className={styles.uploadBtn}>
-                                    📎 {t('assessment.selectFiles')}
+                                    {locale === 'vi' ? 'Chọn tệp từ máy tính' : 'Browse Files'}
                                     <input
                                         type="file"
                                         multiple
@@ -307,7 +380,7 @@ export default function DetailDrawer({
                                     ))}
                                 </div>
                             ) : (
-                                <p className={styles.empty}>{t('formIso.evidenceEmpty')}</p>
+                                <p className={styles.empty}>{locale === 'vi' ? 'Chưa có tệp bằng chứng nào được tải lên cho biện pháp này.' : 'No evidence files uploaded for this control yet.'}</p>
                             )}
 
                             <div className={styles.block}>
@@ -325,44 +398,22 @@ export default function DetailDrawer({
 
                     {tab === 'ai' && (
                         <div className={styles.section}>
-                            {verdict || confidence != null || missingItems.length > 0 || aiNotes ? (
-                                <>
-                                    {verdict && (
-                                        <div className={styles.block}>
-                                            <div className={styles.blockLabel}>{t('formIso.aiVerdict')}</div>
-                                            <span className={`${styles.chip} ${styles[`v_${verdict}`] || ''}`}>
-                                                {t(`assessment.verdict.${verdict}`)}
-                                            </span>
-                                        </div>
-                                    )}
-                                    {confidence != null && (
-                                        <div className={styles.block}>
-                                            <div className={styles.blockLabel}>{t('formIso.aiConfidence')}</div>
-                                            <p className={styles.text}>
-                                                {typeof confidence === 'number'
-                                                    ? `${Math.round(confidence * 100)}%`
-                                                    : String(confidence)}
-                                            </p>
-                                        </div>
-                                    )}
-                                    {missingItems.length > 0 && (
-                                        <div className={styles.block}>
-                                            <div className={styles.blockLabel}>{t('formIso.aiMissing')}</div>
-                                            <ul className={styles.evList}>
-                                                {missingItems.map((m, i) => <li key={i}>{m}</li>)}
-                                            </ul>
-                                        </div>
-                                    )}
-                                    {aiNotes && (
-                                        <div className={styles.block}>
-                                            <div className={styles.blockLabel}>{t('formIso.aiNotes')}</div>
-                                            <p className={styles.text}>{aiNotes}</p>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <p className={styles.empty}>{t('formIso.aiEmpty')}</p>
-                            )}
+                            <div className={styles.aiNoticeCard}>
+                                <span className={styles.aiNoticeBadge}>{locale === 'vi' ? 'TÍNH NĂNG ĐANG HOÀN THIỆN' : 'FEATURE IN DEVELOPMENT'}</span>
+                                <h4 className={styles.aiNoticeTitle}>
+                                    {locale === 'vi' ? 'Trợ Lý Đánh Giá AI Tức Thì (Realtime Copilot)' : 'Realtime AI Copilot Assessment'}
+                                </h4>
+                                <p className={styles.aiNoticeDesc}>
+                                    {locale === 'vi' 
+                                        ? 'Tính năng thẩm định và đưa ra kết luận tự động cho từng biện pháp đơn lẻ đang được tối ưu hóa cho mô hình AI Local (Gemma 2B / Qwen 2.5) để bảo đảm tốc độ và quyền riêng tư dữ liệu.' 
+                                        : 'Realtime single-control AI verification is being optimized for local offline LLMs (Gemma 2B / Qwen 2.5).'}
+                                </p>
+                                <div className={styles.aiNoticeTip}>
+                                    {locale === 'vi' 
+                                        ? 'Quy trình hiện tại: Hãy tích chọn các biện pháp đã triển khai, nạp tệp bằng chứng tại tab "Tệp bằng chứng", sau đó chuyển sang Bước 4 (Tổng kết & Gửi) để AI thực hiện thẩm định toàn diện toàn bộ hồ sơ.' 
+                                        : 'Current workflow: Mark implemented controls, attach evidence, and proceed to Step 4 (Review & Submit) to trigger full comprehensive AI assessment.'}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>

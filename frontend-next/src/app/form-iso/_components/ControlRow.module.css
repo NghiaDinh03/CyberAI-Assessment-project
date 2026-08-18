@@ -136,57 +136,37 @@
     flex-shrink: 0;
 }
 
-.evidenceBtn {
+.guideBtn {
     background: rgba(255, 255, 255, 0.04);
-    border: 1px dashed rgba(255, 255, 255, 0.2);
-    color: #94a3b8;
-    font-size: 0.75rem;
-    font-weight: 500;
-    padding: 5px 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
-}
-
-.evidenceBtn:hover {
-    background: rgba(59, 130, 246, 0.15);
-    border-color: rgba(59, 130, 246, 0.4);
-    color: #60a5fa;
-}
-
-.evidenceBtnActive {
-    background: rgba(16, 185, 129, 0.15);
-    border: 1px solid rgba(16, 185, 129, 0.4);
-    color: #34d399;
-}
-
-.infoBtn {
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.25);
-    color: #93c5fd;
-    font-size: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 0.8rem;
     font-weight: 600;
-    padding: 5px 10px;
+    padding: 6px 14px;
     border-radius: 8px;
     cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
     white-space: nowrap;
 }
 
-.infoBtn:hover,
-.infoBtnActive {
-    background: rgba(59, 130, 246, 0.25);
+.guideBtn:hover {
+    background: rgba(59, 130, 246, 0.2);
     border-color: #3b82f6;
-    color: #ffffff;
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
 }
+
+.guideBtnHasFiles {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.35);
+    color: #6ee7b7;
+}
+
+.guideBtnHasFiles:hover {
+    background: rgba(16, 185, 129, 0.22);
+    border-color: #10b981;
+    color: #a7f3d0;
+}
+
 
 .verdict {
     font-size: 0.68rem;

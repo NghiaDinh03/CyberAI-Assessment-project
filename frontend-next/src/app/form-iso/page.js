@@ -254,7 +254,16 @@ export default function FormISOPage() {
                         : `🎉 Successfully parsed ${data.summary?.processed_successfully || files.length} files! Detected ${hosts.length} hosts and auto-checked ${suggestedControls.length} matching controls.`
                 })
             } else {
-                const errMsg = data.detail || data.message || (locale === 'vi' ? 'Lỗi khi xử lý hàng loạt tệp bằng chứng.' : 'Error processing batch evidence files.')
+                let errMsg = (locale === 'vi' ? 'Lỗi khi xử lý hàng loạt tệp bằng chứng.' : 'Error processing batch evidence files.')
+                if (typeof data.detail === 'string') {
+                    errMsg = data.detail
+                } else if (Array.isArray(data.detail)) {
+                    errMsg = data.detail.map(d => (typeof d === 'string' ? d : d.msg || JSON.stringify(d))).join(', ')
+                } else if (data.detail && typeof data.detail === 'object') {
+                    errMsg = data.detail.msg || JSON.stringify(data.detail)
+                } else if (typeof data.message === 'string') {
+                    errMsg = data.message
+                }
                 setBatchResultMsg({
                     type: 'error',
                     text: errMsg
@@ -269,6 +278,7 @@ export default function FormISOPage() {
         } finally {
             setBatchUploading(false)
         }
+
     }
 
     const deleteEvidence = async (controlId, filename) => {

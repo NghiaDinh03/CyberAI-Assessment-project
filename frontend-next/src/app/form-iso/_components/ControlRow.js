@@ -101,20 +101,11 @@ export default function ControlRow({
             <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
                 <button
                     type="button"
-                    className={`${styles.evidenceBtn} ${evidenceCount > 0 ? styles.evidenceBtnActive : ''}`}
+                    className={`${styles.guideBtn} ${evidenceCount > 0 ? styles.guideBtnHasFiles : ''}`}
                     onClick={() => onOpenDrawer?.(control.id)}
-                    title={locale === 'vi' ? 'Quản lý tệp bằng chứng' : 'Manage evidence files'}
+                    title={locale === 'vi' ? 'Xem hướng dẫn, tiêu chí và tệp bằng chứng' : 'View criteria and evidence'}
                 >
-                    📎 {evidenceCount > 0 ? `${evidenceCount} ${locale === 'vi' ? 'tệp' : 'files'}` : (locale === 'vi' ? 'Đính kèm' : 'Attach')}
-                </button>
-
-                <button
-                    type="button"
-                    className={styles.infoBtn}
-                    onClick={() => onOpenDrawer?.(control.id)}
-                    title={locale === 'vi' ? 'Xem chi tiết tiêu chuẩn, hướng dẫn & lệnh mẫu' : 'View full standard criteria & guidance'}
-                >
-                    ⓘ {locale === 'vi' ? 'Hướng dẫn' : 'Guide'}
+                    {locale === 'vi' ? 'Hướng dẫn' : 'Guide'} {evidenceCount > 0 ? `(${evidenceCount})` : ''}
                 </button>
 
                 {verdict && (
@@ -132,6 +123,7 @@ export default function ControlRow({
         </div>
     )
 }
+
 
 
 
