@@ -1,0 +1,172 @@
+{
+  "version": "1.0",
+  "standard": "ISO 27001:2022",
+  "description": "Benchmark dataset cho đánh giá chất lượng AI Auditor — mỗi test case có input đã biết và expected output chuẩn để so sánh chất lượng SecurityLM vs Cloud model",
+  "created": "2026-03-26",
+  "test_cases": [
+    {
+      "id": "BC-001",
+      "name": "Ngân hàng tuân thủ cao (>90%)",
+      "category": "high_compliance",
+      "input": {
+        "org_name": "Ngân hàng Test A",
+        "industry": "Tài chính - Ngân hàng",
+        "employees": 2000,
+        "it_staff": 80,
+        "servers": 500,
+        "firewalls": "Palo Alto PA-5260 HA",
+        "vpn": true,
+        "antivirus": "CrowdStrike Falcon XDR",
+        "siem": "Splunk Enterprise Security",
+        "backup": "Veeam + AWS S3 Glacier offsite",
+        "cloud": "AWS + Azure DR",
+        "network_diagram": "Zero Trust 5 zones: Internet → PA-5260 HA → DMZ → Application → Core Banking → Management. VLAN phân tách theo zone. Micro-segmentation NSX-T.",
+        "implemented_controls": [
+          "A.5.1","A.5.2","A.5.3","A.5.4","A.5.9","A.5.12","A.5.15","A.5.16","A.5.17","A.5.18",
+          "A.5.24","A.5.26","A.5.27","A.5.31","A.5.34",
+          "A.6.1","A.6.3","A.6.5","A.6.6","A.6.7","A.6.8",
+          "A.7.1","A.7.2","A.7.4","A.7.8","A.7.10","A.7.14",
+          "A.8.1","A.8.2","A.8.3","A.8.5","A.8.7","A.8.8","A.8.9","A.8.12","A.8.13","A.8.14","A.8.15","A.8.16","A.8.20","A.8.22","A.8.24","A.8.25","A.8.29"
+        ],
+        "incidents_12m": 1,
+        "iso_status": "Đang triển khai"
+      },
+      "expected_output": {
+        "compliance_tier": "high",
+        "compliance_min_percent": 75,
+        "top_risks_should_include": ["A.5.7", "A.5.23", "A.8.8"],
+        "severity_distribution": {
+          "critical_max": 3,
+          "high_max": 8,
+          "medium_max": 15
+        },
+        "executive_summary_should_mention": ["SOC", "Zero Trust", "PCI-DSS", "ngân sách"],
+        "report_sections_required": ["ĐÁNH GIÁ TỔNG QUAN", "RISK REGISTER", "GAP ANALYSIS", "ACTION PLAN", "EXECUTIVE SUMMARY"]
+      }
+    },
+    {
+      "id": "BC-002",
+      "name": "Bệnh viện tuân thủ thấp (<20%)",
+      "category": "low_compliance",
+      "input": {
+        "org_name": "Bệnh viện Test B",
+        "industry": "Y tế - Khám chữa bệnh",
+        "employees": 400,
+        "it_staff": 4,
+        "servers": 12,
+        "firewalls": "FortiGate 60F",
+        "vpn": false,
+        "antivirus": "Kaspersky Endpoint",
+        "siem": "Không có",
+        "backup": "NAS Synology hàng ngày",
+        "cloud": "Không sử dụng",
+        "network_diagram": "Mạng phẳng, không phân tách VLAN. Tất cả máy cùng subnet. Wi-Fi chung nhân viên và khách.",
+        "implemented_controls": [
+          "A.5.1",
+          "A.7.1",
+          "A.8.7","A.8.13"
+        ],
+        "incidents_12m": 5,
+        "iso_status": "Chưa triển khai"
+      },
+      "expected_output": {
+        "compliance_tier": "critical",
+        "compliance_max_percent": 20,
+        "top_risks_should_include": ["A.5.15", "A.5.16", "A.5.17", "A.8.15", "A.8.16", "A.8.20", "A.8.22"],
+        "severity_distribution": {
+          "critical_min": 5,
+          "high_min": 10
+        },
+        "executive_summary_should_mention": ["dữ liệu bệnh nhân", "VLAN", "SIEM", "ngân sách"],
+        "report_sections_required": ["ĐÁNH GIÁ TỔNG QUAN", "RISK REGISTER", "GAP ANALYSIS", "ACTION PLAN", "EXECUTIVE SUMMARY"]
+      }
+    },
+    {
+      "id": "BC-003",
+      "name": "Startup SaaS tuân thủ trung bình (40-60%)",
+      "category": "medium_compliance",
+      "input": {
+        "org_name": "Startup Test C",
+        "industry": "Phần mềm dịch vụ (SaaS)",
+        "employees": 50,
+        "it_staff": 10,
+        "servers": 80,
+        "firewalls": "AWS Security Groups, Cloudflare WAF",
+        "vpn": true,
+        "antivirus": "CrowdStrike Falcon Go",
+        "siem": "AWS CloudTrail + CloudWatch",
+        "backup": "AWS S3 Versioning + RDS Automated Backup",
+        "cloud": "100% AWS (EKS, RDS, S3)",
+        "network_diagram": "100% Cloud. VPC 3 subnet: Public (ALB), Private (EKS), Isolated (RDS). Dev truy cập qua WireGuard VPN. IAM phân quyền strict.",
+        "implemented_controls": [
+          "A.5.1","A.5.2","A.5.15","A.5.16","A.5.17",
+          "A.6.3","A.6.7",
+          "A.8.1","A.8.5","A.8.7","A.8.8","A.8.13","A.8.15","A.8.20","A.8.22","A.8.24","A.8.25"
+        ],
+        "incidents_12m": 0,
+        "iso_status": "Đang triển khai"
+      },
+      "expected_output": {
+        "compliance_tier": "medium",
+        "compliance_min_percent": 35,
+        "compliance_max_percent": 65,
+        "top_risks_should_include": ["A.5.9", "A.5.19", "A.5.24", "A.8.9", "A.8.16"],
+        "report_sections_required": ["ĐÁNH GIÁ TỔNG QUAN", "RISK REGISTER", "GAP ANALYSIS", "ACTION PLAN", "EXECUTIVE SUMMARY"]
+      }
+    },
+    {
+      "id": "BC-004",
+      "name": "Cơ quan nhà nước TCVN 11930 (Cấp độ 3)",
+      "category": "government_tcvn",
+      "standard": "tcvn11930",
+      "input": {
+        "org_name": "Sở Test D",
+        "industry": "Hành chính công",
+        "employees": 150,
+        "it_staff": 6,
+        "servers": 25,
+        "firewalls": "FortiGate 200F",
+        "vpn": true,
+        "antivirus": "BKAV Pro Endpoint",
+        "siem": "Wazuh SIEM",
+        "backup": "Veeam Backup + NAS",
+        "cloud": "Trung tâm dữ liệu tỉnh",
+        "network_diagram": "3 VLAN: Nội bộ (10), DMZ (50 - cổng TTĐT), Quản trị (1). FortiGate biên. Switch HP Aruba 2930F.",
+        "implemented_controls": [
+          "NW.01","NW.02","NW.03","NW.04","NW.05",
+          "SV.01","SV.02","SV.07","SV.08",
+          "APP.01","APP.02","APP.03",
+          "DAT.01",
+          "MNG.01","MNG.02","MNG.03"
+        ],
+        "incidents_12m": 2,
+        "iso_status": "Đang triển khai"
+      },
+      "expected_output": {
+        "compliance_tier": "medium",
+        "compliance_min_percent": 40,
+        "top_risks_should_include": ["NW.06", "NW.07", "SV.03", "SV.05", "SV.06", "DAT.02", "MNG.04", "MNG.05"],
+        "report_sections_required": ["ĐÁNH GIÁ TỔNG QUAN", "RISK REGISTER", "GAP ANALYSIS", "ACTION PLAN", "EXECUTIVE SUMMARY"]
+      }
+    }
+  ],
+  "evaluation_metrics": {
+    "section_completeness": "Báo cáo có đủ 5 section bắt buộc",
+    "severity_accuracy": "Số lượng Critical/High/Medium/Low phù hợp với mức tuân thủ",
+    "control_id_accuracy": "Control ID trong báo cáo phải thuộc tiêu chuẩn tương ứng",
+    "recommendation_actionability": "Khuyến nghị phải cụ thể, có timeline, không chung chung",
+    "executive_summary_conciseness": "Executive Summary ≤ 300 từ, có metrics và next steps",
+    "false_positive_rate": "Không báo GAP cho controls đã được tick là implemented"
+  },
+  "model_comparison": {
+    "models_to_compare": ["SecurityLM-7B (LocalAI)", "Meta-Llama-8B (LocalAI)", "Cloud (OpenClaude)"],
+    "comparison_criteria": [
+      "Thời gian xử lý (seconds)",
+      "Section completeness score (0-5)",
+      "Control ID accuracy (%)",
+      "Recommendation specificity (1-5)",
+      "False positive rate (%)",
+      "Executive summary quality (1-5)"
+    ]
+  }
+}

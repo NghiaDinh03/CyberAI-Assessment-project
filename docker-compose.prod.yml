@@ -1,0 +1,136 @@
+# docker-compose.prod.yml — Production deployment
+# Sử dụng: docker-compose -f docker-compose.prod.yml up -d
+#
+# Khác với docker-compose.yml (dev):
+# - LocalAI: tăng memory limit, không có DEBUG mode
+# - Backend: gunicorn với workers
+# - Frontend: production build
+# - Không mount source code vào container
+# - HTTPS qua Nginx reverse proxy
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: cyberai-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - cyberai-network
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cyberai-backend
+    environment:
+      - LOCALAI_URL=http://localai:8080
+      - MODEL_NAME=${MODEL_NAME:-Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf}
+      - SECURITY_MODEL_NAME=${SECURITY_MODEL_NAME:-SecurityLLM-7B-Q4_K_M.gguf}
+      - MAX_TOKENS=-1
+      - CLOUD_LLM_API_URL=${CLOUD_LLM_API_URL}
+      - CLOUD_MODEL_NAME=${CLOUD_MODEL_NAME:-gemini-3-pro-preview}
+      - CLOUD_API_KEYS=${CLOUD_API_KEYS}
+      - ISO_DOCS_PATH=/data/iso_documents
+      - VECTOR_STORE_PATH=/data/vector_store
+      - DATA_PATH=/data
+      - LOG_LEVEL=WARNING
+      - DEBUG=false
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://yourdomain.com}
+      - JWT_SECRET=${JWT_SECRET}
+      - INFERENCE_TIMEOUT=300
+      - CLOUD_TIMEOUT=60
+      - WORKERS=2
+    networks:
+      - cyberai-network
+    volumes:
+      - cyberai-data:/data
+    depends_on:
+      localai:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend-next
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+    container_name: cyberai-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://yourdomain.com}
+      - API_URL=http://backend:8000
+      - NODE_ENV=production
+    volumes:
+      - ./docs:/app/docs:ro
+    networks:
+      - cyberai-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  localai:
+    # Latest tag for full Gemma 3/4 support via up-to-date llama.cpp.
+    # Switch to a versioned CUDA tag once a stable release ships gemma3 + CUDA support.
+    image: localai/localai:latest
+    container_name: cyberai-localai
+    ports:
+      - "8080:8080"
+    environment:
+      - DEBUG=false
+      - THREADS=${THREADS:-6}
+      - CONTEXT_SIZE=8192
+      - PARALLEL_REQUESTS=false
+      - MLOCK=false
+      - MMAP=true
+      - GALLERIES=false
+    ulimits:
+      memlock: -1
+    volumes:
+      - ./models:/build/models
+    networks:
+      - cyberai-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          memory: 8G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/readyz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+
+networks:
+  cyberai-network:
+    driver: bridge
+
+volumes:
+  cyberai-data:
+    driver: local

@@ -1,0 +1,332 @@
+"""CyberAI Assessment API v2.0 — FastAPI with CORS, rate limiting, and custom error handlers."""
+
+import logging
+import time
+import uuid
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from core.config import settings
+from core.exceptions import AppException
+
+logging.basicConfig(
+    level=logging.DEBUG if settings.DEBUG else logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+# Silence noisy HTTP client libraries even in DEBUG mode — they flood logs
+# with connection/TLS/request/response detail on every health poll (15s × 2-3
+# pages = 6k+ debug lines/hour of pure noise).
+for noisy in ("httpcore", "httpcore.connection", "httpcore.http11",
+              "urllib3", "urllib3.connectionpool",
+              "h2", "h2.codec.framed_write", "h2.proto.connection",
+              "httpx", "chromadb.utils.embedding_functions.onnx_mini_lm_l6_v2"):
+    logging.getLogger(noisy).setLevel(logging.WARNING)
+logger = logging.getLogger(__name__)
+
+try:
+    from slowapi import _rate_limit_exceeded_handler
+    from slowapi.errors import RateLimitExceeded
+    from core.limiter import limiter, _has_rate_limit
+except ImportError:
+    limiter = None
+    _has_rate_limit = False
+    logger.warning("slowapi not installed — rate limiting disabled")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("CyberAI Platform starting up...")
+
+    # Validate settings; emit warnings for any soft issues
+    for w in settings.validate():
+        logger.warning(w)
+
+    logger.info(f"  App       : {settings.APP_NAME} v{settings.APP_VERSION}")
+    logger.info(f"  Cloud LLM : {settings.CLOUD_LLM_API_URL} (model: {settings.CLOUD_MODEL_NAME})")
+    logger.info(f"  API keys  : {len(settings.cloud_api_key_list)} configured")
+    logger.info(f"  Ollama    : {settings.OLLAMA_URL} (model: {settings.MODEL_NAME})")
+    logger.info(f"  CORS      : {settings.cors_origins_list}")
+    logger.info(f"  PREFER_LOCAL: {settings.PREFER_LOCAL}")
+    logger.info(f"  DEBUG     : {settings.DEBUG}")
+
+    from services.model_guard import ModelGuard
+    ModelGuard.refresh()
+
+    try:
+        from services.ram_guard import log_ram_guard_status
+        log_ram_guard_status(logger)
+    except Exception as exc:
+        logger.warning(f"RAM guard startup check failed (non-fatal): {exc}")
+
+    try:
+        from repositories.session_store import SessionStore
+        cleaned = SessionStore().cleanup_expired()
+        if cleaned:
+            logger.info(f"  Cleaned {cleaned} expired sessions on startup")
+    except Exception as exc:
+        logger.warning(f"Session cleanup error on startup: {exc}")
+
+    try:
+        from services.document_ingest.watcher import start_watcher
+        start_watcher()
+        logger.info("  Document watcher thread started.")
+    except Exception as exc:
+        logger.warning(f"Failed to start Document Watcher (non-fatal): {exc}")
+
+    yield
+
+    logger.info("Graceful shutdown initiated...")
+
+    try:
+        from services.document_ingest.watcher import stop_watcher
+        stop_watcher()
+        logger.info("  Document watcher thread stopped.")
+    except Exception as exc:
+        logger.warning(f"Failed to stop Document Watcher: {exc}")
+
+    try:
+        from repositories.vector_store import VectorStore
+        vs = VectorStore()
+        # chromadb.PersistentClient does not expose an explicit .close() in all
+        # versions; call it only when the method exists to stay version-agnostic.
+        client = getattr(vs, "client", None)
+        if client is not None:
+            if hasattr(client, "close"):
+                client.close()
+                logger.info("  ChromaDB client closed.")
+            elif hasattr(client, "reset"):
+                # reset() clears in-memory state without deleting persisted data
+                client.reset()
+                logger.info("  ChromaDB client reset.")
+    except Exception as exc:
+        logger.warning(f"  ChromaDB shutdown error (non-fatal): {exc}")
+
+    logger.info("Shutdown complete.")
+
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    description=(
+        f"AI-powered ISO 27001 compliance chatbot with "
+        f"{settings.CLOUD_MODEL_NAME} via Open Claude"
+    ),
+    version=settings.APP_VERSION,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan,
+)
+
+if _has_rate_limit:
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.middleware("http")
+async def record_metrics(request: Request, call_next):
+    """Track request count and duration for every HTTP request.
+
+    Skips the /metrics endpoint itself to avoid self-referential cardinality.
+    Uses the raw path (without query string) as the endpoint label to keep
+    cardinality bounded even with dynamic path segments.
+    """
+    path = request.url.path
+    start = time.perf_counter()
+    response = await call_next(request)
+    if path != "/metrics":
+        try:
+            from api.routes.metrics import REQUEST_COUNT, REQUEST_DURATION
+            duration = time.perf_counter() - start
+            REQUEST_COUNT.labels(
+                method=request.method,
+                endpoint=path,
+                status=str(response.status_code),
+            ).inc()
+            REQUEST_DURATION.labels(endpoint=path).observe(duration)
+        except Exception:
+            # Never let metrics instrumentation crash the request
+            pass
+    return response
+
+
+@app.middleware("http")
+async def add_request_id(request: Request, call_next):
+    """Propagate or generate a unique request ID for every HTTP request.
+
+    - Reads ``X-Request-ID`` from the incoming headers (pass-through pattern).
+    - Falls back to a fresh ``uuid4`` when the header is absent.
+    - Stores the value in ``request.state.request_id`` for use by route
+      handlers and exception handlers.
+    - Echoes the value back in the ``X-Request-ID`` response header.
+    """
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
+
+
+@app.middleware("http")
+async def limit_request_size(request: Request, call_next):
+    # Allow larger uploads for documents, standards, and evidence files
+    exempt_prefixes = [
+        "/api/documents/upload",
+        "/api/standards/upload",
+        "/api/standards/validate",
+        "/api/iso27001/evidence/",
+        "/api/templates/",
+        "/api/v1/documents/upload",
+        "/api/v1/standards/upload",
+        "/api/v1/standards/validate",
+        "/api/v1/iso27001/evidence/",
+        "/api/v1/templates/",
+    ]
+    if not any(request.url.path.startswith(p) for p in exempt_prefixes):
+        content_length = request.headers.get("content-length")
+        if content_length and int(content_length) > 2 * 1024 * 1024:
+            request_id = getattr(request.state, "request_id", "unknown")
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "error": "Request body too large",
+                    "max_size": "2MB",
+                    "request_id": request_id,
+                },
+            )
+    return await call_next(request)
+
+
+@app.exception_handler(AppException)
+async def app_exception_handler(request: Request, exc: AppException):
+    """Handle all first-party AppException subclasses with sanitized output."""
+    request_id = getattr(request.state, "request_id", "unknown")
+    content: dict = {
+        "error": exc.message,
+        "status_code": exc.status_code,
+        "request_id": request_id,
+    }
+    # Include structured details only when they are explicitly provided and
+    # contain no raw exception data (the caller's responsibility).
+    if exc.details is not None:
+        content["details"] = exc.details
+    return JSONResponse(status_code=exc.status_code, content=content)
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Return sanitized JSON for every FastAPI/Starlette HTTPException."""
+    request_id = getattr(request.state, "request_id", "unknown")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": exc.detail,
+            "status_code": exc.status_code,
+            "request_id": request_id,
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """Catch-all handler — never leaks internal details to API consumers.
+
+    Stack traces and raw exception messages are logged server-side only.
+    """
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.exception(
+        "Unhandled exception [request_id=%s] %s %s",
+        request_id,
+        request.method,
+        request.url.path,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal server error",
+            "request_id": request_id,
+        },
+    )
+
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc):
+    request_id = getattr(request.state, "request_id", "unknown")
+    return JSONResponse(
+        status_code=404,
+        content={
+            "error": "Not found",
+            "detail": str(exc.detail) if hasattr(exc, "detail") else "Resource not found",
+            "request_id": request_id,
+        },
+    )
+
+
+from api.routes import chat, document, health, iso27001, system, standards, benchmark, prompts, ollama, risks, templates, assessment_history, auth  # noqa: E402
+from api.routes.metrics import router as metrics_router  # noqa: E402
+
+app.include_router(metrics_router, prefix="", tags=["Observability"])
+
+app.include_router(health.router,             prefix="/api/v1", tags=["Health v1"])
+app.include_router(auth.router,               prefix="/api/v1", tags=["Authentication v1"])
+app.include_router(chat.router,               prefix="/api/v1", tags=["Chat v1"])
+app.include_router(document.router,           prefix="/api/v1", tags=["Documents v1"])
+app.include_router(iso27001.router,           prefix="/api/v1", tags=["ISO27001 v1"])
+app.include_router(standards.router,          prefix="/api/v1", tags=["Standards v1"])
+app.include_router(system.router,             prefix="/api/v1", tags=["System v1"])
+app.include_router(benchmark.router,          prefix="/api/v1", tags=["Benchmark v1"])
+app.include_router(prompts.router,            prefix="/api/v1", tags=["Prompts v1"])
+app.include_router(ollama.router,             prefix="/api/v1", tags=["Ollama v1"])
+app.include_router(risks.router,              prefix="/api/v1", tags=["Risk Register v1"])
+app.include_router(templates.router,          prefix="/api/v1", tags=["Templates v1"])
+app.include_router(assessment_history.router, prefix="/api/v1", tags=["Assessment History v1"])
+
+app.include_router(health.router,             prefix="/api", tags=["Health"])
+app.include_router(auth.router,               prefix="/api", tags=["Authentication"])
+app.include_router(chat.router,               prefix="/api", tags=["Chat"])
+app.include_router(document.router,           prefix="/api", tags=["Documents"])
+app.include_router(iso27001.router,           prefix="/api", tags=["ISO27001"])
+app.include_router(standards.router,          prefix="/api", tags=["Standards"])
+app.include_router(system.router,             prefix="/api", tags=["System"])
+app.include_router(benchmark.router,          prefix="/api", tags=["Benchmark"])
+app.include_router(prompts.router,            prefix="/api", tags=["Prompts"])
+app.include_router(ollama.router,             prefix="/api", tags=["Ollama"])
+app.include_router(risks.router,              prefix="/api", tags=["Risk Register"])
+app.include_router(templates.router,          prefix="/api", tags=["Templates"])
+app.include_router(assessment_history.router, prefix="", tags=["Assessment History"])
+
+
+# Endpoint rườm rà dataset fine-tuning đã được loại bỏ để tinh giản hệ thống.
+
+
+@app.get("/")
+def root():
+    return {
+        "status": "running",
+        "service": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "ai_model": settings.CLOUD_MODEL_NAME,
+        "ai_provider": f"Open Claude ({settings.CLOUD_MODEL_NAME})",
+        "docs": "/docs",
+    }
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "version": settings.APP_VERSION}
+
+
+@app.get("/api/healthz")
+@app.get("/api/v1/healthz")
+@app.get("/healthz")
+def healthz_check():
+    return {"status": "healthy", "version": settings.APP_VERSION}

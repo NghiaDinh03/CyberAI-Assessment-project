@@ -1,0 +1,88 @@
+/* ── EvidenceThumb: small file thumbnail ── */
+
+.thumb {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.thumb:hover {
+    background: var(--bg-muted);
+    border-color: var(--border-active);
+}
+
+.preview {
+    width: 38px;
+    height: 38px;
+    border-radius: 6px;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.icon {
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.name {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.size {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    letter-spacing: 0.3px;
+}
+
+.expand {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.expand:hover {
+    background: var(--blue-subtle);
+    border-color: var(--border-active);
+    color: var(--accent-blue);
+}

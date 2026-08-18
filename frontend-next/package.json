@@ -1,0 +1,24 @@
+{
+  "name": "cyberai-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test:smoke": "node scripts/smoke_test.js"
+  },
+  "dependencies": {
+    "lucide-react": "^1.7.0",
+    "mermaid": "^11.14.0",
+    "next": "^15.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.1",
+    "react-syntax-highlighter": "^16.1.1",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.0"
+  }
+}

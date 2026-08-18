@@ -1,0 +1,83 @@
+{
+  "standard": "TCVN 11930:2017",
+  "version": "2017",
+  "full_name": "Yêu cầu kỹ thuật về bảo đảm an toàn thông tin theo 5 cấp độ",
+  "total_controls": 34,
+  "categories": [
+    {
+      "id": "NW",
+      "name": "Network Security",
+      "name_vi": "Bảo đảm ATTT Mạng",
+      "controls_count": 8
+    },
+    {
+      "id": "SV",
+      "name": "Server Security",
+      "name_vi": "Bảo đảm ATTT Máy chủ",
+      "controls_count": 8
+    },
+    {
+      "id": "APP",
+      "name": "Application Security",
+      "name_vi": "Bảo đảm ATTT Ứng dụng",
+      "controls_count": 7
+    },
+    {
+      "id": "DAT",
+      "name": "Data Security",
+      "name_vi": "Bảo đảm ATTT Dữ liệu",
+      "controls_count": 6
+    },
+    {
+      "id": "MNG",
+      "name": "Operations & Policy Management",
+      "name_vi": "Quản lý Vận hành & Chính sách",
+      "controls_count": 5
+    }
+  ],
+  "scoring": {
+    "method": "weighted",
+    "weights": {
+      "critical": 4,
+      "high": 3,
+      "medium": 2,
+      "low": 1
+    },
+    "levels": {
+      "1": "Cơ bản — kiểm soát tối thiểu",
+      "2": "Trung bình — kiểm soát cơ bản",
+      "3": "Khá — kiểm soát đầy đủ",
+      "4": "Cao — kiểm soát nâng cao",
+      "5": "Rất cao — kiểm soát xuất sắc"
+    }
+  },
+  "evidence_requirements": {
+    "NW.01": {"required": ["ACL configuration", "Network access policy"], "keywords": ["ACL", "truy cập vùng mạng"]},
+    "NW.02": {"required": ["Firewall rules", "Firewall logs"], "keywords": ["firewall", "tường lửa"]},
+    "NW.03": {"required": ["IDS/IPS configuration", "Alert logs"], "keywords": ["IDS", "IPS", "xâm nhập"]},
+    "NW.04": {"required": ["VPN configuration", "VPN logs"], "keywords": ["VPN", "mã hóa đường truyền"]},
+    "NW.05": {"required": ["DMZ architecture diagram", "Segmentation evidence"], "keywords": ["DMZ", "phân tách"]},
+    "SV.01": {"required": ["Password policy", "Service hardening evidence"], "keywords": ["mật khẩu", "password policy"]},
+    "SV.02": {"required": ["Antivirus deployment", "Scan reports"], "keywords": ["antivirus", "chống mã độc"]},
+    "SV.03": {"required": ["EDR/XDR deployment", "Detection logs"], "keywords": ["EDR", "XDR", "xâm nhập máy chủ"]},
+    "SV.05": {"required": ["PAM configuration", "Privileged access logs"], "keywords": ["PAM", "truy cập đặc quyền"]},
+    "SV.06": {"required": ["MFA for admin", "Authentication logs"], "keywords": ["MFA", "xác thực đa yếu tố"]},
+    "SV.07": {"required": ["Patch management policy", "Patch deployment logs"], "keywords": ["patch", "bản vá"]},
+    "SV.08": {"required": ["Hardening guidelines", "CIS benchmark results"], "keywords": ["hardening", "CIS", "cấu hình an toàn"]},
+    "APP.01": {"required": ["Password hashing evidence", "Database security config"], "keywords": ["mã hóa mật khẩu", "bcrypt"]},
+    "APP.02": {"required": ["TLS certificate", "HTTPS configuration"], "keywords": ["HTTPS", "TLS", "SSL"]},
+    "APP.03": {"required": ["Input validation evidence", "WAF rules"], "keywords": ["SQLi", "XSS", "input validation"]},
+    "APP.05": {"required": ["WAF configuration", "WAF logs"], "keywords": ["WAF", "web application firewall"]},
+    "APP.07": {"required": ["Audit log configuration", "Log retention policy"], "keywords": ["audit log", "nhật ký"]},
+    "DAT.01": {"required": ["Backup policy", "Backup schedule", "Restore test"], "keywords": ["backup", "sao lưu"]},
+    "DAT.02": {"required": ["Access control policy", "Need-to-know matrix"], "keywords": ["phân quyền", "need-to-know"]},
+    "DAT.03": {"required": ["3-2-1 backup evidence", "Offsite backup config"], "keywords": ["backup dự phòng", "3-2-1"]},
+    "DAT.04": {"required": ["Encryption at rest config", "TDE evidence"], "keywords": ["TDE", "mã hóa dữ liệu"]},
+    "DAT.05": {"required": ["DLP configuration", "DLP alerts"], "keywords": ["DLP", "phòng chống thất thoát"]},
+    "MNG.01": {"required": ["Approved security policy", "Management approval"], "keywords": ["chính sách ATTT", "phê duyệt"]},
+    "MNG.02": {"required": ["CISO appointment", "Security team org chart"], "keywords": ["cán bộ ATTT", "chuyên trách"]},
+    "MNG.03": {"required": ["SIEM/SOC configuration", "Monitoring evidence"], "keywords": ["SIEM", "SOC", "giám sát tập trung"]},
+    "MNG.04": {"required": ["Incident response plan", "Drill records"], "keywords": ["ứng cứu sự cố", "diễn tập"]},
+    "MNG.05": {"required": ["Pentest reports", "Risk assessment records"], "keywords": ["pentest", "đánh giá rủi ro"]}
+  }
+}

@@ -1,0 +1,174 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: cyberai-backend:latest
+    container_name: cyberai-backend
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
+      - MODEL_NAME=${MODEL_NAME:-gemma4:latest}
+      - SECURITY_MODEL_NAME=${SECURITY_MODEL_NAME:-gemma4:latest}
+      - MAX_TOKENS=-1
+      - PREFER_LOCAL=${PREFER_LOCAL:-true}
+      - CLOUD_LLM_API_URL=${CLOUD_LLM_API_URL:-https://open-claude.com/v1}
+      - CLOUD_MODEL_NAME=${CLOUD_MODEL_NAME:-gemini-3.1-pro-preview}
+      - CLOUD_API_KEYS=${CLOUD_API_KEYS}
+      - GOOGLE_AI_STUDIO_API_KEY=${GOOGLE_AI_STUDIO_API_KEY:-}
+      - GOOGLE_AI_STUDIO_MODEL=${GOOGLE_AI_STUDIO_MODEL:-gemini-2.0-flash}
+      - GOOGLE_AI_STUDIO_URL=${GOOGLE_AI_STUDIO_URL:-https://generativelanguage.googleapis.com/v1beta}
+      - ISO_DOCS_PATH=/data/iso_documents
+      - VECTOR_STORE_PATH=/data/vector_store
+      - DATA_PATH=/data
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DEBUG=${DEBUG:-true}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - RATE_LIMIT_CHAT=${RATE_LIMIT_CHAT:-10/minute}
+      - RATE_LIMIT_ASSESS=${RATE_LIMIT_ASSESS:-3/minute}
+      - RATE_LIMIT_BENCHMARK=${RATE_LIMIT_BENCHMARK:-5/minute}
+      - INFERENCE_TIMEOUT=${INFERENCE_TIMEOUT:-1800}
+      - CLOUD_TIMEOUT=${CLOUD_TIMEOUT:-60}
+      - MODELS_PATH=/app/models
+    networks:
+      - cyberai-network
+    volumes:
+      - ./backend:/app
+      - ./models/llm:/app/models
+      - ./data/iso_documents:/data/iso_documents
+      - ./data/vector_store:/data/vector_store
+      - ./data/assessments:/data/assessments
+      - ./data/evidence:/data/evidence
+      - ./data/exports:/data/exports
+      - ./data/sessions:/data/sessions
+      - ./data/standards:/data/standards
+      - ./data/knowledge_base:/data/knowledge_base
+      - ./data/uploads:/data/uploads
+    depends_on:
+      ollama:
+        condition: service_started
+    restart: unless-stopped
+    mem_limit: 4g
+    mem_reservation: 1g
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 4G
+        reservations:
+          memory: 1G
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend-next
+      dockerfile: Dockerfile
+    image: cyberai-frontend:latest
+    container_name: cyberai-frontend
+    user: root
+    ports:
+      - "3081:3000"
+    command: ["sh", "-c", "npm install --legacy-peer-deps && npm run dev"]
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - API_URL=http://backend:8000
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    volumes:
+      - ./frontend-next:/app
+      - ./docs:/app/docs:ro
+    networks:
+      - cyberai-network
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+    mem_limit: 2g
+    mem_reservation: 256m
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+        reservations:
+          memory: 256M
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: cyberai-ollama
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5 && (ollama list | grep -q 'gemma4' || ollama pull gemma4:latest); wait"]
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_NUM_PARALLEL=2
+      - OLLAMA_NUM_THREADS=12
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_LOAD_TIMEOUT=20m
+      - OLLAMA_MAX_QUEUE=10
+      - OLLAMA_FLASH_ATTENTION=true
+      - OLLAMA_CONTEXT_LENGTH=4096
+      - OLLAMA_DEBUG=INFO
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - cyberai-network
+    restart: unless-stopped
+    mem_limit: 14g
+    mem_reservation: 4g
+    deploy:
+      resources:
+        limits:
+          cpus: "12"
+          memory: 14G
+        reservations:
+          memory: 4G
+          # Kích hoạt GPU Nvidia khi go-live thực tế (bỏ comment bên dưới):
+          # devices:
+          #   - driver: nvidia
+          #     count: all
+          #     capabilities: [gpu]
+    healthcheck:
+      test: [ "CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: cyberai-searxng
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8080
+    ports:
+      - "8888:8080"
+    networks:
+      - cyberai-network
+    restart: unless-stopped
+    mem_limit: 1g
+    mem_reservation: 128m
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+        reservations:
+          memory: 128M
+
+volumes:
+  ollama_data:
+
+networks:
+  cyberai-network:
+    driver: bridge

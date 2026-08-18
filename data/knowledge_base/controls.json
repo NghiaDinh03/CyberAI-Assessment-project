@@ -1,0 +1,90 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-05-06",
+  "description": "Unified controls catalog for CyberAI Assessment Platform",
+  "standards": {
+    "iso27001": {
+      "name": "ISO 27001:2022",
+      "total_controls": 93,
+      "source": "data/knowledge_base/iso27001.json"
+    },
+    "tcvn11930": {
+      "name": "TCVN 11930:2017",
+      "total_controls": 34,
+      "source": "data/knowledge_base/tcvn14423.json"
+    }
+  },
+  "weight_definitions": {
+    "critical": {
+      "score": 4,
+      "label_vi": "Tối quan trọng",
+      "label_en": "Critical",
+      "emoji": "🔴",
+      "description": "Controls that are fundamental to information security. Failure to implement creates immediate high-risk exposure."
+    },
+    "high": {
+      "score": 3,
+      "label_vi": "Quan trọng",
+      "label_en": "High",
+      "emoji": "🟠",
+      "description": "Controls that significantly reduce risk. Failure creates substantial vulnerability."
+    },
+    "medium": {
+      "score": 2,
+      "label_vi": "Trung bình",
+      "label_en": "Medium",
+      "emoji": "🟡",
+      "description": "Controls that provide good security posture. Important but not immediately critical."
+    },
+    "low": {
+      "score": 1,
+      "label_vi": "Thấp",
+      "label_en": "Low",
+      "emoji": "⚪",
+      "description": "Controls that enhance security posture. Nice-to-have but not urgent."
+    }
+  },
+  "verdict_definitions": {
+    "satisfied": {
+      "label_vi": "Đạt",
+      "label_en": "Satisfied",
+      "emoji": "✅",
+      "description": "Control is fully implemented with adequate evidence."
+    },
+    "partial": {
+      "label_vi": "Một phần",
+      "label_en": "Partial",
+      "emoji": "⚠️",
+      "description": "Control is partially implemented or evidence is incomplete."
+    },
+    "missing": {
+      "label_vi": "Chưa đạt",
+      "label_en": "Missing",
+      "emoji": "❌",
+      "description": "Control is not implemented or no evidence provided."
+    },
+    "not_applicable": {
+      "label_vi": "Không áp dụng",
+      "label_en": "Not Applicable",
+      "emoji": "➖",
+      "description": "Control is not applicable to the organization's context."
+    }
+  },
+  "evidence_mapping_patterns": {
+    "policy": ["A.5.1", "A.5.2"],
+    "firewall": ["A.8.20", "NW.02"],
+    "backup": ["A.8.13", "DAT.01"],
+    "training": ["A.6.3"],
+    "encryption": ["A.8.24", "DAT.04"],
+    "vulnerability": ["A.8.8"],
+    "logging": ["A.8.15", "MNG.03"],
+    "vpn": ["NW.04"],
+    "patch": ["SV.07"],
+    "mfa": ["A.8.5", "SV.06"],
+    "incident": ["A.5.24", "A.5.26", "MNG.04"],
+    "siem": ["A.8.15", "A.8.16", "MNG.03"],
+    "antivirus": ["A.8.7", "SV.02"],
+    "hardening": ["A.8.9", "SV.08"],
+    "pentest": ["A.8.29", "MNG.05"]
+  }
+}

@@ -1,0 +1,50 @@
+# ======= Core Framework =======
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.9.0
+pydantic-settings>=2.1.0
+python-multipart>=0.0.6
+python-dotenv>=1.0.0
+
+# ======= HTTP Clients =======
+requests>=2.31.0
+httpx>=0.27.0
+
+# ======= Vector Store (RAG) =======
+chromadb>=0.5.0
+
+# ======= Web Search =======
+duckduckgo-search>=6.2.0
+
+# ======= Streaming =======
+sse-starlette>=1.8.0
+
+# ======= Security & Rate Limiting =======
+slowapi>=0.1.9
+
+# ======= Observability / Metrics =======
+prometheus-client>=0.20.0
+
+# ======= System Monitoring (replaces /proc mount) =======
+psutil>=5.9.0
+
+# ======= YAML Parsing (Dynamic Standards) =======
+pyyaml>=6.0
+
+# ======= PDF Export (optional — fallback to HTML if not installed) =======
+weasyprint>=62.0
+
+# ======= Evidence Extraction (Phase 0 — document ingest pipeline) =======
+# Parses uploaded .docx / .xlsx / .pdf evidence into normalized text + tables
+# for downstream RAG / auto-scoring.
+python-docx>=1.1.0
+openpyxl>=3.1.0
+pypdf>=4.0.0
+
+# ======= OCR (Phase 10A — scanned PDF + image text extraction) =======
+pytesseract>=0.3.10
+pdf2image>=1.16.0
+Pillow>=10.0.0
+
+# ======= Logging =======
+# (uses stdlib logging, no extra deps)

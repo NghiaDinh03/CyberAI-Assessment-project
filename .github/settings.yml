@@ -1,0 +1,32 @@
+# GitHub Repository Settings
+# Applied automatically by the "Settings" GitHub App (https://github.com/apps/settings)
+# To use: install the app on your repo, then push this file.
+#
+# Manual alternative: go to GitHub repo → click ⚙ (gear icon next to "About") → fill in fields
+
+repository:
+  name: phobert-chatbot-project
+  description: "🛡️ Enterprise AI Platform — ISO 27001 Assessment, RAG Chatbot, AI News Aggregator with TTS. Built with Next.js 15, FastAPI, ChromaDB, and multi-tier Cloud LLM fallback."
+  homepage: ""
+  topics:
+    - nextjs
+    - fastapi
+    - python
+    - docker
+    - rag
+    - chromadb
+    - iso27001
+    - llm
+    - text-to-speech
+    - edge-tts
+    - cybersecurity
+    - vietnamese
+    - ai
+    - langchain
+    - vector-database
+
+  private: false
+  has_issues: true
+  has_projects: false
+  has_wiki: false
+  has_downloads: true
