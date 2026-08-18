@@ -903,100 +903,114 @@ async def export_soa(body: SoAExportRequest = SoAExportRequest()):
 
 
 @router.post("/iso27001/evidence/batch-ingest")
-async def batch_ingest_evidence(files: List[UploadFile] = File(...)):
+async def batch_ingest_evidence(request: Request, authorization: Optional[str] = Header(None)):
     """Batch upload server scans, logs, policies, and evidence documents.
-    Automatically parses content and maps them to ISO 27001 / TCVN 11930 controls.
+    Processes files sequentially through an isolated queue and maps them to compliance controls.
     """
     from services.evidence_mapper import map_evidence_to_controls
 
-    if not files:
-        raise HTTPException(status_code=400, detail="No files uploaded.")
+    try:
+        form = await request.form()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Không thể đọc multipart form data: {str(e)}")
 
+    uploaded_files: List[UploadFile] = []
+    for key, value in form.multi_items():
+        if isinstance(value, UploadFile):
+            uploaded_files.append(value)
+
+    if not uploaded_files:
+        raise HTTPException(status_code=400, detail="Không tìm thấy tệp đính kèm nào được gửi lên.")
+
+    current_user = _get_request_user(authorization)
     mapped_controls: Dict[str, List[dict]] = {}
     detected_hosts: List[dict] = []
     processed_files = []
+    errors = []
 
     ip_regex = _re_val.compile(r'\b(?:10|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}\b')
     hostname_regex = _re_val.compile(r'(?:Host Name|Computer Name|Tên máy chủ)[:\s]+([a-zA-Z0-9_\-]+)', _re_val.IGNORECASE)
     os_regex = _re_val.compile(r'(?:OS Name|Operating System|Hệ điều hành)[:\s]+([^\r\n]+)', _re_val.IGNORECASE)
 
-    for file in files:
+    for file in uploaded_files:
         if not file.filename:
             continue
+        try:
+            ext = "." + file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+            if ext not in ALLOWED_EVIDENCE_EXT:
+                errors.append(f"{file.filename}: Định dạng '{ext}' không được hỗ trợ.")
+                continue
 
-        ext = "." + file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
-        if ext not in ALLOWED_EVIDENCE_EXT:
-            continue
+            content = await file.read()
+            if len(content) > MAX_EVIDENCE_SIZE:
+                errors.append(f"{file.filename}: Kích thước vượt quá {MAX_EVIDENCE_SIZE // (1024*1024)}MB.")
+                continue
 
-        content = await file.read()
-        if len(content) > MAX_EVIDENCE_SIZE:
-            continue
+            ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            safe_name = f"{ts}_{file.filename}"
+            temp_dir = os.path.join(EVIDENCE_DIR, "_batch_temp")
+            os.makedirs(temp_dir, exist_ok=True)
+            temp_path = os.path.join(temp_dir, safe_name)
 
-        # Temporary save to parse
-        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        safe_name = f"{ts}_{file.filename}"
-        temp_dir = os.path.join(EVIDENCE_DIR, "_batch_temp")
-        os.makedirs(temp_dir, exist_ok=True)
-        temp_path = os.path.join(temp_dir, safe_name)
-
-        with open(temp_path, "wb") as f:
-            f.write(content)
-
-        text_content = parse_evidence_file_content(temp_path)
-
-        # Host detection from logs
-        found_ips = ip_regex.findall(text_content)
-        found_hostnames = hostname_regex.findall(text_content)
-        found_os = os_regex.findall(text_content)
-
-        host_info = {
-            "source_file": file.filename,
-            "ip": found_ips[0] if found_ips else None,
-            "hostname": found_hostnames[0] if found_hostnames else (file.filename.split(".")[0] if found_ips else None),
-            "os": found_os[0].strip() if found_os else None
-        }
-        if host_info["ip"] or host_info["hostname"]:
-            detected_hosts.append(host_info)
-
-        # Map to controls
-        control_scores = map_evidence_to_controls(file.filename, text_content)
-        
-        # Save file to top-matched controls (confidence >= 0.5)
-        saved_to_controls = []
-        for ctrl_id, score in control_scores.items():
-            if score >= 0.5:
-                ctrl_dir = os.path.join(EVIDENCE_DIR, ctrl_id.replace(".", "_"))
-                os.makedirs(ctrl_dir, exist_ok=True)
-                dest_path = os.path.join(ctrl_dir, safe_name)
-                with open(dest_path, "wb") as f:
-                    f.write(content)
-
-                if ctrl_id not in mapped_controls:
-                    mapped_controls[ctrl_id] = []
-                
-                mapped_controls[ctrl_id].append({
-                    "filename": safe_name,
-                    "original_name": file.filename,
-                    "confidence": score,
-                    "size_bytes": len(content),
-                    "preview": text_content[:200]
-                })
-                saved_to_controls.append(ctrl_id)
-
-        # If no control matched >= 0.5, store in general unassigned folder
-        if not saved_to_controls:
-            unassigned_dir = os.path.join(EVIDENCE_DIR, "_unassigned")
-            os.makedirs(unassigned_dir, exist_ok=True)
-            with open(os.path.join(unassigned_dir, safe_name), "wb") as f:
+            with open(temp_path, "wb") as f:
                 f.write(content)
 
-        processed_files.append({
-            "filename": file.filename,
-            "size_bytes": len(content),
-            "mapped_controls": saved_to_controls
-        })
+            text_content = parse_evidence_file_content(temp_path)
 
-    # Deduplicate detected hosts
+            # Host detection from log content
+            found_ips = ip_regex.findall(text_content)
+            found_hostnames = hostname_regex.findall(text_content)
+            found_os = os_regex.findall(text_content)
+
+            host_info = {
+                "source_file": file.filename,
+                "ip": found_ips[0] if found_ips else None,
+                "hostname": found_hostnames[0] if found_hostnames else (file.filename.split(".")[0] if found_ips else None),
+                "os": found_os[0].strip() if found_os else None
+            }
+            if host_info["ip"] or host_info["hostname"]:
+                detected_hosts.append(host_info)
+
+            # Map to controls
+            control_scores = map_evidence_to_controls(file.filename, text_content)
+
+            saved_to_controls = []
+            for ctrl_id, score in control_scores.items():
+                if score >= 0.4:
+                    ctrl_dir = os.path.join(EVIDENCE_DIR, ctrl_id.replace(".", "_"))
+                    os.makedirs(ctrl_dir, exist_ok=True)
+                    dest_path = os.path.join(ctrl_dir, safe_name)
+                    with open(dest_path, "wb") as f:
+                        f.write(content)
+
+                    if ctrl_id not in mapped_controls:
+                        mapped_controls[ctrl_id] = []
+                    
+                    mapped_controls[ctrl_id].append({
+                        "filename": safe_name,
+                        "original_name": file.filename,
+                        "confidence": score,
+                        "size_bytes": len(content),
+                        "preview": text_content[:200]
+                    })
+                    saved_to_controls.append(ctrl_id)
+
+            if not saved_to_controls:
+                unassigned_dir = os.path.join(EVIDENCE_DIR, "_unassigned")
+                os.makedirs(unassigned_dir, exist_ok=True)
+                with open(os.path.join(unassigned_dir, safe_name), "wb") as f:
+                    f.write(content)
+
+            processed_files.append({
+                "filename": file.filename,
+                "size_bytes": len(content),
+                "mapped_controls": saved_to_controls,
+                "status": "success"
+            })
+        except Exception as file_err:
+            logger.error(f"Error processing {file.filename}: {file_err}")
+            errors.append(f"{file.filename}: {str(file_err)}")
+
     unique_hosts = []
     seen_ips = set()
     for h in detected_hosts:
@@ -1014,10 +1028,13 @@ async def batch_ingest_evidence(files: List[UploadFile] = File(...)):
         "mapped_controls": mapped_controls,
         "suggested_implemented_controls": suggested_controls,
         "detected_hosts": unique_hosts,
+        "errors": errors,
         "summary": {
-            "total_files": len(processed_files),
+            "total_files": len(uploaded_files),
+            "processed_successfully": len(processed_files),
             "matched_controls_count": len(suggested_controls),
             "detected_hosts_count": len(unique_hosts)
         }
     }
+
 

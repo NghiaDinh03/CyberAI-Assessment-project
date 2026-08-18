@@ -193,12 +193,21 @@ export default function FormISOPage() {
         Array.from(files).forEach(f => formData.append('files', f))
 
         try {
+            const savedToken = typeof window !== 'undefined' ? localStorage.getItem('cyberai_auth_token') : null
+            const headers = {}
+            if (savedToken) {
+                headers['Authorization'] = `Bearer ${savedToken}`
+            }
+
             const res = await fetch('/api/iso27001/evidence/batch-ingest', {
                 method: 'POST',
+                headers,
                 body: formData
             })
-            if (res.ok) {
-                const data = await res.json()
+
+            const data = await res.json().catch(() => ({}))
+
+            if (res.ok && data.status === 'success') {
                 const mapped = data.mapped_controls || {}
                 const suggestedControls = data.suggested_implemented_controls || []
                 const hosts = data.detected_hosts || []
@@ -236,13 +245,14 @@ export default function FormISOPage() {
                 setBatchResultMsg({
                     type: 'success',
                     text: locale === 'vi' 
-                        ? `🎉 Tự động bóc tách thành công ${data.summary?.total_files || files.length} tệp! Đã nhận diện ${hosts.length} máy chủ và tự động tick ${suggestedControls.length} biện pháp kiểm soát phù hợp.`
-                        : `🎉 Successfully parsed ${data.summary?.total_files || files.length} files! Detected ${hosts.length} hosts and auto-checked ${suggestedControls.length} matching controls.`
+                        ? `🎉 Tự động bóc tách thành công ${data.summary?.processed_successfully || files.length} tệp! Đã nhận diện ${hosts.length} máy chủ và tự động tick ${suggestedControls.length} biện pháp kiểm soát phù hợp.`
+                        : `🎉 Successfully parsed ${data.summary?.processed_successfully || files.length} files! Detected ${hosts.length} hosts and auto-checked ${suggestedControls.length} matching controls.`
                 })
             } else {
+                const errMsg = data.detail || data.message || (locale === 'vi' ? 'Lỗi khi xử lý hàng loạt tệp bằng chứng.' : 'Error processing batch evidence files.')
                 setBatchResultMsg({
                     type: 'error',
-                    text: locale === 'vi' ? 'Lỗi khi xử lý hàng loạt tệp bằng chứng.' : 'Error processing batch evidence files.'
+                    text: errMsg
                 })
             }
         } catch (err) {
