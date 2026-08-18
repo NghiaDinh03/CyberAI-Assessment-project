@@ -1486,9 +1486,10 @@ export default function FormISOPage() {
                         <span className={styles.stepBannerCount}>{t('assessment.stepOf', { current: step, total: 4 })}</span>
                         <span className={styles.stepBannerSep}>—</span>
                         <span className={styles.stepBannerTitle}>
-                            {STEP_TITLES[step - 1]}
+                            {STEP_ITEMS[step - 1]?.title}
                         </span>
                     </div>
+
 
                     <div className={styles.stepContainer}>
                         {renderStepContent()}
