@@ -251,8 +251,35 @@ def process_assessment_bg(assessment_id: str, system_data: dict, model_mode: str
         save_assessment(assessment_id, data)
 
 
+def _get_request_user(authorization: Optional[str]) -> dict:
+    """Extract authenticated user details from Bearer token if provided, else guest."""
+    if not authorization or not authorization.startswith("Bearer "):
+        return {"id": "anonymous", "username": "guest", "role": "user", "full_name": "Khách"}
+    try:
+        from api.routes.auth import verify_token, user_store
+        token = authorization.split(" ")[1]
+        payload = verify_token(token)
+        if payload and "sub" in payload:
+            user = user_store.get_user_by_id(payload["sub"])
+            if user:
+                return {
+                    "id": user["id"],
+                    "username": user["username"],
+                    "full_name": user.get("full_name"),
+                    "role": user.get("role", "user")
+                }
+    except Exception as e:
+        logger.warning(f"Auth token extraction warning: {e}")
+    return {"id": "anonymous", "username": "guest", "role": "user", "full_name": "Khách"}
+
+
 @router.post("/iso27001/assess")
-async def assess(data: SystemInfo, background_tasks: BackgroundTasks):
+async def assess(
+    data: SystemInfo,
+    background_tasks: BackgroundTasks,
+    authorization: Optional[str] = Header(None)
+):
+    current_user = _get_request_user(authorization)
     assessment_id = str(uuid.uuid4())
     system_data = {
         "assessment_standard": data.assessment_standard,
@@ -288,7 +315,7 @@ async def assess(data: SystemInfo, background_tasks: BackgroundTasks):
         evidence_context = build_evidence_context_for_ai(data.evidence_map)
         logger.info(f"[Assessment] Evidence map: {len(data.evidence_map)} controls with evidence")
 
-    # Tính compliance_percent sơ bộ ngay lúc tạo (weighted: critical=4, high=3, medium=2, low=1)
+    # Tính compliance_percent sơ bộ ngay lúc tạo
     impl_controls = data.implemented_controls or []
     total_controls = 93 if data.assessment_standard == "iso27001" else 34
     compliance_pct = 0
@@ -317,6 +344,7 @@ async def assess(data: SystemInfo, background_tasks: BackgroundTasks):
         "model_mode": data.model_mode,
         "standard": data.assessment_standard,
         "evidence_attached": len(data.evidence_map) > 0,
+        "created_by": current_user,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
@@ -324,7 +352,7 @@ async def assess(data: SystemInfo, background_tasks: BackgroundTasks):
     save_assessment(assessment_id, assessment_record)
     background_tasks.add_task(process_assessment_bg, assessment_id, system_data, data.model_mode, evidence_context)
 
-    return {"status": "accepted", "id": assessment_id, "message": "Assessment task started in background"}
+    return {"status": "accepted", "id": assessment_id, "message": "Assessment task started in background", "created_by": current_user}
 
 
 @router.get("/iso27001/assessments")
@@ -332,17 +360,24 @@ async def get_all_assessments(
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
     page_size: int = Query(default=50, ge=1, le=100, description="Items per page (max 100)"),
     flat: bool = Query(default=False, description="Return flat array (no pagination envelope)"),
+    authorization: Optional[str] = Header(None)
 ):
-    """List all assessments.
-
-    By default returns a paginated envelope:
-    ``{ items, total, page, page_size, total_pages }``
-
-    Pass ``?flat=true`` to get a plain JSON array (legacy compatibility).
+    """List assessments with RBAC user isolation.
+    Admin sees all assessments. Regular users only see their own assessments.
     """
+    current_user = _get_request_user(authorization)
     all_items = list_assessments()
+
+    # Filter by user role: admin sees all, others only see their own (or anonymous if created as guest)
+    if current_user["role"] != "admin":
+        all_items = [
+            item for item in all_items
+            if item.get("created_by", {}).get("id") == current_user["id"]
+            or (current_user["id"] == "anonymous" and item.get("created_by", {}).get("id") in (None, "anonymous"))
+        ]
+
     total = len(all_items)
-    total_pages = max(1, -(-total // page_size))  # ceiling division
+    total_pages = max(1, -(-total // page_size))
 
     start = (page - 1) * page_size
     end = start + page_size
@@ -361,25 +396,56 @@ async def get_all_assessments(
 
 
 @router.get("/iso27001/assessments/{assessment_id}")
-async def get_assessment(assessment_id: str):
+async def get_assessment(assessment_id: str, authorization: Optional[str] = Header(None)):
     _validate_path_id(assessment_id, "assessment_id")
+    current_user = _get_request_user(authorization)
     data = load_assessment(assessment_id)
     if not data:
         return {"error": "Assessment not found", "status": "not_found"}
+
+    # RBAC Access Control Check
+    created_by_id = data.get("created_by", {}).get("id")
+    if current_user["role"] != "admin" and created_by_id and created_by_id != current_user["id"] and created_by_id != "anonymous":
+        raise HTTPException(
+            status_code=403,
+            detail="Bạn không có quyền truy cập vào bài đánh giá của người dùng khác."
+        )
+
     return data
 
 
 @router.delete("/iso27001/assessments/{assessment_id}")
-async def delete_assessment(assessment_id: str):
+async def delete_assessment(assessment_id: str, authorization: Optional[str] = Header(None)):
     _validate_path_id(assessment_id, "assessment_id")
+    current_user = _get_request_user(authorization)
     filepath = os.path.join(ASSESSMENTS_DIR, f"{assessment_id}.json")
-    if os.path.exists(filepath):
-        try:
-            os.remove(filepath)
-            return {"status": "success", "message": "Assessment deleted successfully"}
-        except Exception as e:
-            return {"status": "error", "message": f"Failed to delete: {str(e)}"}
-    return {"status": "not_found", "message": "Assessment not found"}
+    
+    if not os.path.exists(filepath):
+        return {"status": "not_found", "message": "Assessment not found"}
+
+    data = load_assessment(assessment_id)
+    if data:
+        created_by_id = data.get("created_by", {}).get("id")
+        if current_user["role"] != "admin" and created_by_id and created_by_id != current_user["id"] and created_by_id != "anonymous":
+            raise HTTPException(
+                status_code=403,
+                detail="Chỉ chủ sở hữu bài đánh giá hoặc Quản trị viên mới có quyền xóa."
+            )
+
+    try:
+        # 1. Delete assessment JSON
+        os.remove(filepath)
+
+        # 2. Cascade delete any assessment-scoped evidence directory if exists
+        assessment_ev_dir = os.path.join(EVIDENCE_DIR, assessment_id)
+        if os.path.exists(assessment_ev_dir):
+            import shutil
+            shutil.rmtree(assessment_ev_dir, ignore_errors=True)
+
+        return {"status": "success", "message": "Đã xóa hoàn toàn bài đánh giá và toàn bộ dữ liệu liên quan."}
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to delete: {str(e)}"}
+
 
 
 @router.post("/iso27001/reindex")
@@ -831,3 +897,127 @@ async def export_soa(body: SoAExportRequest = SoAExportRequest()):
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ── Batch Evidence Ingest & Auto-Mapper ──────────────────────────────
+
+
+@router.post("/iso27001/evidence/batch-ingest")
+async def batch_ingest_evidence(files: List[UploadFile] = File(...)):
+    """Batch upload server scans, logs, policies, and evidence documents.
+    Automatically parses content and maps them to ISO 27001 / TCVN 11930 controls.
+    """
+    from services.evidence_mapper import map_evidence_to_controls
+
+    if not files:
+        raise HTTPException(status_code=400, detail="No files uploaded.")
+
+    mapped_controls: Dict[str, List[dict]] = {}
+    detected_hosts: List[dict] = []
+    processed_files = []
+
+    ip_regex = _re_val.compile(r'\b(?:10|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}\b')
+    hostname_regex = _re_val.compile(r'(?:Host Name|Computer Name|Tên máy chủ)[:\s]+([a-zA-Z0-9_\-]+)', _re_val.IGNORECASE)
+    os_regex = _re_val.compile(r'(?:OS Name|Operating System|Hệ điều hành)[:\s]+([^\r\n]+)', _re_val.IGNORECASE)
+
+    for file in files:
+        if not file.filename:
+            continue
+
+        ext = "." + file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+        if ext not in ALLOWED_EVIDENCE_EXT:
+            continue
+
+        content = await file.read()
+        if len(content) > MAX_EVIDENCE_SIZE:
+            continue
+
+        # Temporary save to parse
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        safe_name = f"{ts}_{file.filename}"
+        temp_dir = os.path.join(EVIDENCE_DIR, "_batch_temp")
+        os.makedirs(temp_dir, exist_ok=True)
+        temp_path = os.path.join(temp_dir, safe_name)
+
+        with open(temp_path, "wb") as f:
+            f.write(content)
+
+        text_content = parse_evidence_file_content(temp_path)
+
+        # Host detection from logs
+        found_ips = ip_regex.findall(text_content)
+        found_hostnames = hostname_regex.findall(text_content)
+        found_os = os_regex.findall(text_content)
+
+        host_info = {
+            "source_file": file.filename,
+            "ip": found_ips[0] if found_ips else None,
+            "hostname": found_hostnames[0] if found_hostnames else (file.filename.split(".")[0] if found_ips else None),
+            "os": found_os[0].strip() if found_os else None
+        }
+        if host_info["ip"] or host_info["hostname"]:
+            detected_hosts.append(host_info)
+
+        # Map to controls
+        control_scores = map_evidence_to_controls(file.filename, text_content)
+        
+        # Save file to top-matched controls (confidence >= 0.5)
+        saved_to_controls = []
+        for ctrl_id, score in control_scores.items():
+            if score >= 0.5:
+                ctrl_dir = os.path.join(EVIDENCE_DIR, ctrl_id.replace(".", "_"))
+                os.makedirs(ctrl_dir, exist_ok=True)
+                dest_path = os.path.join(ctrl_dir, safe_name)
+                with open(dest_path, "wb") as f:
+                    f.write(content)
+
+                if ctrl_id not in mapped_controls:
+                    mapped_controls[ctrl_id] = []
+                
+                mapped_controls[ctrl_id].append({
+                    "filename": safe_name,
+                    "original_name": file.filename,
+                    "confidence": score,
+                    "size_bytes": len(content),
+                    "preview": text_content[:200]
+                })
+                saved_to_controls.append(ctrl_id)
+
+        # If no control matched >= 0.5, store in general unassigned folder
+        if not saved_to_controls:
+            unassigned_dir = os.path.join(EVIDENCE_DIR, "_unassigned")
+            os.makedirs(unassigned_dir, exist_ok=True)
+            with open(os.path.join(unassigned_dir, safe_name), "wb") as f:
+                f.write(content)
+
+        processed_files.append({
+            "filename": file.filename,
+            "size_bytes": len(content),
+            "mapped_controls": saved_to_controls
+        })
+
+    # Deduplicate detected hosts
+    unique_hosts = []
+    seen_ips = set()
+    for h in detected_hosts:
+        identifier = h["ip"] or h["hostname"]
+        if identifier and identifier not in seen_ips:
+            seen_ips.add(identifier)
+            unique_hosts.append(h)
+
+    suggested_controls = list(mapped_controls.keys())
+
+    return {
+        "status": "success",
+        "processed_count": len(processed_files),
+        "files": processed_files,
+        "mapped_controls": mapped_controls,
+        "suggested_implemented_controls": suggested_controls,
+        "detected_hosts": unique_hosts,
+        "summary": {
+            "total_files": len(processed_files),
+            "matched_controls_count": len(suggested_controls),
+            "detected_hosts_count": len(unique_hosts)
+        }
+    }
+

@@ -1,4 +1,5 @@
 export const CONTROL_DESCRIPTIONS_EN = {
+
     // === ISO 27001:2022 — Annex A Controls ===
 
     // A.5 Organizational Controls
@@ -529,3 +530,6 @@ export const CONTROL_DESCRIPTIONS_EN = {
         criteria: "Annual pentest by independent provider, fix timeline tracked, retest."
     }
 }
+
+export const CONTROL_DESCRIPTIONS = CONTROL_DESCRIPTIONS_EN
+

@@ -180,6 +180,82 @@ export default function FormISOPage() {
         } catch (_) {}
     }
 
+    const [batchUploading, setBatchUploading] = useState(false)
+    const [batchResultMsg, setBatchResultMsg] = useState(null)
+    const [detectedHosts, setDetectedHosts] = useState([])
+    const batchFileInputRef = useRef(null)
+
+    const handleBatchEvidenceUpload = async (files) => {
+        if (!files || files.length === 0) return
+        setBatchUploading(true)
+        setBatchResultMsg(null)
+        const formData = new FormData()
+        Array.from(files).forEach(f => formData.append('files', f))
+
+        try {
+            const res = await fetch('/api/iso27001/evidence/batch-ingest', {
+                method: 'POST',
+                body: formData
+            })
+            if (res.ok) {
+                const data = await res.json()
+                const mapped = data.mapped_controls || {}
+                const suggestedControls = data.suggested_implemented_controls || []
+                const hosts = data.detected_hosts || []
+
+                // Merge into implemented_controls
+                setForm(prev => {
+                    const mergedControls = Array.from(new Set([...prev.implemented_controls, ...suggestedControls]))
+                    const newServersCount = hosts.length > 0 ? Math.max(prev.servers, hosts.length) : prev.servers
+                    return {
+                        ...prev,
+                        implemented_controls: mergedControls,
+                        servers: newServersCount
+                    }
+                })
+
+                // Merge into evidenceMap
+                setEvidenceMap(prev => {
+                    const next = { ...prev }
+                    Object.entries(mapped).forEach(([ctrlId, fileList]) => {
+                        const existing = next[ctrlId] || []
+                        const newFiles = fileList.map(f => ({
+                            filename: f.filename,
+                            size_bytes: f.size_bytes,
+                            confidence: f.confidence
+                        }))
+                        next[ctrlId] = [...existing, ...newFiles]
+                    })
+                    return next
+                })
+
+                if (hosts.length > 0) {
+                    setDetectedHosts(hosts)
+                }
+
+                setBatchResultMsg({
+                    type: 'success',
+                    text: locale === 'vi' 
+                        ? `🎉 Tự động bóc tách thành công ${data.summary?.total_files || files.length} tệp! Đã nhận diện ${hosts.length} máy chủ và tự động tick ${suggestedControls.length} biện pháp kiểm soát phù hợp.`
+                        : `🎉 Successfully parsed ${data.summary?.total_files || files.length} files! Detected ${hosts.length} hosts and auto-checked ${suggestedControls.length} matching controls.`
+                })
+            } else {
+                setBatchResultMsg({
+                    type: 'error',
+                    text: locale === 'vi' ? 'Lỗi khi xử lý hàng loạt tệp bằng chứng.' : 'Error processing batch evidence files.'
+                })
+            }
+        } catch (err) {
+            console.error('Batch ingest error:', err)
+            setBatchResultMsg({
+                type: 'error',
+                text: locale === 'vi' ? 'Không thể kết nối đến máy chủ để bóc tách tệp.' : 'Could not connect to server for batch processing.'
+            })
+        } finally {
+            setBatchUploading(false)
+        }
+    }
+
     const deleteEvidence = async (controlId, filename) => {
         try {
             await fetch(`/api/iso27001/evidence/${controlId}/${filename}`, { method: 'DELETE' })
@@ -824,6 +900,68 @@ export default function FormISOPage() {
                                 />
                             </div>
                             <span className={styles.complianceLabel}>{t('assessment.controlsCompliancePct', { percent: compliancePercent })}</span>
+                        </div>
+
+                        {/* ── Batch Evidence & Scan Log Ingest Banner ── */}
+                        <div className={styles.batchIngestCard}>
+                            <div className={styles.batchIngestHeader}>
+                                <div className={styles.batchIngestTitle}>
+                                    <span className={styles.batchIcon}>⚡</span>
+                                    <div>
+                                        <div className={styles.batchMainTitle}>
+                                            {locale === 'vi' ? 'Nạp Hàng Loạt Log & Tệp Bằng Chứng' : 'Batch Evidence & Scan Log Ingestion'}
+                                        </div>
+                                        <div className={styles.batchSub}>
+                                            {locale === 'vi' 
+                                                ? 'Tự động bóc tách log máy chủ (systeminfo, Hotfix KB, Firewall...) & tự động tick chọn 93 Controls' 
+                                                : 'Auto-parse server scan logs & auto-populate 93 compliance controls with mapped evidence'}
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className={styles.batchBtn}
+                                    onClick={() => batchFileInputRef.current?.click()}
+                                    disabled={batchUploading}
+                                >
+                                    {batchUploading ? (
+                                        <>⏳ {locale === 'vi' ? 'Đang phân tích...' : 'Analyzing...'}</>
+                                    ) : (
+                                        <>📁 {locale === 'vi' ? 'Chọn nhiều tệp log/bằng chứng' : 'Upload Batch Files'}</>
+                                    )}
+                                </button>
+                                <input
+                                    type="file"
+                                    multiple
+                                    ref={batchFileInputRef}
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => {
+                                        if (e.target.files?.length > 0) {
+                                            handleBatchEvidenceUpload(e.target.files)
+                                            e.target.value = ''
+                                        }
+                                    }}
+                                />
+                            </div>
+
+                            {batchResultMsg && (
+                                <div className={`${styles.batchAlert} ${batchResultMsg.type === 'success' ? styles.batchAlertSuccess : styles.batchAlertError}`}>
+                                    {batchResultMsg.text}
+                                </div>
+                            )}
+
+                            {detectedHosts.length > 0 && (
+                                <div className={styles.detectedHostsRow}>
+                                    <span className={styles.detectedLabel}>🖥️ {locale === 'vi' ? 'Máy chủ phát hiện được:' : 'Detected Hosts:'}</span>
+                                    <div className={styles.hostBadges}>
+                                        {detectedHosts.map((h, i) => (
+                                            <span key={i} className={styles.hostBadge} title={h.os || ''}>
+                                                <strong>{h.hostname || h.ip}</strong> {h.ip && h.hostname ? `(${h.ip})` : ''}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <p className={styles.helperText} dangerouslySetInnerHTML={{ __html: t('assessment.controlsHelp') }} />
