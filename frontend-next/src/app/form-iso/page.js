@@ -12,8 +12,10 @@ import StepProgress from '@/components/StepProgress'
 import { useTranslation } from '@/components/LanguageProvider'
 import { Shield, ChevronRight, ChevronLeft } from 'lucide-react'
 import ControlRow from './_components/ControlRow'
+import ControlInspector from './_components/ControlInspector'
 import DetailDrawer from './_components/DetailDrawer'
 import EvidencePreviewModal from './_components/EvidencePreviewModal'
+
 
 const POLL_INTERVAL = 8000
 const ASSESSMENT_MODE_KEY = 'cyberai.assessmentMode'
@@ -377,6 +379,13 @@ export default function FormISOPage() {
 
         return stats
     }, [allControls, form.implemented_controls, evidenceMap])
+
+    const [selectedControlId, setSelectedControlId] = useState(null)
+    const activeControlId = selectedControlId || allControls[0]?.id
+    const selectedControlObj = useMemo(() => {
+        return allControls.find(c => c.id === activeControlId) || allControls[0]
+    }, [allControls, activeControlId])
+
 
 
     const applyTemplateData = (parsed, keepModelMode = false, currentModelMode = 'hybrid') => {
@@ -1087,101 +1096,123 @@ export default function FormISOPage() {
 
                         <p className={styles.helperText} dangerouslySetInnerHTML={{ __html: t('assessment.controlsHelp') }} />
 
-                        <div className={styles.accordionContainer}>
-                            {currentStandard.controls.map((category, catIdx) => {
-                                const catControlIds = category.controls.map(c => c.id)
-                                const selectedInCat = form.implemented_controls.filter(id => catControlIds.includes(id)).length
-                                const isAllSelected = selectedInCat === category.controls.length
+                        {/* ── Split-Pane Master-Detail Workspace ── */}
+                        <div className={styles.splitAssessmentLayout}>
+                            {/* Left List Pane (60%) */}
+                            <div className={styles.leftListPane}>
+                                <div className={styles.accordionContainer}>
+                                    {currentStandard.controls.map((category, catIdx) => {
+                                        const catControlIds = category.controls.map(c => c.id)
+                                        const selectedInCat = form.implemented_controls.filter(id => catControlIds.includes(id)).length
+                                        const isAllSelected = selectedInCat === category.controls.length
 
-                                // Filter controls by search query and active filter chip
-                                const filteredControls = category.controls.filter(ctrl => {
-                                    if (controlSearch.trim()) {
-                                        const q = controlSearch.toLowerCase().trim()
-                                        const idMatch = ctrl.id.toLowerCase().includes(q)
-                                        const labelMatch = (ctrl.label || '').toLowerCase().includes(q)
-                                        const catMatch = (category.category || '').toLowerCase().includes(q)
-                                        if (!idMatch && !labelMatch && !catMatch) return false
-                                    }
-                                    if (filterTag === 'critical' && ctrl.weight !== 'critical') return false
-                                    if (filterTag === 'high' && ctrl.weight !== 'high') return false
-                                    if (filterTag === 'no_evidence') {
-                                        const evCount = (evidenceMap[ctrl.id] || []).length
-                                        if (evCount > 0) return false
-                                    }
-                                    if (filterTag === 'implemented') {
-                                        if (!form.implemented_controls.includes(ctrl.id)) return false
-                                    }
-                                    return true
-                                })
+                                        // Filter controls by search query and active filter chip
+                                        const filteredControls = category.controls.filter(ctrl => {
+                                            if (controlSearch.trim()) {
+                                                const q = controlSearch.toLowerCase().trim()
+                                                const idMatch = ctrl.id.toLowerCase().includes(q)
+                                                const labelMatch = (ctrl.label || '').toLowerCase().includes(q)
+                                                const catMatch = (category.category || '').toLowerCase().includes(q)
+                                                if (!idMatch && !labelMatch && !catMatch) return false
+                                            }
+                                            if (filterTag === 'critical' && ctrl.weight !== 'critical') return false
+                                            if (filterTag === 'high' && ctrl.weight !== 'high') return false
+                                            if (filterTag === 'no_evidence') {
+                                                const evCount = (evidenceMap[ctrl.id] || []).length
+                                                if (evCount > 0) return false
+                                            }
+                                            if (filterTag === 'implemented') {
+                                                if (!form.implemented_controls.includes(ctrl.id)) return false
+                                            }
+                                            return true
+                                        })
 
-                                if (filteredControls.length === 0 && (controlSearch.trim() || filterTag !== 'all')) {
-                                    return null
-                                }
+                                        if (filteredControls.length === 0 && (controlSearch.trim() || filterTag !== 'all')) {
+                                            return null
+                                        }
 
-                                const isAutoExpanded = (controlSearch.trim() || filterTag !== 'all') && filteredControls.length > 0
-                                const isExpanded = isAutoExpanded || expandedCategory === catIdx
+                                        const isAutoExpanded = (controlSearch.trim() || filterTag !== 'all') && filteredControls.length > 0
+                                        const isExpanded = isAutoExpanded || expandedCategory === catIdx
 
-                                return (
-                                    <div key={catIdx} className={`${styles.accordionItem} ${isExpanded ? styles.expanded : ''}`}>
-                                        <div
-                                            className={styles.accordionHeader}
-                                            onClick={() => setExpandedCategory(isExpanded && !isAutoExpanded ? null : catIdx)}
-                                        >
-                                            <div className={styles.accTitle}>
-                                                <span className={styles.accIcon}>{isExpanded ? '📂' : '📁'}</span>
-                                                {category.category}
-                                            </div>
-                                            <div className={styles.accMeta}>
-                                                <span className={`${styles.accCount} ${selectedInCat === category.controls.length ? styles.accCountFull : ''}`}>
-                                                    {selectedInCat}/{category.controls.length}
-                                                </span>
-                                                <span className={styles.accArrow}>{isExpanded ? '▲' : '▼'}</span>
-                                            </div>
-                                        </div>
-
-                                        {isExpanded && (
-                                            <div className={styles.accordionBody}>
-                                                <div className={styles.selectAllBox}>
-                                                    <label className={styles.checkLabel}>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isAllSelected}
-                                                            onChange={() => toggleCategoryAll(category.controls, isAllSelected)}
-                                                        />
-                                                        <strong>{t('assessment.selectAllGroup')}</strong>
-                                                    </label>
+                                        return (
+                                            <div key={catIdx} className={`${styles.accordionItem} ${isExpanded ? styles.expanded : ''}`}>
+                                                <div
+                                                    className={styles.accordionHeader}
+                                                    onClick={() => setExpandedCategory(isExpanded && !isAutoExpanded ? null : catIdx)}
+                                                >
+                                                    <div className={styles.accTitle}>
+                                                        <span className={styles.accIcon}>{isExpanded ? '📂' : '📁'}</span>
+                                                        {category.category}
+                                                    </div>
+                                                    <div className={styles.accMeta}>
+                                                        <span className={`${styles.accCount} ${selectedInCat === category.controls.length ? styles.accCountFull : ''}`}>
+                                                            {selectedInCat}/{category.controls.length}
+                                                        </span>
+                                                        <span className={styles.accArrow}>{isExpanded ? '▲' : '▼'}</span>
+                                                    </div>
                                                 </div>
-                                                <div className={styles.controlList}>
-                                                    {filteredControls.map(ctrl => {
-                                                        const implemented = form.implemented_controls.includes(ctrl.id)
-                                                        const evCount = (evidenceMap[ctrl.id] || []).length
-                                                        return (
-                                                            <ControlRow
-                                                                key={ctrl.id}
-                                                                control={ctrl}
-                                                                state={{ implemented }}
-                                                                onToggleImplemented={toggleControl}
-                                                                onOpenDrawer={(id) => {
-                                                                    drawerReturnFocusRef.current =
-                                                                        document.activeElement instanceof HTMLElement
-                                                                            ? document.activeElement
-                                                                            : null
-                                                                    setDrawerControlId(id)
-                                                                    fetchEvidenceForControl(id)
-                                                                }}
-                                                                evidenceCount={evCount}
-                                                                verdict={undefined}
-                                                            />
-                                                        )
-                                                    })}
-                                                </div>
+
+                                                {isExpanded && (
+                                                    <div className={styles.accordionBody}>
+                                                        <div className={styles.selectAllBox}>
+                                                            <label className={styles.checkLabel}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isAllSelected}
+                                                                    onChange={() => toggleCategoryAll(category.controls, isAllSelected)}
+                                                                />
+                                                                <strong>{t('assessment.selectAllGroup')}</strong>
+                                                            </label>
+                                                        </div>
+                                                        <div className={styles.controlList}>
+                                                            {filteredControls.map(ctrl => {
+                                                                const implemented = form.implemented_controls.includes(ctrl.id)
+                                                                const evCount = (evidenceMap[ctrl.id] || []).length
+                                                                const isSelected = activeControlId === ctrl.id
+                                                                return (
+                                                                    <ControlRow
+                                                                        key={ctrl.id}
+                                                                        control={ctrl}
+                                                                        state={{ implemented }}
+                                                                        isSelected={isSelected}
+                                                                        onToggleImplemented={toggleControl}
+                                                                        onSelectControl={(id) => {
+                                                                            setSelectedControlId(id)
+                                                                            fetchEvidenceForControl(id)
+                                                                        }}
+                                                                        evidenceCount={evCount}
+                                                                        verdict={undefined}
+                                                                    />
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
-                                )
-                            })}
+                                        )
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Right Docked Inspector Pane (40%) */}
+                            <div className={styles.rightInspectorPane}>
+                                <ControlInspector
+                                    control={selectedControlObj}
+                                    state={{
+                                        implemented: form.implemented_controls.includes(selectedControlObj?.id),
+                                        evidenceFiles: evidenceMap[selectedControlObj?.id] || [],
+                                        description: allDescriptions[selectedControlObj?.id]
+                                    }}
+                                    onToggleImplemented={toggleControl}
+                                    onUploadFiles={uploadEvidence}
+                                    onDeleteFile={deleteEvidence}
+                                    onExpandFile={setPreviewFile}
+                                    isDocked={true}
+                                />
+                            </div>
                         </div>
                     </div>
+
                 )
             case 4:
                 return (

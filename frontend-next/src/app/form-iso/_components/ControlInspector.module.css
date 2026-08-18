@@ -1,0 +1,541 @@
+/* ── Enterprise Docked Control Inspector ── */
+
+.emptyInspector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 3rem 2rem;
+    height: 100%;
+    min-height: 480px;
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    backdrop-filter: blur(10px);
+}
+
+.emptyIcon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.7;
+}
+
+.emptyTitle {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 0.5rem;
+}
+
+.emptyDesc {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    max-width: 320px;
+    line-height: 1.5;
+}
+
+.inspectorCard {
+    display: flex;
+    flex-direction: column;
+    background: #090d16;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    height: 100%;
+    max-height: calc(100vh - 180px);
+    position: sticky;
+    top: 80px;
+}
+
+.floatingDrawer {
+    position: fixed;
+    right: 20px;
+    top: 80px;
+    bottom: 20px;
+    width: 480px;
+    max-width: 95vw;
+    z-index: 200;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(59, 130, 246, 0.2);
+}
+
+.header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    background: rgba(15, 23, 42, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.titleWrap {
+    flex: 1;
+    min-width: 0;
+}
+
+.idLine {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+
+.ctrlId {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #60a5fa;
+    font-family: ui-monospace, monospace;
+}
+
+.weightBadge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+}
+
+.w_critical { color: #f87171; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); }
+.w_high     { color: #fbbf24; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); }
+.w_medium   { color: #60a5fa; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); }
+.w_low      { color: #94a3b8; background: rgba(148, 163, 184, 0.1); border: 1px solid rgba(148, 163, 184, 0.2); }
+
+.statusPill {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.statusPillOn {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.statusPillOff {
+    background: rgba(148, 163, 184, 0.1);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.ctrlTitle {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #f8fafc;
+    line-height: 1.35;
+    margin: 0;
+}
+
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.toggleBtn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #cbd5e1;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.toggleBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.toggleBtnActive {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+    color: #34d399;
+}
+
+.closeBtn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.closeBtn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.scrollBody {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.secHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.secIcon {
+    font-size: 0.95rem;
+}
+
+.secHeader h4 {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #cbd5e1;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.requirementBox {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 0.86rem;
+    color: #e2e8f0;
+    line-height: 1.5;
+}
+
+.requirementBox p {
+    margin: 0;
+}
+
+.criteriaBox {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.criteriaText {
+    font-size: 0.84rem;
+    color: #cbd5e1;
+    line-height: 1.45;
+}
+
+.criteriaText strong {
+    color: #60a5fa;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+}
+
+.criteriaText p {
+    margin: 0;
+}
+
+.cmdSnippet {
+    background: #020617;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.cmdHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 0.74rem;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.copyBtn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #93c5fd;
+    font-size: 0.7rem;
+    padding: 2px 7px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.copyBtn:hover {
+    background: rgba(59, 130, 246, 0.2);
+    color: #ffffff;
+}
+
+.codeBlock {
+    margin: 0;
+    font-family: ui-monospace, 'Fira Code', monospace;
+    font-size: 0.78rem;
+    color: #38bdf8;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.4;
+}
+
+.pitfallBox {
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    color: #fca5a5;
+    line-height: 1.5;
+}
+
+.pitfallBox p {
+    margin: 0;
+    white-space: pre-line;
+}
+
+/* ── Dropzone & Evidence ── */
+.dropzone {
+    background: rgba(2, 6, 23, 0.6);
+    border: 2px dashed rgba(59, 130, 246, 0.35);
+    border-radius: 10px;
+    padding: 18px 16px;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.dropzone:hover,
+.dropzoneActive {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.08);
+}
+
+.dropLabel {
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.uploadIcon {
+    font-size: 1.4rem;
+}
+
+.dropText {
+    font-size: 0.82rem;
+    color: #cbd5e1;
+}
+
+.dropText strong {
+    color: #60a5fa;
+    text-decoration: underline;
+}
+
+.dropSub {
+    font-size: 0.72rem;
+    color: #64748b;
+}
+
+.fileList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.fileItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+}
+
+.fileMeta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.fileIcon {
+    font-size: 1.1rem;
+}
+
+.fileName {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 240px;
+}
+
+.fileSize {
+    font-size: 0.7rem;
+    color: #94a3b8;
+}
+
+.matchTag {
+    color: #34d399;
+    font-weight: 600;
+}
+
+.fileActions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.fileBtn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    padding: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.fileBtn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.fileBtnDelete:hover {
+    color: #ef4444;
+}
+
+/* ── AI Assessment Live Box ── */
+.aiVerdictCard {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.aiVerdictHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.aiPill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.15);
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.aiDot {
+    width: 6px;
+    height: 6px;
+    background: #34d399;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #34d399;
+}
+
+.aiConfidence {
+    font-size: 0.74rem;
+    color: #94a3b8;
+}
+
+.aiProofText {
+    font-size: 0.82rem;
+    color: #cbd5e1;
+    line-height: 1.45;
+}
+
+.aiProofText strong {
+    color: #94a3b8;
+    display: block;
+    margin-bottom: 2px;
+    font-size: 0.74rem;
+}
+
+.aiProofText p {
+    margin: 0;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 8px 10px;
+    border-radius: 6px;
+    border-left: 3px solid #10b981;
+    font-family: ui-monospace, monospace;
+    font-size: 0.78rem;
+}
+
+.aiAdvice {
+    font-size: 0.8rem;
+    color: #fde68a;
+    line-height: 1.4;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    padding: 8px 10px;
+    border-radius: 6px;
+}
+
+.aiAdvice strong {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 0.74rem;
+}
+
+.aiEmptyBox {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    color: #94a3b8;
+    line-height: 1.45;
+}
+
+.aiEmptyBox span {
+    font-size: 1.1rem;
+}
+
+.aiEmptyBox strong {
+    color: #cbd5e1;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.aiEmptyBox p {
+    margin: 0;
+}
