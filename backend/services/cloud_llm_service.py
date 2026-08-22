@@ -136,7 +136,7 @@ class CloudLLMService:
     @staticmethod
     def _prepare_ollama_payload(model: str, messages: List[Dict], temperature: float, max_tokens: int):
         resolved = resolve_ollama_model(model)
-        trimmed = messages[:1] + messages[-3:] if len(messages) > 4 else messages
+        trimmed = messages[:1] + messages[-9:] if len(messages) > 10 else messages
         
         MAX_PROMPT_CHARS = 16000
         for i, msg in enumerate(trimmed):
@@ -150,9 +150,17 @@ class CloudLLMService:
         return resolved, trimmed, effective_max_tokens
 
     @classmethod
+    def _get_candidate_ollama_urls(cls) -> List[str]:
+        primary = (getattr(settings, "OLLAMA_URL", "http://ollama:11434") or "http://ollama:11434").rstrip('/')
+        candidates = [primary]
+        for fallback in ["http://ollama:11434", "http://host.docker.internal:11434", "http://127.0.0.1:11434"]:
+            if fallback not in candidates:
+                candidates.append(fallback)
+        return candidates
+
+    @classmethod
     def _call_ollama(cls, model: str, messages: List[Dict], temperature: float = 0.7,
                      max_tokens: int = 4096) -> Dict[str, Any]:
-        ollama_url = settings.OLLAMA_URL
         resolved, trimmed, effective_max_tokens = cls._prepare_ollama_payload(
             model, messages, temperature, max_tokens
         )
@@ -160,35 +168,42 @@ class CloudLLMService:
         ollama_timeout = settings.INFERENCE_TIMEOUT
         
         logger.info(f"[Ollama] Requesting model={resolved}, messages={len(trimmed)}, total_chars={total_chars}")
-        try:
-            response = requests.post(
-                f"{ollama_url}/api/chat",
-                json={
-                    "model": resolved,
-                    "messages": trimmed,
-                    "options": {
-                        "temperature": temperature,
-                        "num_predict": effective_max_tokens,
-                        "num_thread": int(os.getenv("OLLAMA_NUM_THREADS", "12")),
-                        "num_ctx": 4096,
+        response = None
+        last_error = None
+        for ollama_url in cls._get_candidate_ollama_urls():
+            try:
+                response = requests.post(
+                    f"{ollama_url}/api/chat",
+                    json={
+                        "model": resolved,
+                        "messages": trimmed,
+                        "options": {
+                            "temperature": temperature,
+                            "num_predict": effective_max_tokens,
+                            "num_thread": int(os.getenv("OLLAMA_NUM_THREADS", "10")),
+                            "num_ctx": int(os.getenv("OLLAMA_NUM_CTX", "8192")),
+                        },
+                        "stream": False,
                     },
-                    "stream": False,
-                },
-                timeout=ollama_timeout,
-            )
-        except requests.exceptions.Timeout:
-            raise Exception(f"[Ollama] Timeout after {ollama_timeout}s — model '{resolved}' needs more time.")
-        except Exception as e:
-            raise Exception(f"[Ollama] Connection error: {e}")
+                    timeout=ollama_timeout,
+                )
+                if response.status_code == 200:
+                    break
+            except requests.exceptions.Timeout:
+                last_error = f"Timeout after {ollama_timeout}s — model '{resolved}' needs more time."
+                logger.warning(f"[Ollama] URL {ollama_url} timed out, trying next candidate...")
+            except Exception as e:
+                last_error = str(e)
+                logger.warning(f"[Ollama] URL {ollama_url} failed ({e}), trying next candidate...")
 
-        if response.status_code != 200:
-            err_text = response.text[:300]
-            raise Exception(f"[Ollama] HTTP {response.status_code}: {err_text}")
+        if response is None or response.status_code != 200:
+            err_text = response.text[:300] if response is not None else (last_error or "All Ollama endpoints unreachable")
+            raise Exception(f"[Ollama] Connection error: {err_text}")
 
         data = response.json()
         msg = data.get("message", {})
         content = msg.get("content", "")
-        reasoning = msg.get("reasoning", "")
+        reasoning = msg.get("reasoning", "") or msg.get("thinking", "")
         if not content and reasoning:
             content = reasoning
             
@@ -206,8 +221,7 @@ class CloudLLMService:
     @classmethod
     def call_ollama_stream(cls, model: str, messages: List[Dict], temperature: float = 0.7,
                            max_tokens: int = 4096):
-        """Stream tokens from Ollama."""
-        ollama_url = settings.OLLAMA_URL
+        """Stream tokens from Ollama with candidate URL auto-failover."""
         resolved, trimmed, effective_max_tokens = cls._prepare_ollama_payload(
             model, messages, temperature, max_tokens
         )
@@ -216,50 +230,73 @@ class CloudLLMService:
 
         full_content = []
         usage = {}
-        try:
-            with requests.post(
-                f"{ollama_url}/api/chat",
-                json={
-                    "model": resolved,
-                    "messages": trimmed,
-                    "options": {
-                        "temperature": temperature,
-                        "num_predict": effective_max_tokens,
-                        "num_thread": int(os.getenv("OLLAMA_NUM_THREADS", "12")),
-                        "num_ctx": 4096,
-                    },
-                    "stream": True,
-                },
-                stream=True,
-                timeout=ollama_timeout,
-            ) as response:
-                if response.status_code != 200:
-                    err_text = response.text[:300] if hasattr(response, "text") else "unknown"
-                    raise Exception(f"[Ollama-stream] HTTP {response.status_code}: {err_text}")
+        stream_success = False
+        last_error = None
 
-                for raw_line in response.iter_lines(decode_unicode=True):
-                    if not raw_line:
+        for ollama_url in cls._get_candidate_ollama_urls():
+            try:
+                with requests.post(
+                    f"{ollama_url}/api/chat",
+                    json={
+                        "model": resolved,
+                        "messages": trimmed,
+                        "options": {
+                            "temperature": temperature,
+                            "num_predict": effective_max_tokens,
+                            "num_thread": int(os.getenv("OLLAMA_NUM_THREADS", "10")),
+                            "num_ctx": int(os.getenv("OLLAMA_NUM_CTX", "8192")),
+                        },
+                        "stream": True,
+                    },
+                    stream=True,
+                    timeout=ollama_timeout,
+                ) as response:
+                    if response.status_code != 200:
+                        err_text = response.text[:300] if hasattr(response, "text") else "unknown"
+                        last_error = f"HTTP {response.status_code}: {err_text}"
+                        logger.warning(f"[Ollama-stream] URL {ollama_url} returned {response.status_code}, trying next...")
                         continue
-                    try:
-                        chunk = json.loads(raw_line)
-                    except Exception:
-                        continue
-                    msg = chunk.get("message", {}) or {}
-                    token = msg.get("content", "") or msg.get("reasoning", "")
-                    if token:
-                        full_content.append(token)
-                        yield {"type": "token", "content": token}
-                    if chunk.get("done"):
-                        usage = {
-                            "prompt_tokens": chunk.get("prompt_eval_count", 0),
-                            "completion_tokens": chunk.get("eval_count", 0),
-                            "total_tokens": chunk.get("prompt_eval_count", 0) + chunk.get("eval_count", 0),
-                        }
-                        break
-        except requests.exceptions.Timeout:
-            raise Exception(f"[Ollama-stream] Timeout after {ollama_timeout}s")
+
+                    thinking_buffer = []
+                    for raw_line in response.iter_lines(decode_unicode=True):
+                        if not raw_line:
+                            continue
+                        try:
+                            chunk = json.loads(raw_line)
+                        except Exception:
+                            continue
+                        msg = chunk.get("message", {}) or {}
+                        content_tok = msg.get("content", "")
+                        thinking_tok = msg.get("thinking", "") or msg.get("reasoning", "")
+                        if content_tok:
+                            full_content.append(content_tok)
+                            yield {"type": "token", "content": content_tok}
+                        elif thinking_tok:
+                            thinking_buffer.append(thinking_tok)
+                            yield {"type": "thinking_token", "content": thinking_tok}
+                        if chunk.get("done"):
+                            usage = {
+                                "prompt_tokens": chunk.get("prompt_eval_count", 0),
+                                "completion_tokens": chunk.get("eval_count", 0),
+                                "total_tokens": chunk.get("prompt_eval_count", 0) + chunk.get("eval_count", 0),
+                            }
+                            break
+                    stream_success = True
+                    break
+            except requests.exceptions.Timeout:
+                last_error = f"Timeout after {ollama_timeout}s"
+                logger.warning(f"[Ollama-stream] URL {ollama_url} timed out, trying next...")
+            except Exception as e:
+                last_error = str(e)
+                logger.warning(f"[Ollama-stream] URL {ollama_url} failed ({e}), trying next...")
+
+        if not stream_success:
+            raise Exception(f"[Ollama-stream] Connection error: {last_error or 'All endpoints failed'}")
 
         final_content = "".join(full_content).strip()
+        if not final_content and 'thinking_buffer' in locals() and thinking_buffer:
+            final_content = "".join(thinking_buffer).strip()
+
         yield {
             "type": "done",
             "content": final_content,

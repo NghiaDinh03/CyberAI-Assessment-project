@@ -15,8 +15,8 @@ from datetime import datetime, timezone
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Regex for safe path-component identifiers: alphanumeric, hyphen, underscore only.
-_SAFE_ID_RE = _re_val.compile(r'^[a-zA-Z0-9_\-]+$')
+# Regex for safe path-component identifiers: alphanumeric, hyphen, underscore, dot (no double dot).
+_SAFE_ID_RE = _re_val.compile(r'^(?!.*\.\.)[a-zA-Z0-9_\-\.]+$')
 
 
 def _validate_path_id(value: str, field_name: str = "id") -> None:
@@ -26,7 +26,7 @@ def _validate_path_id(value: str, field_name: str = "id") -> None:
             status_code=400,
             detail=(
                 f"Invalid {field_name}: only alphanumeric characters, hyphens, "
-                f"and underscores are allowed."
+                f"underscores, and dots are allowed."
             ),
         )
 
@@ -1037,5 +1037,128 @@ async def batch_ingest_evidence(request: Request, authorization: Optional[str] =
             "detected_hosts_count": len(unique_hosts)
         }
     }
+
+
+class ControlAssistRequest(BaseModel):
+    standard: str = "iso27001"
+    control_id: str
+    control_label: Optional[str] = ""
+    requirement: Optional[str] = ""
+    criteria: Optional[str] = ""
+    mode: str = "verify_evidence"  # "verify_evidence" | "generate_sop" | "custom_query"
+    query: Optional[str] = ""
+    evidence_filenames: Optional[List[str]] = []
+    notes: Optional[str] = ""
+    model: Optional[str] = None
+
+
+@router.post("/iso27001/controls/{control_id}/ai-assist")
+async def control_ai_assist(control_id: str, req: ControlAssistRequest):
+    """Real-time AI assistance for an individual compliance control.
+    
+    Supports:
+    - Verifying uploaded evidence files against control requirements
+    - Generating standard SOP / Policy / Implementation scripts (PowerShell, Bash)
+    - Interactive Q&A for specific technical implementation doubts
+    """
+    _validate_path_id(control_id, "control_id")
+    from services.cloud_llm_service import CloudLLMService
+    
+    # 1. Gather evidence texts for this control
+    evidence_dir = os.path.join(EVIDENCE_DIR, control_id.replace(".", "_"))
+    evidence_snippets = []
+    if os.path.exists(evidence_dir):
+        for fname in os.listdir(evidence_dir):
+            if not req.evidence_filenames or fname in req.evidence_filenames:
+                fpath = os.path.join(evidence_dir, fname)
+                parsed = parse_evidence_file_content(fpath)
+                if parsed:
+                    evidence_snippets.append(f"--- File: {fname} ---\n{parsed}")
+
+    evidence_text = "\n\n".join(evidence_snippets) if evidence_snippets else "Chưa có file bằng chứng nào được tải lên."
+
+    # 2. Build prompt based on mode
+    if req.mode == "verify_evidence":
+        system_prompt = (
+            "Bạn là Chuyên gia Đánh giá Trưởng (Lead Auditor) ISO 27001:2022 và An toàn thông tin. "
+            "Nhiệm vụ: Thẩm định xem các tệp bằng chứng do tổ chức cung cấp có đáp ứng đầy đủ tiêu chí kiểm toán cho Biện pháp kiểm soát (Control) hay không.\n"
+            "QUY TẮC:\n"
+            "- Trả lời hoàn toàn bằng TIẾNG VIỆT, cấu trúc Markdown rõ ràng, chuyên nghiệp.\n"
+            "- Nêu rõ: Kết luận (Đạt / Chưa đạt / Cần bổ sung), Điểm mạnh của bằng chứng, Điểm còn thiếu sót (GAPs), và Khuyến nghị cụ thể cho đợt Audit chính thức."
+        )
+        user_prompt = (
+            f"THÔNG TIN BIỆN PHÁP KIỂM SOÁT:\n"
+            f"- Mã Control: {req.control_id}\n"
+            f"- Tên Control: {req.control_label}\n"
+            f"- Yêu cầu tiêu chuẩn: {req.requirement}\n"
+            f"- Tiêu chí nghiệm thu: {req.criteria}\n"
+            f"- Ghi chú của đơn vị: {req.notes}\n\n"
+            f"NỘI DUNG TỆP BẰNG CHỨNG ĐÃ TẢI LÊN:\n{evidence_text}\n\n"
+            f"Hãy thẩm định bằng chứng trên và đưa ra nhận xét chi tiết theo tiêu chuẩn đánh giá ISO 27001."
+        )
+    elif req.mode == "generate_sop":
+        system_prompt = (
+            "Bạn là Chuyên gia Tư vấn Cấp cao ISO 27001:2022 và CISO. "
+            "Nhiệm vụ: Sinh kịch bản triển khai chi tiết, khung quy trình (SOP/Policy) và mã lệnh kỹ thuật mẫu (PowerShell / Bash / Linux) "
+            "giúp doanh nghiệp triển khai thành công biện pháp an toàn thông tin này.\n"
+            "QUY TẮC:\n"
+            "- Trả lời hoàn toàn bằng TIẾNG VIỆT, cấu trúc Markdown chuẩn Enterprise, có mã lệnh thực tế, rõ ràng."
+        )
+        user_prompt = (
+            f"BIỆN PHÁP KIỂM SOÁT CẦN TRIỂN KHAI:\n"
+            f"- Mã Control: {req.control_id}\n"
+            f"- Tên Control: {req.control_label}\n"
+            f"- Yêu cầu tiêu chuẩn: {req.requirement}\n"
+            f"- Tiêu chí nghiệm thu: {req.criteria}\n\n"
+            f"Hãy soạn thảo:\n"
+            f"1. Khung quy trình / Chính sách vận hành chuẩn (SOP Overview).\n"
+            f"2. Các bước cấu hình kỹ thuật cụ thể (Kèm lệnh PowerShell/Bash mẫu).\n"
+            f"3. Danh mục bằng chứng cần lưu trữ để vượt qua đợt đánh giá chứng nhận."
+        )
+    else:
+        system_prompt = (
+            "Bạn là CyberAI, Trợ lý chuyên gia an toàn thông tin và ISO 27001. "
+            "Hãy trả lời câu hỏi của người dùng về biện pháp kiểm soát an ninh này một cách chính xác, thực tế và hoàn toàn bằng TIẾNG VIỆT."
+        )
+        user_prompt = (
+            f"BIỆN PHÁP KIỂM SOÁT:\n"
+            f"- Mã Control: {req.control_id} ({req.control_label})\n"
+            f"- Yêu cầu: {req.requirement}\n"
+            f"- Bằng chứng hiện có: {evidence_text[:500]}\n\n"
+            f"CÂU HỎI TỪ NGƯỜI DÙNG: {req.query or 'Hãy phân tích biện pháp này.'}"
+        )
+
+    selected_model = req.model or "gemma4:latest"
+    is_local = not (selected_model.startswith("gemini") or selected_model.startswith("claude") or selected_model.startswith("gpt"))
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"[YÊU CẦU: Hãy phân tích và trả lời chi tiết bằng TIẾNG VIỆT]\n\n{user_prompt}"}
+    ]
+
+    try:
+        res = CloudLLMService.chat_completion(
+            messages=messages,
+            temperature=0.4,
+            local_model=selected_model if is_local else None,
+            prefer_cloud=not is_local,
+            cloud_model=selected_model if not is_local else None,
+        )
+        content = ChatService.clean_response(res.get("content", ""))
+        return {
+            "status": "success",
+            "control_id": control_id,
+            "mode": req.mode,
+            "model_used": res.get("model", selected_model),
+            "response": content
+        }
+    except Exception as e:
+        logger.error(f"[AI Assist Control] error: {e}")
+        return {
+            "status": "error",
+            "control_id": control_id,
+            "error": str(e)
+        }
+
 
 

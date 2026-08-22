@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from services.document_ingest import storage as doc_storage
 from services.document_service import DocumentService
 from services import template_evidence_store as te_store
+from repositories.template_store import template_store
 
 router = APIRouter()
 doc_service = DocumentService()
@@ -30,6 +31,50 @@ def _validate_template_id(template_id: str) -> None:
     if not _TEMPLATE_ID_RE.match(template_id) or len(template_id) > 64:
         raise HTTPException(status_code=400, detail="Invalid template_id format.")
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Template Catalog CRUD Endpoints (100% Dynamic Database)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/templates")
+async def list_templates(standard: str = None):
+    """List all assessment templates from SQLite database."""
+    items = template_store.list_templates(standard=standard)
+    return {"templates": items, "total": len(items)}
+
+
+@router.get("/templates/{template_id}")
+async def get_template(template_id: str):
+    """Get single assessment template by ID."""
+    _validate_template_id(template_id)
+    tpl = template_store.get_template(template_id)
+    if not tpl:
+        raise HTTPException(status_code=404, detail="Template not found.")
+    return tpl
+
+
+@router.post("/templates")
+async def save_template(payload: dict):
+    """Create or update a custom assessment template."""
+    if not payload.get("name"):
+        raise HTTPException(status_code=400, detail="Template name is required.")
+    saved = template_store.save_template(payload)
+    return {"status": "saved", "template": saved}
+
+
+@router.delete("/templates/{template_id}")
+async def delete_template(template_id: str):
+    """Delete a custom template. Built-in templates cannot be deleted."""
+    _validate_template_id(template_id)
+    deleted = template_store.delete_template(template_id)
+    if not deleted:
+        raise HTTPException(status_code=400, detail="Cannot delete built-in or non-existent template.")
+    return {"status": "deleted", "id": template_id}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Template Evidence Endpoints
+# ─────────────────────────────────────────────────────────────────────────────
 
 @router.post("/templates/{template_id}/evidence/upload")
 async def upload_template_evidence(template_id: str, file: UploadFile = File(...)):

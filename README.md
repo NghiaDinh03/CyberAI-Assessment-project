@@ -31,13 +31,14 @@ The platform supports **100% Offline / On-Premise** execution via Ollama (`gemma
 | # | Section | Description |
 |---|---------|-------------|
 | 1 | [🚀 Quick Start](#1--quick-start) | Clone, configure, and launch with Docker |
-| 2 | [✨ Key Features](#2--key-features) | 3 Core Pillars and Supporting Subsystems |
+| 2 | [✨ Key Features](#2--key-features) | 4 Core Pillars and Supporting Subsystems |
 | 3 | [🏗️ System Architecture](#3-️-system-architecture) | Docker Network Topology & Inference Fallback |
-| 4 | [🧠 Research & Core Algorithms](#4--research--core-algorithms) | 4 Key Algorithms for Academic Theses |
-| 5 | [📊 Empirical Evaluation (Enterprise Benchmark)](#6--empirical-evaluation-enterprise-benchmark) | Enterprise Infrastructure Assessment |
-| 6 | [⚙️ Environment Variables](#6-️-environment-variables) | `.env` Reference |
-| 7 | [📚 Documentation](#7--documentation) | Links to Full Technical Guides |
-| 8 | [📄 License](#-license) | MIT License |
+| 4 | [📊 Comparative Analysis](#4--comparative-analysis) | CyberAI vs Global SaaS Platforms (Vanta, Drata) |
+| 5 | [🧠 Research & Core Algorithms](#5--research--core-algorithms) | 4 Key Algorithms for Academic Theses |
+| 6 | [📊 Empirical Evaluation](#6--empirical-evaluation-enterprise-benchmark) | Enterprise Infrastructure Assessment |
+| 7 | [⚙️ Environment Variables](#7-️-environment-variables) | `.env` Reference |
+| 8 | [📚 Documentation](#8--documentation) | Links to Full Technical Guides |
+| 9 | [📄 License](#-license) | MIT License |
 
 ---
 
@@ -123,7 +124,20 @@ flowchart TB
 
 ```mermaid
 graph LR
-## 4. Comparative Analysis
+    A["🦙 Ollama (Local Edge AI)<br/>gemma4:latest (Primary)"] -->|"Format Syntax Error"| B["🔧 json_repair<br/>Auto-heal JSON AST"]
+    A -->|"Timeout / Busy / Cloud Mode"| C["☁️ Cloud Gateway<br/>DeepSeek / Gemini Flash"]
+    C -->|"Standardized Output"| D["📄 IT Audit Reports<br/>Markdown / DOCX / XLSX / PDF"]
+    B -->|"Standardized Output"| D
+
+    style A fill:#ea580c,stroke:#f97316,color:#fff
+    style B fill:#15803d,stroke:#22c55e,color:#fff
+    style C fill:#4338ca,stroke:#6366f1,color:#fff
+    style D fill:#0369a1,stroke:#0ea5e9,color:#fff
+```
+
+---
+
+## 4. 📊 Comparative Analysis
 
 The table below contrasts **CyberAI** with prominent AI-driven GRC (Governance, Risk, and Compliance) automation platforms in the global market, such as **Vanta**, **Drata**, and **Scytale**:
 

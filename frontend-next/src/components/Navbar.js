@@ -7,7 +7,7 @@ import { useTheme } from './ThemeProvider'
 import { useTranslation } from './LanguageProvider'
 import styles from './Navbar.module.css'
 import {
-    Home, MessageSquare, Shield, BookOpen, BarChart2,
+    Home, MessageSquare, Shield, BookOpen, BarChart2, Code2,
     Sun, Moon, Settings, LogIn, LogOut, ChevronDown, User as UserIcon
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -109,7 +109,10 @@ export default function Navbar() {
         <nav className={styles.navbar}>
             <div className={styles.inner}>
                 <Link href="/" className={styles.brand}>
-                    <Shield className={styles.brandIcon} size={22} strokeWidth={2.2} />
+                    <svg className={styles.brandIcon} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 3L4 8v8c0 6.627 5.153 12.417 12 13.95C22.847 28.417 28 22.627 28 16V8L16 3z" fill="rgba(37,99,235,0.25)" stroke="#3b82f6" strokeWidth="2.2" strokeLinejoin="round"/>
+                        <path d="M11 16l3.5 3.5L21 12" stroke="#60a5fa" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                     <span className={styles.brandText}>{t('common.appName')}</span>
                 </Link>
 

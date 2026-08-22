@@ -51,6 +51,16 @@ def _file_extension(filename: str) -> str:
 # content type for an unsupported file.
 _MIME_BY_EXT: dict[str, str] = {
     "txt": "text/plain",
+    "log": "text/plain",
+    "json": "application/json",
+    "yaml": "text/yaml",
+    "yml": "text/yaml",
+    "xml": "application/xml",
+    "conf": "text/plain",
+    "ini": "text/plain",
+    "sh": "text/plain",
+    "ps1": "text/plain",
+    "env": "text/plain",
     "md": "text/markdown",
     "csv": "text/csv",
     "pdf": "application/pdf",

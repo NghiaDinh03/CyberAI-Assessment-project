@@ -15,6 +15,7 @@ from services.cloud_llm_service import CloudLLMService, MIN_MAX_TOKENS
 from services.model_guard import ModelGuard
 from services.model_router import route_model
 from services.web_search import WebSearch
+from services.chat_queue import ChatQueueManager
 from repositories.vector_store import VectorStore
 from repositories.session_store import SessionStore
 from prompts import get_prompt
@@ -25,6 +26,11 @@ SPECIAL_TOKENS = re.compile(
     r'<\|eot_id\|>|<\|start_header_id\|>|<\|end_header_id\|>|'
     r'<\|begin_of_text\|>|<\|end_of_text\|>|<\|finetune_right_pad_id\|>|'
     r'<\|reserved_special_token_\d+\|>'
+)
+_THINKING_TAG_RE = re.compile(r'<think>.*?</think>', re.DOTALL | re.IGNORECASE)
+_THINKING_HEADER_RE = re.compile(
+    r"^(?:Here'?s a thinking process[^\n]*:?\s*\n(?:(?:\s*[\d\-\*\>].*?\n)|\s*\n)+)",
+    re.IGNORECASE
 )
 
 # Prompt-injection patterns — case-insensitive, matched anywhere in the message.
@@ -110,7 +116,82 @@ class ChatService:
 
     @staticmethod
     def clean_response(text: str) -> str:
-        return SPECIAL_TOKENS.sub('', text).strip()
+        if not text:
+            return ""
+        text = SPECIAL_TOKENS.sub('', text)
+        text = _THINKING_TAG_RE.sub('', text)
+        text = _THINKING_HEADER_RE.sub('', text)
+        text = ChatService._normalize_symbols_and_bytes(text)
+        return text.strip()
+
+    @staticmethod
+    def _normalize_symbols_and_bytes(text: str) -> str:
+        if not text:
+            return ""
+
+        # 1. Decode hex byte tokens: <0xF0><0x9F><0x97><0x84> -> UTF-8 characters
+        def _decode_hex_match(match):
+            hex_tokens = re.findall(r'<0x([0-9A-Fa-f]{2})>', match.group(0))
+            try:
+                raw_bytes = bytes(int(h, 16) for h in hex_tokens)
+                decoded = raw_bytes.decode('utf-8', errors='ignore')
+                return decoded
+            except Exception:
+                return ""
+
+        text = re.sub(r'(?:<0x[0-9A-Fa-f]{2}>)+', _decode_hex_match, text)
+        text = re.sub(r'<0x[0-9A-Fa-f]{2}>', '', text)
+
+        # 2. LaTeX arrow and math command replacements (both $\command$ and \command)
+        latex_replacements = [
+            (r'\$(?:\\rightarrow|\\to|\\longrightarrow)\$', '→'),
+            (r'\\(?:rightarrow|to|longrightarrow)\b', '→'),
+            (r'\$(?:\\leftarrow|\\gets|\\longleftarrow)\$', '←'),
+            (r'\\(?:leftarrow|gets|longleftarrow)\b', '←'),
+            (r'\$(?:\\Rightarrow|\\implies|\\Longrightarrow)\$', '⇒'),
+            (r'\\(?:Rightarrow|implies|Longrightarrow)\b', '⇒'),
+            (r'\$(?:\\Leftarrow|\\Longleftarrow)\$', '⇐'),
+            (r'\\(?:Leftarrow|Longleftarrow)\b', '⇐'),
+            (r'\$(?:\\Leftrightarrow|\\iff|\\Longleftrightarrow)\$', '⇔'),
+            (r'\\(?:Leftrightarrow|iff|Longleftrightarrow)\b', '⇔'),
+            (r'\$(?:\\leftrightarrow)\$', '↔'),
+            (r'\\(?:leftrightarrow)\b', '↔'),
+            (r'\$(?:\\approx|\\approxeq)\$', '≈'),
+            (r'\\(?:approx|approxeq)\b', '≈'),
+            (r'\$(?:\\neq|\\ne)\$', '≠'),
+            (r'\\(?:neq|ne)\b', '≠'),
+            (r'\$(?:\\le|\\leq)\$', '≤'),
+            (r'\\(?:le|leq)\b', '≤'),
+            (r'\$(?:\\ge|\\geq)\$', '≥'),
+            (r'\\(?:ge|geq)\b', '≥'),
+            (r'\$(?:\\pm)\$', '±'),
+            (r'\\(?:pm)\b', '±'),
+            (r'\$(?:\\times)\$', '×'),
+            (r'\\(?:times)\b', '×'),
+            (r'\$(?:\\div)\$', '÷'),
+            (r'\\(?:div)\b', '÷'),
+            (r'\$(?:\\cdot)\$', '·'),
+            (r'\\(?:cdot)\b', '·'),
+            (r'\$(?:\\bullet)\$', '•'),
+            (r'\\(?:bullet)\b', '•'),
+            (r'\$(?:\\dots|\\cdots|\\ldots)\$', '...'),
+            (r'\\(?:dots|cdots|ldots)\b', '...'),
+            (r'\$(?:\\infty)\$', '∞'),
+            (r'\\(?:infty)\b', '∞'),
+            (r'\$(?:\\checkmark)\$', '✓'),
+            (r'\\(?:checkmark)\b', '✓'),
+            (r'\$(?:\\sim)\$', '~'),
+        ]
+        for pattern, repl in latex_replacements:
+            text = re.sub(pattern, repl, text)
+
+        # 3. Clean up lone $ delimiters wrapping simple arrow/word expressions
+        text = re.sub(r'\$([^\$\n]+)\$', r'\1', text)
+
+        # 4. Clean up TL;DR prefixes
+        text = re.sub(r'\b(?:TL;DR|TLDR)\s*[:\-]\s*', '**Tóm lại:** ', text, flags=re.IGNORECASE)
+
+        return text
 
     # Keys that strongly indicate a SIEM / EDR / firewall / access log payload.
     # Matched substring-wise so both flat ("agent.ip":) and nested JSON formats hit.
@@ -127,11 +208,12 @@ class ChatService:
 
     @staticmethod
     def _is_log_analysis(message: str) -> bool:
-        """Detect if the user is requesting log/event analysis.
+        """Detect if the user is requesting log/event/rule analysis.
 
         Returns True for:
-        - Natural-language requests mentioning log/event analysis.
+        - Natural-language requests mentioning log/event/rule analysis.
         - Text-format logs (Windows Event IDs, ISO timestamps, field:value blocks).
+        - SIEM / EDR / AQL / SQL / Sigma / YARA detection queries.
         - JSON payloads from SIEM/EDR/firewall/auditd/access-log systems.
         """
         if not message:
@@ -143,6 +225,9 @@ class ChatService:
             "audit log", "process creation", "logon", "logoff",
             "firewall log", "access log", "error log", "phân tích sự kiện",
             "raw log", "alert", "siem log", "edr log",
+            "rule này", "bắt gì", "phân tích rule", "quy tắc này",
+            "aql filter", "filter query", "sigma rule", "yara rule",
+            "detection rule", "living off the land", "lolbins",
         )
         if any(kw in msg_lower for kw in log_keywords):
             return True
@@ -154,7 +239,7 @@ class ChatService:
                 if hint in message:
                     return True
 
-        # Regex fallbacks for plain-text logs.
+        # Regex fallbacks for plain-text logs & SIEM/AQL detection queries.
         log_patterns = (
             r"Event\s*ID[:\s]*\d+",
             r"Source[:\s]*(Microsoft|Security|System|Application)",
@@ -171,6 +256,10 @@ class ChatService:
             r"\bdst(?:ip|_ip)?\s*=\s*\d+\.\d+\.\d+\.\d+",
             r"\b(?:GET|POST|PUT|DELETE|PATCH)\s+/\S+\s+HTTP/\d",
             r"type=SYSCALL\s+msg=audit",
+            # SIEM / AQL / EDR query patterns
+            r"(?:Parent\s*Process\s*Path|Process\s*Path)\s*ILIKE",
+            r"SELECT\s+.*\s+FROM\s+.*\s+WHERE",
+            r"(?:AND|OR)\s+NOT\s+\(\(",
         )
         for pattern in log_patterns:
             if re.search(pattern, message, re.IGNORECASE):
@@ -279,30 +368,90 @@ class ChatService:
         re.MULTILINE,
     )
 
+    _LOG_FIELD_LABELS = [
+        "Parent Process Name:", "Parent Process ID:", "Parent Command Line:",
+        "File Hash (SHA256):", "File Hash (MD5):", "Source Interface:", "Destination Interface:",
+        "Token Elevation:", "Thời gian phát hiện:", "Log cần kiểm tra:", "Truy vấn gợi ý:",
+        "Parent Process:", "Process Name:", "Process ID:", "Command Line:", "Account Name:",
+        "Computer Name:", "Logon Type:", "Source Port:", "Destination Port:", "Policy ID:",
+        "Sent Bytes:", "Received Bytes:", "Device Name:", "Device ID:", "Rule Name:",
+        "Event ID:", "Timestamp:", "Log ID:", "Log Type:", "Subtype:", "Level:",
+        "Source IP:", "Destination IP:", "Protocol:", "Action:", "Service:", "Duration:",
+        "Nhận định:", "Mức độ:", "Lý do:", "Technique:", "Tactic:", "Khuyến nghị:",
+        "IOCs:", "MITRE:", "Host:", "User:", "Source:", "SHA256:", "MD5:",
+    ]
+
     @staticmethod
     def _normalize_log_output(text: str) -> str:
-        """Strip markdown artefacts from a log-analysis response.
-
-        Small local models (gemma, phi, llama3-8B) often ignore the
-        "no markdown" rule and emit headings, tables, or bullets.  This is a
-        defensive post-processor: cheap, idempotent, only runs when log mode
-        was triggered.
-        """
+        """Format and beautify log-analysis responses with bullet points, bold field keys, and structured SOC section headings."""
         if not text:
             return text
-        out = ChatService._NORMALIZE_HEADING_RE.sub("", text)
-        out = ChatService._NORMALIZE_HRULE_RE.sub("", out)
-        out = ChatService._NORMALIZE_INLINE_DIVIDER_RE.sub("", out)
-        out = ChatService._NORMALIZE_LEADING_EMOJI_RE.sub("", out)
-        out = ChatService._NORMALIZE_BULLET_RE.sub("", out)
-        out = ChatService._NORMALIZE_BOLD_LABEL_RE.sub(r"\1:", out)
-        # Strip any remaining **bold** spans (keep inner text).
-        out = re.sub(r"\*\*([^*\n]{1,120})\*\*", r"\1", out)
-        # Strip trailing whitespace on each line.
-        out = re.sub(r"[ \t]+\n", "\n", out)
-        # Collapse runs of 3+ blank lines.
-        out = re.sub(r"\n{3,}", "\n\n", out)
-        return out.strip()
+
+        labels = sorted(ChatService._LOG_FIELD_LABELS, key=len, reverse=True)
+        out = text
+
+        # 1. Split merged labels into newlines only when not part of composite prefixes
+        for label in labels:
+            escaped = re.escape(label)
+            pattern = re.compile(r"(?<!^)(?<!\n)(?<=[^\w\s]|\d|[a-zÀ-ỹ])\s+(" + escaped + r")", re.IGNORECASE)
+            def _repl(m):
+                prefix_pos = m.start(1)
+                before = out[max(0, prefix_pos - 15):prefix_pos].lower()
+                if any(before.endswith(p) for p in ("parent ", "file hash ", "source ", "destination ", "layer ")):
+                    return m.group(0)
+                return "\n" + m.group(1)
+            out = pattern.sub(_repl, out)
+
+        raw_lines = [l.strip() for l in out.split('\n') if l.strip()]
+        cleaned_lines = []
+        for l in raw_lines:
+            # If multiple fields were concatenated on one line (e.g. "Src IP: 1.1.1.1 Dst IP: 2.2.2.2")
+            parts = re.split(r"(?<=\S)\s{2,}(?=[A-Za-z0-9À-ỹ\s\(\)\/_\-]+:)", l)
+            cleaned_lines.extend(parts)
+
+        formatted = []
+        has_event_header = False
+        has_verdict_header = False
+        has_mitre_header = False
+        has_rec_header = False
+
+        for line in cleaned_lines:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith('###'):
+                formatted.append(f"\n{line}")
+                continue
+
+            lower = line.lower()
+            if not has_event_header and any(lower.startswith(k.lower()) for k in ("event id:", "timestamp:", "host:", "device name:", "source:", "process name:", "event source:", "client ip:", "rule:", "agent:")):
+                formatted.append("### 📋 Thông tin sự kiện")
+                has_event_header = True
+            elif not has_verdict_header and lower.startswith("nhận định:"):
+                formatted.append("\n### 🎯 Nhận định & Đánh giá")
+                has_verdict_header = True
+            elif not has_mitre_header and (lower.startswith("technique:") or lower.startswith("mitre:")):
+                formatted.append("\n### 🛡️ Kỹ thuật tấn công (MITRE ATT&CK)")
+                has_mitre_header = True
+            elif not has_rec_header and (lower.startswith("khuyến nghị:") or lower.startswith("log cần kiểm tra:")):
+                formatted.append("\n### 💡 Khuyến nghị xử lý")
+                has_rec_header = True
+
+            # Convert `Field: Value` to `- **Field**: Value`
+            m = re.match(r"^(\s*[-*•]?\s*)(?:\*\*)?([A-Za-z0-9À-ỹ\s\(\)\/_\-]+?)(?:\*\*)?:\s*(.+)$", line)
+            if m:
+                label_name = m.group(2).strip()
+                val = m.group(3).strip()
+                label_name = label_name.replace("**", "")
+                formatted.append(f"- **{label_name}**: {val}")
+            else:
+                formatted.append(line)
+
+        # Strip trailing whitespace on each line & collapse excess blank lines
+        res = "\n".join(formatted).strip()
+        res = re.sub(r"[ \t]+\n", "\n", res)
+        res = re.sub(r"\n{3,}", "\n\n", res)
+        return res
 
     # Vietnamese diacritics — detection for language enforcement.
     _VN_DIACRITIC_RE = re.compile(
@@ -367,20 +516,27 @@ class ChatService:
     # Source of truth is prompts/defaults.py; this mirror is used only when the
     # prompt registry is unavailable (e.g. tests without DATA_PATH).
     _LOG_ANALYSIS_PROMPT_FALLBACK = (
-        "Bạn là SOC Analyst Level 3. Phân tích log và trả về dạng `Field: Value` thuần. "
-        "KHÔNG heading markdown, KHÔNG emoji, KHÔNG bullet, KHÔNG horizontal rule, "
-        "KHÔNG intro/outro.\n\n"
-        "Format: mỗi dòng 1 field `<Field>: <value>`. Label KHÔNG in đậm.\n\n"
-        "Bắt buộc có các dòng:\n"
-        "- `Nhận định: True Positive | False Positive | Cần điều tra thêm`\n"
-        "- `Mức độ: Critical | High | Medium | Low | Informational`\n"
-        "- `Lý do: <2-3 câu>`\n"
-        "- `Technique: Txxxx.xxx - <tên>` và `Tactic: <tên>` (hoặc `MITRE: N/A`)\n"
-        "- Nếu False Positive → `Khuyến nghị: Không cần hành động - hoạt động bình thường.`\n"
-        "- Nếu TP/Cần điều tra → `Log cần kiểm tra:`, `Truy vấn gợi ý:`, `IOCs:`\n\n"
-        "QUY TẮC CỨNG: KHÔNG `#`/`##`/`###`, KHÔNG `**bold label**:`, KHÔNG emoji, KHÔNG `---`, "
-        "KHÔNG `===`, KHÔNG bullet `-`/`*` đầu dòng field, KHÔNG bảng, KHÔNG subtitle "
-        "(`Tóm tắt`, `Phân tích kỹ thuật`). Dùng label cũ `Kết luận` = SAI."
+        "Bạn là SOC Analyst Level 3 chuyên nghiệp. Phân tích log an ninh theo cấu trúc Markdown 4 phần rõ ràng, "
+        "sử dụng bullet points `- **Tên Field**: <giá trị>` để hiển thị mạch lạc, chuyên nghiệp, dễ đọc.\n\n"
+        "## OUTPUT FORMAT:\n\n"
+        "### 📋 Thông tin sự kiện\n"
+        "- **Event ID**: <ID>\n"
+        "- **Timestamp**: <Thời gian>\n"
+        "- **User**: <Tài khoản>\n"
+        "- **Process Name**: <Tên tiến trình>\n"
+        "- **Command Line**: <Câu lệnh thực thi>\n"
+        "- **Parent Process**: <Tiến trình cha>\n\n"
+        "### 🎯 Nhận định & Đánh giá\n"
+        "- **Nhận định**: True Positive / False Positive / Cần điều tra thêm\n"
+        "- **Mức độ**: Critical / High / Medium / Low / Informational\n"
+        "- **Lý do**: <Giải thích ngắn gọn 2-3 câu bằng tiếng Việt>\n\n"
+        "### 🛡️ Kỹ thuật tấn công (MITRE ATT&CK)\n"
+        "- **Technique**: Txxxx.xxx - <Tên>\n"
+        "- **Tactic**: <Tên tactic>\n\n"
+        "### 💡 Khuyến nghị xử lý\n"
+        "- **Khuyến nghị**: <Hành động cụ thể hoặc 'Không cần hành động - hoạt động bình thường' nếu False Positive>\n"
+        "- **Log cần kiểm tra**: <Event ID hoặc nguồn log liên quan>\n\n"
+        "QUY TẮC BẮT BUỘC: Luôn dùng đúng định dạng bullet `- **Tên Field**: <value>` cho từng trường và phân nhóm 4 mục `###` ở trên."
     )
 
     @staticmethod
@@ -423,39 +579,53 @@ class ChatService:
             ChatService._flatten_log_to_fields(message) if is_log else message
         )
 
-        # Short system prompt for local CPU models — no RAG context, minimal tokens
+        is_vn = ChatService._is_vietnamese(message)
+        lang_directive = (
+            "\n\n[IMPORTANT: User inquiry is in VIETNAMESE. Respond entirely in natural, professional VIETNAMESE. For logs, keep technical field names and IOCs in English, but write all explanations, verdicts, and recommendations in Vietnamese.]"
+            if is_vn else
+            "\n\n[IMPORTANT: User inquiry is in ENGLISH. Respond entirely in natural, professional ENGLISH. Keep all explanations, answers, and formatting in English.]"
+        )
+
+        # Short system prompt for local CPU/GPU models — no RAG context, minimal tokens
         if is_local:
             if is_log:
-                system_prompt = log_prompt
+                system_prompt = log_prompt + lang_directive
                 user_content = log_message
             else:
                 system_prompt = ChatService._safe_prompt(
                     "chat.local_default",
-                    "Bạn là trợ lý AI chuyên gia về an ninh mạng và bảo mật thông tin.",
-                )
+                    "You are CyberAI, an expert cybersecurity and information security assistant.",
+                ) + lang_directive
                 user_content = message
+            
+            if is_vn and not user_content.startswith("[YÊU CẦU:"):
+                user_content = f"[YÊU CẦU: Hãy phân tích và trả lời chi tiết bằng TIẾNG VIỆT]\n\n{user_content}"
+
             messages = [{"role": "system", "content": system_prompt}]
             if history:
-                messages.extend(history[-2:])
+                messages.extend(history[-8:])
             messages.append({"role": "user", "content": user_content})
             return messages
 
         # Log analysis takes priority — use structured prompt regardless of RAG/search
         if is_log:
-            system_prompt = log_prompt
+            system_prompt = log_prompt + lang_directive
             user_content = log_message
         # Cloud model with RAG context from knowledge base
         elif use_rag and context:
-            system_prompt = ChatService._safe_prompt("chat.rag", "")
-            user_content = f"Tài liệu tham chiếu:\n{context}\n\nCâu hỏi: {message}"
+            system_prompt = ChatService._safe_prompt("chat.rag", "") + lang_directive
+            user_content = f"Reference Context / Tài liệu tham chiếu:\n{context}\n\nQuestion / Câu hỏi: {message}"
         # Cloud model with web search results
         elif use_search and search_context:
-            system_prompt = ChatService._safe_prompt("chat.web_search", "")
-            user_content = f"Kết quả tìm kiếm:\n{search_context}\n\nCâu hỏi: {message}"
+            system_prompt = ChatService._safe_prompt("chat.web_search", "") + lang_directive
+            user_content = f"Search Results / Kết quả tìm kiếm:\n{search_context}\n\nQuestion / Câu hỏi: {message}"
         # Cloud model — general knowledge, no RAG/search
         else:
-            system_prompt = ChatService._safe_prompt("chat.general", "")
+            system_prompt = ChatService._safe_prompt("chat.general", "") + lang_directive
             user_content = message
+
+        if is_vn and not user_content.startswith("[YÊU CẦU:"):
+            user_content = f"[YÊU CẦU: Hãy phân tích và trả lời chi tiết bằng TIẾNG VIỆT]\n\n{user_content}"
 
         messages = [{"role": "system", "content": system_prompt}]
         if history:
@@ -483,7 +653,18 @@ class ChatService:
         guard_error = ChatService._local_only_guard()
         if guard_error:
             return guard_error
+
+        queue_mgr = ChatQueueManager.get_instance()
+        is_local_req = (not prefer_cloud) and ChatService._is_local_model(model_override or settings.MODEL_NAME)
+        ticket = None
+
         try:
+            # Synchronize turn via queue
+            for q_ev in queue_mgr.enqueue_and_wait(session_id=session_id, is_local=is_local_req):
+                if q_ev.get("step") == "queue_granted":
+                    ticket = q_ev.get("ticket")
+                    break
+
             routing = route_model(message)
             model_name = model_override or routing["model"]
             use_rag = routing["use_rag"]
@@ -512,13 +693,50 @@ class ChatService:
                     web_sources = [{"title": r["title"], "url": r["url"]} for r in search_results]
 
             ss = ChatService.get_session_store()
-            max_hist = 2 if is_local else 10
+            max_hist = 8 if is_local else 10
             history = ss.get_context_messages(session_id, max_messages=max_hist)
             is_log = (
                 ChatService._is_log_analysis(message)
                 or ChatService._session_in_log_mode(history or [])
             )
             messages = ChatService._build_messages(message, routing, context, search_context, history, is_local=is_local)
+
+            # Auto-compact history if nearing context limit
+            total_chars = sum(len(m.get("content", "")) for m in messages)
+            estimated_tokens = total_chars // 3
+            if is_local:
+                if estimated_tokens > 3800 and history and len(history) > 2:
+                    logger.info(f"[Chat] Context high ({estimated_tokens} est. tokens) -> auto-compacting history to last 2 messages")
+                    history = history[-2:]
+                    messages = ChatService._build_messages(message, routing, context, search_context, history, is_local=is_local)
+                    total_chars = sum(len(m.get("content", "")) for m in messages)
+                    estimated_tokens = total_chars // 3
+
+                if estimated_tokens > 4800 and history:
+                    logger.info(f"[Chat] Current payload alone is large ({estimated_tokens} est. tokens) -> dropping history to guarantee output token budget")
+                    history = []
+                    messages = ChatService._build_messages(message, routing, context, search_context, history, is_local=is_local)
+                    total_chars = sum(len(m.get("content", "")) for m in messages)
+                    estimated_tokens = total_chars // 3
+
+                if estimated_tokens > 7800:
+                    logger.warning(f"[Chat] Context limit reached ({estimated_tokens} est. tokens)")
+                    overflow_msg = (
+                        "Đoạn hội thoại hiện tại đã đạt giới hạn bộ nhớ ngữ cảnh của mô hình AI cục bộ "
+                        "(bao gồm toàn bộ lịch sử các câu hỏi trước đó và dữ liệu log lớn). "
+                        "Để AI phân tích chính xác và đạt hiệu suất cao nhất, bạn vui lòng mở một phiên chat mới (+ Cuộc trò chuyện mới) "
+                        "hoặc chuyển sang Cloud AI để xử lý lượng ngữ cảnh lớn hơn."
+                    )
+                    ss.add_message(session_id, "user", message)
+                    ss.add_message(session_id, "assistant", overflow_msg, model=model_name, provider="ollama")
+                    return {
+                        "response": overflow_msg,
+                        "model": model_name,
+                        "provider": "ollama",
+                        "route": routing["route"],
+                        "session_id": session_id,
+                        "is_context_overflow": True,
+                    }
 
             # cloud_model must only be set when prefer_cloud=True
             result = await asyncio.to_thread(
@@ -564,6 +782,9 @@ class ChatService:
                 "response": f"Lỗi: {str(e)}", "model": model_name if 'model_name' in locals() else settings.MODEL_NAME,
                 "provider": "error", "session_id": session_id, "error": True,
             }
+        finally:
+            if ticket:
+                queue_mgr.release_turn(ticket)
 
     @staticmethod
     def generate_response_stream(message: str, session_id: str = "default",
@@ -584,25 +805,48 @@ class ChatService:
         if guard_error:
             yield guard_error
             return
+
+        queue_mgr = ChatQueueManager.get_instance()
+        is_local_req = (not prefer_cloud) and ChatService._is_local_model(model_override or settings.MODEL_NAME)
+        ticket = None
+
         try:
+            # 1. Hàng đợi xử lý: Session Lock & Local Inference Throttle
+            for q_ev in queue_mgr.enqueue_and_wait(session_id=session_id, is_local=is_local_req):
+                if q_ev.get("step") == "queue_granted":
+                    ticket = q_ev.get("ticket")
+                    break
+                yield q_ev
+
             yield {"step": "routing", "i18n_key": "stream.routing",
-                   "message": "Analyzing question..."}
+                   "message": "🔍 Đang phân tích câu hỏi & đối chiếu chuyên môn an toàn thông tin..."}
 
-            routing = route_model(message)
-            model_name = model_override or routing["model"]
-            use_rag = routing["use_rag"]
-            use_search = routing.get("use_search", False)
+            eff_model = model_override or settings.MODEL_NAME
+            is_local = (not prefer_cloud) and ChatService._is_local_model(eff_model)
 
-            is_local = ChatService._is_local_model(model_name)
             if is_local:
+                # Fast path: local models use direct inference without heavy semantic RAG search
+                model_name = eff_model
                 use_rag = False
+                use_search = False
+                routing = {
+                    "model": model_name,
+                    "use_rag": False,
+                    "use_search": False,
+                    "route": "security" if ChatService._is_log_analysis(message) else "general",
+                }
+            else:
+                routing = route_model(message)
+                model_name = model_override or routing["model"]
+                use_rag = routing["use_rag"]
+                use_search = routing.get("use_search", False)
 
             context, search_context = "", ""
             sources, web_sources = [], []
 
             if use_rag:
                 yield {"step": "rag", "i18n_key": "stream.rag",
-                       "message": "🔍 Searching internal documents..."}
+                       "message": "📚 Đang tra cứu cơ sở tri thức tiêu chuẩn ISO 27001 / TCVN 11930..."}
                 vs = ChatService.get_vector_store()
                 results = vs.search(message, top_k=2, organisation=organisation)
                 if results:
@@ -611,28 +855,69 @@ class ChatService:
 
             if use_search:
                 yield {"step": "searching", "i18n_key": "stream.searching",
-                       "message": "🔍 Searching the web..."}
+                       "message": "🌐 Đang thu thập và tổng hợp thông tin tình báo an ninh mạng trên Web..."}
                 search_results = WebSearch.search(message, max_results=5)
                 if search_results:
                     search_context = WebSearch.format_context(search_results)
                     web_sources = [{"title": r["title"], "url": r["url"]} for r in search_results]
                     yield {"step": "search_done", "i18n_key": "stream.searchDone",
                            "i18n_params": {"count": len(search_results)},
-                           "message": f"✅ Found {len(search_results)} results, analyzing..."}
+                           "message": f"✅ Đã tiếp nhận {len(search_results)} nguồn dữ liệu, đang biên soạn câu trả lời..."}
 
             display_model = model_name if model_name else settings.CLOUD_MODEL_NAME
             yield {"step": "thinking", "i18n_key": "stream.thinking",
                    "i18n_params": {"model": display_model},
-                   "message": f"🤖 Generating response ({display_model})..."}
+                   "message": f"🤖 Đang khởi động suy luận {display_model} trên GPU AMD Radeon..."}
 
             ss = ChatService.get_session_store()
-            max_hist = 2 if is_local else 10
+            max_hist = 8 if is_local else 10
             history = ss.get_context_messages(session_id, max_messages=max_hist)
             is_log = (
                 ChatService._is_log_analysis(message)
                 or ChatService._session_in_log_mode(history or [])
             )
             messages = ChatService._build_messages(message, routing, context, search_context, history, is_local=is_local)
+
+            # Auto-compact history if nearing context limit
+            total_chars = sum(len(m.get("content", "")) for m in messages)
+            estimated_tokens = total_chars // 3
+            if is_local:
+                if estimated_tokens > 3800 and history and len(history) > 2:
+                    logger.info(f"[Chat] Context high ({estimated_tokens} est. tokens) -> auto-compacting history to last 2 messages")
+                    history = history[-2:]
+                    messages = ChatService._build_messages(message, routing, context, search_context, history, is_local=is_local)
+                    total_chars = sum(len(m.get("content", "")) for m in messages)
+                    estimated_tokens = total_chars // 3
+
+                if estimated_tokens > 4800 and history:
+                    logger.info(f"[Chat] Current payload alone is large ({estimated_tokens} est. tokens) -> dropping history to guarantee output token budget")
+                    history = []
+                    messages = ChatService._build_messages(message, routing, context, search_context, history, is_local=is_local)
+                    total_chars = sum(len(m.get("content", "")) for m in messages)
+                    estimated_tokens = total_chars // 3
+
+                if estimated_tokens > 7800:
+                    logger.warning(f"[Chat] Context limit reached ({estimated_tokens} est. tokens) -> yielding friendly alert")
+                    overflow_msg = (
+                        "Đoạn hội thoại hiện tại đã đạt giới hạn bộ nhớ ngữ cảnh của mô hình AI cục bộ "
+                        "(bao gồm toàn bộ lịch sử các câu hỏi trước đó và dữ liệu log lớn). "
+                        "Để AI phân tích chính xác và đạt hiệu suất cao nhất, bạn vui lòng mở một phiên chat mới (+ Cuộc trò chuyện mới) "
+                        "hoặc chuyển sang Cloud AI để xử lý lượng ngữ cảnh lớn hơn."
+                    )
+                    ss.add_message(session_id, "user", message, user_id=user_id)
+                    ss.add_message(session_id, "assistant", overflow_msg, user_id=user_id, model=model_name, provider="ollama")
+                    yield {
+                        "step": "done",
+                        "data": {
+                            "response": overflow_msg,
+                            "model": model_name,
+                            "provider": "ollama",
+                            "is_context_overflow": True,
+                            "session_id": session_id,
+                            "route": routing["route"],
+                        }
+                    }
+                    return
 
             # Decide streaming path: only Ollama models support live token streaming here.
             response_text = ""
@@ -642,7 +927,7 @@ class ChatService:
             if not prefer_cloud and is_local and ChatService._is_ollama_model(model_name):
                 try:
                     yield {"step": "stream_start", "i18n_key": "stream.streamStart",
-                           "message": "💭 Model is thinking — streaming live..."}
+                           "message": "💭 Mô hình đang suy nghĩ và truyền tải dữ liệu trực tiếp..."}
                     chunks = []
                     for ev in CloudLLMService.call_ollama_stream(
                         model=model_name, messages=messages, temperature=0.7
@@ -650,6 +935,8 @@ class ChatService:
                         if ev.get("type") == "token":
                             chunks.append(ev["content"])
                             yield {"step": "token", "token": ev["content"]}
+                        elif ev.get("type") == "thinking_token":
+                            yield {"step": "thinking_token", "token": ev["content"]}
                         elif ev.get("type") == "done":
                             response_text = ChatService.clean_response(ev.get("content", "") or "".join(chunks))
                             result_meta = {
@@ -657,26 +944,38 @@ class ChatService:
                                 "provider": ev.get("provider", "ollama"),
                                 "usage": ev.get("usage", {}),
                             }
-                    ollama_streamed = True
+                    if response_text.strip():
+                        ollama_streamed = True
+                    else:
+                        logger.warning("[Stream] Ollama stream yielded no content -> fallback to non-stream")
                 except Exception as stream_err:
                     logger.warning(f"[Stream] Ollama stream failed → falling back to non-stream: {stream_err}")
                     yield {"step": "stream_fallback", "i18n_key": "stream.fallback",
                            "message": "⚠️ Stream failed, switching to standard mode..."}
 
             if not ollama_streamed:
-                result = CloudLLMService.chat_completion(
-                    messages=messages,
-                    temperature=0.7,
-                    local_model=model_name,
-                    prefer_cloud=prefer_cloud,
-                    cloud_model=model_override if prefer_cloud else None,
-                )
-                response_text = ChatService.clean_response(result["content"]) if result.get("content") else ""
-                result_meta = {
-                    "model": result.get("model", model_name),
-                    "provider": result.get("provider", "unknown"),
-                    "usage": result.get("usage", {}),
-                }
+                try:
+                    result = CloudLLMService.chat_completion(
+                        messages=messages,
+                        temperature=0.7,
+                        local_model=model_name,
+                        prefer_cloud=prefer_cloud,
+                        cloud_model=model_override if prefer_cloud else None,
+                    )
+                    response_text = ChatService.clean_response(result["content"]) if result.get("content") else ""
+                    result_meta = {
+                        "model": result.get("model", model_name),
+                        "provider": result.get("provider", "unknown"),
+                        "usage": result.get("usage", {}),
+                    }
+                except Exception as comp_err:
+                    logger.error(f"[Chat] Non-stream completion failed: {comp_err}")
+                    if not response_text:
+                        response_text = f"Mô hình cục bộ không thể hoàn tất phân tích lúc này: {str(comp_err)}. Vui lòng thử lại hoặc chuyển sang chế độ Cloud AI."
+                        result_meta = {"model": model_name, "provider": "error", "usage": {}}
+
+            if is_log and response_text:
+                response_text = ChatService._normalize_log_output(response_text)
 
             ss.add_message(session_id, "user", message, user_id=user_id)
             if response_text:
@@ -692,7 +991,7 @@ class ChatService:
             yield {
                 "step": "done",
                 "data": {
-                    "response": response_text or "",
+                    "response": response_text or "Không nhận được phản hồi từ mô hình. Vui lòng thử lại.",
                     "response_i18n_key": None if response_text else "stream.noResponse",
                     "model": result_meta["model"],
                     "provider": result_meta["provider"],
@@ -720,6 +1019,9 @@ class ChatService:
                     "session_id": session_id, "error": True,
                 },
             }
+        finally:
+            if ticket:
+                queue_mgr.release_turn(ticket)
 
     @staticmethod
     def clear_conversation(session_id: str) -> Dict[str, Any]:
@@ -856,100 +1158,41 @@ class ChatService:
         )
 
 
-        local_available = False
-        if effective_mode in ("local", "hybrid"):
-            local_available = CloudLLMService.localai_health_check(
-                model=settings.SECURITY_MODEL_NAME, timeout=15
-            )
-            if not local_available:
-                logger.warning(
-                    f"[Assessment] LocalAI health check FAILED (model={settings.SECURITY_MODEL_NAME}) — "
-                    f"auto-upgrade mode: local→hybrid, hybrid→cloud"
-                )
-                if effective_mode == "local":
-                    if settings.cloud_api_key_list:
-                        effective_mode = "hybrid"
-                        logger.warning("[Assessment] local→hybrid fallback")
-                    else:
-                        raise Exception(
-                            "LocalAI không khởi động được và không có Cloud API key. "
-                            "Kiểm tra RAM và model GGUF trong LocalAI container."
-                        )
-                elif effective_mode == "hybrid":
-                    effective_mode = "cloud"
-                    logger.warning("[Assessment] hybrid→cloud fallback (LocalAI unavailable)")
+        # Resolve 100% Local Model for Assessment (Default: gemma4:latest on AMD GPU)
+        local_target_model = system_data.get("selected_model") or "gemma4:latest"
+        logger.info(f"[Assessment] 100% Local Inference Mode activated with model={local_target_model}")
 
         def _try_phase(messages, temperature, local_model, task_type, priority=False):
-            """Try LocalAI first, then fallback to cloud if local load fails."""
-            errors = []
-            # If in hybrid and local is intended
-            if effective_mode in ("local", "hybrid"):
-                try:
-                    return CloudLLMService._call_localai(local_model, messages, temperature, priority=priority)
-                except Exception as e:
-                    err_str = str(e)
-                    errors.append(f"LocalAI: {err_str}")
-                    logger.warning(f"[Assessment] LocalAI failed (task={task_type}): {err_str}")
-                    is_load_error = any(kw in err_str for kw in ["Model load failed", "could not load model", "rpc error", "Canceled", "HTTP 500", "Connection error"])
-                    if effective_mode == "local":
-                        raise
-                    # In hybrid: attempt cloud fallback for the phase
-                    if is_load_error and settings.cloud_api_key_list:
-                        try:
-                            cloud_model = CloudLLMService._resolve_model("iso_analysis")
-                            cloud_res = CloudLLMService._call_open_claude(messages, temperature, max_tokens=MIN_MAX_TOKENS, model=cloud_model, task_type="iso_analysis")
-                            cloud_res["provider"] = cloud_res.get("provider", "open-claude") + "-fallback"
-                            return cloud_res
-                        except Exception as ce:
-                            errors.append(f"Cloud fallback: {ce}")
-                            logger.error(f"[Assessment] Cloud fallback failed after LocalAI error: {ce}")
-            else:
-                # cloud mode only
-                return CloudLLMService._call_open_claude(messages, temperature, max_tokens=MIN_MAX_TOKENS, task_type=task_type)
+            """Execute assessment phase using 100% Local Ollama model (Gemma 4 on GPU)."""
+            target_model = local_model or local_target_model or "gemma4:latest"
+            logger.info(f"[Assessment] Running phase (task={task_type}) on Local Ollama model={target_model}")
+            return CloudLLMService._call_ollama(
+                model=target_model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=MIN_MAX_TOKENS
+            )
 
-            raise Exception("; ".join(errors))
+        p1_task_type = "iso_local"
+        p1_model = local_target_model
+        p2_task_type = "iso_local"
+        p2_model = local_target_model
 
-        if effective_mode == "local":
-            p1_task_type = "iso_local"
-            p1_model = settings.SECURITY_MODEL_NAME
-            p2_task_type = "iso_local"
-            p2_model = settings.MODEL_NAME  # Meta-Llama cho report formatting
-            logger.info(f"[Assessment] local — P1={p1_model}, P2={p2_model}")
-        elif effective_mode == "cloud":
-            p1_task_type = "iso_analysis"
-            p1_model = None  # resolved by CloudLLMService
-            p2_task_type = "iso_analysis"
-            p2_model = None
-            logger.info("[Assessment] cloud — both phases OpenClaude")
-        else:  # hybrid
-            p1_task_type = "iso_local"
-            p1_model = settings.SECURITY_MODEL_NAME
-            p2_task_type = "iso_analysis"
-            p2_model = None  # OpenClaude for report
-            logger.info(f"[Assessment] hybrid — P1={p1_model} (LocalAI), P2=OpenClaude")
-
-        # Step 3 — for hybrid/local, pre-compute a SecurityLM evidence summary
-        # so chunk drafting can cite it instead of re-reading raw evidence.
+        # Pre-compute evidence summary using local model
         evidence_summary = ""
-        if effective_mode in ("hybrid", "local"):
-            evidence_text = (system_data.get("notes", "") or "").strip()
-            if evidence_text:
-                try:
-                    evidence_summary = summarize_evidence(
-                        evidence_text,
-                        max_tokens=getattr(settings, "EVIDENCE_SUMMARY_TOKENS", 256),
-                        logger=logger,
-                    )
-                    if evidence_summary:
-                        logger.info(
-                            f"[Assessment] evidence summary OK "
-                            f"({len(evidence_summary)} chars, mode={effective_mode})"
-                        )
-                    else:
-                        logger.info(f"[Assessment] evidence summary empty (mode={effective_mode})")
-                except Exception as se:
-                    logger.warning(f"[Assessment] summarize_evidence failed: {se}")
-                    evidence_summary = ""
+        evidence_text = (system_data.get("notes", "") or "").strip()
+        if evidence_text:
+            try:
+                evidence_summary = summarize_evidence(
+                    evidence_text,
+                    max_tokens=getattr(settings, "EVIDENCE_SUMMARY_TOKENS", 256),
+                    logger=logger,
+                )
+                if evidence_summary:
+                    logger.info(f"[Assessment] evidence summary OK ({len(evidence_summary)} chars)")
+            except Exception as se:
+                logger.warning(f"[Assessment] summarize_evidence failed: {se}")
+                evidence_summary = ""
 
         try:
             raw_analysis = ""
@@ -1142,10 +1385,10 @@ class ChatService:
                 "json_data": json_data,
                 "details": [],
                 "control_verdicts": all_verdicts,
-                "model_mode": effective_mode,
+                "model_mode": "local",
                 "model_used": {
-                    "phase1": f"{result_p1.get('provider') if result_p1 else 'localai'}:{result_p1.get('model') if result_p1 else settings.SECURITY_MODEL_NAME}",
-                    "phase2": f"{result_p2.get('provider')}:{result_p2.get('model')}",
+                    "phase1": f"ollama:{result_p1.get('model', 'gemma4:latest') if result_p1 else 'gemma4:latest'}",
+                    "phase2": f"ollama:{result_p2.get('model', 'gemma4:latest') if result_p2 else 'gemma4:latest'}",
                 },
             }
         except Exception as e:

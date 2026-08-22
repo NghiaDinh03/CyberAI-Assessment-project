@@ -59,6 +59,28 @@ async def get_all_standards():
     }
 
 
+@router.get("/standards/control-descriptions")
+async def get_control_descriptions(locale: str = "vi", standard: str = None):
+    """Fetch security control requirements and assessment criteria from SQLite database."""
+    from repositories.control_descriptions_store import control_descriptions_store
+    descriptions = control_descriptions_store.get_all(locale=locale, standard=standard)
+    return {
+        "descriptions": descriptions,
+        "total": len(descriptions),
+        "locale": locale
+    }
+
+
+@router.get("/standards/control-descriptions/{control_id}")
+async def get_single_control_description(control_id: str, locale: str = "vi"):
+    """Fetch a single control description by control ID."""
+    from repositories.control_descriptions_store import control_descriptions_store
+    desc = control_descriptions_store.get_by_id(control_id, locale=locale)
+    if not desc:
+        raise HTTPException(status_code=404, detail=f"Control '{control_id}' not found")
+    return desc
+
+
 @router.get("/standards/sample")
 async def get_sample_standard():
     """Download a sample standard JSON template for reference."""

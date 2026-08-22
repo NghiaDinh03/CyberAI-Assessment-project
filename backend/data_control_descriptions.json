@@ -1,0 +1,891 @@
+{
+  "A.5.1": {
+    "control_id": "A.5.1",
+    "requirement_vi": "Xây dựng, phê duyệt và truyền đạt chính sách ATTT phù hợp với mục tiêu tổ chức.",
+    "criteria_vi": "Có chính sách ATTT được lãnh đạo cấp cao phê duyệt, truyền đạt toàn bộ nhân viên, xem xét định kỳ.",
+    "requirement_en": "Establish, approve, and communicate an information security policy aligned with organizational objectives.",
+    "criteria_en": "Information security policy approved by senior leadership, communicated to all staff, reviewed periodically."
+  },
+  "A.5.2": {
+    "control_id": "A.5.2",
+    "requirement_vi": "Phân công rõ ràng vai trò, trách nhiệm về ATTT.",
+    "criteria_vi": "Có ma trận RACI cho các vai trò ATTT: CISO, quản trị viên hệ thống, người dùng cuối.",
+    "requirement_en": "Clearly assign roles and responsibilities for information security.",
+    "criteria_en": "RACI matrix exists for security roles: CISO, system administrators, end users."
+  },
+  "A.5.3": {
+    "control_id": "A.5.3",
+    "requirement_vi": "Các nhiệm vụ xung đột và vùng trách nhiệm phải được phân tách.",
+    "criteria_vi": "Không có một cá nhân nào kiểm soát toàn bộ giao dịch quan trọng. Người phê duyệt khác người thực hiện.",
+    "requirement_en": "Conflicting duties and areas of responsibility must be segregated.",
+    "criteria_en": "No single individual controls an entire critical transaction. Approver differs from executor."
+  },
+  "A.5.4": {
+    "control_id": "A.5.4",
+    "requirement_vi": "Ban quản lý yêu cầu nhân viên và nhà thầu tuân thủ chính sách ATTT.",
+    "criteria_vi": "Có cam kết bằng văn bản, đào tạo nhận thức ATTT cho quản lý.",
+    "requirement_en": "Management requires staff and contractors to comply with information security policies.",
+    "criteria_en": "Written acknowledgment, security awareness training for managers."
+  },
+  "A.5.5": {
+    "control_id": "A.5.5",
+    "requirement_vi": "Thiết lập và duy trì liên lạc với cơ quan quản lý, chức năng liên quan.",
+    "criteria_vi": "Có danh sách liên hệ cơ quan công an, CERT, cơ quan quản lý viễn thông.",
+    "requirement_en": "Establish and maintain contact with relevant authorities and functions.",
+    "criteria_en": "Contact list for police, CERT, telecommunications regulators maintained."
+  },
+  "A.5.6": {
+    "control_id": "A.5.6",
+    "requirement_vi": "Thiết lập liên lạc với các nhóm chuyên gia, diễn đàn ATTT.",
+    "criteria_vi": "Tham gia cộng đồng ATTT, theo dõi cảnh báo an ninh mạng.",
+    "requirement_en": "Maintain contact with special interest groups and security forums.",
+    "criteria_en": "Active membership in security communities, monitoring of security advisories."
+  },
+  "A.5.7": {
+    "control_id": "A.5.7",
+    "requirement_vi": "Thu thập và phân tích thông tin về các mối đe dọa ATTT.",
+    "criteria_vi": "Có quy trình tiếp nhận và xử lý Threat Intelligence feeds.",
+    "requirement_en": "Collect and analyze information about information security threats.",
+    "criteria_en": "Process for ingesting and processing Threat Intelligence feeds."
+  },
+  "A.5.8": {
+    "control_id": "A.5.8",
+    "requirement_vi": "Tích hợp ATTT vào quản lý dự án.",
+    "criteria_vi": "Mỗi dự án có đánh giá rủi ro ATTT, yêu cầu bảo mật từ giai đoạn thiết kế.",
+    "requirement_en": "Integrate information security into project management.",
+    "criteria_en": "Each project has security risk assessment and security requirements from design phase."
+  },
+  "A.5.9": {
+    "control_id": "A.5.9",
+    "requirement_vi": "Lập và duy trì danh mục tài sản thông tin (bao gồm người chịu trách nhiệm).",
+    "criteria_vi": "Có danh mục tài sản được cập nhật, phân loại: phần cứng, phần mềm, dữ liệu, con người.",
+    "requirement_en": "Establish and maintain an inventory of information assets (with owners).",
+    "criteria_en": "Asset inventory maintained and classified: hardware, software, data, people."
+  },
+  "A.5.10": {
+    "control_id": "A.5.10",
+    "requirement_vi": "Quy tắc sử dụng tài sản thông tin phải được xác định và tài liệu hóa.",
+    "criteria_vi": "Có chính sách sử dụng chấp nhận được (Acceptable Use Policy).",
+    "requirement_en": "Rules for acceptable use of information assets must be defined and documented.",
+    "criteria_en": "Acceptable Use Policy in place and acknowledged."
+  },
+  "A.5.11": {
+    "control_id": "A.5.11",
+    "requirement_vi": "Nhân viên và bên ngoài phải hoàn trả tài sản khi chấm dứt hợp đồng.",
+    "criteria_vi": "Quy trình offboarding bao gồm kiểm tra hoàn trả tài sản IT.",
+    "requirement_en": "Staff and external parties must return assets upon contract termination.",
+    "criteria_en": "Offboarding procedure includes IT asset return checklist."
+  },
+  "A.5.12": {
+    "control_id": "A.5.12",
+    "requirement_vi": "Thông tin phải được phân loại theo giá trị, yêu cầu pháp lý, mức độ nhạy cảm.",
+    "criteria_vi": "Có 3-4 mức phân loại: Công khai, Nội bộ, Bí mật, Tối mật.",
+    "requirement_en": "Information must be classified by value, legal requirements, and sensitivity.",
+    "criteria_en": "3-4 classification levels: Public, Internal, Confidential, Top Secret."
+  },
+  "A.5.13": {
+    "control_id": "A.5.13",
+    "requirement_vi": "Thông tin phải được ghi nhãn phù hợp với sơ đồ phân loại.",
+    "criteria_vi": "Tài liệu có watermark/header phân loại, email có nhãn mức độ bảo mật.",
+    "requirement_en": "Information must be labeled in accordance with the classification scheme.",
+    "criteria_en": "Documents have classification watermark/header; emails are tagged with confidentiality level."
+  },
+  "A.5.14": {
+    "control_id": "A.5.14",
+    "requirement_vi": "Quy tắc, thủ tục truyền tải thông tin cho mọi loại phương tiện.",
+    "criteria_vi": "Mã hóa email nhạy cảm, VPN cho truyền dữ liệu, hạn chế USB.",
+    "requirement_en": "Rules and procedures for transferring information across all media types.",
+    "criteria_en": "Encrypted email for sensitive data, VPN for transit, USB restrictions."
+  },
+  "A.5.15": {
+    "control_id": "A.5.15",
+    "requirement_vi": "Thiết lập và triển khai chính sách kiểm soát truy cập vật lý và logic.",
+    "criteria_vi": "Nguyên tắc Need-to-know và Least Privilege được áp dụng.",
+    "requirement_en": "Establish and implement physical and logical access control policies.",
+    "criteria_en": "Need-to-know and Least Privilege principles applied."
+  },
+  "A.5.16": {
+    "control_id": "A.5.16",
+    "requirement_vi": "Quản lý vòng đời đầy đủ của danh tính.",
+    "criteria_vi": "Hệ thống IAM (Identity & Access Management), tài khoản duy nhất cho mỗi người.",
+    "requirement_en": "Manage the full identity lifecycle.",
+    "criteria_en": "Identity & Access Management (IAM) system with unique account per person."
+  },
+  "A.5.17": {
+    "control_id": "A.5.17",
+    "requirement_vi": "Sử dụng công nghệ xác thực phù hợp với mức độ nhạy cảm.",
+    "criteria_vi": "MFA cho hệ thống quan trọng, chính sách mật khẩu mạnh (12+ ký tự).",
+    "requirement_en": "Use authentication technologies appropriate to sensitivity level.",
+    "criteria_en": "MFA for critical systems; strong password policy (12+ characters)."
+  },
+  "A.5.18": {
+    "control_id": "A.5.18",
+    "requirement_vi": "Cung cấp, xem xét, sửa đổi và thu hồi quyền truy cập theo chính sách.",
+    "criteria_vi": "Review quyền định kỳ (tối thiểu 6 tháng/lần), thu hồi ngay khi nghỉ việc.",
+    "requirement_en": "Provision, review, modify, and revoke access rights according to policy.",
+    "criteria_en": "Periodic access review (at least every 6 months); immediate revocation on departure."
+  },
+  "A.5.19": {
+    "control_id": "A.5.19",
+    "requirement_vi": "Xác định và triển khai biện pháp quản lý rủi ro từ nhà cung cấp.",
+    "criteria_vi": "Điều khoản ATTT trong hợp đồng, đánh giá rủi ro nhà cung cấp.",
+    "requirement_en": "Identify and implement controls to manage supplier-related risks.",
+    "criteria_en": "Security clauses in supplier contracts; supplier risk assessments."
+  },
+  "A.5.20": {
+    "control_id": "A.5.20",
+    "requirement_vi": "Các yêu cầu ATTT được đưa vào thỏa thuận với nhà cung cấp.",
+    "criteria_vi": "NDA, SLA bảo mật, quyền kiểm toán.",
+    "requirement_en": "Information security requirements included in supplier agreements.",
+    "criteria_en": "NDAs, security SLAs, audit rights."
+  },
+  "A.5.21": {
+    "control_id": "A.5.21",
+    "requirement_vi": "Quản lý rủi ro ATTT liên quan đến chuỗi cung ứng sản phẩm/dịch vụ ICT.",
+    "criteria_vi": "Đánh giá bảo mật nhà cung cấp phần mềm, kiểm tra mã nguồn bên thứ ba.",
+    "requirement_en": "Manage information security risks in the ICT supply chain.",
+    "criteria_en": "Software supplier security assessments; third-party code review."
+  },
+  "A.5.22": {
+    "control_id": "A.5.22",
+    "requirement_vi": "Giám sát, xem xét, đánh giá và quản lý thay đổi dịch vụ nhà cung cấp.",
+    "criteria_vi": "Báo cáo định kỳ từ nhà cung cấp, đánh giá lại khi có thay đổi.",
+    "requirement_en": "Monitor, review, evaluate, and manage changes in supplier services.",
+    "criteria_en": "Periodic supplier reports; reassessment when changes occur."
+  },
+  "A.5.23": {
+    "control_id": "A.5.23",
+    "requirement_vi": "Thiết lập quy trình quản lý ATTT khi sử dụng dịch vụ đám mây.",
+    "criteria_vi": "Chính sách Cloud Security, đánh giá CSP, mã hóa dữ liệu trên cloud.",
+    "requirement_en": "Establish information security management process for cloud services.",
+    "criteria_en": "Cloud Security Policy, CSP assessment, cloud data encryption."
+  },
+  "A.5.24": {
+    "control_id": "A.5.24",
+    "requirement_vi": "Lập kế hoạch và chuẩn bị cho việc quản lý sự cố ATTT.",
+    "criteria_vi": "Có Incident Response Plan, đội CSIRT/SOC, diễn tập sự cố hàng năm.",
+    "requirement_en": "Plan and prepare for information security incident management.",
+    "criteria_en": "Incident Response Plan, CSIRT/SOC team, annual incident drills."
+  },
+  "A.5.25": {
+    "control_id": "A.5.25",
+    "requirement_vi": "Đánh giá sự kiện ATTT và quyết định có phải là sự cố không.",
+    "criteria_vi": "Quy trình phân loại sự kiện, thang đo mức độ nghiêm trọng.",
+    "requirement_en": "Assess security events and decide whether they are incidents.",
+    "criteria_en": "Event classification process and severity scoring."
+  },
+  "A.5.26": {
+    "control_id": "A.5.26",
+    "requirement_vi": "Phản ứng sự cố theo quy trình đã thiết lập.",
+    "criteria_vi": "Quy trình escalation, thời gian phản ứng (SLA), ghi chép sự cố.",
+    "requirement_en": "Respond to incidents according to established procedures.",
+    "criteria_en": "Escalation procedures, response time SLAs, incident logging."
+  },
+  "A.5.27": {
+    "control_id": "A.5.27",
+    "requirement_vi": "Kiến thức từ sự cố được sử dụng để cải tiến biện pháp phòng ngừa.",
+    "criteria_vi": "Post-incident review, cập nhật biện pháp phòng ngừa.",
+    "requirement_en": "Knowledge from incidents is used to improve preventive controls.",
+    "criteria_en": "Post-incident reviews; updates to preventive measures."
+  },
+  "A.5.28": {
+    "control_id": "A.5.28",
+    "requirement_vi": "Thiết lập quy trình thu thập, bảo quản bằng chứng số.",
+    "criteria_vi": "Chain of custody, log preservation, forensic readiness.",
+    "requirement_en": "Establish procedures for collecting and preserving digital evidence.",
+    "criteria_en": "Chain of custody, log preservation, forensic readiness."
+  },
+  "A.5.29": {
+    "control_id": "A.5.29",
+    "requirement_vi": "Duy trì ATTT trong tình huống gián đoạn hoạt động.",
+    "criteria_vi": "BCP (Business Continuity Plan) bao gồm yêu cầu ATTT.",
+    "requirement_en": "Maintain information security during business disruption.",
+    "criteria_en": "Business Continuity Plan (BCP) includes security requirements."
+  },
+  "A.5.30": {
+    "control_id": "A.5.30",
+    "requirement_vi": "Đảm bảo sẵn sàng ICT để duy trì hoạt động kinh doanh.",
+    "criteria_vi": "DR Plan, RTO/RPO xác định, backup tested, failover procedures.",
+    "requirement_en": "Ensure ICT readiness for business continuity.",
+    "criteria_en": "DR Plan, defined RTO/RPO, tested backups, failover procedures."
+  },
+  "A.5.31": {
+    "control_id": "A.5.31",
+    "requirement_vi": "Xác định và tuân thủ các yêu cầu pháp lý liên quan đến ATTT.",
+    "criteria_vi": "Danh mục luật/quy định áp dụng: Luật An ninh mạng VN, PDPA, GDPR nếu có.",
+    "requirement_en": "Identify and comply with applicable legal requirements for information security.",
+    "criteria_en": "List of applicable laws/regulations: Vietnam Cybersecurity Law, PDPA, GDPR if applicable."
+  },
+  "A.5.32": {
+    "control_id": "A.5.32",
+    "requirement_vi": "Bảo vệ quyền sở hữu trí tuệ.",
+    "criteria_vi": "Quản lý license phần mềm, kiểm tra bản quyền.",
+    "requirement_en": "Protect intellectual property rights.",
+    "criteria_en": "Software license management; copyright compliance checks."
+  },
+  "A.5.33": {
+    "control_id": "A.5.33",
+    "requirement_vi": "Bảo vệ hồ sơ khỏi mất mát, hủy hoại, giả mạo.",
+    "criteria_vi": "Chính sách lưu trữ hồ sơ, thời gian lưu giữ, mã hóa.",
+    "requirement_en": "Protect records from loss, destruction, and falsification.",
+    "criteria_en": "Records retention policy, retention periods, encryption."
+  },
+  "A.5.34": {
+    "control_id": "A.5.34",
+    "requirement_vi": "Tuân thủ quy định về quyền riêng tư và bảo vệ PII.",
+    "criteria_vi": "DPIA (Data Protection Impact Assessment), đồng ý xử lý dữ liệu, DPO nếu cần.",
+    "requirement_en": "Comply with privacy regulations and PII protection requirements.",
+    "criteria_en": "DPIA, data processing consent, DPO if required."
+  },
+  "A.5.35": {
+    "control_id": "A.5.35",
+    "requirement_vi": "Đánh giá độc lập ATTT theo khoảng thời gian đã lên kế hoạch.",
+    "criteria_vi": "Audit nội bộ hàng năm, pentest độc lập, báo cáo đánh giá.",
+    "requirement_en": "Independent reviews of information security at planned intervals.",
+    "criteria_en": "Annual internal audits, independent pentests, assessment reports."
+  },
+  "A.5.36": {
+    "control_id": "A.5.36",
+    "requirement_vi": "Xem xét định kỳ việc tuân thủ chính sách ATTT.",
+    "criteria_vi": "Kiểm tra tuân thủ hàng quý, báo cáo vi phạm.",
+    "requirement_en": "Periodic review of compliance with information security policies.",
+    "criteria_en": "Quarterly compliance checks, violation reporting."
+  },
+  "A.5.37": {
+    "control_id": "A.5.37",
+    "requirement_vi": "Tài liệu hóa các quy trình vận hành.",
+    "criteria_vi": "SOP cho vận hành IT, quản lý thay đổi, backup.",
+    "requirement_en": "Document operating procedures.",
+    "criteria_en": "SOPs for IT operations, change management, backups."
+  },
+  "A.6.1": {
+    "control_id": "A.6.1",
+    "requirement_vi": "Kiểm tra lý lịch nhân viên trước khi tuyển dụng.",
+    "criteria_vi": "Background check, xác minh bằng cấp, kiểm tra tiền án.",
+    "requirement_en": "Background checks on personnel before hiring.",
+    "criteria_en": "Background check, education verification, criminal record check."
+  },
+  "A.6.2": {
+    "control_id": "A.6.2",
+    "requirement_vi": "Hợp đồng lao động bao gồm trách nhiệm ATTT.",
+    "criteria_vi": "NDA, điều khoản bảo mật trong hợp đồng.",
+    "requirement_en": "Employment contracts include information security responsibilities.",
+    "criteria_en": "NDA and confidentiality clauses in contracts."
+  },
+  "A.6.3": {
+    "control_id": "A.6.3",
+    "requirement_vi": "Tất cả nhân viên được đào tạo ATTT phù hợp.",
+    "criteria_vi": "Chương trình đào tạo hàng năm, phishing simulation, kiểm tra nhận thức.",
+    "requirement_en": "All personnel receive appropriate information security training.",
+    "criteria_en": "Annual training program, phishing simulations, awareness assessments."
+  },
+  "A.6.4": {
+    "control_id": "A.6.4",
+    "requirement_vi": "Quy trình kỷ luật cho vi phạm chính sách ATTT.",
+    "criteria_vi": "Có quy trình rõ ràng, công bằng, được truyền đạt.",
+    "requirement_en": "Disciplinary process for violations of information security policies.",
+    "criteria_en": "Clear, fair, and communicated disciplinary process."
+  },
+  "A.6.5": {
+    "control_id": "A.6.5",
+    "requirement_vi": "Trách nhiệm ATTT vẫn có hiệu lực sau khi chấm dứt hợp đồng.",
+    "criteria_vi": "NDA còn hiệu lực, thu hồi tài khoản trong 24h.",
+    "requirement_en": "Information security responsibilities remain valid after contract termination.",
+    "criteria_en": "NDA remains in effect; account revocation within 24h."
+  },
+  "A.6.6": {
+    "control_id": "A.6.6",
+    "requirement_vi": "Thỏa thuận bảo mật với nhân viên và bên ngoài.",
+    "criteria_vi": "NDA được ký, xem xét định kỳ.",
+    "requirement_en": "Confidentiality agreements with staff and external parties.",
+    "criteria_en": "Signed NDAs, periodically reviewed."
+  },
+  "A.6.7": {
+    "control_id": "A.6.7",
+    "requirement_vi": "Biện pháp bảo mật khi làm việc từ xa.",
+    "criteria_vi": "VPN bắt buộc, chính sách BYOD, mã hóa thiết bị.",
+    "requirement_en": "Security measures for remote working.",
+    "criteria_en": "Mandatory VPN, BYOD policy, device encryption."
+  },
+  "A.6.8": {
+    "control_id": "A.6.8",
+    "requirement_vi": "Cơ chế báo cáo sự kiện ATTT cho nhân viên.",
+    "criteria_vi": "Kênh báo cáo rõ ràng: hotline, email, ticketing system.",
+    "requirement_en": "Information security event reporting mechanism for staff.",
+    "criteria_en": "Clear reporting channels: hotline, email, ticketing system."
+  },
+  "A.7.1": {
+    "control_id": "A.7.1",
+    "requirement_vi": "Xác định vành đai bảo vệ các khu vực chứa thông tin nhạy cảm.",
+    "criteria_vi": "Tường, cửa khóa, hàng rào cho data center và server room.",
+    "requirement_en": "Define security perimeters protecting areas containing sensitive information.",
+    "criteria_en": "Walls, locked doors, fencing for data center and server rooms."
+  },
+  "A.7.2": {
+    "control_id": "A.7.2",
+    "requirement_vi": "Kiểm soát truy cập vật lý vào các khu vực an toàn.",
+    "criteria_vi": "Thẻ từ/biometric, log ra vào, escort cho khách.",
+    "requirement_en": "Physical access control to secure areas.",
+    "criteria_en": "Smart card/biometric, entry/exit logs, visitor escort."
+  },
+  "A.7.3": {
+    "control_id": "A.7.3",
+    "requirement_vi": "Thiết kế và áp dụng biện pháp bảo vệ vật lý cho văn phòng.",
+    "criteria_vi": "Khóa tủ tài liệu, clean desk policy, camera giám sát.",
+    "requirement_en": "Design and apply physical protection for offices.",
+    "criteria_en": "Lockable cabinets, clean desk policy, surveillance cameras."
+  },
+  "A.7.4": {
+    "control_id": "A.7.4",
+    "requirement_vi": "Giám sát liên tục các khu vực nhạy cảm.",
+    "criteria_vi": "CCTV 24/7, lưu trữ ít nhất 30 ngày, giám sát thời gian thực.",
+    "requirement_en": "Continuous monitoring of sensitive areas.",
+    "criteria_en": "24/7 CCTV, retention at least 30 days, real-time monitoring."
+  },
+  "A.7.5": {
+    "control_id": "A.7.5",
+    "requirement_vi": "Biện pháp chống thiên tai, cháy, lũ, mất điện.",
+    "criteria_vi": "UPS, máy phát điện, hệ thống chữa cháy tự động, kiểm soát nhiệt độ.",
+    "requirement_en": "Protection against natural disasters, fire, flood, power loss.",
+    "criteria_en": "UPS, backup generators, automatic fire suppression, climate control."
+  },
+  "A.7.6": {
+    "control_id": "A.7.6",
+    "requirement_vi": "Quy tắc làm việc trong khu vực an toàn.",
+    "criteria_vi": "Cấm thiết bị ghi hình, giám sát nhân viên, hạn chế số người vào.",
+    "requirement_en": "Working procedures in secure areas.",
+    "criteria_en": "Recording devices prohibited, staff supervision, restricted access numbers."
+  },
+  "A.7.7": {
+    "control_id": "A.7.7",
+    "requirement_vi": "Chính sách bàn sạch và màn hình khóa.",
+    "criteria_vi": "Tự động khóa màn hình sau 5 phút, tủ có khóa cho tài liệu.",
+    "requirement_en": "Clean desk and clear screen policy.",
+    "criteria_en": "Auto screen lock after 5 minutes, lockable cabinets for documents."
+  },
+  "A.7.8": {
+    "control_id": "A.7.8",
+    "requirement_vi": "Đặt thiết bị ở vị trí an toàn, bảo vệ khỏi rủi ro.",
+    "criteria_vi": "Server rack có khóa, cáp gọn gàng, nhãn thiết bị.",
+    "requirement_en": "Place equipment in safe locations protected from risk.",
+    "criteria_en": "Lockable server racks, tidy cabling, equipment labels."
+  },
+  "A.7.9": {
+    "control_id": "A.7.9",
+    "requirement_vi": "Bảo vệ tài sản khi mang ra ngoài khuôn viên.",
+    "criteria_vi": "Mã hóa ổ cứng laptop, tracking thiết bị, bảo hiểm.",
+    "requirement_en": "Protect off-premise assets.",
+    "criteria_en": "Laptop disk encryption, device tracking, insurance."
+  },
+  "A.7.10": {
+    "control_id": "A.7.10",
+    "requirement_vi": "Quản lý phương tiện lưu trữ theo vòng đời.",
+    "criteria_vi": "Mã hóa USB/ổ cứng di động, hủy an toàn (degaussing/shredding).",
+    "requirement_en": "Lifecycle management of storage media.",
+    "criteria_en": "USB/portable drive encryption; secure disposal (degaussing/shredding)."
+  },
+  "A.7.11": {
+    "control_id": "A.7.11",
+    "requirement_vi": "Bảo vệ thiết bị khỏi mất điện và sự cố tiện ích.",
+    "criteria_vi": "Nguồn điện dự phòng, đường internet backup.",
+    "requirement_en": "Protect equipment from power loss and utility failures.",
+    "criteria_en": "Backup power, redundant internet links."
+  },
+  "A.7.12": {
+    "control_id": "A.7.12",
+    "requirement_vi": "Bảo vệ cáp nguồn và cáp mạng.",
+    "criteria_vi": "Cáp trong ống luồn, nhãn cáp, fiber optic cho backbone.",
+    "requirement_en": "Protect power and network cabling.",
+    "criteria_en": "Cables in conduits, cable labels, fiber optics for backbone."
+  },
+  "A.7.13": {
+    "control_id": "A.7.13",
+    "requirement_vi": "Bảo trì thiết bị đúng cách để đảm bảo tính khả dụng.",
+    "criteria_vi": "Lịch bảo trì, ghi chép bảo trì, nhân viên được ủy quyền.",
+    "requirement_en": "Properly maintain equipment to ensure availability.",
+    "criteria_en": "Maintenance schedule, maintenance records, authorized personnel."
+  },
+  "A.7.14": {
+    "control_id": "A.7.14",
+    "requirement_vi": "Xóa sạch dữ liệu trước khi xử lý/tái sử dụng thiết bị.",
+    "criteria_vi": "Quy trình data wiping (DoD 5220.22-M hoặc NIST 800-88).",
+    "requirement_en": "Securely erase data before disposal/reuse of equipment.",
+    "criteria_en": "Data wiping procedure (DoD 5220.22-M or NIST 800-88)."
+  },
+  "A.8.1": {
+    "control_id": "A.8.1",
+    "requirement_vi": "Bảo vệ thông tin trên thiết bị đầu cuối người dùng.",
+    "criteria_vi": "Antivirus/EDR, mã hóa ổ đĩa (BitLocker), policy GPO.",
+    "requirement_en": "Protect information on user endpoints.",
+    "criteria_en": "Antivirus/EDR, disk encryption (BitLocker), GPO policy."
+  },
+  "A.8.2": {
+    "control_id": "A.8.2",
+    "requirement_vi": "Hạn chế và quản lý quyền truy cập đặc quyền.",
+    "criteria_vi": "PAM (Privileged Access Management), tài khoản admin riêng biệt, logging.",
+    "requirement_en": "Restrict and manage privileged access rights.",
+    "criteria_en": "PAM (Privileged Access Management), separate admin accounts, logging."
+  },
+  "A.8.3": {
+    "control_id": "A.8.3",
+    "requirement_vi": "Hạn chế truy cập dựa trên chính sách kiểm soát truy cập.",
+    "criteria_vi": "RBAC/ABAC, phân quyền theo nguyên tắc Least Privilege.",
+    "requirement_en": "Restrict access based on the access control policy.",
+    "criteria_en": "RBAC/ABAC, permissions based on Least Privilege."
+  },
+  "A.8.4": {
+    "control_id": "A.8.4",
+    "requirement_vi": "Kiểm soát truy cập đọc/ghi mã nguồn.",
+    "criteria_vi": "Git access control, code review, branch protection.",
+    "requirement_en": "Control read/write access to source code.",
+    "criteria_en": "Git access control, code review, branch protection."
+  },
+  "A.8.5": {
+    "control_id": "A.8.5",
+    "requirement_vi": "Triển khai cơ chế xác thực an toàn.",
+    "criteria_vi": "HTTPS, certificate management, OAuth2/SAML.",
+    "requirement_en": "Implement secure authentication mechanisms.",
+    "criteria_en": "HTTPS, certificate management, OAuth2/SAML."
+  },
+  "A.8.6": {
+    "control_id": "A.8.6",
+    "requirement_vi": "Giám sát và quản lý công suất tài nguyên.",
+    "criteria_vi": "Monitoring (CPU, RAM, Disk), capacity planning, alerting.",
+    "requirement_en": "Monitor and manage resource capacity.",
+    "criteria_en": "Monitoring (CPU, RAM, Disk), capacity planning, alerting."
+  },
+  "A.8.7": {
+    "control_id": "A.8.7",
+    "requirement_vi": "Triển khai biện pháp phát hiện, ngăn chặn và phục hồi từ mã độc.",
+    "criteria_vi": "Antivirus/EDR trên tất cả endpoint, email gateway filtering, sandbox.",
+    "requirement_en": "Implement detection, prevention, and recovery from malware.",
+    "criteria_en": "Antivirus/EDR on all endpoints, email gateway filtering, sandbox."
+  },
+  "A.8.8": {
+    "control_id": "A.8.8",
+    "requirement_vi": "Xác định, đánh giá và xử lý lỗ hổng kỹ thuật.",
+    "criteria_vi": "Vulnerability scanning định kỳ (Nessus/OpenVAS), patch management.",
+    "requirement_en": "Identify, evaluate, and treat technical vulnerabilities.",
+    "criteria_en": "Periodic vulnerability scanning (Nessus/OpenVAS), patch management."
+  },
+  "A.8.9": {
+    "control_id": "A.8.9",
+    "requirement_vi": "Thiết lập, tài liệu hóa, triển khai, giám sát cấu hình.",
+    "criteria_vi": "Baseline configuration, hardening guides (CIS Benchmarks).",
+    "requirement_en": "Establish, document, implement, and monitor configurations.",
+    "criteria_en": "Baseline configuration, hardening guides (CIS Benchmarks)."
+  },
+  "A.8.10": {
+    "control_id": "A.8.10",
+    "requirement_vi": "Xóa thông tin khi không còn cần thiết.",
+    "criteria_vi": "Data retention policy, secure deletion procedures.",
+    "requirement_en": "Erase information when no longer needed.",
+    "criteria_en": "Data retention policy, secure deletion procedures."
+  },
+  "A.8.11": {
+    "control_id": "A.8.11",
+    "requirement_vi": "Che giấu dữ liệu theo chính sách kiểm soát truy cập.",
+    "criteria_vi": "Data masking trong môi trường test/dev, tokenization.",
+    "requirement_en": "Mask data per access control policy.",
+    "criteria_en": "Data masking in test/dev environments, tokenization."
+  },
+  "A.8.12": {
+    "control_id": "A.8.12",
+    "requirement_vi": "Áp dụng biện pháp ngăn chặn rò rỉ dữ liệu.",
+    "criteria_vi": "DLP endpoint và network, giám sát email/USB/cloud upload.",
+    "requirement_en": "Apply data leakage prevention measures.",
+    "criteria_en": "Endpoint and network DLP, monitoring of email/USB/cloud upload."
+  },
+  "A.8.13": {
+    "control_id": "A.8.13",
+    "requirement_vi": "Sao lưu dữ liệu, phần mềm, cấu hình hệ thống theo chính sách.",
+    "criteria_vi": "Backup 3-2-1 (3 bản, 2 media, 1 offsite), test restore hàng quý.",
+    "requirement_en": "Backup data, software, and system configurations per policy.",
+    "criteria_en": "3-2-1 backup (3 copies, 2 media, 1 offsite), quarterly restore tests."
+  },
+  "A.8.14": {
+    "control_id": "A.8.14",
+    "requirement_vi": "Thiết bị xử lý thông tin phải có dự phòng để đáp ứng tính khả dụng.",
+    "criteria_vi": "HA (High Availability) cho hệ thống critical, failover cluster.",
+    "requirement_en": "Information processing equipment must have redundancy for availability.",
+    "criteria_en": "High Availability (HA) for critical systems, failover cluster."
+  },
+  "A.8.15": {
+    "control_id": "A.8.15",
+    "requirement_vi": "Ghi và giám sát log hoạt động, ngoại lệ, lỗi, sự kiện ATTT.",
+    "criteria_vi": "Centralized logging (SIEM), log retention 12 tháng, tamper-proof.",
+    "requirement_en": "Log and monitor activities, exceptions, errors, and security events.",
+    "criteria_en": "Centralized logging (SIEM), 12-month log retention, tamper-proof."
+  },
+  "A.8.16": {
+    "control_id": "A.8.16",
+    "requirement_vi": "Giám sát mạng, hệ thống, ứng dụng để phát hiện bất thường.",
+    "criteria_vi": "SOC/NOC, alert rules, incident correlation.",
+    "requirement_en": "Monitor networks, systems, and applications for anomalies.",
+    "criteria_en": "SOC/NOC, alert rules, incident correlation."
+  },
+  "A.8.17": {
+    "control_id": "A.8.17",
+    "requirement_vi": "Đồng bộ đồng hồ hệ thống với nguồn thời gian chuẩn.",
+    "criteria_vi": "NTP server nội bộ, tất cả thiết bị sync.",
+    "requirement_en": "Synchronize system clocks with a standard time source.",
+    "criteria_en": "Internal NTP server, all devices synchronized."
+  },
+  "A.8.18": {
+    "control_id": "A.8.18",
+    "requirement_vi": "Hạn chế và kiểm soát sử dụng chương trình tiện ích đặc quyền.",
+    "criteria_vi": "Application whitelisting, logging admin tools usage.",
+    "requirement_en": "Restrict and control use of privileged utility programs.",
+    "criteria_en": "Application whitelisting, logging admin tools usage."
+  },
+  "A.8.19": {
+    "control_id": "A.8.19",
+    "requirement_vi": "Quy trình kiểm soát cài đặt phần mềm.",
+    "criteria_vi": "Danh sách phần mềm được phê duyệt, kiểm soát admin rights.",
+    "requirement_en": "Software installation control procedures.",
+    "criteria_en": "Approved software list, admin rights control."
+  },
+  "A.8.20": {
+    "control_id": "A.8.20",
+    "requirement_vi": "Bảo vệ, quản lý và kiểm soát mạng để bảo vệ thông tin.",
+    "criteria_vi": "Firewall, network segmentation, VLAN, ACL.",
+    "requirement_en": "Protect, manage, and control networks to safeguard information.",
+    "criteria_en": "Firewall, network segmentation, VLAN, ACL."
+  },
+  "A.8.21": {
+    "control_id": "A.8.21",
+    "requirement_vi": "Xác định, triển khai và giám sát cơ chế an ninh cho dịch vụ mạng.",
+    "criteria_vi": "SLA với ISP, redundant connectivity, IDS/IPS.",
+    "requirement_en": "Identify, implement, and monitor security mechanisms for network services.",
+    "criteria_en": "ISP SLAs, redundant connectivity, IDS/IPS."
+  },
+  "A.8.22": {
+    "control_id": "A.8.22",
+    "requirement_vi": "Phân tách mạng theo nhóm dịch vụ, người dùng, hệ thống.",
+    "criteria_vi": "DMZ cho server public, VLAN riêng cho server/user/management/guest.",
+    "requirement_en": "Segregate networks by service group, user, system.",
+    "criteria_en": "DMZ for public servers, separate VLANs for server/user/management/guest."
+  },
+  "A.8.23": {
+    "control_id": "A.8.23",
+    "requirement_vi": "Quản lý truy cập web để giảm thiểu rủi ro.",
+    "criteria_vi": "Web filtering proxy, chặn danh mục nguy hiểm.",
+    "requirement_en": "Manage web access to reduce risk.",
+    "criteria_en": "Web filtering proxy, blocking dangerous categories."
+  },
+  "A.8.24": {
+    "control_id": "A.8.24",
+    "requirement_vi": "Sử dụng mã hóa đúng cách bao gồm quản lý khóa.",
+    "criteria_vi": "TLS 1.2+ cho transit, AES-256 cho at-rest, certificate management.",
+    "requirement_en": "Use cryptography correctly including key management.",
+    "criteria_en": "TLS 1.2+ in transit, AES-256 at rest, certificate management."
+  },
+  "A.8.25": {
+    "control_id": "A.8.25",
+    "requirement_vi": "Thiết lập quy tắc phát triển phần mềm/hệ thống an toàn.",
+    "criteria_vi": "SDLC tích hợp bảo mật (SAST/DAST), code review, penetration testing.",
+    "requirement_en": "Establish secure development rules for software/systems.",
+    "criteria_en": "Security-integrated SDLC (SAST/DAST), code review, penetration testing."
+  },
+  "A.8.26": {
+    "control_id": "A.8.26",
+    "requirement_vi": "Xác định và phê duyệt yêu cầu ATTT khi phát triển/mua ứng dụng.",
+    "criteria_vi": "Security requirements trong user stories, threat modeling.",
+    "requirement_en": "Identify and approve security requirements when developing/acquiring applications.",
+    "criteria_en": "Security requirements in user stories, threat modeling."
+  },
+  "A.8.27": {
+    "control_id": "A.8.27",
+    "requirement_vi": "Thiết lập nguyên tắc kiến trúc hệ thống an toàn.",
+    "criteria_vi": "Defense in depth, Zero Trust architecture principles.",
+    "requirement_en": "Establish secure system architecture principles.",
+    "criteria_en": "Defense in depth, Zero Trust architecture principles."
+  },
+  "A.8.28": {
+    "control_id": "A.8.28",
+    "requirement_vi": "Áp dụng nguyên tắc lập trình an toàn.",
+    "criteria_vi": "OWASP Top 10, input validation, parameterized queries.",
+    "requirement_en": "Apply secure coding principles.",
+    "criteria_en": "OWASP Top 10, input validation, parameterized queries."
+  },
+  "A.8.29": {
+    "control_id": "A.8.29",
+    "requirement_vi": "Thực hiện kiểm thử bảo mật trong quá trình phát triển.",
+    "criteria_vi": "Unit test bảo mật, SAST/DAST, pentest trước go-live.",
+    "requirement_en": "Conduct security testing during development.",
+    "criteria_en": "Security unit tests, SAST/DAST, pre-go-live pentest."
+  },
+  "A.8.30": {
+    "control_id": "A.8.30",
+    "requirement_vi": "Giám sát hoạt động phát triển phần mềm thuê ngoài.",
+    "criteria_vi": "Code audit, NDA, kiểm tra bảo mật sản phẩm nhận.",
+    "requirement_en": "Monitor outsourced software development activities.",
+    "criteria_en": "Code audit, NDA, security checks of received products."
+  },
+  "A.8.31": {
+    "control_id": "A.8.31",
+    "requirement_vi": "Phân tách các môi trường dev/test/production.",
+    "criteria_vi": "Môi trường riêng biệt, không dùng dữ liệu thật cho test.",
+    "requirement_en": "Separate dev/test/production environments.",
+    "criteria_en": "Distinct environments, no real data used in test."
+  },
+  "A.8.32": {
+    "control_id": "A.8.32",
+    "requirement_vi": "Kiểm soát thay đổi đối với hệ thống/ứng dụng.",
+    "criteria_vi": "Change management process, CAB review, rollback plan.",
+    "requirement_en": "Change control for systems/applications.",
+    "criteria_en": "Change management process, CAB review, rollback plan."
+  },
+  "A.8.33": {
+    "control_id": "A.8.33",
+    "requirement_vi": "Bảo vệ dữ liệu dùng cho kiểm thử.",
+    "criteria_vi": "Data masking cho test data, không dùng PII thật.",
+    "requirement_en": "Protect data used for testing.",
+    "criteria_en": "Test data masking, no real PII used."
+  },
+  "A.8.34": {
+    "control_id": "A.8.34",
+    "requirement_vi": "Lập kế hoạch kiểm toán để giảm thiểu gián đoạn.",
+    "criteria_vi": "Audit schedule, read-only access cho auditor, giám sát hoạt động audit.",
+    "requirement_en": "Plan audits to minimize disruption.",
+    "criteria_en": "Audit schedule, read-only auditor access, audit activity monitoring."
+  },
+  "NW.01": {
+    "control_id": "NW.01",
+    "requirement_vi": "Kiểm soát truy cập giữa các mạng/vùng mạng bằng ACL.",
+    "criteria_vi": "Thiết bị mạng có cấu hình ACL rõ ràng, đổi mật khẩu mặc định, log truy cập.",
+    "requirement_en": "Control access between network zones using ACLs.",
+    "criteria_en": "Network devices have clear ACL configuration, default passwords changed, access logging."
+  },
+  "NW.02": {
+    "control_id": "NW.02",
+    "requirement_vi": "Trang bị tường lửa (Firewall) bảo vệ vùng biên mạng.",
+    "criteria_vi": "Firewall đặt tại biên mạng, rule set được rà soát định kỳ, block traffic mặc định.",
+    "requirement_en": "Deploy firewalls protecting the network perimeter.",
+    "criteria_en": "Firewall at perimeter, rule set reviewed periodically, default-deny policy."
+  },
+  "NW.03": {
+    "control_id": "NW.03",
+    "requirement_vi": "Triển khai hệ thống phát hiện/ngăn chặn xâm nhập (IDS/IPS).",
+    "criteria_vi": "IDS/IPS hoạt động, signature cập nhật, có quy trình xử lý cảnh báo.",
+    "requirement_en": "Deploy intrusion detection/prevention systems (IDS/IPS).",
+    "criteria_en": "IDS/IPS active, signatures updated, alert handling procedure in place."
+  },
+  "NW.04": {
+    "control_id": "NW.04",
+    "requirement_vi": "Mã hóa đường truyền khi truy cập từ xa bằng VPN.",
+    "criteria_vi": "VPN cho mọi kết nối từ xa, mã hóa AES-256, xác thực chứng chỉ số.",
+    "requirement_en": "Encrypt remote access traffic via VPN.",
+    "criteria_en": "VPN for all remote connections, AES-256 encryption, certificate-based authentication."
+  },
+  "NW.05": {
+    "control_id": "NW.05",
+    "requirement_vi": "Phân tách vùng mạng công cộng (DMZ) và nội bộ.",
+    "criteria_vi": "DMZ riêng biệt cho Web/Mail server, Firewall giữa DMZ và LAN.",
+    "requirement_en": "Separate public (DMZ) and internal network zones.",
+    "criteria_en": "Dedicated DMZ for Web/Mail servers, firewall between DMZ and LAN."
+  },
+  "NW.06": {
+    "control_id": "NW.06",
+    "requirement_vi": "Lọc địa chỉ MAC (Port Security) trên switch.",
+    "criteria_vi": "Port security enabled, giới hạn MAC/port, log cảnh báo thiết bị lạ.",
+    "requirement_en": "MAC address filtering (Port Security) on switches.",
+    "criteria_en": "Port security enabled, MAC limits per port, alerts for unauthorized devices."
+  },
+  "NW.07": {
+    "control_id": "NW.07",
+    "requirement_vi": "Quản lý truy cập mạng NAC (Network Access Control).",
+    "criteria_vi": "NAC kiểm tra compliance trước khi cho phép kết nối, cách ly thiết bị vi phạm.",
+    "requirement_en": "Network Access Control (NAC) management.",
+    "criteria_en": "NAC checks compliance before allowing connection; quarantines violating devices."
+  },
+  "NW.08": {
+    "control_id": "NW.08",
+    "requirement_vi": "Đường truyền vật lý dự phòng khác tuyến (cho HTTT cấp độ 4, 5).",
+    "criteria_vi": "Dual ISP, đường cáp vật lý khác tuyến, tự động failover.",
+    "requirement_en": "Redundant physical network paths (for systems Level 4, 5).",
+    "criteria_en": "Dual ISP, physically diverse cable paths, automatic failover."
+  },
+  "SV.01": {
+    "control_id": "SV.01",
+    "requirement_vi": "Thiết lập mật khẩu phức tạp và đóng các dịch vụ không cần thiết.",
+    "criteria_vi": "Mật khẩu 12+ ký tự, đặc biệt + số, disable SSH root, đóng port thừa.",
+    "requirement_en": "Set complex passwords and disable unnecessary services.",
+    "criteria_en": "12+ character passwords with special chars + numbers, SSH root disabled, redundant ports closed."
+  },
+  "SV.02": {
+    "control_id": "SV.02",
+    "requirement_vi": "Cài đặt phần mềm chống mã độc (Antivirus) trên máy chủ.",
+    "criteria_vi": "Antivirus active, cập nhật signature tự động, quét real-time.",
+    "requirement_en": "Install antivirus software on servers.",
+    "criteria_en": "Antivirus active, automatic signature updates, real-time scanning."
+  },
+  "SV.03": {
+    "control_id": "SV.03",
+    "requirement_vi": "Triển khai hệ thống chống xâm nhập máy chủ (EDR/XDR).",
+    "criteria_vi": "EDR trên tất cả server, threat detection, auto-response rules.",
+    "requirement_en": "Deploy host intrusion prevention systems (EDR/XDR).",
+    "criteria_en": "EDR on all servers, threat detection, auto-response rules."
+  },
+  "SV.04": {
+    "control_id": "SV.04",
+    "requirement_vi": "Giám sát tính toàn vẹn tệp tin (File Integrity Monitoring).",
+    "criteria_vi": "FIM hoạt động trên file hệ thống quan trọng, cảnh báo real-time khi thay đổi.",
+    "requirement_en": "File Integrity Monitoring (FIM).",
+    "criteria_en": "FIM active on critical system files, real-time alerts on changes."
+  },
+  "SV.05": {
+    "control_id": "SV.05",
+    "requirement_vi": "Quản lý truy cập đặc quyền trên máy chủ (PAM).",
+    "criteria_vi": "Tài khoản admin riêng biệt, session recording, just-in-time access.",
+    "requirement_en": "Privileged Access Management (PAM) on servers.",
+    "criteria_en": "Separate admin accounts, session recording, just-in-time access."
+  },
+  "SV.06": {
+    "control_id": "SV.06",
+    "requirement_vi": "Xác thực đa yếu tố (MFA) đối với quyền root/admin.",
+    "criteria_vi": "MFA bắt buộc cho SSH/RDP admin, OTP hoặc hardware key.",
+    "requirement_en": "Multi-Factor Authentication (MFA) for root/admin.",
+    "criteria_en": "MFA required for SSH/RDP admin, OTP or hardware key."
+  },
+  "SV.07": {
+    "control_id": "SV.07",
+    "requirement_vi": "Cập nhật bản vá bảo mật định kỳ (Patch Management).",
+    "criteria_vi": "Bản vá critical trong 72h, thường trong 30 ngày, test trước khi apply.",
+    "requirement_en": "Periodic security patch management.",
+    "criteria_en": "Critical patches within 72h, others within 30 days, tested before applying."
+  },
+  "SV.08": {
+    "control_id": "SV.08",
+    "requirement_vi": "Thiết lập cấu hình an toàn (Hardening theo CIS Benchmark).",
+    "criteria_vi": "CIS Benchmark score > 80%, disable service thừa, audit policy.",
+    "requirement_en": "Secure configuration (Hardening per CIS Benchmark).",
+    "criteria_en": "CIS Benchmark score > 80%, redundant services disabled, audit policy in place."
+  },
+  "APP.01": {
+    "control_id": "APP.01",
+    "requirement_vi": "Mã hóa mật khẩu trong CSDL bằng thuật toán an toàn.",
+    "criteria_vi": "Bcrypt/Argon2 cho mật khẩu, không dùng MD5/SHA1, salt unique.",
+    "requirement_en": "Encrypt passwords in databases using safe algorithms.",
+    "criteria_en": "Bcrypt/Argon2 for passwords, no MD5/SHA1, unique salt per record."
+  },
+  "APP.02": {
+    "control_id": "APP.02",
+    "requirement_vi": "Kết nối an toàn qua HTTPS/TLS 1.2 trở lên.",
+    "criteria_vi": "TLS 1.2+, certificate hợp lệ, HSTS enabled, disable TLS 1.0/1.1.",
+    "requirement_en": "Secure connections via HTTPS/TLS 1.2 or higher.",
+    "criteria_en": "TLS 1.2+, valid certificate, HSTS enabled, TLS 1.0/1.1 disabled."
+  },
+  "APP.03": {
+    "control_id": "APP.03",
+    "requirement_vi": "Kiểm soát đầu vào người dùng (chống SQLi, XSS).",
+    "criteria_vi": "Input validation, parameterized queries, output encoding, CSP header.",
+    "requirement_en": "Validate user input (prevent SQLi, XSS).",
+    "criteria_en": "Input validation, parameterized queries, output encoding, CSP header."
+  },
+  "APP.04": {
+    "control_id": "APP.04",
+    "requirement_vi": "Giới hạn thời gian phiên làm việc (Session Timeout).",
+    "criteria_vi": "Session timeout 15-30 phút, secure/httponly cookie flags.",
+    "requirement_en": "Limit session lifetime (Session Timeout).",
+    "criteria_en": "Session timeout 15-30 minutes, secure/httponly cookie flags."
+  },
+  "APP.05": {
+    "control_id": "APP.05",
+    "requirement_vi": "Ngăn chặn tấn công Web bằng WAF (Web Application Firewall).",
+    "criteria_vi": "WAF active, OWASP CRS ruleset, custom rules cho ứng dụng.",
+    "requirement_en": "Prevent web attacks via WAF (Web Application Firewall).",
+    "criteria_en": "WAF active, OWASP CRS ruleset, custom application rules."
+  },
+  "APP.06": {
+    "control_id": "APP.06",
+    "requirement_vi": "Đánh giá an toàn mã nguồn (SAST/DAST) trước production.",
+    "criteria_vi": "SAST trong CI/CD pipeline, DAST trước mỗi release, fix tất cả Critical.",
+    "requirement_en": "Source code security assessment (SAST/DAST) before production.",
+    "criteria_en": "SAST in CI/CD pipeline, DAST before each release, all Critical issues fixed."
+  },
+  "APP.07": {
+    "control_id": "APP.07",
+    "requirement_vi": "Lưu nhật ký truy cập tự động (Audit Log).",
+    "criteria_vi": "Log mọi thay đổi dữ liệu (Insert/Update/Delete), who/when/what, tamper-proof.",
+    "requirement_en": "Automatic access logging (Audit Log).",
+    "criteria_en": "Log all data changes (Insert/Update/Delete), who/when/what, tamper-proof."
+  },
+  "DAT.01": {
+    "control_id": "DAT.01",
+    "requirement_vi": "Sao lưu định kỳ dữ liệu quan trọng.",
+    "criteria_vi": "Backup hàng ngày, full backup hàng tuần, test restore hàng quý.",
+    "requirement_en": "Periodic backup of critical data.",
+    "criteria_en": "Daily backup, weekly full backup, quarterly restore tests."
+  },
+  "DAT.02": {
+    "control_id": "DAT.02",
+    "requirement_vi": "Phân quyền truy cập theo nguyên tắc Need-to-know (quyền tối thiểu).",
+    "criteria_vi": "RBAC, review quyền định kỳ, audit trail cho truy cập dữ liệu nhạy cảm.",
+    "requirement_en": "Need-to-know access permissions (least privilege).",
+    "criteria_en": "RBAC, periodic permission review, audit trail for sensitive data access."
+  },
+  "DAT.03": {
+    "control_id": "DAT.03",
+    "requirement_vi": "Hệ thống sao lưu dự phòng tự động theo mô hình 3-2-1.",
+    "criteria_vi": "3 bản sao, 2 media khác nhau, 1 offsite/cloud, RPO/RTO xác định.",
+    "requirement_en": "Automated 3-2-1 backup system.",
+    "criteria_en": "3 copies, 2 different media, 1 offsite/cloud, defined RPO/RTO."
+  },
+  "DAT.04": {
+    "control_id": "DAT.04",
+    "requirement_vi": "Mã hóa dữ liệu nhạy cảm tại nơi lưu trữ (Encryption at Rest).",
+    "criteria_vi": "TDE cho database, BitLocker/LUKS cho disk, key management policy.",
+    "requirement_en": "Encrypt sensitive data at rest (Encryption at Rest).",
+    "criteria_en": "TDE for databases, BitLocker/LUKS for disks, key management policy."
+  },
+  "DAT.05": {
+    "control_id": "DAT.05",
+    "requirement_vi": "Triển khai hệ thống phòng chống thất thoát dữ liệu (DLP).",
+    "criteria_vi": "DLP endpoint + network, giám sát USB/email/cloud upload, alert & block.",
+    "requirement_en": "Deploy Data Loss Prevention (DLP) systems.",
+    "criteria_en": "Endpoint + network DLP, monitoring USB/email/cloud upload, alert & block."
+  },
+  "DAT.06": {
+    "control_id": "DAT.06",
+    "requirement_vi": "Quy trình xóa/tái chế thiết bị đảm bảo dữ liệu bị hủy vật lý.",
+    "criteria_vi": "Data wiping (NIST 800-88), degaussing cho HDD, shredding cho SSD.",
+    "requirement_en": "Equipment disposal/recycling procedures ensure physical data destruction.",
+    "criteria_en": "Data wiping (NIST 800-88), HDD degaussing, SSD shredding."
+  },
+  "MNG.01": {
+    "control_id": "MNG.01",
+    "requirement_vi": "Ban hành chính sách ATTT được lãnh đạo cấp cao phê duyệt.",
+    "criteria_vi": "Chính sách ATTT bằng văn bản, phê duyệt cấp Giám đốc, truyền đạt toàn tổ chức.",
+    "requirement_en": "Issue an information security policy approved by senior management.",
+    "criteria_en": "Written security policy, executive-level approval, organization-wide communication."
+  },
+  "MNG.02": {
+    "control_id": "MNG.02",
+    "requirement_vi": "Có cán bộ chuyên trách an toàn thông tin.",
+    "criteria_vi": "Bộ phận ATTT độc lập hoặc cán bộ chuyên trách, báo cáo trực tiếp lãnh đạo.",
+    "requirement_en": "Designated information security personnel.",
+    "criteria_en": "Independent security function or dedicated officer, reporting directly to leadership."
+  },
+  "MNG.03": {
+    "control_id": "MNG.03",
+    "requirement_vi": "Hệ thống giám sát và cảnh báo sự cố tập trung (SIEM/SOC).",
+    "criteria_vi": "SIEM hoạt động 24/7, correlation rules, alert escalation, report hàng tháng.",
+    "requirement_en": "Centralized monitoring and incident alerting (SIEM/SOC).",
+    "criteria_en": "SIEM running 24/7, correlation rules, alert escalation, monthly reports."
+  },
+  "MNG.04": {
+    "control_id": "MNG.04",
+    "requirement_vi": "Có quy trình ứng cứu sự cố và diễn tập ATTT hàng năm.",
+    "criteria_vi": "Incident Response Plan, diễn tập ít nhất 1 lần/năm, báo cáo kết quả.",
+    "requirement_en": "Incident response procedures and annual security drills.",
+    "criteria_en": "Incident Response Plan, at least 1 drill per year, results reported."
+  },
+  "MNG.05": {
+    "control_id": "MNG.05",
+    "requirement_vi": "Kiểm tra đánh giá rủi ro định kỳ với bên thứ 3 (Pentest).",
+    "criteria_vi": "Pentest hàng năm bởi đơn vị độc lập, báo cáo fix timeline, retest.",
+    "requirement_en": "Periodic third-party risk assessments (Pentest).",
+    "criteria_en": "Annual pentest by independent provider, fix timeline tracked, retest."
+  }
+}

@@ -34,6 +34,7 @@
     "assessment": "Assessment",
     "standards": "Standards",
     "analytics": "Analytics",
+    "swaggerDocs": "Swagger Docs",
     "settings": "Settings",
     "toggleMenu": "Toggle menu",
     "backendOnline": "Backend Online",
@@ -227,6 +228,7 @@
       "searchDone": "✅ Found {count} results, analyzing...",
       "thinking": "🤖 Generating response ({model})...",
       "streamStart": "💭 Model is thinking — streaming live...",
+      "queued": "⏳ Waiting in processing queue (Position: {position})...",
       "fallback": "⚠️ Stream failed, switching to standard mode...",
       "noResponse": "Model returned no response.",
       "errorPrefix": "Error: {message}"
@@ -235,6 +237,9 @@
   "assessment": {
     "pageTitle": "Information Security Assessment",
     "pageSubtitle": "AI Auditor · ISO 27001 · TCVN 11930",
+    "quickTemplate": "Want to quickly assess using a real-world template?",
+    "quickTemplateDesc": "Select pre-configured EVN, MoMo, Tiki, or Base.vn templates to auto-populate info and audit evidence.",
+    "viewTemplates": "Browse Templates",
     "tabForm": "Form Input",
     "tabResult": "Result",
     "tabHistory": "History",

@@ -35,10 +35,8 @@ let onFinalizeCb = null
 let tRef = null
 
 function notify() {
-    // Shallow-clone so subscribers can reference-compare.
-    const snap = { ...state }
     listeners.forEach(l => {
-        try { l(snap) } catch {}
+        try { l() } catch {}
     })
 }
 
@@ -49,6 +47,10 @@ function setState(patch) {
 
 export function getState() {
     return state
+}
+
+export function getServerSnapshot() {
+    return initialState
 }
 
 export function subscribe(listener) {
@@ -106,6 +108,17 @@ function translate(key, params) {
     return ''
 }
 
+// Append thinking/reasoning token to the in-flight assistant bubble.
+function appendThinkingToken(token) {
+    const { pendingMsgId } = state
+    if (!pendingMsgId) return
+    const messages = state.messages.map(m =>
+        m._id === pendingMsgId ? { ...m, thinking: (m.thinking || '') + token } : m
+    )
+    state = { ...state, messages }
+    notify()
+}
+
 // Append token text to the in-flight assistant bubble.
 function appendToken(token) {
     const { pendingMsgId } = state
@@ -140,8 +153,13 @@ function buildParseLine() {
             const event = JSON.parse(line.slice(6))
             if (event.step === 'done' || event.step === 'error') {
                 setState({ finalData: event.data })
+            } else if (event.step === 'thinking_token' && event.token) {
+                appendThinkingToken(event.token)
             } else if (event.step === 'token' && event.token) {
                 appendToken(event.token)
+            } else if (event.step === 'queued') {
+                const qMsg = event.message || `Đang chờ trong hàng đợi (Vị trí: ${event.position || 1})...`
+                updateStatus(qMsg)
             } else {
                 if (event.i18n_key) {
                     const translated = translate(`chatbot.${event.i18n_key}`, event.i18n_params || {})
@@ -180,6 +198,8 @@ function finalize({ aborted = false, err = null } = {}) {
     if (pendingMsgId) {
         const pending = state.messages.find(m => m._id === pendingMsgId)
         const streamed = (pending?.content || streamBuffer || '').trim()
+        const thinking = (pending?.thinking || '').trim()
+        const thinkingElapsed = thinking ? Math.max(1, Math.round((Date.now() - startTs) / 1000)) : null
 
         if (err) {
             const content = err.message || 'Error'
@@ -190,6 +210,8 @@ function finalize({ aborted = false, err = null } = {}) {
             const errorMsg = {
                 role: 'assistant',
                 content: finalContent,
+                thinking,
+                thinkingElapsed,
                 time: now(),
                 elapsedSec,
                 model: selectedModel,
@@ -201,21 +223,25 @@ function finalize({ aborted = false, err = null } = {}) {
         } else if (finalData) {
             const isError = !!finalData.error
             const finalResp = (finalData.response || '').trim()
-            // Token-wins-over-finalData.response preservation (from round 2):
-            // prefer already-streamed text when backend's final response is
-            // empty or shorter than what we've already rendered.
             let botContent
             if (isError) {
                 const errText = finalResp || translate('chatbot.modelUnavailable') || 'Model unavailable'
                 botContent = streamed ? `${streamed}\n\n_${errText}_` : errText
             } else {
-                botContent = finalResp.length >= streamed.length
-                    ? (finalResp || translate('chatbot.noResponse') || streamed || '')
-                    : (streamed || finalResp || '')
+                botContent = finalResp || streamed || ''
             }
+
+            const actuallyEmpty = !botContent || botContent === translate('chatbot.noResponse') || botContent === 'No response.'
+            const isFailure = isError || (actuallyEmpty && !streamed)
+            if (actuallyEmpty && !streamed) {
+                botContent = translate('chatbot.noResponseFromModel') || 'Mô hình AI chưa thể hoàn tất câu trả lời do thời gian xử lý quá lâu hoặc tài nguyên bận. Bạn có thể bấm Thử lại hoặc chọn chuyển sang Cloud AI.'
+            }
+
             const botMsg = {
                 role: 'assistant',
                 content: botContent,
+                thinking,
+                thinkingElapsed,
                 time: now(),
                 elapsedSec,
                 model: isError ? selectedModel : finalData.model,
@@ -225,15 +251,17 @@ function finalize({ aborted = false, err = null } = {}) {
                 ragUsed: finalData.rag_used,
                 webSources: finalData.web_sources,
                 sources: finalData.sources,
-                isError,
+                isError: isFailure,
             }
             finalMessages = state.messages.map(m => m._id === pendingMsgId ? botMsg : m)
         } else {
             // Stream ended with no done/error event — use accumulated tokens.
-            const content = streamed || translate('chatbot.noResponseFromModel') || 'No response'
+            const content = streamed || translate('chatbot.noResponseFromModel') || 'Mô hình AI chưa thể hoàn tất câu trả lời do thời gian xử lý quá lâu hoặc tài nguyên bận.'
             const botMsg = {
                 role: 'assistant',
                 content,
+                thinking,
+                thinkingElapsed,
                 time: now(),
                 elapsedSec,
                 model: selectedModel,
@@ -320,7 +348,7 @@ export async function startStream({
         const reqHeaders = { 'Content-Type': 'application/json' }
         if (token) reqHeaders['Authorization'] = `Bearer ${token}`
 
-        const res = await fetch('/api/chat', {
+        const res = await fetch('/api/chat/stream', {
             method: 'POST',
             headers: reqHeaders,
             body: JSON.stringify({

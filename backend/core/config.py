@@ -55,7 +55,7 @@ class Settings:
     )
 
     CLOUD_LLM_API_URL: str = os.getenv("CLOUD_LLM_API_URL", "https://open-claude.com/v1")
-    CLOUD_MODEL_NAME: str = os.getenv("CLOUD_MODEL_NAME", "gemini-3.1-pro-preview")
+    CLOUD_MODEL_NAME: str = os.getenv("CLOUD_MODEL_NAME", "gemini-2.0-flash")
     CLOUD_API_KEYS: str = os.getenv("CLOUD_API_KEYS", "")
 
     # Google AI Studio (Gemini free-tier) — used as last-resort cloud fallback
@@ -83,7 +83,7 @@ class Settings:
 
     # Local model inference on CPU can take 10-30 minutes for complex prompts
     INFERENCE_TIMEOUT: int = int(os.getenv("INFERENCE_TIMEOUT", "1800"))
-    CLOUD_TIMEOUT: int = int(os.getenv("CLOUD_TIMEOUT", "120"))
+    CLOUD_TIMEOUT: int = int(os.getenv("CLOUD_TIMEOUT", "600"))
     MAX_CONCURRENT_REQUESTS: int = int(os.getenv("MAX_CONCURRENT_REQUESTS", "3"))
 
     # Step 3 — hybrid assessment pipeline.

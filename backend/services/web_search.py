@@ -13,7 +13,24 @@ USER_AGENT = (
 
 class WebSearch:
     @staticmethod
-    def search(query: str, max_results: int = 5, retries: int = 2) -> List[Dict[str, str]]:
+    def search(query: str, max_results: int = 5, retries: int = 1) -> List[Dict[str, str]]:
+        if not query or not query.strip():
+            return []
+
+        # 1. Bảo vệ: Nếu query là log kỹ thuật, tuyệt đối không tìm kiếm web
+        try:
+            from services.model_router import is_log_analysis_query
+            if is_log_analysis_query(query):
+                logger.info("[WebSearch] Log payload detected -> skipping web search to protect data and avoid delay.")
+                return []
+        except Exception:
+            pass
+
+        # 2. Tiền xử lý query: loại bỏ ký tự lạ, rút gọn tối đa 150 ký tự
+        cleaned_query = " ".join(query.strip().split())[:150]
+        if len(cleaned_query) < 3:
+            return []
+
         try:
             from ddgs import DDGS
         except ImportError:
@@ -25,8 +42,8 @@ class WebSearch:
 
         for attempt in range(retries + 1):
             try:
-                with DDGS(headers={"User-Agent": USER_AGENT}) as ddgs:
-                    raw = list(ddgs.text(query, max_results=max_results, region="vn-vi"))
+                with DDGS(headers={"User-Agent": USER_AGENT}, timeout=5) as ddgs:
+                    raw = list(ddgs.text(cleaned_query, max_results=max_results, region="vn-vi"))
 
                 if raw:
                     results = []
@@ -39,14 +56,14 @@ class WebSearch:
                     return results
 
                 if attempt < retries:
-                    time.sleep(1)
+                    time.sleep(0.5)
 
             except Exception as e:
                 logger.warning(f"Web search attempt {attempt + 1} thất bại: {e}")
                 if attempt < retries:
-                    time.sleep(2)
+                    time.sleep(1)
 
-        logger.warning(f"Web search thất bại sau {retries + 1} lần thử")
+        logger.info("[WebSearch] Không có kết quả tìm kiếm web hoặc search engine bận.")
         return []
 
     @staticmethod

@@ -34,6 +34,7 @@
     "assessment": "Đánh giá",
     "standards": "Tiêu chuẩn",
     "analytics": "Phân tích",
+    "swaggerDocs": "Swagger API",
     "settings": "Cài đặt",
     "toggleMenu": "Mở/đóng menu",
     "backendOnline": "Backend đang hoạt động",
@@ -227,6 +228,7 @@
       "searchDone": "✅ Tìm thấy {count} kết quả, đang phân tích...",
       "thinking": "🤖 Đang tạo phản hồi ({model})...",
       "streamStart": "💭 Model đang suy nghĩ — phát trực tiếp...",
+      "queued": "⏳ Đang trong hàng đợi xử lý (Vị trí: {position})...",
       "fallback": "⚠️ Streaming lỗi, chuyển sang chế độ thường...",
       "noResponse": "Model không trả về phản hồi.",
       "errorPrefix": "Lỗi: {message}"
@@ -235,6 +237,9 @@
   "assessment": {
     "pageTitle": "Đánh giá An toàn Thông tin",
     "pageSubtitle": "AI Auditor · ISO 27001 · TCVN 11930",
+    "quickTemplate": "Bạn muốn đánh giá nhanh theo mẫu thực tế?",
+    "quickTemplateDesc": "Chọn mẫu hệ thống EVN, MoMo, Tiki hoặc Base.vn có sẵn để AI tự động điền thông tin và đối chiếu bằng chứng.",
+    "viewTemplates": "Xem kho mẫu thẩm định",
     "tabForm": "Nhập liệu",
     "tabResult": "Kết quả",
     "tabHistory": "Lịch sử",

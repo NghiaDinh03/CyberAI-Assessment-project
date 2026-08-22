@@ -1,27 +1,14 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import styles from './DetailDrawer.module.css'
 import EvidenceThumb from './EvidenceThumb'
 import { useTranslation } from '@/components/LanguageProvider'
 
 /**
  * Overlay drawer showing control details. Does NOT reflow the grid below.
- *
- * Props:
- *  - open: boolean
- *  - control: { id, label } | null
- *  - state: {
- *      implemented, description, evidenceFiles, notes,
- *      evidence_verdict?, missing_items?, confidence?, ai_notes?
- *    }
- *  - onClose()
- *  - onToggleImplemented(controlId)
- *  - onUploadFiles(controlId, FileList | File[])
- *  - onDeleteFile(controlId, filename)
- *  - onChangeNotes(controlId, text)
- *  - onExpandFile(file)   // Step 5: full modal preview
- *  - returnFocusRef?: ref to element that triggered the drawer (to restore focus)
  */
 const TECHNICAL_COMMANDS = {
     // Firewall & Network
@@ -116,6 +103,8 @@ export default function DetailDrawer({
     onChangeNotes,
     onExpandFile,
     returnFocusRef,
+    standard = 'iso27001',
+    selectedModel = 'gemma4:latest',
 }) {
     const { t, locale } = useTranslation()
     const [tab, setTab] = useState('criteria')
@@ -124,10 +113,65 @@ export default function DetailDrawer({
     const panelRef = useRef(null)
     const gateTimerRef = useRef(null)
 
-    // Reset to criteria tab when control changes
+    // AI Control Assistant states
+    const [aiMode, setAiMode] = useState('verify_evidence')
+    const [aiLoading, setAiLoading] = useState(false)
+    const [aiResponse, setAiResponse] = useState(null)
+    const [customQuery, setCustomQuery] = useState('')
+    const [copiedAi, setCopiedAi] = useState(false)
+
+    // Reset states when control changes
     useEffect(() => {
-        if (open) setTab('criteria')
+        if (open) {
+            setTab('criteria')
+            setAiResponse(null)
+            setCustomQuery('')
+        }
     }, [open, control?.id])
+
+    const handleRunAiAssist = async (chosenMode, overrideQuery) => {
+        const m = chosenMode || aiMode
+        setAiLoading(true)
+        setAiMode(m)
+        const q = overrideQuery !== undefined ? overrideQuery : customQuery
+        try {
+            const desc = state?.description
+            const evidenceFiles = state?.evidenceFiles || []
+            const res = await fetch(`/api/iso27001/controls/${control.id}/ai-assist`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    standard: standard || 'iso27001',
+                    control_id: control.id,
+                    control_label: control.label,
+                    requirement: desc?.requirement || '',
+                    criteria: desc?.criteria || '',
+                    mode: m,
+                    query: q,
+                    evidence_filenames: evidenceFiles.map(f => f.filename),
+                    notes: state?.notes || '',
+                    model: selectedModel || 'gemma4:latest'
+                })
+            })
+            const data = await res.json()
+            if (data.status === 'success') {
+                setAiResponse(data.response)
+            } else {
+                setAiResponse(`❌ **Lỗi:** ${data.error || 'Không thể kết nối mô hình AI.'}`)
+            }
+        } catch (err) {
+            setAiResponse(`❌ **Lỗi kết nối máy chủ:** ${err.message}`)
+        } finally {
+            setAiLoading(false)
+        }
+    }
+
+    const copyAiResponse = () => {
+        if (!aiResponse) return
+        navigator.clipboard.writeText(aiResponse)
+        setCopiedAi(true)
+        setTimeout(() => setCopiedAi(false), 2000)
+    }
 
     // Focus panel on open; restore focus to the opener on close
     useEffect(() => {
@@ -235,9 +279,9 @@ export default function DetailDrawer({
 
                 <nav className={styles.tabs} role="tablist" aria-label={t('formIso.drawerTabs')}>
                     {[
-                        { id: 'criteria', label: locale === 'vi' ? 'Tiêu chí & Hướng dẫn' : 'Criteria & Guidance' },
-                        { id: 'evidence', label: `${locale === 'vi' ? 'Tệp bằng chứng' : 'Evidence'} (${evidenceFiles.length})` },
-                        { id: 'ai', label: locale === 'vi' ? 'Trợ lý AI' : 'AI Assistant' }
+                        { id: 'criteria', label: t('formIso.tab.criteria') },
+                        { id: 'evidence', label: `${t('formIso.tab.evidence')} (${evidenceFiles.length})` },
+                        { id: 'ai', label: `🤖 CyberAI (${locale === 'vi' ? 'Trợ lý' : 'Assistant'})` }
                     ].map(tObj => (
                         <button
                             key={tObj.id}
@@ -356,9 +400,9 @@ export default function DetailDrawer({
                                         accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xlsx,.csv,.txt,.log,.conf,.xml,.json"
                                         hidden
                                         onChange={(e) => {
-                                            const files = e.target.files
-                                            if (files?.length > 0 && onUploadFiles) onUploadFiles(control.id, files)
-                                            e.target.value = ''
+                                             const files = e.target.files
+                                             if (files?.length > 0 && onUploadFiles) onUploadFiles(control.id, files)
+                                             e.target.value = ''
                                         }}
                                     />
                                 </label>
@@ -398,21 +442,105 @@ export default function DetailDrawer({
 
                     {tab === 'ai' && (
                         <div className={styles.section}>
-                            <div className={styles.aiNoticeCard}>
-                                <span className={styles.aiNoticeBadge}>{locale === 'vi' ? 'TÍNH NĂNG ĐANG HOÀN THIỆN' : 'FEATURE IN DEVELOPMENT'}</span>
-                                <h4 className={styles.aiNoticeTitle}>
-                                    {locale === 'vi' ? 'Trợ Lý Đánh Giá AI Tức Thì (Realtime Copilot)' : 'Realtime AI Copilot Assessment'}
-                                </h4>
-                                <p className={styles.aiNoticeDesc}>
-                                    {locale === 'vi' 
-                                        ? 'Tính năng thẩm định và đưa ra kết luận tự động cho từng biện pháp đơn lẻ đang được tối ưu hóa cho mô hình AI Local (Gemma 2B / Qwen 2.5) để bảo đảm tốc độ và quyền riêng tư dữ liệu.' 
-                                        : 'Realtime single-control AI verification is being optimized for local offline LLMs (Gemma 2B / Qwen 2.5).'}
-                                </p>
-                                <div className={styles.aiNoticeTip}>
-                                    {locale === 'vi' 
-                                        ? 'Quy trình hiện tại: Hãy tích chọn các biện pháp đã triển khai, nạp tệp bằng chứng tại tab "Tệp bằng chứng", sau đó chuyển sang Bước 4 (Tổng kết & Gửi) để AI thực hiện thẩm định toàn diện toàn bộ hồ sơ.' 
-                                        : 'Current workflow: Mark implemented controls, attach evidence, and proceed to Step 4 (Review & Submit) to trigger full comprehensive AI assessment.'}
+                            <div className={styles.aiActionCard}>
+                                <div className={styles.aiActionHeader}>
+                                    <span className={styles.aiModelBadge}>
+                                        ⚡ {selectedModel}
+                                    </span>
+                                    <span className={styles.aiTitleTag}>
+                                        {locale === 'vi' ? 'Trợ Lý Thẩm Định CyberAI' : 'CyberAI Assessment Assistant'}
+                                    </span>
                                 </div>
+                                <p className={styles.aiSubText}>
+                                    {locale === 'vi'
+                                        ? 'Sử dụng mô hình AI an toàn nội bộ để thẩm định tệp bằng chứng thực tế, sinh kịch bản triển khai SOP hoặc giải đáp các thắc mắc chuyên sâu cho biện pháp này.'
+                                        : 'Leverage offline AI model to verify uploaded evidence files, generate implementation SOP, or answer technical inquiries.'}
+                                </p>
+
+                                <div className={styles.aiButtonGrid}>
+                                    <button
+                                        type="button"
+                                        className={`${styles.aiQuickBtn} ${aiMode === 'verify_evidence' ? styles.aiQuickBtnActive : ''}`}
+                                        onClick={() => handleRunAiAssist('verify_evidence')}
+                                        disabled={aiLoading}
+                                    >
+                                        <span>🔍</span>
+                                        <div>
+                                            <strong>{locale === 'vi' ? 'Thẩm Định Bằng Chứng' : 'Verify Evidence'}</strong>
+                                            <small>{evidenceFiles.length} {locale === 'vi' ? 'tệp đính kèm' : 'files attached'}</small>
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className={`${styles.aiQuickBtn} ${aiMode === 'generate_sop' ? styles.aiQuickBtnActive : ''}`}
+                                        onClick={() => handleRunAiAssist('generate_sop')}
+                                        disabled={aiLoading}
+                                    >
+                                        <span>💡</span>
+                                        <div>
+                                            <strong>{locale === 'vi' ? 'Sinh Quy Trình & Lệnh Mẫu' : 'Generate SOP & Scripts'}</strong>
+                                            <small>{locale === 'vi' ? 'SOP chuẩn & PowerShell' : 'Policy SOP & Scripts'}</small>
+                                        </div>
+                                    </button>
+                                </div>
+
+                                <div className={styles.aiQueryBox}>
+                                    <div className={styles.aiQueryInputRow}>
+                                        <input
+                                            type="text"
+                                            className={styles.aiQueryInput}
+                                            placeholder={locale === 'vi' ? 'Đặt câu hỏi cụ thể cho Model (VD: Làm sao vượt qua audit mục này?)...' : 'Ask specific question to AI model...'}
+                                            value={customQuery}
+                                            onChange={(e) => setCustomQuery(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && customQuery.trim()) {
+                                                    handleRunAiAssist('custom_query', customQuery)
+                                                }
+                                            }}
+                                            disabled={aiLoading}
+                                        />
+                                        <button
+                                            type="button"
+                                            className={styles.aiQuerySendBtn}
+                                            onClick={() => handleRunAiAssist('custom_query', customQuery)}
+                                            disabled={aiLoading || !customQuery.trim()}
+                                        >
+                                            {aiLoading ? '...' : 'Gửi'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {aiLoading && (
+                                    <div className={styles.aiLoadingWrap}>
+                                        <div className={styles.aiLoadingSpinner} />
+                                        <span>{locale === 'vi' ? 'Mô hình AI đang phân tích dữ liệu chuyên sâu...' : 'AI model is analyzing...'}</span>
+                                    </div>
+                                )}
+
+                                {aiResponse && !aiLoading && (
+                                    <div className={styles.aiResultCard}>
+                                        <div className={styles.aiResultHeader}>
+                                            <div className={styles.aiResultHeaderLeft}>
+                                                <span className={styles.aiResultDot} />
+                                                <strong>{locale === 'vi' ? 'Kết Quả Phân Tích Chuyên Sâu' : 'AI Analysis Result'}</strong>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className={styles.aiCopyBtn}
+                                                onClick={copyAiResponse}
+                                                title={locale === 'vi' ? 'Sao chép kết quả' : 'Copy result'}
+                                            >
+                                                {copiedAi ? (locale === 'vi' ? '✓ Đã chép' : '✓ Copied') : (locale === 'vi' ? 'Sao chép' : 'Copy')}
+                                            </button>
+                                        </div>
+                                        <div className={styles.aiMarkdownContent}>
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                {aiResponse}
+                                            </ReactMarkdown>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

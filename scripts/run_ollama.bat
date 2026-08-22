@@ -1,0 +1,6 @@
+@echo off
+set OLLAMA_HOST=0.0.0.0:11434
+set OLLAMA_IGPU_ENABLE=1
+set OLLAMA_NUM_PARALLEL=2
+set OLLAMA_MAX_LOADED_MODELS=1
+"%LOCALAPPDATA%\Programs\Ollama\ollama.exe" serve

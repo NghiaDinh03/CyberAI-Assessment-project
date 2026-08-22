@@ -21,12 +21,24 @@ gcp-key*.json
 # ====== AI Agent Context & Local Memory (CRITICAL: NEVER PUSH TO GIT) ======
 .AI_CONTEXT/
 .AI_CONTEXT/*
+.AI_CONTEXT/**/*
 agent_memory/
 agent_memory/*
 
-# ====== Sensitive Enterprise Audit Data ======
+# ====== Local Ad-hoc Tests & Verification Scripts (NEVER PUSH TO GIT) ======
+backend/tests/verify_*.py
+backend/tests/_smoke_*.py
+
+# ====== Sensitive Enterprise Audit & Template Data ======
 *.docx
+*.doc
+*.xlsx
+*.xls
+*.csv
 !docs/**/*.docx
+data/templates/*.json
+data/samples/
+*.parquet
 
 # ====== Logs & Diagnostics ======
 *.log

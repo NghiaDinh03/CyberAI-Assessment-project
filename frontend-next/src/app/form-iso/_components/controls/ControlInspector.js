@@ -3,8 +3,7 @@
 import { useState } from 'react'
 import styles from './ControlInspector.module.css'
 import { useTranslation } from '@/components/LanguageProvider'
-import { CONTROL_DESCRIPTIONS as VI_DESCRIPTIONS } from '@/data/controlDescriptions.vi'
-import { CONTROL_DESCRIPTIONS_EN as EN_DESCRIPTIONS } from '@/data/controlDescriptions.en'
+import { useControlDescriptions } from '@/data'
 
 /**
  * Enterprise Docked Control Inspector (Master-Detail Panel).
@@ -22,6 +21,7 @@ export default function ControlInspector({
     isDocked = true,
 }) {
     const { t, locale } = useTranslation()
+    const descriptions = useControlDescriptions()
     const [copiedCmd, setCopiedCmd] = useState(null)
     const [isDragging, setIsDragging] = useState(false)
 
@@ -43,7 +43,6 @@ export default function ControlInspector({
 
     const implemented = !!state?.implemented
     const evidenceFiles = state?.evidenceFiles || []
-    const descriptions = locale === 'vi' ? VI_DESCRIPTIONS : EN_DESCRIPTIONS
     const meta = descriptions[control.id] || {}
 
     // Default sample collection commands mapped by control ID prefix or keywords

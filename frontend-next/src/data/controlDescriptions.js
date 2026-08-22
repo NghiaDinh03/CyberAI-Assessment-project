@@ -1,12 +1,32 @@
-export { CONTROL_DESCRIPTIONS as CONTROL_DESCRIPTIONS_VI } from './controlDescriptions.vi'
-import { CONTROL_DESCRIPTIONS as VI } from './controlDescriptions.vi'
-import { CONTROL_DESCRIPTIONS_EN as EN } from './controlDescriptions.en'
+/**
+ * Dynamic Control Descriptions Module
+ * Control descriptions are stored and served dynamically via SQLite Database (GET /api/standards/control-descriptions).
+ * This module provides dynamic hooks and cached access.
+ */
 
-export const CONTROL_DESCRIPTIONS_BY_LOCALE = { vi: VI, en: EN }
+let cachedDescriptions = { vi: null, en: null }
 
-export function getControlDescriptions(locale = 'vi') {
-    return CONTROL_DESCRIPTIONS_BY_LOCALE[locale] || VI
+export async function fetchControlDescriptionsFromAPI(locale = 'vi') {
+    if (cachedDescriptions[locale]) {
+        return cachedDescriptions[locale]
+    }
+    try {
+        const res = await fetch(`/api/standards/control-descriptions?locale=${locale}`)
+        if (res.ok) {
+            const data = await res.json()
+            if (data.descriptions) {
+                cachedDescriptions[locale] = data.descriptions
+                return data.descriptions
+            }
+        }
+    } catch (e) {
+        console.error('Failed to fetch control descriptions from backend:', e)
+    }
+    return cachedDescriptions[locale] || {}
 }
 
-// Backward-compat default export (defaults to Vietnamese for legacy imports)
-export const CONTROL_DESCRIPTIONS = VI
+export function getControlDescriptions(locale = 'vi') {
+    return cachedDescriptions[locale] || {}
+}
+
+export const CONTROL_DESCRIPTIONS = {}

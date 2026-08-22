@@ -207,8 +207,72 @@ def _semantic_classify(message: str) -> Dict:
         return {"intent": None, "confidence": 0}
 
 
+_LOG_KEYWORDS = (
+    "phân tích log", "analyze log", "event id", "eventid", "eventcategory",
+    "sự kiện", "windows event", "syslog", "security log", "agentdevice",
+    "audit log", "process creation", "logon", "logoff", "sysmon",
+    "firewall log", "access log", "error log", "phân tích sự kiện",
+    "raw log", "alert", "siem log", "edr log", "processguid", "parentprocess",
+    "commandline", "parentimage", "md5=", "sha256=", "rule_name",
+    "failed password", "accepted password", "authentication failure",
+    "sshd", "auditd", "iptables", "suricata", "snort", "wazuh",
+)
+
+_LOG_PATTERNS = (
+    r"<\d+>(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{4}-\d{2}-\d{2})",
+    r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+[\w.-]+\s+\w+(?:\[\d+\])?:",
+    r"\[\d{2}/[A-Za-z]{3}/\d{4}:\d{2}:\d{2}:\d{2}\s+[+-]\d{4}\]",
+    r"Event\s*ID[:\s=]*\d+",
+    r"Source[:\s=]*(Microsoft|Security|System|Application|Sysmon)",
+    r"Token\s*Elevation\s*Type",
+    r"Process\s*(Name|ID|Command\s*Line|Guid)[:\s=]",
+    r"Logon\s*(Type|Guid)[:\s=]*\d+",
+    r"Creator\s*Process",
+    r"New\s*Process\s*Name",
+    r"\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}",
+    r"Mandatory\s*Label",
+    r"Account\s*Name[:\s=]",
+    r"\bsrc(?:ip|_ip)?\s*=\s*\d+\.\d+\.\d+\.\d+",
+    r"\bdst(?:ip|_ip)?\s*=\s*\d+\.\d+\.\d+\.\d+",
+    r"\b(?:GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+/\S+\s+HTTP/\d",
+    r"type=SYSCALL\s+msg=audit",
+    r"Failed\s+password\s+for\s+",
+    r"\b(?:THREAT|TRAFFIC|SYSTEM|CONFIG)\b.*?,(?:\d{1,3}\.){3}\d{1,3}",
+    r"(?:date|time|devname|logid|type|subtype|level|action|proto|srcip|dstip)=\S+",
+)
+
+
+def is_log_analysis_query(message: str) -> bool:
+    """Return True if the message represents a raw log or log analysis request."""
+    if not message:
+        return False
+    msg_lower = message.lower()
+    if any(kw in msg_lower for kw in _LOG_KEYWORDS):
+        return True
+    for pattern in _LOG_PATTERNS:
+        if re.search(pattern, message, re.IGNORECASE):
+            return True
+    stripped = message.strip()
+    if stripped.startswith(('{', '[')) and any(h in msg_lower for h in ("event", "timestamp", "log", "agent", "source", "ip", "rule", "alert")):
+        return True
+    return False
+
+
 def route_model(message: str) -> dict:
-    """Hybrid routing: Semantic first → Keyword fallback."""
+    """Hybrid routing: Log Detector first → Semantic → Keyword fallback."""
+    # Priority 0: Log analysis detection — NEVER do web search on log payloads!
+    if is_log_analysis_query(message):
+        logger.info("[Router] Log analysis pattern detected -> routing to security (no web search)")
+        return {
+            "model": SECURITY_MODEL,
+            "use_rag": False,
+            "use_search": False,
+            "matched_keywords": ["log_analysis"],
+            "route": "security",
+            "confidence": 1.0,
+            "classification_method": "log_detector",
+        }
+
     msg = message.lower()
 
     semantic_result = _semantic_classify(message)

@@ -31,13 +31,14 @@ Dự án hỗ trợ chạy hoàn toàn cục bộ (**100% Offline / On-Premise**
 | # | Phần | Mô tả |
 |---|------|--------|
 | 1 | [🚀 Khởi động nhanh](#1--khởi-động-nhanh) | Clone, cấu hình, chạy Docker |
-| 2 | [✨ Tổng quan tính năng](#2--tổng-quan-tính-năng) | 3 tính năng cốt lõi và các phân hệ hỗ trợ |
+| 2 | [✨ Tổng quan tính năng](#2--tổng-quan-tính-năng) | 4 tính năng cốt lõi và các phân hệ hỗ trợ |
 | 3 | [🏗️ Kiến trúc hệ thống](#3-️-kiến-trúc-hệ-thống) | Sơ đồ Docker network & Luồng xử lý dữ liệu |
-| 4 | [🧠 Thuật toán & Mô hình Nghiên cứu](#4--thuật-toán--mô-hình-nghiên-cứu) | 4 thuật toán cốt lõi cho Đồ án nghiên cứu |
-| 5 | [📊 Đánh Giá Thực Nghiệm (Enterprise Benchmark)](#5--đánh-giá-thực-nghiệm-trên-hạ-tầng-doanh-nghiệp-enterprise-benchmark) | Nghiên cứu điển hình trên hạ tầng thực nghiệm |
-| 6 | [⚙️ Biến môi trường](#6-️-biến-môi-trường) | Cấu hình `.env` đầy đủ |
-| 7 | [📚 Tài liệu](#7--tài-liệu) | Liên kết đến tài liệu chi tiết |
-| 8 | [📄 Giấy phép](#-giấy-phép) | MIT License |
+| 4 | [📊 Phân tích so sánh](#4--phân-tích-so-sánh-với-các-nền-tảng-quốc-tế-comparative-analysis) | So sánh CyberAI với Vanta, Drata, Scytale |
+| 5 | [🧠 Thuật toán & Mô hình Nghiên cứu](#5--thuật-toán--mô-hình-nghiên-cứu-research--academic-contributions) | 4 thuật toán cốt lõi cho Đồ án nghiên cứu |
+| 6 | [📊 Đánh Giá Thực Nghiệm](#6--đánh-giá-thực-nghiệm-trên-hạ-tầng-doanh-nghiệp-enterprise-benchmark) | Nghiên cứu điển hình trên hạ tầng thực nghiệm |
+| 7 | [⚙️ Biến môi trường](#7-️-biến-môi-trường) | Cấu hình `.env` đầy đủ |
+| 8 | [📚 Tài liệu](#8--tài-liệu) | Liên kết đến tài liệu chi tiết |
+| 9 | [📄 Giấy phép](#-giấy-phép) | MIT License |
 
 ---
 
@@ -96,10 +97,6 @@ curl http://localhost:8000/health
 ### Sơ đồ Docker Network
 
 ```mermaid
-graph TB
-### 3. 🏗️ Kiến trúc hệ thống
-
-```mermaid
 flowchart TB
     User(["👨‍💻 Chuyên viên ATTT / Kiểm toán viên"])
 
@@ -149,7 +146,22 @@ graph LR
 
 ---
 
-## 4. 🧠 Thuật toán & Mô hình Nghiên cứu (Research & Academic Contributions)
+## 4. 📊 Phân tích so sánh với các nền tảng quốc tế (Comparative Analysis)
+
+Bảng dưới đây so sánh **CyberAI** với các nền tảng tự động hóa GRC (Quản trị, Rủi ro và Tuân thủ) hàng đầu thế giới như **Vanta**, **Drata**, và **Scytale**:
+
+| Tiêu chí | Nền tảng SaaS Toàn cầu (Vanta, Drata, Scytale) | CyberAI Assessment Platform |
+|:---|:---|:---|
+| **Mô hình Triển khai** | **SaaS / Cloud-Native**: Log kiểm toán và bằng chứng phải tải lên đám mây của nhà cung cấp. | **On-Premise / 100% Offline**: Chạy hoàn toàn trong mạng nội bộ, suy luận qua Local LLM. |
+| **Bảo mật Dữ liệu** | **Nguy cơ lộ lọt**: Sơ đồ mạng, log an ninh và cấu hình bị truyền ra máy chủ nước ngoài. | **Air-Gapped An toàn tuyệt đối**: Dữ liệu kiểm toán không bao giờ rời khỏi máy chủ nội bộ. |
+| **Tiêu chuẩn Việt Nam** | ❌ **Không hỗ trợ**: Chỉ hỗ trợ khung quốc tế (SOC 2, ISO 27001, HIPAA, GDPR...). | 🇻🇳 **Hỗ trợ chuyên sâu**: Tích hợp toàn diện tiêu chuẩn quốc gia **TCVN 11930:2017** và xác định cấp độ theo **Nghị định 85/2016/NĐ-CP**. |
+| **Hỗ trợ Ngôn ngữ** | Chủ yếu tối ưu cho tài liệu tuân thủ tiếng Anh. | Song ngữ hoàn chỉnh (Việt - Anh), tự động dịch và chuẩn hoá thuật ngữ an ninh thông tin. |
+| **Thu thập Bằng chứng** | Tích hợp qua API đám mây công cộng (AWS, GCP, GitHub, Okta). | Bộ engine **Evidence Mapper** ngoại tuyến (Regex & từ khóa chuyên biệt) tự động chấm điểm tài liệu cấu hình. |
+| **Bảo vệ PII** | Phụ thuộc chính sách API của bên thứ ba (OpenAI, Anthropic). | Bộ lọc **Privacy Filter** cục bộ tự động che dấu thông tin định danh cá nhân trước khi xử lý. |
+
+---
+
+## 5. 🧠 Thuật toán & Mô hình Nghiên cứu (Research & Academic Contributions)
 
 Dự án CyberAI được xây dựng dựa trên 4 thuật toán và mô hình kỹ thuật phục vụ công tác nghiên cứu học thuật và đồ án tốt nghiệp:
 
@@ -164,7 +176,7 @@ Dự án CyberAI được xây dựng dựa trên 4 thuật toán và mô hình 
 
 ---
 
-## 5. 📊 Đánh Giá Thực Nghiệm Trên Hạ Tầng Doanh Nghiệp (Enterprise Benchmark)
+## 6. 📊 Đánh Giá Thực Nghiệm Trên Hạ Tầng Doanh Nghiệp (Enterprise Benchmark)
 
 Nền tảng được kiểm thử và xác thực thực nghiệm dựa trên bộ dữ liệu kiểm toán hệ thống thông tin quy mô doanh nghiệp (**Enterprise Infrastructure Benchmark**):
 - **Dữ liệu cấu hình thực tế:** Bộ nhật ký quét máy chủ gồm Domain Controller, Server ứng dụng nghiệp vụ, cấu hình hệ điều hành Windows Server, lịch sử cập nhật Hotfix, chính sách tường lửa nội bộ và phần mềm bảo vệ điểm cuối (EDR/Antivirus).

@@ -1,17 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import * as streamStore from './streamStore'
 
-// Subscribe React component to module-level stream store.
-// Returns the latest snapshot; component re-renders on every notify().
+// Subscribe React component to module-level stream store via React's official useSyncExternalStore.
+// This prevents infinite render loops, cascading setState depth warnings, and concurrent tearing.
 export function useStreamStore() {
-    const [snap, setSnap] = useState(() => streamStore.getState())
-    useEffect(() => {
-        // Sync once in case state changed between initial getState() and subscribe().
-        setSnap(streamStore.getState())
-        const unsub = streamStore.subscribe(setSnap)
-        return unsub
-    }, [])
-    return snap
+    return useSyncExternalStore(
+        streamStore.subscribe,
+        streamStore.getState,
+        streamStore.getServerSnapshot
+    )
 }

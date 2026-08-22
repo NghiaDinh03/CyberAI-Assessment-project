@@ -514,52 +514,289 @@
     line-height: 1.45;
 }
 
-.aiNoticeCard {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
+.aiActionCard {
+    background: #0f172a;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 12px;
     padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
-.aiNoticeBadge {
-    display: inline-block;
-    align-self: flex-start;
-    background: rgba(245, 158, 11, 0.15);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    color: #fbbf24;
-    font-size: 0.68rem;
+.aiActionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.aiModelBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #34d399;
+    font-size: 0.7rem;
     font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 4px;
-    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: 'Fira Code', monospace;
 }
 
-.aiNoticeTitle {
-    font-size: 0.95rem;
+.aiTitleTag {
+    font-size: 0.85rem;
     font-weight: 700;
-    color: #f1f5f9;
-    margin: 0;
+    color: #60a5fa;
+    letter-spacing: 0.3px;
 }
 
-.aiNoticeDesc {
-    font-size: 0.82rem;
+.aiSubText {
+    font-size: 0.78rem;
     color: #94a3b8;
-    line-height: 1.5;
+    line-height: 1.45;
     margin: 0;
 }
 
-.aiNoticeTip {
-    background: rgba(59, 130, 246, 0.08);
-    border: 1px dashed rgba(59, 130, 246, 0.25);
+.aiButtonGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.aiQuickBtn {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     padding: 10px 12px;
-    font-size: 0.78rem;
-    color: #cbd5e1;
-    line-height: 1.5;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    color: #f1f5f9;
 }
+
+.aiQuickBtn span {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.aiQuickBtn div strong {
+    display: block;
+    font-size: 0.8rem;
+    color: #e2e8f0;
+    margin-bottom: 2px;
+}
+
+.aiQuickBtn div small {
+    font-size: 0.7rem;
+    color: #64748b;
+    display: block;
+}
+
+.aiQuickBtn:hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.4);
+    transform: translateY(-1px);
+}
+
+.aiQuickBtnActive {
+    background: rgba(59, 130, 246, 0.2) !important;
+    border-color: #3b82f6 !important;
+}
+
+.aiQuickBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.aiQueryBox {
+    margin-top: 4px;
+}
+
+.aiQueryInputRow {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.aiQueryInput {
+    flex: 1;
+    background: #090d16;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 7px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    color: #f1f5f9;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.aiQueryInput:focus {
+    border-color: #3b82f6;
+}
+
+.aiQuerySendBtn {
+    background: #2563eb;
+    border: none;
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+
+.aiQuerySendBtn:hover:not(:disabled) {
+    background: #1d4ed8;
+}
+
+.aiQuerySendBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.aiLoadingWrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px dashed rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.8rem;
+    color: #93c5fd;
+}
+
+.aiLoadingSpinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    border-top-color: #60a5fa;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.aiResultCard {
+    background: #090d16;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: fadeIn 0.2s ease;
+}
+
+.aiResultHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 8px;
+}
+
+.aiResultHeaderLeft {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: #60a5fa;
+}
+
+.aiResultDot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 6px #10b981;
+}
+
+.aiCopyBtn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.aiCopyBtn:hover {
+    background: rgba(59, 130, 246, 0.2);
+    color: #ffffff;
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.aiMarkdownContent {
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: #e2e8f0;
+    overflow-x: auto;
+}
+
+.aiMarkdownContent h1,
+.aiMarkdownContent h2,
+.aiMarkdownContent h3,
+.aiMarkdownContent h4 {
+    color: #60a5fa;
+    margin: 12px 0 6px 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.aiMarkdownContent p {
+    margin: 6px 0;
+}
+
+.aiMarkdownContent ul,
+.aiMarkdownContent ol {
+    padding-left: 18px;
+    margin: 6px 0;
+}
+
+.aiMarkdownContent li {
+    margin-bottom: 3px;
+}
+
+.aiMarkdownContent code {
+    background: rgba(255, 255, 255, 0.08);
+    color: #38bdf8;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.78rem;
+}
+
+.aiMarkdownContent pre {
+    background: #050811;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 10px;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+
+.aiMarkdownContent pre code {
+    background: transparent;
+    padding: 0;
+    color: #38bdf8;
+}
+
 
 
 

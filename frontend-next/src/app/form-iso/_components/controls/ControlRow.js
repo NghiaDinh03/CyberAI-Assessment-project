@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import styles from './ControlRow.module.css'
 import { useTranslation } from '@/components/LanguageProvider'
-import { CONTROL_DESCRIPTIONS as VI_DESCRIPTIONS } from '@/data/controlDescriptions.vi'
-import { CONTROL_DESCRIPTIONS_EN as EN_DESCRIPTIONS } from '@/data/controlDescriptions.en'
+import { useControlDescriptions } from '@/data'
 
 /**
  * Full-width enterprise control row.
@@ -62,7 +61,7 @@ export default function ControlRow({
         onToggleImplemented?.(control.id)
     }
 
-    const descriptions = locale === 'vi' ? VI_DESCRIPTIONS : EN_DESCRIPTIONS
+    const descriptions = useControlDescriptions()
     const meta = descriptions[control.id] || {}
 
     return (

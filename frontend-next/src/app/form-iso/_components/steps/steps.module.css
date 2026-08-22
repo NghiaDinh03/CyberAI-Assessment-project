@@ -1,0 +1,841 @@
+.stepContent {
+    animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sectionTitle {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+}
+
+.helperText {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.15rem;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.fieldFull {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.field label,
+.fieldFull label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.2px;
+}
+
+.highlightLabel {
+    color: var(--accent-blue) !important;
+    font-weight: 700 !important;
+}
+
+.required {
+    color: var(--accent-red);
+}
+
+.field input,
+.field select,
+.standardSelect,
+.autoTextarea,
+.textarea {
+    padding: 0.7rem 0.95rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    outline: none;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.standardSelect {
+    font-weight: 600;
+    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.05);
+    cursor: pointer;
+}
+
+.field input:focus,
+.field select:focus,
+.standardSelect:focus,
+.autoTextarea:focus,
+.textarea:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+    background: var(--bg-primary);
+}
+
+.fieldCheckbox {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+.checkLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    user-select: none;
+}
+
+.checkLabel input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--accent-blue);
+    cursor: pointer;
+}
+
+.labelWithInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.infoIcon {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.infoIcon:hover,
+.infoIconActive {
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.12);
+}
+
+/* Step 1: Scope Selector */
+.scopeSection {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.15rem;
+    margin-top: 0.5rem;
+}
+
+.scopeOptions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.85rem;
+    margin-top: 0.85rem;
+}
+
+.scopeOption {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.scopeOption:hover {
+    border-color: var(--border-hover, #64748b);
+    transform: translateY(-1px);
+}
+
+.scopeOptionActive {
+    border-color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.08);
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
+}
+
+.scopeOptionIcon {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.scopeOptionText {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.scopeOptionText strong {
+    font-size: 0.84rem;
+    color: var(--text-primary);
+}
+
+.scopeOptionText span {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.35;
+}
+
+.scopeCheckMark {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--accent-blue);
+}
+
+.scopeDescWrap {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.scopeDescInput {
+    padding: 0.7rem 0.95rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    outline: none;
+}
+
+.scopeDescInput:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+/* Step 3: Controls Header & Filters */
+.controlHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.counterBadge {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 20px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.countNum {
+    color: var(--accent-blue);
+    font-weight: 700;
+}
+
+.complianceBar {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 1.15rem;
+}
+
+.complianceTrack {
+    flex: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.complianceFill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-blue), #10b981);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+.complianceLabel {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.riskBadgeRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.15rem;
+}
+
+.riskBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.76rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+
+.riskDot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+.riskBadgeCrit .riskDot { background: var(--accent-red); }
+.riskBadgeHigh .riskDot { background: var(--accent-amber, #f59e0b); }
+.riskBadgeMed .riskDot { background: var(--accent-blue); }
+
+.riskBadgeCrit { border-color: rgba(239, 68, 68, 0.3); }
+.riskBadgeHigh { border-color: rgba(245, 158, 11, 0.3); }
+.riskBadgeMed { border-color: rgba(59, 130, 246, 0.3); }
+.riskBadgeEvidence { border-color: rgba(148, 163, 184, 0.3); }
+
+/* Batch Ingestion */
+.batchIngestCard {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.06) 0%, rgba(16, 185, 129, 0.06) 100%);
+    border: 1px dashed rgba(59, 130, 246, 0.4);
+    border-radius: 12px;
+    padding: 1.15rem 1.35rem;
+    margin-bottom: 1.25rem;
+}
+
+.batchIngestHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.batchIngestTitle {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.batchIcon {
+    font-size: 1.6rem;
+}
+
+.batchMainTitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.batchSub {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.batchBtn {
+    padding: 0.6rem 1.15rem;
+    background: var(--accent-blue);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.batchBtn:hover:not(:disabled) {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.batchBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.batchAlert {
+    margin-top: 0.85rem;
+    padding: 0.65rem 0.95rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    line-height: 1.4;
+}
+
+.batchAlertSuccess {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #10b981;
+}
+
+.batchAlertError {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+}
+
+.detectedHostsRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+    flex-wrap: wrap;
+}
+
+.detectedLabel {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.hostBadges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.hostBadge {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+}
+
+/* Toolbar & Filters */
+.controlToolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin-bottom: 1.15rem;
+}
+
+.searchWrap {
+    position: relative;
+    width: 100%;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.9rem;
+    opacity: 0.6;
+}
+
+.searchInput {
+    width: 100%;
+    padding: 0.7rem 2rem 0.7rem 2.4rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.searchInput:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.clearSearchBtn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.filterChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.filterChip {
+    padding: 0.4rem 0.85rem;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filterChip:hover {
+    border-color: var(--text-dim);
+}
+
+.filterChipActive {
+    border-color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--accent-blue);
+    font-weight: 600;
+}
+
+.filterChipActiveCrit {
+    border-color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--accent-red);
+    font-weight: 600;
+}
+
+.filterChipActiveHigh {
+    border-color: var(--accent-amber, #f59e0b);
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.filterChipActiveEv {
+    border-color: #94a3b8;
+    background: rgba(148, 163, 184, 0.15);
+    color: #cbd5e1;
+    font-weight: 600;
+}
+
+.filterChipActiveDone {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    font-weight: 600;
+}
+
+.categoryActionRow {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.5rem;
+}
+
+.expandAllBtn {
+    background: none;
+    border: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent-blue);
+    cursor: pointer;
+}
+
+.expandAllBtn:hover {
+    text-decoration: underline;
+}
+
+/* Accordion */
+.accordionContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin-top: 0.85rem;
+}
+
+.accordionItem {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-card);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.accordionItem.expanded {
+    border-color: rgba(59, 130, 246, 0.35);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.accordionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.95rem 1.15rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s ease;
+}
+
+.accordionHeader:hover {
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.accTitle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.accIcon {
+    font-size: 1.05rem;
+}
+
+.accMeta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.accCount {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    background: var(--bg-primary);
+    padding: 0.25rem 0.6rem;
+    border-radius: 12px;
+}
+
+.accCountFull {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.12);
+}
+
+.accArrow {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.accordionBody {
+    padding: 0 1.15rem 1.15rem;
+    border-top: 1px solid var(--border);
+    animation: fadeIn 0.2s ease;
+}
+
+.selectAllBox {
+    padding: 0.75rem 0;
+    border-bottom: 1px dashed var(--border);
+    margin-bottom: 0.75rem;
+}
+
+.controlList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Step 4: AI Model Selector & Review */
+.modelSelectorWrap {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.35rem;
+    margin: 1.35rem 0;
+}
+
+.modelSelectorHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.15rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.modelSelectorTitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.modelEngineActiveStatus {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.12);
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.modelGridSelector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.modelOptionCard {
+    display: flex;
+    flex-direction: column;
+    padding: 1.15rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    transition: all 0.2s ease;
+}
+
+.modelOptionCardActive {
+    border-color: var(--accent-blue);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.03) 100%);
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+}
+
+.modelOptionCardDisabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.modelOptionTop {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.modelNameGroup {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.modelMainIcon {
+    font-size: 1.35rem;
+}
+
+.modelOptionName {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.modelSubBadge {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    display: block;
+}
+
+.modelBadgeActive {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.15);
+    padding: 0.25rem 0.55rem;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.modelBadgeDev {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.15);
+    padding: 0.25rem 0.55rem;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.modelOptionDesc {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    margin: 0 0 1rem;
+    flex-grow: 1;
+}
+
+.modelHwBadges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.modelOptionHw {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+}
+
+.modelOptionHwSafe {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.25rem 0.55rem;
+    border-radius: 6px;
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.summaryBox {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+
+.summaryBox h4 {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.85rem;
+}
+
+.summaryBox ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+}
+
+.summaryBox li {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+.summaryBox li strong {
+    color: var(--text-primary);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+    .grid, .scopeOptions, .modelGridSelector, .summaryBox ul {
+        grid-template-columns: 1fr;
+    }
+}

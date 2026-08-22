@@ -21,11 +21,7 @@ const WARN_OFFSET = 200
 
 const CLOUD_MODELS = [
     { id: 'gemma4:latest',           label: 'Gemma 4 (Local)',          provider: 'ollama',    badge: 'Primary · Local' },
-    { id: 'gemini-2.0-flash-free',   label: 'Gemini 2.0 Flash (Free)', provider: 'google',    badge: 'Free · Fallback' },
-    { id: 'gemini-3.1-pro-preview',  label: 'Gemini 3.1 Pro',          provider: 'google',    badge: 'Preview' },
-    { id: 'gpt-5.4',                 label: 'GPT-5.4',                  provider: 'openai',    badge: 'Flagship' },
-    { id: 'claude-opus-4.7',         label: 'Claude Opus 4.7',          provider: 'anthropic', badge: 'Flagship' },
-    { id: 'claude-sonnet-4-6',       label: 'Claude Sonnet 4.6',        provider: 'anthropic', badge: 'Balanced' },
+    { id: 'gemini-2.0-flash-free',   label: 'Gemini 2.0 Flash (Free)', provider: 'google',    badge: 'Cloud Fallback' },
 ]
 
 // Ollama models populated dynamically from backend catalog
@@ -91,15 +87,144 @@ function directSaveSession(sessionId, messages) {
     } catch { }
 }
 
+function decodeHexByteTokens(str) {
+    if (!str || typeof str !== 'string') return str || ''
+    return str.replace(/(?:<0x[0-9A-Fa-f]{2}>)+/g, (match) => {
+        const hexes = match.match(/<0x([0-9A-Fa-f]{2})>/g)
+        if (!hexes) return ''
+        try {
+            const bytes = new Uint8Array(hexes.map(h => parseInt(h.replace(/<0x|>/g, ''), 16)))
+            return new TextDecoder('utf-8').decode(bytes)
+        } catch {
+            return ''
+        }
+    }).replace(/<0x[0-9A-Fa-f]{2}>/g, '')
+}
+
+function normalizeMathAndArrows(str) {
+    if (!str || typeof str !== 'string') return str || ''
+    return str
+        // LaTeX Arrows & Implications
+        .replace(/\$(?:\\rightarrow|\\to|\\longrightarrow)\$/gi, '→')
+        .replace(/\\(?:rightarrow|to|longrightarrow)\b/gi, '→')
+        .replace(/\$(?:\\leftarrow|\\gets|\\longleftarrow)\$/gi, '←')
+        .replace(/\\(?:leftarrow|gets|longleftarrow)\b/gi, '←')
+        .replace(/\$(?:\\Rightarrow|\\implies|\\Longrightarrow)\$/gi, '⇒')
+        .replace(/\\(?:Rightarrow|implies|Longrightarrow)\b/gi, '⇒')
+        .replace(/\$(?:\\Leftarrow|\\Longleftarrow)\$/gi, '⇐')
+        .replace(/\\(?:Leftarrow|Longleftarrow)\b/gi, '⇐')
+        .replace(/\$(?:\\Leftrightarrow|\\iff|\\Longleftrightarrow)\$/gi, '⇔')
+        .replace(/\\(?:Leftrightarrow|iff|Longleftrightarrow)\b/gi, '⇔')
+        .replace(/\$(?:\\leftrightarrow)\$/gi, '↔')
+        .replace(/\\(?:leftrightarrow)\b/gi, '↔')
+        // LaTeX Math comparisons & operators
+        .replace(/\$(?:\\approx|\\approxeq)\$/gi, '≈')
+        .replace(/\\(?:approx|approxeq)\b/gi, '≈')
+        .replace(/\$(?:\\neq|\\ne)\$/gi, '≠')
+        .replace(/\\(?:neq|ne)\b/gi, '≠')
+        .replace(/\$(?:\\le|\\leq)\$/gi, '≤')
+        .replace(/\\(?:le|leq)\b/gi, '≤')
+        .replace(/\$(?:\\ge|\\geq)\$/gi, '≥')
+        .replace(/\\(?:ge|geq)\b/gi, '≥')
+        .replace(/\$(?:\\pm)\$/gi, '±')
+        .replace(/\\(?:pm)\b/gi, '±')
+        .replace(/\$(?:\\times)\$/gi, '×')
+        .replace(/\\(?:times)\b/gi, '×')
+        .replace(/\$(?:\\div)\$/gi, '÷')
+        .replace(/\\(?:div)\b/gi, '÷')
+        .replace(/\$(?:\\cdot)\$/gi, '·')
+        .replace(/\\(?:cdot)\b/gi, '·')
+        .replace(/\$(?:\\bullet)\$/gi, '•')
+        .replace(/\\(?:bullet)\b/gi, '•')
+        .replace(/\$(?:\\dots|\\cdots|\\ldots)\$/gi, '...')
+        .replace(/\\(?:dots|cdots|ldots)\b/gi, '...')
+        .replace(/\$(?:\\infty)\$/gi, '∞')
+        .replace(/\\(?:infty)\b/gi, '∞')
+        .replace(/\$(?:\\checkmark)\$/gi, '✓')
+        .replace(/\\(?:checkmark)\b/gi, '✓')
+        .replace(/\$(?:\\sim)\$/gi, '~')
+        // Strip stray inline $ wrapping text/arrow chains like `$Reconnaissance → Initial Access$`
+        .replace(/\$([^\$\n]+)\$/g, '$1')
+        // TL;DR normalization
+        .replace(/\b(?:TL;DR|TLDR)\s*[:\-]\s*/gi, '**Tóm lại:** ')
+}
+
+function cleanAndFormatMarkdown(text) {
+    if (!text || typeof text !== 'string') return text || ''
+    
+    // First pass: decode hex bytes and normalize LaTeX math/arrows
+    let cleaned = normalizeMathAndArrows(decodeHexByteTokens(text))
+
+    // If text is SOC log, format into structured report without emoji clutter
+    const hasLogMarkers = cleaned.includes('Nhận định:')
+        || cleaned.includes('Event ID:')
+        || cleaned.includes('Process Name:')
+        || cleaned.includes('Command Line:')
+        || (cleaned.includes('Technique:') && cleaned.includes('Mức độ:'))
+        || (cleaned.includes('MD5:') && cleaned.includes('SHA256:'))
+        || cleaned.includes('Khuyến nghị:')
+
+    if (!hasLogMarkers || cleaned.includes('### Thông tin sự kiện')) {
+        return cleaned
+    }
+
+    const lines = cleaned.split('\n')
+    const formatted = []
+    let hasEventHeader = false
+    let hasVerdictHeader = false
+    let hasMitreHeader = false
+    let hasRecHeader = false
+
+    for (let rawLine of lines) {
+        let line = rawLine.trim()
+        if (!line) continue
+        if (line.startsWith('###')) {
+            formatted.push(`\n${line}`)
+            continue
+        }
+        const lower = line.toLowerCase()
+        if (!hasEventHeader && (
+            lower.startsWith('event id:') || lower.startsWith('timestamp:') || lower.startsWith('host:') ||
+            lower.startsWith('user:') || lower.startsWith('process name:') || lower.startsWith('source:') ||
+            lower.startsWith('command line:') || lower.startsWith('md5:') || lower.startsWith('sha256:')
+        )) {
+            formatted.push('### Thông tin sự kiện')
+            hasEventHeader = true
+        } else if (!hasVerdictHeader && lower.startsWith('nhận định:')) {
+            formatted.push('\n### Nhận định & Đánh giá')
+            hasVerdictHeader = true
+        } else if (!hasMitreHeader && (lower.startsWith('technique:') || lower.startsWith('tactic:') || lower.startsWith('mitre:'))) {
+            formatted.push('\n### Kỹ thuật tấn công (MITRE ATT&CK)')
+            hasMitreHeader = true
+        } else if (!hasRecHeader && (lower.startsWith('khuyến nghị:') || lower.startsWith('log cần kiểm tra:'))) {
+            formatted.push('\n### Khuyến nghị xử lý')
+            hasRecHeader = true
+        }
+
+        const match = line.match(/^([A-Za-z0-9À-ỹ\s\(\)\/_\-]+?):\s*(.+)$/)
+        if (match && !line.startsWith('- **') && !line.startsWith('###')) {
+            const label = match[1].trim()
+            const val = match[2].trim()
+            formatted.push(`- **${label}**: ${val}`)
+        } else {
+            formatted.push(line)
+        }
+    }
+    return formatted.join('\n')
+}
+
 const MessageBubble = memo(function MessageBubble({
     m,
+    index,
     msgKey,
     isLastStreaming,
+    statusText,
     copiedMsgId,
     onCopy,
-    onEdit,
-    onRetry,
+    onSaveEdit,
+    onRegenerate,
     onSwitchModel,
+    onNewChat,
     prevUserPrompt,
     t
 }) {
@@ -107,41 +232,118 @@ const MessageBubble = memo(function MessageBubble({
     const isStreaming = !!m._streaming
     const isCopied = copiedMsgId === msgKey
     const content = typeof m.content === 'string' ? m.content : (m.content ? JSON.stringify(m.content) : '')
+    const displayContent = useMemo(() => {
+        return isBot ? cleanAndFormatMarkdown(content) : content
+    }, [isBot, content])
     const charCount = content.length
     const modelKey = m.model || m.requestedModel || ''
     const providerColor = m.provider && PROVIDER_COLORS[m.provider]
         ? PROVIDER_COLORS[m.provider]
         : (modelKey.includes('gemma') || modelKey.endsWith('.gguf') ? PROVIDER_COLORS.ollama : PROVIDER_COLORS.openai)
 
-    const isExplicitError = !!m.isError || (isBot && (content.startsWith('Error:') || content.includes('[Ollama] HTTP') || content.includes('inference failed:')))
+    const [isEditing, setIsEditing] = useState(false)
+    const [editText, setEditText] = useState(content)
+    const editTextareaRef = useRef(null)
+
+    useEffect(() => {
+        setEditText(content)
+    }, [content])
+
+    useEffect(() => {
+        if (isEditing && editTextareaRef.current) {
+            editTextareaRef.current.focus()
+            const len = editTextareaRef.current.value.length
+            editTextareaRef.current.setSelectionRange(len, len)
+        }
+    }, [isEditing])
+
+    const handleSaveEdit = () => {
+        if (!editText.trim()) return
+        setIsEditing(false)
+        onSaveEdit?.(index, editText.trim())
+    }
+
+    const handleCancelEdit = () => {
+        setEditText(content)
+        setIsEditing(false)
+    }
+
+    const isContextOverflow = content.includes('đạt giới hạn bộ nhớ ngữ cảnh')
+        || content.includes('vượt quá dung lượng ngữ cảnh')
+        || content.includes('CONTEXT_LENGTH_EXCEEDED')
+        || !!m.isContextOverflow
+
+    const isExplicitError = !isContextOverflow && (!!m.isError || (isBot && (content.startsWith('Error:') || content.includes('[Ollama] HTTP') || content.includes('inference failed:') || content.startsWith('Hệ thống không thể') || content.startsWith('Mô hình cục bộ không thể') || content === 'No response.' || content === 'Không nhận được phản hồi từ mô hình. Vui lòng thử lại.')))
     const isOllama404 = isExplicitError && (content.includes('404') || content.includes('not found') || content.includes('gemma4:latest'))
 
     if (!isBot) {
         return (
             <div className={`${styles.msg} ${styles.msgUser}`}>
-                <div className={styles.userFloatingActions}>
-                    <button
-                        type="button"
-                        className={styles.userActionBtn}
-                        onClick={() => onEdit?.(content)}
-                        title={t ? t('chatbot.editAndResend') : 'Chỉnh sửa & gửi lại'}
-                        aria-label="Edit message"
-                    >
-                        <Pencil size={12} />
-                    </button>
-                    <button
-                        type="button"
-                        className={`${styles.userActionBtn} ${isCopied ? styles.userActionBtnActive : ''}`}
-                        onClick={() => onCopy(msgKey, content)}
-                        title={isCopied ? 'Đã sao chép!' : 'Sao chép'}
-                        aria-label="Copy message"
-                    >
-                        {isCopied ? <Check size={12} /> : <Copy size={12} />}
-                    </button>
-                    <span className={styles.userTimeOutside}>{m.time}</span>
-                </div>
-                <div className={`${styles.bubble} ${styles.bubbleUser}`}>
-                    {content}
+                {!isEditing && (
+                    <div className={styles.userFloatingActions}>
+                        <button
+                            type="button"
+                            className={styles.userActionBtn}
+                            onClick={() => setIsEditing(true)}
+                            title={t ? t('chatbot.editAndResend') : 'Chỉnh sửa & gửi lại'}
+                            aria-label="Edit message"
+                        >
+                            <Pencil size={12} />
+                        </button>
+                        <button
+                            type="button"
+                            className={`${styles.userActionBtn} ${isCopied ? styles.userActionBtnActive : ''}`}
+                            onClick={() => onCopy(msgKey, content)}
+                            title={isCopied ? 'Đã sao chép!' : 'Sao chép'}
+                            aria-label="Copy message"
+                        >
+                            {isCopied ? <Check size={12} /> : <Copy size={12} />}
+                        </button>
+                        <span className={styles.userTimeOutside}>{m.time}</span>
+                    </div>
+                )}
+                <div className={`${styles.bubble} ${styles.bubbleUser} ${isEditing ? styles.bubbleUserEditing : ''}`}>
+                    {isEditing ? (
+                        <div className={styles.userEditContainer}>
+                            <textarea
+                                ref={editTextareaRef}
+                                className={styles.userEditTextarea}
+                                value={editText}
+                                onChange={(e) => setEditText(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault()
+                                        handleSaveEdit()
+                                    } else if (e.key === 'Escape') {
+                                        e.preventDefault()
+                                        handleCancelEdit()
+                                    }
+                                }}
+                                rows={Math.min(8, Math.max(2, editText.split('\n').length))}
+                                placeholder="Chỉnh sửa câu hỏi..."
+                            />
+                            <div className={styles.userEditActions}>
+                                <button
+                                    type="button"
+                                    className={styles.userEditCancelBtn}
+                                    onClick={handleCancelEdit}
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.userEditSaveBtn}
+                                    onClick={handleSaveEdit}
+                                    disabled={!editText.trim()}
+                                >
+                                    <Send size={12} />
+                                    <span>Lưu & Gửi lại</span>
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        content
+                    )}
                 </div>
                 <div className={styles.avatarUser}>
                     <User size={14} />
@@ -155,11 +357,39 @@ const MessageBubble = memo(function MessageBubble({
             <div className={styles.avatar}>
                 {isStreaming
                     ? <Loader2 size={14} className={styles.spinIcon} />
-                    : (isExplicitError ? <AlertTriangle size={14} color="#fca5a5" /> : <Bot size={14} />)}
+                    : (isContextOverflow
+                        ? <AlertCircle size={14} color="#fbbf24" />
+                        : (isExplicitError ? <AlertTriangle size={14} color="#fca5a5" /> : <Bot size={14} />))}
             </div>
 
-            <div className={`${styles.bubble} ${styles.bubbleBot} ${isExplicitError ? styles.bubbleError : ''}`}>
-                {isExplicitError ? (
+            <div className={`${styles.bubble} ${styles.bubbleBot} ${isContextOverflow ? styles.bubbleContextWarning : (isExplicitError ? styles.bubbleError : '')}`}>
+                {isContextOverflow ? (
+                    <div className={styles.contextWarningCard}>
+                        <div className={styles.contextWarningHeader}>
+                            <AlertCircle size={16} />
+                            <span>Ngữ cảnh hội thoại đã đầy</span>
+                        </div>
+                        <p className={styles.contextWarningDesc}>
+                            Đoạn hội thoại hiện tại chứa nhiều câu hỏi và dữ liệu log lớn đã đạt giới hạn bộ nhớ ngữ cảnh của mô hình AI cục bộ. Để AI phân tích chính xác và đạt hiệu suất cao nhất, bạn vui lòng mở một phiên chat mới hoặc chuyển sang Cloud AI.
+                        </p>
+                        <div className={styles.contextWarningActions}>
+                            <button
+                                type="button"
+                                className={styles.contextNewChatBtn}
+                                onClick={() => onNewChat?.()}
+                            >
+                                <Plus size={13} /> Mở phiên chat mới
+                            </button>
+                            <button
+                                type="button"
+                                className={styles.errorCloudBtn}
+                                onClick={() => onSwitchModel?.(index, 'gemini-2.0-flash-free')}
+                            >
+                                <Zap size={13} /> Thử Cloud AI (1M context)
+                            </button>
+                        </div>
+                    </div>
+                ) : isExplicitError ? (
                     <div className={styles.errorCard}>
                         <div className={styles.errorHeader}>
                             <AlertTriangle size={16} />
@@ -174,14 +404,14 @@ const MessageBubble = memo(function MessageBubble({
                             <button
                                 type="button"
                                 className={styles.errorRetryBtn}
-                                onClick={() => onRetry?.(prevUserPrompt)}
+                                onClick={() => onRegenerate?.(index)}
                             >
                                 <RefreshCw size={13} /> Thử lại
                             </button>
                             <button
                                 type="button"
                                 className={styles.errorCloudBtn}
-                                onClick={() => onSwitchModel?.('gemini-2.0-flash-free', prevUserPrompt)}
+                                onClick={() => onSwitchModel?.(index, 'gemini-2.0-flash-free')}
                             >
                                 <Zap size={13} /> Dùng Cloud AI (Miễn phí)
                             </button>
@@ -193,23 +423,52 @@ const MessageBubble = memo(function MessageBubble({
                     </div>
                 ) : (
                     <>
-                        {isStreaming && content === '' ? (
-                            <div className={styles.skeletonWrap}>
-                                <div className={`${styles.skeletonLine} ${styles.skeletonLong}`} />
-                                <div className={`${styles.skeletonLine} ${styles.skeletonMed}`} />
-                                <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
-                            </div>
-                        ) : (
-                            <div className={styles.md}>
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || ' '}</ReactMarkdown>
-                                {isLastStreaming && <span className={styles.blinkCursor}>|</span>}
-                            </div>
+                        {m.thinking && (
+                            <details
+                                className={styles.thinkingBlock}
+                                open={isStreaming && !content}
+                            >
+                                <summary className={styles.thinkingSummary}>
+                                    <Sparkles size={13} className={styles.thinkingSparkle} />
+                                    <span>
+                                        {isStreaming && !content
+                                            ? (statusText || 'Đang suy nghĩ...')
+                                            : `Quá trình suy nghĩ (${m.thinkingElapsed ? `${m.thinkingElapsed}s` : 'hoàn tất'})`}
+                                    </span>
+                                    {isStreaming && !content && <Loader2 size={12} className={styles.spinIcon} />}
+                                </summary>
+                                <div className={styles.thinkingContent}>
+                                    <pre className={styles.thinkingText}>{m.thinking}</pre>
+                                    {isStreaming && !content && <span className={styles.blinkCursor}>|</span>}
+                                </div>
+                            </details>
                         )}
 
-                        {isStreaming && charCount > 0 && (
+                        {isStreaming && content === '' && !m.thinking ? (
+                            <div className={styles.streamPendingBox}>
+                                <div className={styles.streamStatusHeader}>
+                                    <span className={styles.streamStatusPulse} />
+                                    <span className={styles.streamStatusLabel}>{statusText || (typeof t === 'function' ? t('chatbot.processing') : 'Đang xử lý...')}</span>
+                                </div>
+                                <div className={styles.skeletonWrap}>
+                                    <div className={`${styles.skeletonLine} ${styles.skeletonLong}`} />
+                                    <div className={`${styles.skeletonLine} ${styles.skeletonMed}`} />
+                                    <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
+                                </div>
+                            </div>
+                        ) : (
+                            content ? (
+                                <div className={styles.md}>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent || ' '}</ReactMarkdown>
+                                    {isLastStreaming && <span className={styles.blinkCursor}>|</span>}
+                                </div>
+                            ) : null
+                        )}
+
+                        {isStreaming && (charCount > 0 || (m.thinking && m.thinking.length > 0)) && (
                             <div className={styles.streamMeta}>
                                 <span className={styles.streamDot} />
-                                <span>{charCount} chars · streaming…</span>
+                                <span>{charCount > 0 ? `${charCount} chars · streaming…` : 'thinking…'}</span>
                             </div>
                         )}
 
@@ -219,7 +478,7 @@ const MessageBubble = memo(function MessageBubble({
                                     <button
                                         type="button"
                                         className={`${styles.actionBtn} ${isCopied ? styles.actionBtnCopied : ''}`}
-                                        onClick={() => onCopy(msgKey, content)}
+                                        onClick={() => onCopy(msgKey, displayContent)}
                                         title="Sao chép toàn bộ câu trả lời"
                                         aria-label="Copy response"
                                     >
@@ -230,7 +489,7 @@ const MessageBubble = memo(function MessageBubble({
                                         <button
                                             type="button"
                                             className={styles.actionBtn}
-                                            onClick={() => onRetry?.(prevUserPrompt)}
+                                            onClick={() => onRegenerate?.(index)}
                                             title="Tạo lại câu trả lời với cùng câu hỏi"
                                             aria-label="Regenerate response"
                                         >
@@ -242,7 +501,7 @@ const MessageBubble = memo(function MessageBubble({
                                         <button
                                             type="button"
                                             className={`${styles.actionBtn} ${styles.actionBtnCloud}`}
-                                            onClick={() => onSwitchModel?.('gemini-2.0-flash-free', prevUserPrompt)}
+                                            onClick={() => onSwitchModel?.(index, 'gemini-2.0-flash-free')}
                                             title="Chạy thử câu hỏi này bằng Cloud AI (Nhanh & Miễn phí)"
                                             aria-label="Try with Cloud AI"
                                         >
@@ -525,7 +784,7 @@ export default function ChatbotPage() {
     // store's messages are the source of truth (they include the in-flight
     // assistant bubble and latest tokens). Otherwise fall back to local
     // session messages loaded from localStorage.
-    const isStreamingActive = stream.streaming && stream.sessionId === activeId
+    const isStreamingActive = stream.streaming && (!activeId || stream.sessionId === activeId || !stream.sessionId)
     const msgs = isStreamingActive ? stream.messages : localMsgs
     const sending = isStreamingActive
     const statusText = isStreamingActive ? stream.statusText : ''
@@ -534,6 +793,12 @@ export default function ChatbotPage() {
     const modelBtnRef = useRef(null)
     const dropdownRef = useRef(null)
     const prevMsgLenRef = useRef(0)
+
+    useEffect(() => {
+        if (stream.streaming && stream.sessionId && (!activeId || activeId !== stream.sessionId)) {
+            setActiveId(stream.sessionId)
+        }
+    }, [stream.streaming, stream.sessionId, activeId])
 
     const [ollamaAvailable, setOllamaAvailable] = useState([])
     const [ollamaCatalog, setOllamaCatalog] = useState([])
@@ -668,11 +933,11 @@ export default function ChatbotPage() {
         mountedRef.current = true
         const saved = lsGet(SESSIONS_KEY, [])
         const id = lsGet(ACTIVE_KEY, null)
-        const savedModel = lsGet(MODEL_KEY, 'gemini-2.0-flash-free')
+        const savedModel = lsGet(MODEL_KEY, 'gemma4:latest')
         const validIds = new Set(CLOUD_MODELS.map(m => m.id))
         const resolvedModel = (savedModel && (validIds.has(savedModel) || savedModel.includes(':') || savedModel.endsWith('.gguf')))
             ? savedModel
-            : 'gemini-2.0-flash-free'
+            : 'gemma4:latest'
         setSelectedModel(resolvedModel)
 
         // If the store is already streaming (e.g. user navigated away via
@@ -856,20 +1121,6 @@ export default function ChatbotPage() {
         }
     }, [])
 
-    const editUserMessage = useCallback((text) => {
-        setInput(typeof text === 'string' ? text : String(text ?? ''))
-        setTimeout(() => {
-            const el = inputRef.current
-            if (el) {
-                el.focus()
-                try {
-                    const len = el.value.length
-                    el.setSelectionRange(len, len)
-                } catch { }
-            }
-        }, 0)
-    }, [])
-
     const updateSessions = useCallback((messages, id) => {
         const dateFmt = locale === 'vi' ? 'vi-VN' : 'en-US'
         const title = messages[0]?.content?.slice(0, 50) || t('chatbot.newChatFull')
@@ -895,6 +1146,147 @@ export default function ChatbotPage() {
             }).catch(() => {})
         } catch {}
     }, [locale, t, token, user])
+
+    const handleSaveEdit = useCallback(async (msgIdx, newText) => {
+        if (!newText || !newText.trim()) return
+        if (isSubmitting.current || streamStore.getState().streaming) return
+        isSubmitting.current = true
+
+        const id = activeId || uid()
+        if (!activeId) setActiveId(id)
+
+        // Truncate conversation to replace this turn and clear downstream history
+        const truncated = localMsgs.slice(0, msgIdx)
+        const updatedUserMsg = { role: 'user', content: newText.trim(), time: now() }
+        const next = [...truncated, updatedUserMsg]
+        setLocalMsgs(next)
+        updateSessions(next, id)
+
+        const isLocal = LOCAL_MODEL_IDS.has(selectedModel)
+            || selectedModel.includes(':')
+            || selectedModel.endsWith('.gguf')
+
+        try {
+            await streamStore.startStream({
+                sessionId: id,
+                messages: next,
+                userText: newText.trim(),
+                selectedModel,
+                isLocal,
+                t,
+                locale,
+                token,
+                userId: user?.id,
+                onFinalize: (finalMessages) => {
+                    if (!mountedRef.current) return
+                    setLocalMsgs(finalMessages)
+                    updateSessions(finalMessages, id)
+                },
+            })
+        } catch {
+        } finally {
+            isSubmitting.current = false
+        }
+    }, [activeId, selectedModel, updateSessions, localMsgs, t, locale, token, user])
+
+    const handleRegenerate = useCallback(async (botIdx) => {
+        if (isSubmitting.current || streamStore.getState().streaming) return
+        isSubmitting.current = true
+
+        const id = activeId || uid()
+        if (!activeId) setActiveId(id)
+
+        // Find the user prompt for this bot reply (at botIdx - 1)
+        const userMsg = botIdx > 0 && localMsgs[botIdx - 1]?.role === 'user'
+            ? localMsgs[botIdx - 1]
+            : localMsgs.find(m => m.role === 'user')
+
+        const userText = userMsg?.content || ''
+        if (!userText) {
+            isSubmitting.current = false
+            return
+        }
+
+        // Truncate messages so this bot response and subsequent turns are removed
+        const next = localMsgs.slice(0, botIdx)
+        setLocalMsgs(next)
+        updateSessions(next, id)
+
+        const isLocal = LOCAL_MODEL_IDS.has(selectedModel)
+            || selectedModel.includes(':')
+            || selectedModel.endsWith('.gguf')
+
+        try {
+            await streamStore.startStream({
+                sessionId: id,
+                messages: next,
+                userText: userText.trim(),
+                selectedModel,
+                isLocal,
+                t,
+                locale,
+                token,
+                userId: user?.id,
+                onFinalize: (finalMessages) => {
+                    if (!mountedRef.current) return
+                    setLocalMsgs(finalMessages)
+                    updateSessions(finalMessages, id)
+                },
+            })
+        } catch {
+        } finally {
+            isSubmitting.current = false
+        }
+    }, [activeId, selectedModel, updateSessions, localMsgs, t, locale, token, user])
+
+    const handleSwitchModelAndRegenerate = useCallback(async (botIdx, modelId) => {
+        handleModelChange(modelId)
+        if (isSubmitting.current || streamStore.getState().streaming) return
+        isSubmitting.current = true
+
+        const id = activeId || uid()
+        if (!activeId) setActiveId(id)
+
+        const userMsg = botIdx > 0 && localMsgs[botIdx - 1]?.role === 'user'
+            ? localMsgs[botIdx - 1]
+            : localMsgs.find(m => m.role === 'user')
+
+        const userText = userMsg?.content || ''
+        if (!userText) {
+            isSubmitting.current = false
+            return
+        }
+
+        const next = localMsgs.slice(0, botIdx)
+        setLocalMsgs(next)
+        updateSessions(next, id)
+
+        const isLocal = LOCAL_MODEL_IDS.has(modelId)
+            || modelId.includes(':')
+            || modelId.endsWith('.gguf')
+
+        try {
+            await streamStore.startStream({
+                sessionId: id,
+                messages: next,
+                userText: userText.trim(),
+                selectedModel: modelId,
+                isLocal,
+                t,
+                locale,
+                token,
+                userId: user?.id,
+                onFinalize: (finalMessages) => {
+                    if (!mountedRef.current) return
+                    setLocalMsgs(finalMessages)
+                    updateSessions(finalMessages, id)
+                },
+            })
+        } catch {
+        } finally {
+            isSubmitting.current = false
+        }
+    }, [activeId, handleModelChange, updateSessions, localMsgs, t, locale, token, user])
 
     const send = useCallback(async (text) => {
         if (!text.trim()) return
@@ -1080,16 +1472,16 @@ export default function ChatbotPage() {
                                     <MessageBubble
                                         key={msgKey}
                                         m={m}
+                                        index={i}
                                         msgKey={msgKey}
                                         isLastStreaming={i === lastStreamingIdx}
+                                        statusText={statusText}
                                         copiedMsgId={copiedMsgId}
                                         onCopy={copyMessage}
-                                        onEdit={editUserMessage}
-                                        onRetry={(prompt) => send(prompt || prevUserPrompt || '')}
-                                        onSwitchModel={(modelId, prompt) => {
-                                            handleModelChange(modelId)
-                                            send(prompt || prevUserPrompt || '')
-                                        }}
+                                        onSaveEdit={handleSaveEdit}
+                                        onRegenerate={handleRegenerate}
+                                        onSwitchModel={handleSwitchModelAndRegenerate}
+                                        onNewChat={newChat}
                                         prevUserPrompt={prevUserPrompt}
                                         t={t}
                                     />
@@ -1101,35 +1493,23 @@ export default function ChatbotPage() {
                                     {statusText && <span className={styles.statusText}>{statusText}</span>}
                                 </div>
                             )}
-                            {/* BUG FIX: visibility tied to stable `sending` +
-                                streaming flag, NOT to `statusText`. Browsers
-                                throttle background tabs and may flush SSE events
-                                that previously cleared statusText, causing the
-                                indicator to disappear on tab return even though
-                                the model is still generating. Fall back to a
-                                generic processing label when no live status
-                                message is available. */}
-                            {sending && msgs.some(m => m._streaming) && (
-                                <div className={styles.typingWrap}>
-                                    <span className={styles.statusText}>
-                                        {statusText || t('chatbot.processing')}
-                                    </span>
-                                </div>
-                            )}
                             <div ref={endRef} />
                         </div>
                     )}
-
-                    {showScrollBtn && (
-                        <button
-                            className={styles.scrollBottom}
-                            onClick={scrollToBottom}
-                            aria-label="Scroll to bottom"
-                        >
-                            <ArrowDown size={16} />
-                        </button>
-                    )}
                 </div>
+
+                {showScrollBtn && (
+                    <button
+                        type="button"
+                        className={styles.scrollBottom}
+                        onClick={scrollToBottom}
+                        title="Cuộn xuống tin nhắn mới nhất"
+                        aria-label="Scroll to bottom"
+                    >
+                        <ArrowDown size={14} />
+                        <span>Cuộn xuống</span>
+                    </button>
+                )}
 
                 <div className={styles.inputFooter}>
                     <form className={styles.inputCard} onSubmit={e => { e.preventDefault(); send(input) }}>

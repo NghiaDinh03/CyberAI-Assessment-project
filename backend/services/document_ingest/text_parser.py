@@ -26,7 +26,7 @@ def _decode(data: bytes) -> str:
         return data.decode("latin-1", errors="replace")
 
 
-@register("txt")
+@register("txt", "log", "json", "yaml", "yml", "xml", "conf", "ini", "sh", "ps1", "env")
 def parse_txt(data: bytes) -> ParserResult:
     text = _decode(data)
     return text, [], []

@@ -44,11 +44,16 @@ export default function SystemStats() {
             const res = await fetch('/api/system/stats')
             if (res.ok) {
                 const data = await res.json()
-                setStats(data)
-                setCachedStats(data)
+                if (data && data.cpu) {
+                    setStats(data)
+                    setCachedStats(data)
+                }
             }
         } catch (err) {
-            console.error('System stats fetch failed:', err)
+            // Soft fail without uncaught error overlay — keep cached stats
+            if (process.env.NODE_ENV === 'development') {
+                console.debug('System stats polling deferred:', err?.message || err)
+            }
         } finally {
             setLoading(false)
             setRefreshing(false)
