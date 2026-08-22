@@ -1,8 +1,10 @@
 'use client'
 
+import { useMemo } from 'react'
 import styles from './steps.module.css'
 import { useTranslation } from '@/components/LanguageProvider'
 import ControlRow from '../controls/ControlRow'
+import { deriveInputEvidenceMap } from '../../utils/evidenceMatcher'
 
 export default function Step3Controls({
     form,
@@ -33,6 +35,17 @@ export default function Step3Controls({
 }) {
     const { t, locale } = useTranslation()
 
+    // Real-time input & file evidence matching
+    const inputEvidenceMap = useMemo(() => {
+        return deriveInputEvidenceMap(form, evidenceMap)
+    }, [form, evidenceMap])
+
+    // Controls that belong to the currently active standard only
+    const validImplemented = useMemo(() => {
+        const standardControlIds = new Set(allControls.map(c => c.id))
+        return form.implemented_controls.filter(id => standardControlIds.has(id))
+    }, [form.implemented_controls, allControls])
+
     return (
         <div className={styles.stepContent}>
             <div className={styles.controlHeader}>
@@ -41,7 +54,7 @@ export default function Step3Controls({
                     <p className={styles.helperText} dangerouslySetInnerHTML={{ __html: t('assessment.controlsStandard', { name: currentStandard.name }) }} />
                 </div>
                 <div className={styles.counterBadge}>
-                    <span className={styles.countNum}>{form.implemented_controls.length}</span> / {totalControls} {t('assessment.passed')}
+                    <span className={styles.countNum}>{validImplemented.length}</span> / {totalControls} {t('assessment.passed')}
                 </div>
             </div>
 
@@ -188,7 +201,7 @@ export default function Step3Controls({
                         className={`${styles.filterChip} ${filterTag === 'implemented' ? styles.filterChipActiveDone : ''}`}
                         onClick={() => setFilterTag('implemented')}
                     >
-                        ✅ {locale === 'vi' ? 'Đã tick' : 'Checked'} ({form.implemented_controls.length})
+                        ✅ {locale === 'vi' ? 'Đã tick' : 'Checked'} ({validImplemented.length})
                     </button>
                 </div>
             </div>
@@ -274,6 +287,7 @@ export default function Step3Controls({
                                         {filteredControls.map(ctrl => {
                                             const implemented = form.implemented_controls.includes(ctrl.id)
                                             const evCount = (evidenceMap[ctrl.id] || []).length
+                                            const insights = inputEvidenceMap[ctrl.id] || []
                                             return (
                                                 <ControlRow
                                                     key={ctrl.id}
@@ -289,6 +303,7 @@ export default function Step3Controls({
                                                         fetchEvidenceForControl(id)
                                                     }}
                                                     evidenceCount={evCount}
+                                                    evidenceInsights={insights}
                                                     verdict={undefined}
                                                 />
                                             )

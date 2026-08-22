@@ -123,6 +123,68 @@ export default function FormISOPage() {
         return () => window.removeEventListener('scroll', handleScroll)
     }, [activeTab])
 
+    const fetchTemplates = useCallback(async () => {
+        try {
+            setTemplatesLoading(true)
+            const res = await fetch('/api/templates')
+            if (res.ok) {
+                const data = await res.json()
+                if (data.templates && Array.isArray(data.templates)) {
+                    setDynamicTemplates(data.templates)
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to fetch templates:', e)
+        } finally {
+            setTemplatesLoading(false)
+        }
+    }, [])
+
+    useEffect(() => {
+        fetchTemplates()
+    }, [fetchTemplates])
+
+    const selectTemplate = useCallback((tpl) => {
+        if (!tpl) return
+        const d = tpl.data || {}
+        const std = tpl.standard || d.assessment_standard || 'iso27001'
+        const orgInfo = d.organization || {}
+        const infraInfo = d.infrastructure || {}
+        const complianceInfo = d.compliance || {}
+
+        setForm({
+            assessment_standard: std,
+            org_name: d.org_name || orgInfo.name || tpl.name || '',
+            org_size: d.org_size || orgInfo.size || 'medium',
+            industry: d.industry || orgInfo.industry || tpl.industry || '',
+            iso_status: d.iso_status || orgInfo.iso_status || 'Đang triển khai',
+            employees: d.employees || orgInfo.employees || 0,
+            it_staff: d.it_staff || orgInfo.it_staff || 0,
+            servers: d.servers || infraInfo.servers || 0,
+            firewalls: d.firewalls || infraInfo.firewalls || '',
+            cloud_provider: d.cloud_provider || infraInfo.cloud || '',
+            antivirus: d.antivirus || infraInfo.antivirus || '',
+            backup_solution: d.backup_solution || infraInfo.backup || '',
+            siem: d.siem || infraInfo.siem || '',
+            vpn: d.vpn !== undefined ? d.vpn : (infraInfo.vpn !== undefined ? infraInfo.vpn : false),
+            incidents_12m: d.incidents_12m || infraInfo.incidents_12m || 0,
+            network_diagram: d.network_diagram || infraInfo.network_topology || '',
+            notes: d.notes || '',
+            assessment_scope: d.assessment_scope || 'full',
+            scope_description: d.scope_description || '',
+            model_mode: 'local',
+            implemented_controls: d.implemented_controls || complianceInfo.implemented_controls || []
+        })
+
+        if (d.evidence_map && typeof d.evidence_map === 'object') {
+            setEvidenceMap(d.evidence_map)
+        }
+
+        setActiveTab('form')
+        setStep(1)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }, [])
+
     const uploadEvidence = async (controlId, files) => {
         if (!files || files.length === 0) return
         setEvidenceUploading(controlId)
@@ -352,26 +414,6 @@ export default function FormISOPage() {
         return stats
     }, [allControls, form.implemented_controls, evidenceMap])
 
-    useEffect(() => {
-        const fetchTemplates = async () => {
-            try {
-                setTemplatesLoading(true)
-                const res = await fetch('/api/templates')
-                if (res.ok) {
-                    const data = await res.json()
-                    if (data.templates && Array.isArray(data.templates)) {
-                        setDynamicTemplates(data.templates)
-                    }
-                }
-            } catch (err) {
-                console.error('Failed to load templates from DB:', err)
-            } finally {
-                setTemplatesLoading(false)
-            }
-        }
-        fetchTemplates()
-    }, [])
-
     const applyTemplateData = (parsed) => {
         const isNested = Boolean(parsed.organization || parsed.infrastructure || parsed.compliance)
         return {
@@ -396,13 +438,6 @@ export default function FormISOPage() {
             scope_description: parsed.scope_description || '',
             model_mode: 'local'
         }
-    }
-
-    const selectTemplate = (tpl) => {
-        const newForm = applyTemplateData(tpl.data)
-        setForm(newForm)
-        setActiveTab('form')
-        setStep(1)
     }
 
     useEffect(() => {
@@ -923,26 +958,36 @@ export default function FormISOPage() {
 
             {/* Control Detail Drawer */}
             <DetailDrawer
-                controlId={drawerControlId}
-                standardId={form.assessment_standard}
-                isOpen={Boolean(drawerControlId)}
+                open={Boolean(drawerControlId)}
+                control={(() => {
+                    if (!drawerControlId) return null
+                    for (const cat of currentStandard?.controls || []) {
+                        const found = (cat?.controls || []).find(c => c.id === drawerControlId)
+                        if (found) return found
+                    }
+                    return { id: drawerControlId, label: drawerControlId, weight: 'medium' }
+                })()}
+                state={{
+                    implemented: form.implemented_controls.includes(drawerControlId),
+                    evidenceFiles: evidenceMap[drawerControlId] || [],
+                    notes: controlNotes[drawerControlId] || '',
+                    description: allDescriptions[drawerControlId] || {}
+                }}
                 onClose={() => {
                     setDrawerControlId(null)
                     drawerReturnFocusRef.current?.focus?.()
                 }}
-                isImplemented={form.implemented_controls.includes(drawerControlId)}
                 onToggleImplemented={toggleControl}
-                evidenceList={evidenceMap[drawerControlId] || []}
-                evidenceUploading={evidenceUploading === drawerControlId}
-                onUploadEvidence={uploadEvidence}
-                onDeleteEvidence={deleteEvidence}
-                onPreviewEvidence={(ctrlId, fn) => {
+                onUploadFiles={uploadEvidence}
+                onDeleteFile={deleteEvidence}
+                onChangeNotes={(ctrlId, note) => setControlNotes(prev => ({ ...prev, [ctrlId]: note }))}
+                onExpandFile={(ctrlId, fn) => {
                     setPreviewFile({ controlId: ctrlId, filename: fn })
                     fetchPreview(ctrlId, fn)
                 }}
-                previewLoading={previewLoading}
-                initialNote={controlNotes[drawerControlId] || ''}
-                onSaveNote={(ctrlId, note) => setControlNotes(prev => ({ ...prev, [ctrlId]: note }))}
+                returnFocusRef={drawerReturnFocusRef}
+                standard={form.assessment_standard}
+                selectedModel={selectedAiModel}
             />
 
             {/* Evidence Preview Modal */}

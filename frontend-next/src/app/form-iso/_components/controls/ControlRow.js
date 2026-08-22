@@ -15,49 +15,21 @@ export default function ControlRow({
     onToggleImplemented,
     onOpenDrawer,
     evidenceCount = 0,
+    evidenceInsights = [],
     verdict,
 }) {
     const { t, locale } = useTranslation()
     const implemented = !!state?.implemented
 
     const [showHint, setShowHint] = useState(false)
-    const [showAuditGuide, setShowAuditGuide] = useState(false)
     const hintTimerRef = useRef(null)
-    const popoverRef = useRef(null)
-    const infoBtnRef = useRef(null)
 
     useEffect(() => () => {
         if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
     }, [])
 
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (
-                popoverRef.current && 
-                !popoverRef.current.contains(e.target) &&
-                infoBtnRef.current && 
-                !infoBtnRef.current.contains(e.target)
-            ) {
-                setShowAuditGuide(false)
-            }
-        }
-        if (showAuditGuide) {
-            document.addEventListener('mousedown', handleClickOutside)
-        }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
-        }
-    }, [showAuditGuide])
-
     const handleToggle = (e) => {
         e.stopPropagation()
-        if (!implemented && evidenceCount < 1) {
-            setShowHint(true)
-            if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
-            hintTimerRef.current = setTimeout(() => setShowHint(false), 4000)
-            return
-        }
-        setShowHint(false)
         onToggleImplemented?.(control.id)
     }
 
@@ -90,9 +62,25 @@ export default function ControlRow({
                     )}
                     <span className={styles.label}>{control.label}</span>
                 </div>
+
                 {meta.requirement && (
                     <div className={styles.requirementSnippet}>
                         {meta.requirement}
+                    </div>
+                )}
+
+                {/* Evidence Insight Badges (from Infra inputs or Uploaded files) */}
+                {evidenceInsights && evidenceInsights.length > 0 && (
+                    <div className={styles.evidenceInsightWrap}>
+                        {evidenceInsights.map((insight, iIdx) => (
+                            <span
+                                key={iIdx}
+                                className={`${styles.evidenceInsightBadge} ${insight.source === 'Tệp bằng chứng' ? styles.evidenceInsightBadgeFile : ''}`}
+                                title={insight.text}
+                            >
+                                💡 <strong>{insight.source}:</strong> {insight.text}
+                            </span>
+                        ))}
                     </div>
                 )}
             </div>
@@ -104,7 +92,7 @@ export default function ControlRow({
                     onClick={() => onOpenDrawer?.(control.id)}
                     title={locale === 'vi' ? 'Xem hướng dẫn, tiêu chí và tệp bằng chứng' : 'View criteria and evidence'}
                 >
-                    {locale === 'vi' ? 'Hướng dẫn' : 'Guide'} {evidenceCount > 0 ? `(${evidenceCount})` : ''}
+                    📖 {locale === 'vi' ? 'Hướng dẫn' : 'Guide'} {evidenceCount > 0 ? `(${evidenceCount})` : ''}
                 </button>
 
                 {verdict && (
@@ -122,7 +110,3 @@ export default function ControlRow({
         </div>
     )
 }
-
-
-
-
