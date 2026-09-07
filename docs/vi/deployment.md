@@ -205,13 +205,13 @@ docker compose -f docker-compose.prod.yml config --quiet
 ```
 
 ### Bảng Phân Bổ Cổng Trong Production:
-| Container Name | Dịch vụ | Cổng Host : Container |
-|---|---|---|
-| `cyberai-nginx` | Reverse Proxy HTTP | `80:80` |
-| `cyberai-backend` | FastAPI Core Engine | `8000:8000` |
-| `cyberai-frontend` | Next.js Web Application | `3081:3000` |
-| `cyberai-ollama` | Local LLM Inference | `11434:11434` |
-| `cyberai-searxng` | Private Search Engine | `8888:8080` |
+| Container Name | Dịch vụ | Cổng Host : Container | Ghi chú |
+|---|---|---|---|
+| `cyberai-nginx` | Reverse Proxy HTTP | `80:80` | Điểm truy cập chính cho người dùng |
+| `cyberai-backend` | FastAPI Core Engine | `8000:8000` | API engine & pipeline ISO27001 |
+| `cyberai-frontend` | Next.js Web Application | `3081:3000` | Giao diện Next.js standalone |
+| `cyberai-searxng` | Private Search Engine | `8888:8080` | Tìm kiếm web riêng tư nội bộ |
+| `cyberai-ollama` *(tuỳ chọn)* | Local LLM Inference | `11435:11434` | Profile `ollama-container` (mặc định dùng Host Ollama `11434`) |
 
 ---
 

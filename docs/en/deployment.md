@@ -205,13 +205,13 @@ docker compose -f docker-compose.prod.yml config --quiet
 ```
 
 ### Production Port Map:
-| Container Name | Service | Port Binding |
-|---|---|---|
-| `cyberai-nginx` | Pure HTTP Reverse Proxy | `80:80` |
-| `cyberai-backend` | FastAPI Core Engine | `8000:8000` |
-| `cyberai-frontend` | Next.js Frontend | `3081:3000` |
-| `cyberai-ollama` | Local LLM Inference | `11434:11434` |
-| `cyberai-searxng` | Private Search Engine | `8888:8080` |
+| Container Name | Service | Port Binding | Notes |
+|---|---|---|---|
+| `cyberai-nginx` | Pure HTTP Reverse Proxy | `80:80` | Primary entrypoint for users |
+| `cyberai-backend` | FastAPI Core Engine | `8000:8000` | API engine & ISO27001 pipeline |
+| `cyberai-frontend` | Next.js Frontend | `3081:3000` | Next.js standalone application |
+| `cyberai-searxng` | Private Search Engine | `8888:8080` | Local private search engine |
+| `cyberai-ollama` *(optional)* | Local LLM Inference | `11435:11434` | Profile `ollama-container` (default uses Host Ollama `11434`) |
 
 ---
 
