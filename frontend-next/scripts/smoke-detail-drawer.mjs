@@ -16,7 +16,10 @@ function assert(cond, msg) {
 }
 
 // 1) Source file checks ------------------------------------------------------
-const drawerPath = resolve(ROOT, 'src/app/form-iso/_components/DetailDrawer.js')
+let drawerPath = resolve(ROOT, 'src/app/form-iso/_components/controls/DetailDrawer.js')
+if (!existsSync(drawerPath)) {
+    drawerPath = resolve(ROOT, 'src/app/form-iso/_components/DetailDrawer.js')
+}
 assert(existsSync(drawerPath), `DetailDrawer.js not found at ${drawerPath}`)
 
 const src = readFileSync(drawerPath, 'utf8')

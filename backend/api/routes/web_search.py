@@ -1,4 +1,4 @@
-"""Web Search API Route — DuckDuckGo-based search for Discover page fallback."""
+"""Web Search API Route — On-premise SearXNG search with DuckDuckGo fallback."""
 
 import logging
 from fastapi import APIRouter, HTTPException
@@ -19,7 +19,7 @@ class WebSearchRequest(BaseModel):
 
 @router.post("/web-search")
 async def web_search(request: WebSearchRequest):
-    """Search the web using DuckDuckGo. Used as fallback when SearXNG is unavailable."""
+    """Search using on-premise SearXNG (port 8080/8888) with DuckDuckGo fallback."""
     try:
         results = WebSearch.search(
             query=request.query,

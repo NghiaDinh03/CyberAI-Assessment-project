@@ -1,151 +1,213 @@
-# Web Search Service — Tích hợp DuckDuckGo
+# Web Search Service — Tích hợp SearXNG & Web Search
 
-> **Module:** [`backend/services/web_search.py`](../../backend/services/web_search.py)
-> **Kích hoạt:** Hybrid intent classifier trong [`backend/services/model_router.py:173-213`](../../backend/services/model_router.py) phân loại câu hỏi vào `intent="search"` → `ChatService` gọi `WebSearch.search()` rồi nhét `WebSearch.format_context()` vào prompt LLM.
-
----
-
-## 1. Vì sao cần Web Search?
-
-CyberAI lấy gốc từ corpus RAG offline (`data/iso_documents/`) nhưng có
-những câu hỏi cần ngữ cảnh web tươi (CVE mới, tin nhà cung cấp, "phiên
-bản mới nhất của …"). Để giữ zero-cost và không cần API-key, platform gọi
-DuckDuckGo qua package **`ddgs`** (với fallback ngược về
-**`duckduckgo-search`**).
+> **Module:** [`backend/services/web_search.py`](../../backend/services/web_search.py)  
+> **Route API:** [`backend/api/routes/web_search.py`](../../backend/api/routes/web_search.py) (`POST /api/v1/web-search`, `POST /api/web-search`)  
+> **Kích hoạt:** Hybrid intent classifier trong [`backend/services/model_router.py`](../../backend/services/model_router.py) phân loại câu hỏi vào `intent="search"` → `ChatService` gọi `WebSearch.search()` rồi đưa `WebSearch.format_context()` vào prompt LLM.
 
 ---
 
-## 2. API công khai
+## 1. Vai trò của Web Search & SearXNG trong Hệ thống
+
+Mặc dù CyberAI vận hành chủ yếu dựa trên cơ sở tri thức tiêu chuẩn an toàn thông tin offline (RAG corpus trong `data/iso_documents/` được nhúng bằng `BAAI/bge-m3`), nhiều tình huống thực tế đòi hỏi thông tin an ninh mạng cập nhật theo thời gian thực (Live Threat Intelligence):
+- Mã lỗ hổng bảo mật mới công bố (Zero-day CVE, NVD/CISA advisories).
+- Chiến dịch tấn công mạng và mã độc tống tiền (Ransomware campaigns) đang diễn ra.
+- Thông báo cảnh báo an toàn từ các cơ quan quản lý (VNCERT, Cục ATTT).
+
+Để đảm bảo **quyền riêng tư dữ liệu (Data Privacy)** và **tính độc lập On-Premise**, hệ thống triển khai container riêng biệt **SearXNG** (`cyberai-searxng`) làm công cụ tìm kiếm tổng hợp meta-search nội bộ, kết hợp cơ chế dự phòng tự động (**Graceful Fallback**) qua thư viện `ddgs`.
+
+---
+
+## 2. Kiến Trúc Tìm Kiếm Hai Tầng (Dual-Layer Search Architecture)
+
+```mermaid
+flowchart TD
+    User(["👤 Người dùng / Chatbot Query"]) --> Router["🔀 ModelRouter (Intent Classifier)"]
+    
+    Router -- "intent == 'search'" --> WS["⚙️ WebSearch.search(query)"]
+    Router -- "intent == 'security'" --> RAG["📚 RAG Service (ChromaDB)"]
+    Router -- "intent == 'general'" --> LLM["🧠 LLM (Không augmentation)"]
+
+    subgraph SEC_GUARD["🛡️ Bảo Vệ Rò Rỉ Dữ Liệu"]
+        WS --> CheckLog{"is_log_analysis_query?\n(Phát hiện log/payload)"}
+        CheckLog -- "Có log/payload" --> Skip["Bỏ qua tìm kiếm web\n(Bảo mật dữ liệu tuyệt đối)"]
+    end
+
+    subgraph LAYER1["🥇 Tầng 1: On-Premise Meta-Search (SearXNG)"]
+        CheckLog -- "Không có log" --> SearXCall["Gọi SearXNG JSON API\nGET {SEARXNG_URL}/search?q=...&format=json\n(Timeout 8.0s)"]
+        SearXCall --> SearXNode["🔍 cyberai-searxng :8080\n(Tổng hợp Google, Bing, Wikipedia...)"]
+        SearXNode --> SearXRes{"Có kết quả hợp lệ?"}
+    end
+
+    subgraph LAYER2["🥈 Tầng 2: Graceful Fallback"]
+        SearXRes -- "Không / Timeout / Lỗi" --> DDGSCall["Fallback sang ddgs\n(DuckDuckGo Python client)\nRetry 1 lần · Region vn-vi"]
+    end
+
+    SearXRes -- "Thành công" --> Format["📝 WebSearch.format_context(results)"]
+    DDGSCall --> Format
+    Format --> Prompt["📑 Tiêm ngữ cảnh vào Prompt Chatbot"]
+    Prompt --> Inference["🦙 Ollama (gemma4) / Cloud Fallback"]
+    Inference --> ClientStream(["🖥️ Trả lời người dùng (SSE Stream kèm nguồn trích dẫn)"])
+
+    style User fill:#fbbf24,stroke:#f59e0b,color:#000
+    style Router fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style LAYER1 fill:#064e3b,stroke:#059669,color:#fff
+    style LAYER2 fill:#1e3a5f,stroke:#2563eb,color:#fff
+    style SEC_GUARD fill:#7f1d1d,stroke:#b91c1c,color:#fff
+    style SearXNode fill:#6b21a8,stroke:#a855f7,color:#fff
+    style ClientStream fill:#0f766e,stroke:#14b8a6,color:#fff
+```
+
+---
+
+## 3. Cấu hình Container SearXNG (`searxng/settings.yml`)
+
+Dịch vụ `cyberai-searxng` sử dụng image `searxng/searxng:latest` và được cấu hình qua tệp `searxng/settings.yml` (mount vào `/etc/searxng:rw`):
+
+```yaml
+use_default_settings: true
+
+general:
+  debug: false
+  instance_name: "CyberAI Private Search"
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "vi"
+  formats:
+    - html
+    - json   # BẮT BUỘC: Cho phép Backend truy xuất định dạng JSON
+
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  secret_key: "cyberai-searxng-insecure-secret-key-for-local-use"
+  limiter: false  # Tắt limiter nội bộ để Backend không bị rate-limit
+```
+
+### Thiết lập Docker Compose:
+- **Mạng nội bộ Docker:** Backend kết nối trực tiếp với SearXNG qua `http://searxng:8080`.
+- **Port Host:** Ánh xạ ra ngoài cổng `8888:8080` phục vụ kiểm tra hoặc truy cập trực tiếp từ máy chủ.
+- **Biến môi trường Backend:** `SEARXNG_URL=http://searxng:8080`.
+
+---
+
+## 4. API Công Khai & Cấu Trúc Dữ Liệu
+
+### Lớp `WebSearch` ([`backend/services/web_search.py`](../../backend/services/web_search.py))
 
 ```python
 class WebSearch:
     @staticmethod
-    def search(query: str, max_results: int = 5, retries: int = 2) -> List[Dict[str, str]]
+    def _search_searxng(query: str, max_results: int = 5) -> List[Dict[str, str]]:
+        """Truy vấn trực tiếp SearXNG Meta-Search Engine qua JSON API."""
+        ...
+
+    @classmethod
+    def search(cls, query: str, max_results: int = 5, retries: int = 1) -> List[Dict[str, str]]:
+        """Tìm kiếm web ưu tiên SearXNG cục bộ, tự động fallback sang ddgs."""
+        ...
+
     @staticmethod
-    def format_context(results: List[Dict[str, str]]) -> str
+    def format_context(results: List[Dict[str, str]]) -> str:
+        """Định dạng danh sách kết quả thành khối văn bản có đánh số trích dẫn cho LLM."""
+        ...
 ```
 
-Nguồn: [`backend/services/web_search.py:14-64`](../../backend/services/web_search.py)
-
-### Schema kết quả
+### Schema kết quả trả về
 
 ```json
 [
-  { "title": "…", "url": "https://…", "snippet": "…" }
+  {
+    "title": "Tiêu chuẩn ISO/IEC 27001 – Hệ thống Quản lý An Toàn Thông Tin",
+    "url": "https://example.vn/iso-27001",
+    "snippet": "ISO/IEC 27001:2022 là tiêu chuẩn quốc tế về quản lý an toàn thông tin..."
+  }
 ]
 ```
 
 ---
 
-## 3. Thuật toán
+## 5. Thuật Toán Xử Lý & Cơ Chế Dự Phòng
 
-```
-1. Thử `from ddgs import DDGS`.
-   Nếu ImportError → thử `from duckduckgo_search import DDGS`.
-   Nếu cả 2 fail → log error, trả về [].
+Quy trình thực thi trong `WebSearch.search()`:
 
-2. For attempt in range(retries + 1):
-     with DDGS(headers={"User-Agent": USER_AGENT}) as ddgs:
-         raw = list(ddgs.text(query, max_results=max_results, region="vn-vi"))
-     Nếu raw → trả [ {title, url, snippet} for item in raw ]
-     Nếu không → sleep(1), retry.
-   Nếu exception → log warning, sleep(2), retry.
+1. **Bảo vệ rò rỉ dữ liệu (Data Loss Prevention):**
+   - Kiểm tra `is_log_analysis_query(query)`.
+   - Nếu phát hiện câu hỏi chứa log kỹ thuật hoặc payload tấn công, **tuyệt đối không gửi ra ngoài internet**; hàm trả về `[]` ngay lập tức để bảo vệ dữ liệu nội bộ.
+2. **Tiền xử lý câu truy vấn:**
+   - Chuẩn hóa khoảng trắng và cắt ngắn tối đa 150 ký tự để tối ưu độ chính xác của search engine.
+   - Nếu độ dài `< 3` ký tự: trả về `[]`.
+3. **Ưu tiên 1 — Truy vấn SearXNG Cục bộ (`_search_searxng`):**
+   - Gửi yêu cầu HTTP GET bằng thư viện `httpx` tới `f"{SEARXNG_URL}/search"` kèm params:
+     - `q`: chuỗi truy vấn đã tiền xử lý.
+     - `format`: `"json"`.
+     - `categories`: `"general"`.
+     - `language`: `"vi-VN"`.
+   - Thiết lập thời gian chờ `timeout=8.0s`.
+   - Trích xuất trường `results[].title`, `results[].url`, `results[].content`.
+   - Nếu thành công và có kết quả: trả về danh sách kết quả ngay, không kích hoạt tầng 2.
+4. **Ưu tiên 2 — Dự phòng tự động (Graceful Fallback với `ddgs`):**
+   - Kích hoạt khi SearXNG gặp sự cố (timeout, container dừng, hoặc 0 kết quả).
+   - Nạp module `ddgs` (hoặc `duckduckgo_search`).
+   - Thực hiện tìm kiếm với User-Agent chuẩn desktop và `region="vn-vi"`.
+   - Thử lại tối đa `retries` lần (giãn cách 0.5s – 1.0s).
+5. **Định dạng ngữ cảnh (`format_context`):**
+   - Đánh số thứ tự trích dẫn `[1]`, `[2]`... kèm URL và trích đoạn tóm tắt để LLM có thể dẫn nguồn tường minh trong câu trả lời.
 
-3. Hết retries → log warning, trả [].
-```
+---
 
-| Thông số | Giá trị | Vị trí |
+## 6. REST API Endpoints
+
+Hệ thống cung cấp endpoint HTTP để kiểm tra hoặc phục vụ các client ngoại vi:
+
+- **Endpoint:** `POST /api/v1/web-search` hoặc `POST /api/web-search`
+- **Request Body:**
+  ```json
+  {
+    "query": "Các lỗ hổng bảo mật nghiêm trọng năm 2026",
+    "max_results": 5
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": "ok",
+    "query": "Các lỗ hổng bảo mật nghiêm trọng năm 2026",
+    "results": [
+      {
+        "title": "Cảnh báo lỗ hổng bảo mật mới...",
+        "url": "https://...",
+        "snippet": "..."
+      }
+    ],
+    "total": 5
+  }
+  ```
+
+---
+
+## 7. Định Tuyến & Điều Kiện Kích Hoạt (Routing)
+
+Quyết định gọi Web Search được điều phối bởi **Hybrid Model Router** ([`backend/services/model_router.py`](../../backend/services/model_router.py)):
+
+1. **Phân loại ngữ nghĩa (Semantic Intent):**
+   - Nhúng câu hỏi và so khớp với vector collection `intent_collection` (được huấn luyện từ `INTENT_TEMPLATES`).
+   - Nếu độ tin cậy $\ge 0.6 \rightarrow$ sử dụng nhãn ngữ nghĩa tương ứng.
+2. **Fallback từ khóa (Keyword Fallback):**
+   - So khớp với tập `SEARCH_KEYWORDS` (ví dụ: *"tìm"*, *"search"*, *"google"*, *"tin tức"*, *"news"*, *"cve"*, *"cập nhật"*...).
+3. **Kết luận Intent:**
+   - Intent $\in \{\text{"security"}, \text{"search"}, \text{"general"}\}$.
+   - **Chỉ khi `intent == "search"`**: Hệ thống mới kích hoạt `WebSearch.search()`.
+   - Các câu hỏi tư vấn tiêu chuẩn ISO 27001 / TCVN 11930 thông thường thuộc phạm vi `security` sẽ **hoàn toàn tra cứu cục bộ bằng RAG ChromaDB**, không gửi truy vấn ra ngoài.
+
+---
+
+## 8. Ghi Chú Vận Hành & Xử Lý Sự Cố
+
+| Tình huống | Nguyên nhân | Biện pháp xử lý |
 |---|---|---|
-| `region` | `vn-vi` | Hard-code — ưu tiên nguồn tiếng Việt |
-| `max_results` | `5` (mặc định) | Tuỳ chỉnh từng call |
-| `retries` | `2` (mặc định) → tổng 3 lần | Tuỳ chỉnh từng call |
-| `User-Agent` | Chuỗi Chrome 120 desktop | `web_search.py:7-11` để né bot-wall |
-| Back-off | `1s` khi rỗng, `2s` sau exception | Tuyến tính, không jitter |
-
----
-
-## 4. Thứ tự resolve thư viện
-
-| Package | Trạng thái | Hành vi |
-|---|---|---|
-| `ddgs` | **ưu tiên** — fork mới | Trong `backend/requirements.txt` |
-| `duckduckgo-search` | fallback cũ | Cùng symbol `DDGS`; ddgs là phiên bản kế thừa |
-
-Nếu cả 2 đều thiếu, hàm trả `[]` thay vì raise — caller (`ChatService`)
-sẽ fall back về sinh không-context, chat không bị chặn vì thiếu dep tuỳ
-chọn.
-
----
-
-## 5. Định dạng context
-
-`format_context()` ghép kết quả thành block đúng cấu trúc mà prompt chat
-mong đợi:
-
-```
-[1] <title>
-URL: <url>
-<snippet>
-
----
-
-[2] <title>
-URL: <url>
-<snippet>
-```
-
-Đoạn này được nối vào system prompt dưới tiêu đề mà
-[`ChatService._build_messages`](../../backend/services/chat_service.py)
-(dòng 208-258) tạo ra. Tiền tố đánh số cho phép LLM trích dẫn ngược về
-người dùng (ví dụ "theo [2] …").
-
----
-
-## 6. Routing — khi nào Web Search được gọi
-
-Quyết định nằm ở **hybrid router**
-[`backend/services/model_router.py:173-213`](../../backend/services/model_router.py):
-
-1. Semantic classification với collection ChromaDB `intent_collection`
-   được seed từ `INTENT_TEMPLATES`.
-2. Nếu confidence ≥ 0.6 → dùng semantic intent.
-3. Ngược lại → keyword fallback với `SEARCH_KEYWORDS` ("tìm", "search",
-   "google", "tin tức", "news", "cve", "cập nhật" …).
-4. Intent cuối cùng ∈ `{"security", "search", "general"}`. Chỉ `search`
-   mới gọi `WebSearch.search()`.
-
-Nghĩa là câu hỏi an ninh thuộc phạm vi RAG **giữ ở local**, không bao giờ
-chạm internet công cộng.
-
----
-
-## 7. Ghi chú vận hành
-
-| Chủ đề | Ghi chú |
-|---|---|
-| **Không API-key** | DDG scrape HTML/JSON — best-effort, không có SLA |
-| **Rate limit** | DDG có thể trả 202/rỗng khi tải cao — vòng retry+backoff là biện pháp duy nhất |
-| **Quyền riêng tư** | Chỉ truy vấn nguyên văn được gửi; không kèm session/PII |
-| **Egress** | HTTPS ra `duckduckgo.com`. Cần allow ở nginx/firewall nếu môi trường hardened |
-| **Tắt** | Bỏ `ddgs` và `duckduckgo-search` khỏi `backend/requirements.txt` — `WebSearch.search()` sẽ trả `[]` an toàn |
-
----
-
-## 8. Chế độ lỗi
-
-| Triệu chứng | Nguyên nhân | Khắc phục |
-|---|---|---|
-| Luôn trả `[]` | DDG tạm block IP egress | Đợi, hoặc proxy egress qua residential exit |
-| Log `ImportError` lần gọi đầu | Chưa cài `ddgs`/`duckduckgo-search` | `pip install ddgs` |
-| Kết quả lệch chủ đề / cũ | `region="vn-vi"` lọc quá tay nguồn EN | Truy vấn bằng EN hoặc nới region (phải đổi code) |
-| Latency cao | DDG chậm + 2 retry × 2s | Hạ `retries` cho luồng nhạy độ trễ |
-
----
-
-## 9. Xem thêm
-
-- [`docs/vi/algorithms.md`](algorithms.md) — toàn bộ hybrid intent
-  classifier.
-- [`docs/vi/chatbot_rag.md`](chatbot_rag.md) — cách context search hoà
-  với context RAG trong prompt.
-- [`docs/vi/architecture.md`](architecture.md) — topo egress trong Docker/nginx.
+| SearXNG trả mã `403 Forbidden` | Thiếu `search.formats: [html, json]` trong cấu hình | Đảm bảo file `searxng/settings.yml` đã mount đúng và chứa `formats: [html, json]`. |
+| SearXNG phản hồi chậm hoặc timeout | Các công cụ tìm kiếm thượng tầng (Google, Bing...) phản hồi chậm | Hệ thống tự động chuyển sang `ddgs` sau 8.0s timeout; có thể tinh chỉnh engine trong `settings.yml`. |
+| Container SearXNG bị dừng | Docker daemon hoặc hết RAM | Kiểm tra `docker logs cyberai-searxng` và khởi động lại với `docker compose up -d searxng`. Hệ thống vẫn hoạt động nhờ fallback `ddgs`. |
+| Không có kết quả từ cả 2 tầng | Mất kết nối internet hoặc query không hợp lệ | Hệ thống trả về `[]` một cách an toàn, Chatbot tiếp tục suy luận từ tri thức sẵn có của LLM. |

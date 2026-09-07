@@ -109,13 +109,16 @@ def sanitize_indirect_injection(text: str) -> str:
         (re.compile(r'override\s+system\s+settings', re.IGNORECASE), '[ATTT_BO_QUA]'),
         (re.compile(r'developer\s+mode', re.IGNORECASE), '[ATTT_BO_QUA]'),
         (re.compile(r'you\s+must\s+now', re.IGNORECASE), '[ATTT_BO_QUA]'),
-        (re.compile(r'\b(system|user|assistant|developer)\s*:\s*', re.IGNORECASE), r'[\1_role]: '),
+        (re.compile(r'\b(system|user|assistant|developer)\s*:\s*', re.IGNORECASE), lambda m: f"[{m.group(1).lower()}_role]: "),
     ]
     
     result = text
     cleaned_count = 0
     for regex, replacement in injection_patterns:
-        new_result = regex.sub(replacement, result)
+        if callable(replacement):
+            new_result = regex.sub(replacement, result)
+        else:
+            new_result = regex.sub(replacement, result)
         if new_result != result:
             cleaned_count += len(regex.findall(result))
             result = new_result

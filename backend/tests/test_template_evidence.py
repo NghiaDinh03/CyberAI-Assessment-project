@@ -139,7 +139,7 @@ class TestUploadEndpoint:
     def test_upload_unsupported_format(self, client):
         resp = client.post(
             "/api/templates/fpt/evidence/upload",
-            files={"file": ("image.png", b"\x89PNG\r\n", "image/png")},
+            files={"file": ("malware.exe", b"MZ\x00\x00", "application/octet-stream")},
         )
         assert resp.status_code == 415
 

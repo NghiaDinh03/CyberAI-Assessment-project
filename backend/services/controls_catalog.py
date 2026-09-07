@@ -170,22 +170,59 @@ def get_flat_controls(standard: str, custom_std: dict = None) -> list:
     return [ctrl for cat in cats for ctrl in cat.get("controls", [])]
 
 
-def calc_compliance(implemented: list, standard: str, custom_std: dict = None) -> dict:
+def calc_compliance(implemented: list, standard: str = "iso27001", custom_std: dict = None) -> dict:
     flat = get_flat_controls(standard, custom_std)
     if not flat:
         total = 93 if standard != "tcvn11930" else 34
-        return {"score": len(implemented), "max_score": total,
-                "percentage": round(len(implemented) / total * 100, 1) if total else 0}
+        unique_impl = list(dict.fromkeys(implemented))
+        score = min(len(unique_impl), total)
+        pct = round(score / total * 100, 1) if total else 0.0
+        return {
+            "score": score,
+            "max_score": total,
+            "percentage": min(100.0, max(0.0, pct)),
+            "control_coverage": {
+                "self_declared_implemented": score,
+                "evidence_supported_implemented": 0,
+                "not_evidenced_or_missing": max(0, total - score),
+                "total_controls": total,
+                "raw_percentage": pct,
+            },
+            "weighted_compliance": {
+                "weighted_score": float(score),
+                "weighted_max_score": float(total),
+                "percentage": pct,
+                "algorithm": "weight_score_v1",
+            },
+        }
+    flat_ids = {c["id"] for c in flat}
+    valid_implemented = [cid for cid in dict.fromkeys(implemented) if cid in flat_ids]
     weight_map = {c["id"]: WEIGHT_SCORE.get(c.get("weight", "medium"), 1) for c in flat}
     max_w = sum(weight_map.values())
-    achieved_w = sum(weight_map.get(cid, 0) for cid in implemented)
-    pct = round(achieved_w / max_w * 100, 1) if max_w > 0 else 0
+    achieved_w = sum(weight_map.get(cid, 0) for cid in valid_implemented)
+    pct = round(achieved_w / max_w * 100, 1) if max_w > 0 else 0.0
+    pct = min(100.0, max(0.0, pct))
+    raw_pct = round(len(valid_implemented) / len(flat) * 100, 1) if flat else 0.0
+
     return {
-        "score": len(implemented),
+        "score": len(valid_implemented),
         "max_score": len(flat),
         "max_weighted": max_w,
         "achieved_weighted": achieved_w,
         "percentage": pct,
+        "control_coverage": {
+            "self_declared_implemented": len(valid_implemented),
+            "evidence_supported_implemented": 0,
+            "not_evidenced_or_missing": max(0, len(flat) - len(valid_implemented)),
+            "total_controls": len(flat),
+            "raw_percentage": raw_pct,
+        },
+        "weighted_compliance": {
+            "weighted_score": float(achieved_w),
+            "weighted_max_score": float(max_w),
+            "percentage": pct,
+            "algorithm": "weight_score_v1",
+        },
     }
 
 
@@ -246,19 +283,53 @@ def calc_tcvn_compliance(implemented: list, custom_std: dict = None) -> dict:
     flat = get_flat_controls("tcvn11930", custom_std)
     if not flat:
         total = 34
+        unique_impl = list(dict.fromkeys(implemented))
+        score = min(len(unique_impl), total)
+        pct = round(score / total * 100, 1) if total else 0.0
         return {
-            "score": len(implemented),
+            "score": score,
             "max_score": total,
-            "percentage": round(len(implemented) / total * 100, 1) if total else 0,
+            "percentage": min(100.0, max(0.0, pct)),
+            "control_coverage": {
+                "self_declared_implemented": score,
+                "evidence_supported_implemented": 0,
+                "not_evidenced_or_missing": max(0, total - score),
+                "total_controls": total,
+                "raw_percentage": pct,
+            },
+            "weighted_compliance": {
+                "weighted_score": float(score),
+                "weighted_max_score": float(total),
+                "percentage": pct,
+                "algorithm": "weight_score_v1",
+            },
         }
+    flat_ids = {c["id"] for c in flat}
+    valid_implemented = [cid for cid in dict.fromkeys(implemented) if cid in flat_ids]
     weight_map = {c["id"]: WEIGHT_SCORE.get(c.get("weight", "medium"), 1) for c in flat}
     max_w = sum(weight_map.values())
-    achieved_w = sum(weight_map.get(cid, 0) for cid in implemented)
-    pct = round(achieved_w / max_w * 100, 1) if max_w > 0 else 0
+    achieved_w = sum(weight_map.get(cid, 0) for cid in valid_implemented)
+    pct = round(achieved_w / max_w * 100, 1) if max_w > 0 else 0.0
+    pct = min(100.0, max(0.0, pct))
+    raw_pct = round(len(valid_implemented) / len(flat) * 100, 1) if flat else 0.0
+
     return {
-        "score": len(implemented),
+        "score": len(valid_implemented),
         "max_score": len(flat),
         "max_weighted": max_w,
         "achieved_weighted": achieved_w,
         "percentage": pct,
+        "control_coverage": {
+            "self_declared_implemented": len(valid_implemented),
+            "evidence_supported_implemented": 0,
+            "not_evidenced_or_missing": max(0, len(flat) - len(valid_implemented)),
+            "total_controls": len(flat),
+            "raw_percentage": raw_pct,
+        },
+        "weighted_compliance": {
+            "weighted_score": float(achieved_w),
+            "weighted_max_score": float(max_w),
+            "percentage": pct,
+            "algorithm": "weight_score_v1",
+        },
     }

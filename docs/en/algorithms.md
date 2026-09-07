@@ -312,12 +312,15 @@ percentage = (achieved_weighted / max_weighted) × 100
 ```
 
 ```python
-# Pseudocode
+# Pseudocode (Ensures standard filtering, deduplication, and <= 100% clamping)
 flat = get_flat_controls(standard)
-weight_map = {c["id"]: WEIGHT_SCORE[c["weight"]] for c in flat}
+flat_ids = {c["id"] for c in flat}
+valid_implemented = [cid for cid in dict.fromkeys(implemented) if cid in flat_ids]
+weight_map = {c["id"]: WEIGHT_SCORE.get(c.get("weight", "medium"), 1) for c in flat}
 max_w = sum(weight_map.values())
-achieved_w = sum(weight_map[cid] for cid in implemented if cid in weight_map)
-percentage = round(achieved_w / max_w * 100, 1)
+achieved_w = sum(weight_map.get(cid, 0) for cid in valid_implemented)
+percentage = min(100.0, max(0.0, round(achieved_w / max_w * 100, 1))) if max_w > 0 else 0.0
+score = min(len(valid_implemented), len(flat))
 ```
 
 ### 3.4 Compliance Tier Classification
@@ -705,42 +708,42 @@ Multi-tier provider fallback with per-key rate-limit tracking and per-model avai
 ```mermaid
 flowchart TD
     REQ[Request] --> MODE{prefer_cloud?}
-    MODE -->|force_local| LOCAL[LocalAI/Ollama]
+    MODE -->|force_local| LOCAL[Ollama :11434 (100% Offline)]
     LOCAL -->|fail + force_local| ERR1[Raise error]
     LOCAL -->|fail + not forced| CLOUD
 
-    MODE -->|prefer_cloud| CLOUD[Cloud: OpenClaude]
-    CLOUD -->|fail| LOCAL2[LocalAI Fallback]
+    MODE -->|prefer_cloud| CLOUD[Cloud AI: Gemini / Claude / DeepSeek]
+    CLOUD -->|fail| LOCAL2[Ollama Fallback]
     LOCAL2 -->|fail| ERR2[All providers failed]
 
-    MODE -->|local_only| LO[LocalAI only]
+    MODE -->|local_only| LO[Ollama only (100% Offline)]
     LO -->|fail| ERR3[Local-only mode error]
 ```
 
 ### 7.2 Task-Model Mapping
 
-Defined in [`TASK_MODEL_MAP`](backend/services/cloud_llm_service.py:15):
+Defined in [`TASK_MODEL_MAP`](backend/services/cloud_llm_service.py):
 
 | Task Type | Model |
 |-----------|-------|
-| `iso_analysis` | `gemini-3-flash-preview` |
-| `complex` | `gemini-3-pro-preview` |
-| `chat` | `gemini-3-flash-preview` |
-| `default` | `gemini-3-flash-preview` |
+| `iso_analysis` | `gemini-2.0-flash` |
+| `complex` | `gemini-2.0-flash` |
+| `chat` | `gemma4:latest` / `gemini-2.0-flash` |
+| `default` | `gemma4:latest` |
 
 ### 7.3 Model Fallback Chain
 
-Defined in [`FALLBACK_CHAIN`](backend/services/cloud_llm_service.py:22):
+Defined in [`FALLBACK_CHAIN`](backend/services/cloud_llm_service.py):
 
 ```
-gemini-3-flash-preview → gemini-3-pro-preview → gpt-5-mini → claude-sonnet-4 → gpt-5
+gemma4:latest (Ollama) → qwen2.5-coder:7b (Ollama) → gemini-2.0-flash (Cloud Fallback)
 ```
 
 For each model in the chain, **all API keys** are tried (round-robin) before moving to the next model.
 
 ### 7.4 Rate Limit Handling
 
-Defined in [`CloudLLMService`](backend/services/cloud_llm_service.py:39):
+Defined in [`CloudLLMService`](backend/services/cloud_llm_service.py):
 
 | Parameter | Value |
 |-----------|-------|
@@ -759,39 +762,31 @@ def _is_rate_limited(key_idx):
 
 ### 7.5 Ollama Integration
 
-Defined in [`_call_ollama()`](backend/services/cloud_llm_service.py:247):
+Defined in [`_call_ollama()`](backend/services/cloud_llm_service.py):
 
-LocalAI model IDs are mapped to Ollama model tags via [`_LOCALAI_TO_OLLAMA`](backend/services/cloud_llm_service.py:32):
-
-| LocalAI ID | Ollama Tag |
-|------------|------------|
-| `gemma-3-4b-it` | `gemma3:4b` |
-| `gemma-3-12b-it` | `gemma3:12b` |
-| `gemma-4-31b-it` | `gemma4:31b` |
-
-Ollama is selected when the model has a known prefix: `gemma3:`, `gemma3n:`, `gemma4:`, `phi4:`, `llama3:`, `mistral:`, `qwen3:`.
+Local inference requests are served directly via Ollama port 11434 (`gemma4:latest`, `qwen2.5-coder:7b`, `bge-m3:latest`).
 
 ### 7.6 Assessment Mode Fallback
 
-Defined in [`ChatService.assess_system()`](backend/services/chat_service.py:368):
+Defined in [`ChatService.assess_system()`](backend/services/chat_service.py):
 
-| Requested Mode | LocalAI Available | Effective Mode |
+| Requested Mode | Ollama Available | Effective Mode |
 |---------------|:-:|----------------|
-| `local` | ✅ | `local` |
+| `local` | ✅ | `local` (100% Offline On-Premise) |
 | `local` | ❌ (+ has cloud keys) | `hybrid` |
 | `local` | ❌ (no cloud keys) | **Error** |
-| `hybrid` | ✅ | `hybrid` |
+| `hybrid` | ✅ | `hybrid` (Ollama first, Cloud fallback) |
 | `hybrid` | ❌ | `cloud` |
 | `cloud` | any | `cloud` |
 
 **Two-phase assessment pipeline**:
 
-| Phase | Local Mode | Hybrid Mode | Cloud Mode |
-|-------|-----------|-------------|------------|
-| P1: Gap Analysis | SecurityLM (LocalAI) | SecurityLM (LocalAI) | OpenClaude |
-| P2: Report Formatting | Meta-Llama (LocalAI) | OpenClaude | OpenClaude |
+| Phase | Local Mode (100% Offline) | Hybrid Mode | Cloud Mode |
+|-------|---------------------------|-------------|------------|
+| P1: Gap Analysis | `gemma4` / `qwen2.5` (Ollama) | `gemma4:latest` (Ollama) | Cloud AI (Gemini / Claude) |
+| P2: Report Formatting | `gemma4:latest` (Ollama) | `gemma4:latest` (Ollama) | Cloud AI (Gemini / Claude) |
 
-Each phase has **3 retry attempts** with JSON validation between attempts.
+Each phase has **3 retry attempts** with JSON validation and `json_repair` self-healing between attempts.
 
 ### 7.7 Constants
 

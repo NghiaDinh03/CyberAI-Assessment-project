@@ -6,6 +6,7 @@ import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -177,6 +178,23 @@ async def add_request_id(request: Request, call_next):
 
 
 @app.middleware("http")
+async def path_security_guard(request: Request, call_next):
+    raw_path = request.scope.get("raw_path", b"").decode("latin-1", errors="ignore")
+    path = request.url.path
+    # Check for path traversal or malicious character injections in assessment/evidence endpoints
+    if "/assessments/" in raw_path or "/assessments/" in path:
+        target = raw_path if "/assessments/" in raw_path else path
+        after = target.split("/assessments/")[-1].split("?")[0]
+        # Disallow dot-dot traversal, null bytes, pipe, angle brackets
+        if ".." in after or "%2e%2e" in after.lower() or "\x00" in after or "%00" in after or "<" in after or ">" in after or "|" in after:
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Invalid assessment_id: only alphanumeric characters, hyphens, underscores, and dots are allowed."}
+            )
+    return await call_next(request)
+
+
+@app.middleware("http")
 async def limit_request_size(request: Request, call_next):
     # Allow larger uploads for documents, standards, and evidence files
     exempt_prefixes = [
@@ -220,6 +238,27 @@ async def app_exception_handler(request: Request, exc: AppException):
     if exc.details is not None:
         content["details"] = exc.details
     return JSONResponse(status_code=exc.status_code, content=content)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = exc.errors()
+    error_msgs = []
+    for err in errors:
+        loc = " -> ".join(str(l) for l in err.get("loc", []))
+        msg = err.get("msg", "Invalid value")
+        error_msgs.append(f"{loc}: {msg}")
+    joined_msg = "; ".join(error_msgs)
+    logger.error(f"[ValidationError] {request.method} {request.url.path}: {joined_msg}")
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": f"Lỗi dữ liệu yêu cầu: {joined_msg}",
+            "error_code": "INVALID_ASSESSMENT_PAYLOAD",
+            "message": joined_msg,
+            "detail": errors,
+        }
+    )
 
 
 @app.exception_handler(HTTPException)
@@ -271,7 +310,7 @@ async def not_found_handler(request: Request, exc):
     )
 
 
-from api.routes import chat, document, health, iso27001, system, standards, benchmark, prompts, ollama, risks, templates, assessment_history, auth  # noqa: E402
+from api.routes import chat, document, health, iso27001, system, standards, benchmark, prompts, ollama, risks, templates, assessment_history, auth, web_search  # noqa: E402
 from api.routes.metrics import router as metrics_router  # noqa: E402
 
 app.include_router(metrics_router, prefix="", tags=["Observability"])
@@ -288,6 +327,7 @@ app.include_router(prompts.router,            prefix="/api/v1", tags=["Prompts v
 app.include_router(ollama.router,             prefix="/api/v1", tags=["Ollama v1"])
 app.include_router(risks.router,              prefix="/api/v1", tags=["Risk Register v1"])
 app.include_router(templates.router,          prefix="/api/v1", tags=["Templates v1"])
+app.include_router(web_search.router,         prefix="/api/v1", tags=["Web Search v1"])
 app.include_router(assessment_history.router, prefix="/api/v1", tags=["Assessment History v1"])
 
 app.include_router(health.router,             prefix="/api", tags=["Health"])
@@ -302,6 +342,7 @@ app.include_router(prompts.router,            prefix="/api", tags=["Prompts"])
 app.include_router(ollama.router,             prefix="/api", tags=["Ollama"])
 app.include_router(risks.router,              prefix="/api", tags=["Risk Register"])
 app.include_router(templates.router,          prefix="/api", tags=["Templates"])
+app.include_router(web_search.router,         prefix="/api", tags=["Web Search"])
 app.include_router(assessment_history.router, prefix="", tags=["Assessment History"])
 
 
@@ -314,8 +355,8 @@ def root():
         "status": "running",
         "service": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "ai_model": settings.CLOUD_MODEL_NAME,
-        "ai_provider": f"Open Claude ({settings.CLOUD_MODEL_NAME})",
+        "ai_model": settings.MODEL_NAME,
+        "ai_provider": f"Ollama ({settings.MODEL_NAME}) / Cloud Fallback",
         "docs": "/docs",
     }
 

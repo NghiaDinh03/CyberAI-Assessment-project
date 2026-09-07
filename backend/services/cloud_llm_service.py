@@ -18,11 +18,14 @@ logger = logging.getLogger(__name__)
 MIN_MAX_TOKENS = 10000
 
 _LOCALAI_TO_OLLAMA: Dict[str, str] = {
-    "gemma-3-4b-it":  "gemma3:4b",
-    "gemma-3-12b-it": "gemma3:12b",
-    "gemma4:latest":  "gemma4:latest",
-    "gemma3n:e4b":    "gemma3n:e4b",
-    "gemma3n:e2b":    "gemma3n:e2b",
+    "gemma-3-4b-it":       "gemma3:4b",
+    "gemma-3-12b-it":      "gemma3:12b",
+    "gemma4:latest":       "gemma4:latest",
+    "gemma3n:e4b":         "gemma3n:e4b",
+    "gemma3n:e2b":         "gemma3n:e2b",
+    "qwen2.5-coder:7b":    "qwen2.5-coder:7b",
+    "qwen2.5-coder:latest": "qwen2.5-coder:7b",
+    "qwen2.5-coder":       "qwen2.5-coder:7b",
 }
 
 # Cached list of Ollama models with TTL
@@ -93,8 +96,84 @@ class CloudLLMService:
 
     @classmethod
     def is_cloud_available(cls) -> bool:
-        """Luôn trả về False để tắt toàn bộ Cloud API."""
-        return False
+        """Return True only if Google AI Studio API key or Cloud API key is configured."""
+        if getattr(settings, "LOCAL_ONLY_MODE", False):
+            return False
+        key = getattr(settings, "GOOGLE_AI_STUDIO_API_KEY", "") or getattr(settings, "CLOUD_API_KEYS", "")
+        return bool(key and key.strip())
+
+    @classmethod
+    def _call_google_ai_studio(cls, model: str, messages: List[Dict], temperature: float = 0.7,
+                               max_tokens: int = 4096) -> Dict[str, Any]:
+        """Call Google AI Studio (Gemini free tier) via standard REST v1beta API."""
+        api_key = getattr(settings, "GOOGLE_AI_STUDIO_API_KEY", "") or getattr(settings, "CLOUD_API_KEYS", "")
+        if not api_key or not api_key.strip():
+            raise ValueError("GOOGLE_AI_STUDIO_API_KEY is not configured")
+
+        target_model = model or getattr(settings, "GOOGLE_AI_STUDIO_MODEL", "gemini-2.0-flash")
+        if ":" in target_model:
+            target_model = target_model.split(":")[0]
+        if not target_model.startswith("gemini-"):
+            target_model = "gemini-2.0-flash"
+
+        base_url = getattr(settings, "GOOGLE_AI_STUDIO_URL", "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
+        endpoint = f"{base_url}/models/{target_model}:generateContent?key={api_key.strip()}"
+
+        system_instruction = None
+        contents = []
+        for msg in messages:
+            role = msg.get("role", "user")
+            content_str = msg.get("content", "")
+            if not content_str:
+                continue
+            if role == "system":
+                system_instruction = {"parts": [{"text": content_str}]}
+            elif role == "assistant":
+                contents.append({"role": "model", "parts": [{"text": content_str}]})
+            else:
+                contents.append({"role": "user", "parts": [{"text": content_str}]})
+
+        if not contents and system_instruction:
+            contents.append({"role": "user", "parts": [{"text": "Tiếp tục phân tích."}]})
+
+        payload = {
+            "contents": contents,
+            "generationConfig": {
+                "temperature": max(0.0, min(1.0, temperature)),
+                "maxOutputTokens": max_tokens if max_tokens > 0 else 4096,
+            }
+        }
+        if system_instruction:
+            payload["system_instruction"] = system_instruction
+
+        timeout = getattr(settings, "CLOUD_TIMEOUT", 60)
+        logger.info(f"[GoogleAIStudio] Calling model={target_model} with {len(contents)} turns")
+        resp = requests.post(endpoint, json=payload, timeout=timeout)
+        if resp.status_code != 200:
+            raise Exception(f"Google AI Studio error {resp.status_code}: {resp.text[:250]}")
+
+        data = resp.json()
+        candidates = data.get("candidates", [])
+        if not candidates:
+            raise Exception("Google AI Studio returned no candidates")
+
+        parts = candidates[0].get("content", {}).get("parts", [])
+        text_out = "".join(p.get("text", "") for p in parts if "text" in p)
+
+        usage_meta = data.get("usageMetadata", {})
+        prompt_tokens = usage_meta.get("promptTokenCount", 0)
+        completion_tokens = usage_meta.get("candidatesTokenCount", 0)
+
+        return {
+            "content": text_out.strip(),
+            "usage": {
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": prompt_tokens + completion_tokens,
+            },
+            "model": target_model,
+            "provider": "google_ai_studio",
+        }
 
     @classmethod
     def _call_localai(cls, model: str, messages: List[Dict], temperature: float = 0.7) -> Dict[str, Any]:
@@ -143,19 +222,25 @@ class CloudLLMService:
             if msg.get("role") == "user" and len(msg.get("content", "")) > MAX_PROMPT_CHARS:
                 trimmed[i] = {**msg, "content": msg["content"][:MAX_PROMPT_CHARS] + "\n\n[... content truncated to fit context ...]"}
 
+        max_cap = int(os.getenv("OLLAMA_MAX_TOKENS", "8192"))
         if max_tokens <= 0:
             effective_max_tokens = 4096
         else:
-            effective_max_tokens = max(64, min(4096, max_tokens))
+            effective_max_tokens = max(64, min(max_cap, max_tokens))
         return resolved, trimmed, effective_max_tokens
+
+    _active_ollama_url: Optional[str] = None
 
     @classmethod
     def _get_candidate_ollama_urls(cls) -> List[str]:
-        primary = (getattr(settings, "OLLAMA_URL", "http://ollama:11434") or "http://ollama:11434").rstrip('/')
-        candidates = [primary]
-        for fallback in ["http://ollama:11434", "http://host.docker.internal:11434", "http://127.0.0.1:11434"]:
-            if fallback not in candidates:
-                candidates.append(fallback)
+        if cls._active_ollama_url:
+            return [cls._active_ollama_url]
+        env_url = (os.getenv("OLLAMA_URL") or getattr(settings, "OLLAMA_URL", "") or "").rstrip('/')
+        candidates = []
+        # In Docker desktop environment, host.docker.internal connects directly to host Ollama
+        for url in ["http://host.docker.internal:11434", env_url, "http://127.0.0.1:11434", "http://ollama:11434"]:
+            if url and url not in candidates:
+                candidates.append(url)
         return candidates
 
     @classmethod
@@ -185,9 +270,10 @@ class CloudLLMService:
                         },
                         "stream": False,
                     },
-                    timeout=ollama_timeout,
+                    timeout=(5, ollama_timeout),
                 )
                 if response.status_code == 200:
+                    cls._active_ollama_url = ollama_url
                     break
             except requests.exceptions.Timeout:
                 last_error = f"Timeout after {ollama_timeout}s — model '{resolved}' needs more time."
@@ -207,14 +293,19 @@ class CloudLLMService:
         if not content and reasoning:
             content = reasoning
             
+        actual_model = data.get("model") or resolved
         return {
             "content": content.strip() if content else "",
             "usage": {
                 "prompt_tokens": data.get("prompt_eval_count", 0),
                 "completion_tokens": data.get("eval_count", 0),
-                "total_tokens": data.get("prompt_eval_count", 0) + data.get("eval_count", 0)
+                "total_tokens": data.get("prompt_eval_count", 0) + data.get("eval_count", 0),
+                "total_duration_ns": data.get("total_duration", 0),
+                "load_duration_ns": data.get("load_duration", 0),
+                "prompt_eval_duration_ns": data.get("prompt_eval_duration", 0),
+                "eval_duration_ns": data.get("eval_duration", 0),
             },
-            "model": resolved,
+            "model": actual_model,
             "provider": "ollama",
         }
 
@@ -310,20 +401,44 @@ class CloudLLMService:
                         max_tokens: int = 8192, prefer_cloud: bool = False,
                         local_model: str = None, task_type: str = None,
                         cloud_model: str = None) -> Dict[str, Any]:
-        """Tự động định tuyến cuộc gọi 100% sang Ollama (gemma4:latest)."""
+        """Định tuyến ưu tiên 100% Local AI Offline (gemma4:latest).
+        Mô hình Cloud (Gemini / Claude) chỉ đóng vai trò kênh fallback dự phòng khi có API Key.
+        """
+        is_gemini_requested = bool(
+            (local_model and str(local_model).startswith("gemini")) or
+            (cloud_model and str(cloud_model).startswith("gemini")) or
+            prefer_cloud
+        )
+
+        if is_gemini_requested and cls.is_cloud_available():
+            try:
+                target_cloud = cloud_model or local_model or settings.GOOGLE_AI_STUDIO_MODEL or "gemini-2.0-flash"
+                logger.info(f"[ChatCompletion] Routing to Cloud Gemini fallback: {target_cloud}")
+                return cls._call_google_ai_studio(target_cloud, messages, temperature, max_tokens)
+            except Exception as cloud_err:
+                logger.warning(f"[ChatCompletion] Cloud Gemini call failed, falling back to local Ollama: {cloud_err}")
+
+        # Local inference via Ollama
         target_model = local_model or settings.MODEL_NAME or "gemma4:latest"
-        if not target_model or not target_model.strip():
-            target_model = "gemma4:latest"
+        if not target_model or not target_model.strip() or str(target_model).startswith("gemini"):
+            target_model = settings.MODEL_NAME or "gemma4:latest"
         ollama_model = target_model if ":" in target_model else _LOCALAI_TO_OLLAMA.get(target_model, target_model)
 
         logger.info(f"[LocalChatCompletion] Requesting model={ollama_model}, task_type={task_type or 'auto'}")
 
         try:
-            result = cls._call_ollama(ollama_model, messages, temperature)
+            result = cls._call_ollama(ollama_model, messages, temperature, max_tokens)
             if result.get("content"):
                 return result
         except Exception as e:
             logger.warning(f"[ChatCompletion] Ollama ({ollama_model}) failed: {e}")
+            if cls.is_cloud_available():
+                logger.info("[ChatCompletion] Ollama failed -> Fallback to Google AI Studio (gemini-2.0-flash)...")
+                try:
+                    fallback_cloud = cloud_model or settings.GOOGLE_AI_STUDIO_MODEL or "gemini-2.0-flash"
+                    return cls._call_google_ai_studio(fallback_cloud, messages, temperature, max_tokens)
+                except Exception as fb_err:
+                    logger.warning(f"[ChatCompletion] Google AI Studio fallback also failed: {fb_err}")
             raise Exception(f"Ollama local inference failed: {e}")
 
         raise Exception(f"Ollama ({ollama_model}) returned empty content")

@@ -132,34 +132,44 @@ _FILENAME_RULES: List[tuple] = [
     ("cloud_security", [("A.5.23", 0.9)]),
 ]
 
-# Content keywords -> control IDs (checked against first 500 chars of content)
+# Content keywords -> control IDs (checked against extracted content)
 _CONTENT_KEYWORDS: Dict[str, List[tuple]] = {
     "chính sách": [("A.5.1", 0.7)],
     "policy": [("A.5.1", 0.6)],
     "phân quyền": [("A.5.15", 0.7), ("A.5.18", 0.6)],
     "truy cập": [("A.5.15", 0.6)],
-    "firewall": [("A.8.20", 0.7)],
-    "tường lửa": [("A.8.20", 0.7)],
-    "sao lưu": [("A.8.13", 0.7)],
-    "backup": [("A.8.13", 0.7)],
-    "mã hóa": [("A.8.24", 0.7)],
-    "encryption": [("A.8.24", 0.7)],
+    "firewall": [("A.8.20", 0.75), ("NW.02", 0.75)],
+    "advfirewall": [("A.8.20", 0.85), ("NW.02", 0.85)],
+    "tường lửa": [("A.8.20", 0.75), ("NW.02", 0.75)],
+    "sao lưu": [("A.8.13", 0.75), ("DAT.01", 0.75)],
+    "backup": [("A.8.13", 0.75), ("DAT.01", 0.75)],
+    "mã hóa": [("A.8.24", 0.75), ("APP.02", 0.75)],
+    "encryption": [("A.8.24", 0.75), ("APP.02", 0.75)],
+    "tls": [("A.8.24", 0.8), ("APP.02", 0.8)],
+    "ssl": [("A.8.24", 0.8), ("APP.02", 0.8)],
     "đào tạo": [("A.6.3", 0.7)],
     "training": [("A.6.3", 0.6)],
     "sự cố": [("A.5.24", 0.6), ("A.5.26", 0.6)],
     "incident": [("A.5.24", 0.6)],
-    "lỗ hổng": [("A.8.8", 0.7)],
-    "vulnerability": [("A.8.8", 0.7)],
-    "nhật ký": [("A.8.15", 0.7)],
-    "logging": [("A.8.15", 0.7)],
+    "lỗ hổng": [("A.8.8", 0.75), ("SV.07", 0.7)],
+    "vulnerability": [("A.8.8", 0.75), ("SV.07", 0.7)],
+    "cve-": [("A.8.8", 0.9), ("MNG.05", 0.8)],
+    "nhật ký": [("A.8.15", 0.7), ("SV.05", 0.7)],
+    "logging": [("A.8.15", 0.7), ("SV.05", 0.7)],
     "siem": [("A.8.15", 0.7), ("MNG.03", 0.7)],
     "xác thực": [("A.5.17", 0.7), ("A.8.5", 0.7)],
     "mật khẩu": [("SV.01", 0.7)],
     "password": [("SV.01", 0.6)],
-    "bản vá": [("SV.07", 0.7)],
-    "patch": [("SV.07", 0.7)],
+    "bản vá": [("SV.07", 0.8), ("A.8.8", 0.75)],
+    "patch": [("SV.07", 0.8), ("A.8.8", 0.75)],
+    "hotfix": [("SV.07", 0.85), ("A.8.8", 0.8), ("A.8.9", 0.75)],
+    "systeminfo": [("A.8.9", 0.85), ("SV.08", 0.85), ("A.5.9", 0.8)],
+    "windows server": [("A.8.9", 0.8), ("SV.08", 0.8), ("A.8.8", 0.75)],
+    "sql server": [("A.8.8", 0.8), ("SV.07", 0.75), ("DAT.01", 0.7)],
+    "active directory": [("A.5.15", 0.8), ("A.5.16", 0.8), ("SV.04", 0.8)],
+    "domain controller": [("A.5.15", 0.8), ("SV.04", 0.8)],
     "chống mã độc": [("A.8.7", 0.7), ("SV.02", 0.7)],
-    "antivirus": [("A.8.7", 0.7)],
+    "antivirus": [("A.8.7", 0.7), ("SV.02", 0.7)],
     "giám sát": [("A.8.16", 0.6)],
     "monitoring": [("A.8.16", 0.6)],
 }
@@ -176,7 +186,7 @@ def map_evidence_to_controls(
 
     Args:
         filename: Original filename (used for pattern matching).
-        content_preview: First ~500 chars of extracted text (used for keyword matching).
+        content_preview: Extracted text preview (checked against keywords).
         max_controls: Maximum number of controls to return.
         min_confidence: Minimum confidence threshold.
 
@@ -193,9 +203,9 @@ def map_evidence_to_controls(
             for ctrl_id, conf in control_list:
                 scores[ctrl_id] = max(scores.get(ctrl_id, 0.0), conf)
 
-    # Phase 2: Content keyword matching (first 500 chars)
+    # Phase 2: Content keyword matching (scans up to 32,000 characters)
     if content_preview:
-        preview_lower = content_preview[:500].lower()
+        preview_lower = content_preview[:32000].lower()
         for keyword, control_list in _CONTENT_KEYWORDS.items():
             if keyword in preview_lower:
                 for ctrl_id, conf in control_list:

@@ -32,6 +32,7 @@ export default function Step3Controls({
     setDrawerControlId,
     fetchEvidenceForControl,
     evidenceMap,
+    onOpenFeedbackDrawer,
 }) {
     const { t, locale } = useTranslation()
 
@@ -46,6 +47,13 @@ export default function Step3Controls({
         return form.implemented_controls.filter(id => standardControlIds.has(id))
     }, [form.implemented_controls, allControls])
 
+    // Controls with actual uploaded evidence
+    const controlsWithEvidenceCount = useMemo(() => {
+        return Object.keys(evidenceMap || {}).filter(k => evidenceMap[k] && evidenceMap[k].length > 0).length
+    }, [evidenceMap])
+
+    const missingEvidenceCount = Math.max(0, validImplemented.length - controlsWithEvidenceCount)
+
     return (
         <div className={styles.stepContent}>
             <div className={styles.controlHeader}>
@@ -53,8 +61,13 @@ export default function Step3Controls({
                     <h2 className={styles.sectionTitle}>{t('assessment.controlsTitle')}</h2>
                     <p className={styles.helperText} dangerouslySetInnerHTML={{ __html: t('assessment.controlsStandard', { name: currentStandard.name }) }} />
                 </div>
-                <div className={styles.counterBadge}>
-                    <span className={styles.countNum}>{validImplemented.length}</span> / {totalControls} {t('assessment.passed')}
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <div className={styles.counterBadge} title={locale === 'vi' ? 'Số biện pháp kiểm soát doanh nghiệp tự chọn áp dụng' : 'Controls selected by organization'}>
+                        <span className={styles.countNum}>{validImplemented.length}</span> / {totalControls} {locale === 'vi' ? 'Khai báo' : 'Declared'}
+                    </div>
+                    <div className={styles.counterBadge} style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }} title={locale === 'vi' ? 'Số biện pháp đã nạp tệp bằng chứng đối chiếu' : 'Controls with attached evidence'}>
+                        📎 <strong>{controlsWithEvidenceCount}</strong> / {totalControls} {locale === 'vi' ? 'Có tệp' : 'Files'}
+                    </div>
                 </div>
             </div>
 
@@ -65,25 +78,33 @@ export default function Step3Controls({
                         style={{ width: `${compliancePercent}%` }}
                     />
                 </div>
-                <span className={styles.complianceLabel}>{t('assessment.controlsCompliancePct', { percent: compliancePercent })}</span>
+                <span className={styles.complianceLabel}>
+                    {locale === 'vi'
+                        ? `Tự khai báo: ${validImplemented.length}/${totalControls} controls (${compliancePercent}%) · Có minh chứng: ${controlsWithEvidenceCount}/${totalControls}`
+                        : `Declared: ${validImplemented.length}/${totalControls} controls (${compliancePercent}%) · With Evidence: ${controlsWithEvidenceCount}/${totalControls}`}
+                </span>
             </div>
 
             <div className={styles.riskBadgeRow}>
                 <div className={`${styles.riskBadge} ${styles.riskBadgeCrit}`}>
                     <span className={styles.riskDot} />
-                    <strong>Critical:</strong> {riskStats.critical.done}/{riskStats.critical.total} {locale === 'vi' ? 'Đạt' : 'Passed'}
+                    <strong>Critical:</strong> {riskStats.critical.done}/{riskStats.critical.total} {locale === 'vi' ? 'Khai báo' : 'Selected'}
                 </div>
                 <div className={`${styles.riskBadge} ${styles.riskBadgeHigh}`}>
                     <span className={styles.riskDot} />
-                    <strong>High:</strong> {riskStats.high.done}/{riskStats.high.total} {locale === 'vi' ? 'Đạt' : 'Passed'}
+                    <strong>High:</strong> {riskStats.high.done}/{riskStats.high.total} {locale === 'vi' ? 'Khai báo' : 'Selected'}
                 </div>
                 <div className={`${styles.riskBadge} ${styles.riskBadgeMed}`}>
                     <span className={styles.riskDot} />
-                    <strong>Medium:</strong> {riskStats.medium.done}/{riskStats.medium.total} {locale === 'vi' ? 'Đạt' : 'Passed'}
+                    <strong>Medium:</strong> {riskStats.medium.done}/{riskStats.medium.total} {locale === 'vi' ? 'Khai báo' : 'Selected'}
+                </div>
+                <div className={`${styles.riskBadge}`} style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                    <span>📎</span>
+                    <strong>{locale === 'vi' ? 'Đã có tệp:' : 'With Files:'}</strong> {controlsWithEvidenceCount}
                 </div>
                 <div className={`${styles.riskBadge} ${styles.riskBadgeEvidence}`}>
-                    <span>📎</span>
-                    <strong>{locale === 'vi' ? 'Chưa có tệp:' : 'No Files:'}</strong> {riskStats.missingEvidence}
+                    <span>⚠️</span>
+                    <strong>{locale === 'vi' ? 'Chưa có tệp:' : 'No Files:'}</strong> {missingEvidenceCount}
                 </div>
             </div>
 
@@ -120,9 +141,10 @@ export default function Step3Controls({
                         ref={batchFileInputRef}
                         style={{ display: 'none' }}
                         onChange={(e) => {
-                            if (e.target.files?.length > 0) {
-                                handleBatchEvidenceUpload(e.target.files)
+                            if (e.target.files && e.target.files.length > 0) {
+                                const selectedFiles = Array.from(e.target.files)
                                 e.target.value = ''
+                                handleBatchEvidenceUpload(selectedFiles)
                             }
                         }}
                     />
@@ -215,6 +237,15 @@ export default function Step3Controls({
                     {expandAllCategories
                         ? (locale === 'vi' ? '▲ Thu gọn tất cả nhóm' : '▲ Collapse All Groups')
                         : (locale === 'vi' ? '▼ Mở rộng tất cả nhóm Controls' : '▼ Expand All Control Groups')}
+                </button>
+                <button
+                    type="button"
+                    className={styles.expandAllBtn}
+                    style={{ background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.3)' }}
+                    onClick={() => onOpenFeedbackDrawer?.()}
+                    title={locale === 'vi' ? 'Quản lý kho tri thức kiểm toán & phán quyết mẫu của chuyên gia' : 'Manage Auditor Feedback & Golden Cases'}
+                >
+                    ⚖️ {locale === 'vi' ? 'Kho Tri Thức Kiểm Toán' : 'Auditor Knowledge Base'}
                 </button>
             </div>
 

@@ -1,6 +1,8 @@
 import logging
 import time
 from typing import List, Dict
+import httpx
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +15,42 @@ USER_AGENT = (
 
 class WebSearch:
     @staticmethod
-    def search(query: str, max_results: int = 5, retries: int = 1) -> List[Dict[str, str]]:
+    def _search_searxng(query: str, max_results: int = 5) -> List[Dict[str, str]]:
+        """Query the on-premise SearXNG meta-search engine via JSON API."""
+        searxng_base = getattr(settings, "SEARXNG_URL", "http://searxng:8080").rstrip("/")
+        endpoints_to_try = [f"{searxng_base}/search"]
+        if "searxng:8080" in searxng_base:
+            endpoints_to_try.append("http://localhost:8888/search")
+
+        for endpoint in endpoints_to_try:
+            try:
+                params = {
+                    "q": query,
+                    "format": "json",
+                    "categories": "general",
+                    "language": "vi-VN",
+                }
+                with httpx.Client(timeout=8.0) as client:
+                    resp = client.get(endpoint, params=params)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        raw_results = data.get("results", [])
+                        if raw_results:
+                            results = []
+                            for item in raw_results[:max_results]:
+                                results.append({
+                                    "title": item.get("title", ""),
+                                    "url": item.get("url", ""),
+                                    "snippet": item.get("content", "") or item.get("snippet", "")
+                                })
+                            logger.info(f"[WebSearch] SearXNG returned {len(results)} results from {endpoint}.")
+                            return results
+            except Exception as e:
+                logger.debug(f"[WebSearch] SearXNG endpoint {endpoint} failed: {e}")
+        return []
+
+    @classmethod
+    def search(cls, query: str, max_results: int = 5, retries: int = 1) -> List[Dict[str, str]]:
         if not query or not query.strip():
             return []
 
@@ -31,13 +68,21 @@ class WebSearch:
         if len(cleaned_query) < 3:
             return []
 
+        # 3. Ưu tiên 1: Gọi SearXNG (On-Premise Private Meta-Search)
+        searx_results = cls._search_searxng(cleaned_query, max_results=max_results)
+        if searx_results:
+            return searx_results
+
+        logger.info("[WebSearch] SearXNG không khả dụng hoặc chưa có kết quả -> Fallback sang thư viện ddgs...")
+
+        # 4. Fallback 2: Thư viện ddgs
         try:
             from ddgs import DDGS
         except ImportError:
             try:
                 from duckduckgo_search import DDGS
             except ImportError:
-                logger.error("ddgs chưa được cài đặt: pip install ddgs")
+                logger.warning("ddgs chưa được cài đặt: pip install ddgs")
                 return []
 
         for attempt in range(retries + 1):
@@ -63,7 +108,7 @@ class WebSearch:
                 if attempt < retries:
                     time.sleep(1)
 
-        logger.info("[WebSearch] Không có kết quả tìm kiếm web hoặc search engine bận.")
+        logger.info("[WebSearch] Không có kết quả tìm kiếm web từ cả SearXNG và fallback.")
         return []
 
     @staticmethod

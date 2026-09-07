@@ -43,8 +43,8 @@ So sánh toàn diện các mô hình AI được triển khai trong Nền tảng
 flowchart LR
     A[📂 Tải bộ dữ liệu<br/>benchmark_iso27001.json] --> B[🔀 Chọn chế độ<br/>local / cloud / hybrid]
     B --> C{Chế độ?}
-    C -->|local| D[🖥️ Ollama / LocalAI]
-    C -->|cloud| E[☁️ Gemini / GPT / Claude]
+    C -->|local| D[🖥️ Ollama (100% Offline)]
+    C -->|cloud| E[☁️ Gemini / Claude / DeepSeek]
     C -->|hybrid| D
     C -->|hybrid| E
     D --> F[📝 Sinh báo cáo<br/>Assessment Report]
@@ -109,7 +109,7 @@ Benchmark (Đánh giá hiệu năng) sử dụng [`benchmark_iso27001.json`](dat
 
 | Thuộc tính | Gemma 3n E4B | Llama 3.1 8B | Gemini 3 Flash | Gemini 3 Pro |
 |-----------|-------------|-------------|----------------|--------------|
-| **Nhà cung cấp** | Ollama (cục bộ) | LocalAI (cục bộ) | Cloud (OpenClaude) | Cloud (OpenClaude) |
+| **Nhà cung cấp** | Ollama (cục bộ) | LocalAI (cục bộ) | Cloud (Google AI) | Cloud (Google AI) |
 | **Tham số** | ~4B hiệu dụng (MoE) | 8B | Không công bố (MoE) | Không công bố (MoE) |
 | **Lượng tử hóa (Quantization)** | Q4_K_M qua Ollama | Q4_K_M GGUF | Native FP | Native FP |
 | **Cửa sổ ngữ cảnh (Context window)** | 8.192 token | 131.072 token | 1.048.576 token | 1.048.576 token |
@@ -627,7 +627,7 @@ time curl -s http://localhost:8080/v1/chat/completions \
         "cloud": {
           "status": "ok",
           "elapsed_seconds": 8.1,
-          "model_used": {"model": "gemini-3-flash-preview", "provider": "open-claude"},
+          "model_used": {"model": "gemini-2.0-flash", "provider": "cloud"},
           "quality_score": {
             "total": 13,
             "max": 15,

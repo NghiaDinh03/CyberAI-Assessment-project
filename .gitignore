@@ -24,10 +24,18 @@ gcp-key*.json
 .AI_CONTEXT/**/*
 agent_memory/
 agent_memory/*
+Example_envident/
+Example_evident/
+example_evident/
+example_envident/
+*.evid
+*.evn
 
 # ====== Local Ad-hoc Tests & Verification Scripts (NEVER PUSH TO GIT) ======
 backend/tests/verify_*.py
 backend/tests/_smoke_*.py
+backend/tests/fixtures/
+backend/tests/fixtures/*
 
 # ====== Sensitive Enterprise Audit & Template Data ======
 *.docx
@@ -35,9 +43,17 @@ backend/tests/_smoke_*.py
 *.xlsx
 *.xls
 *.csv
+*.pdf
 !docs/**/*.docx
+!docs/**/*.pdf
 data/templates/*.json
 data/samples/
+data/evidence/
+data/evidence/*
+data/uploads/
+data/uploads/*
+data/assessments/
+data/assessments/*
 *.parquet
 
 # ====== Logs & Diagnostics ======

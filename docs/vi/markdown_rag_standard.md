@@ -54,7 +54,7 @@ Bởi vậy, chuẩn hợp lý và tiên tiến nhất khi convert Vector là **
 
 1. **Khâu định dạng Metadata (Document Level):** Trong file `.md`, bạn viết rõ các thẻ ranh giới `## [PROBLEM]`, `## [INTERVENTION]`.
 2. **Khâu Chunking (Cắt khúc dữ liệu):** Hàm `chunk_text()` trước khi đưa dữ liệu vào ChromaDB sẽ không cắt mù quáng theo số chữ. Thay vào đó, nó nhận diện kí tự `##` làm ranh giới phân tách mảng. Nếu đoạn văn bị quá dài, hệ thống sẽ chèn lại cái thẻ `## [INTERVENTION]` đấy vào phần văn bản bị ngắt đứt.
-3. **Khâu Embedding (Convert Vector):** Khi đoạn text này được biến đổi thành dạng CSDL Vector thông qua model `all-MiniLM-L6-v2`, bộ não toán học của Model sẽ gán mức độ tương đồng cực đại (Cosine Similarity) giữa câu hỏi như *"Cách ly network như thế nào"* với nguyên một cụm Vector dày đặc ý nghĩa thuộc nhóm `[INTERVENTION]`.
+3. **Khâu Embedding (Convert Vector):** Khi đoạn text này được biến đổi thành dạng CSDL Vector thông qua model `BAAI/bge-m3` (hoặc `bge-m3:latest` qua Ollama, dimension 1024), bộ não toán học của Model sẽ gán mức độ tương đồng cực đại (Cosine Similarity) giữa câu hỏi như *"Cách ly network như thế nào"* với nguyên một cụm Vector dày đặc ý nghĩa thuộc nhóm `[INTERVENTION]`.
 
 **Mẫu ví dụ cấu trúc tài liệu PICO RAG cực kì hiệu quả:**
 

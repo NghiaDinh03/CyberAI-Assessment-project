@@ -164,11 +164,11 @@
   "docs": {
     "sectionTitle": "📚 Thư viện tài liệu",
     "architectureTitle": "Kiến trúc hệ thống",
-    "architectureDesc": "Tổng quan kiến trúc nền tảng CyberAI bao gồm FastAPI Backend, Next.js Frontend, LocalAI và ChromaDB.",
+    "architectureDesc": "Tổng quan kiến trúc nền tảng CyberAI bao gồm FastAPI Backend, Next.js Frontend, Ollama 100% Offline AI, SearXNG và ChromaDB.",
     "apiTitle": "Tài liệu API",
     "apiDesc": "Tài liệu REST API đầy đủ cho tất cả Endpoints bao gồm Chat, Assessment, Standards và System Routes.",
     "deploymentTitle": "Hướng dẫn triển khai",
-    "deploymentDesc": "Hướng dẫn triển khai production với Docker Compose, cấu hình Nginx, thiết lập SSL và chiến lược mở rộng.",
+    "deploymentDesc": "Hướng dẫn triển khai production với Docker Compose, Nginx HTTP thuần (không cần cert), biến môi trường và tối ưu hiệu năng.",
     "chatbotRagTitle": "Chatbot & RAG Pipeline",
     "chatbotRagDesc": "Cách AI Chatbot hoạt động với RAG (Retrieval-Augmented Generation), thiết kế prompt và chuỗi dự phòng model.",
     "chromadbTitle": "Hướng dẫn ChromaDB",

@@ -47,16 +47,16 @@ graph TB
         direction TB
 
         subgraph "Collection 1: iso_documents"
-            MD["📄 7 Markdown Files<br/>ISO Documents"]
-            CHUNK["✂️ Chunking<br/>~315 chunks"]
-            EMB1["🔢 Embedding<br/>all-MiniLM-L6-v2"]
+            MD["📄 Markdown Files<br/>ISO & TCVN Documents"]
+            CHUNK["✂️ Chunking<br/>600 chars + 150 overlap"]
+            EMB1["🔢 Embedding<br/>BAAI/bge-m3 (dim 1024)"]
             VS["💾 Vector Store<br/>/data/vector_store/"]
             MD --> CHUNK --> EMB1 --> VS
         end
 
         subgraph "Collection 2: intent_classifier"
             SEED["🌱 Seed Examples<br/>security/search/general"]
-            EMB2["🔢 Embedding<br/>all-MiniLM-L6-v2"]
+            EMB2["🔢 Embedding<br/>BAAI/bge-m3 (dim 1024)"]
             MEM["🧠 In-Memory Store"]
             SEED --> EMB2 --> MEM
         end

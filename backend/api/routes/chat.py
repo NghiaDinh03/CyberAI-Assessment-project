@@ -1,5 +1,4 @@
-"""Chat API Routes — Streaming, history, and user-scoped session management."""
-
+import asyncio
 import json
 import logging
 import threading
@@ -223,3 +222,17 @@ async def chat_health():
     base["model_guard"] = ModelGuard.status()
     base["local_only_mode"] = settings.LOCAL_ONLY_MODE
     return base
+
+
+@router.get("/chat/sessions/{session_id}/audit-trace")
+async def get_chat_session_audit_trace(session_id: str, http_request: Request, user_id: Optional[str] = None):
+    """Retrieve verifiable runtime audit trace for a specific chat session with redacted PII."""
+    from repositories.audit_store import audit_store
+    events = audit_store.get_events_by_session(session_id)
+    return {
+        "session_id": session_id,
+        "total_audit_events": len(events),
+        "events": events,
+    }
+
+

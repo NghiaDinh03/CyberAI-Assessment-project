@@ -60,8 +60,10 @@ done
 echo ""
 
 MODEL_TO_PULL=${MODEL_NAME:-gemma4:latest}
-echo -e "${BLUE}Đang kiểm tra và tải mô hình ${MODEL_TO_PULL} vào container cyberai-ollama...${NC}"
+echo -e "${BLUE}Đang kiểm tra và tải các mô hình Local AI cần thiết vào Ollama...${NC}"
 docker exec cyberai-ollama ollama pull ${MODEL_TO_PULL}
+docker exec cyberai-ollama ollama pull qwen2.5-coder:7b || true
+docker exec cyberai-ollama ollama pull bge-m3 || true
 
 # 5. Kiểm tra sức khỏe toàn bộ hệ thống (Healthcheck)
 echo -e "\n${YELLOW}[5/5] Kiểm tra sức khỏe các dịch vụ CyberAI...${NC}"
@@ -89,7 +91,8 @@ done
 echo -e "\n${GREEN}======================================================${NC}"
 echo -e "${GREEN}    🎉 DEPLOY HOÀN TẤT - CYBERAI PLATFORM SẴN SÀNG!   ${NC}"
 echo -e "${GREEN}======================================================${NC}"
-echo -e " 🌐 Frontend UI/UX : http://localhost:3081"
+echo -e " 🌐 Nginx Gateway  : http://localhost:80 (HTTP thuần - Không cert)"
+echo -e " 🎨 Frontend UI/UX : http://localhost:3081"
 echo -e " ⚙️ Backend API    : http://localhost:8000/docs"
 echo -e " 🧠 Ollama Engine  : http://localhost:11434"
 echo -e " 🔍 SearXNG Search : http://localhost:8888"

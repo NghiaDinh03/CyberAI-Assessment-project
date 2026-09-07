@@ -164,11 +164,11 @@
   "docs": {
     "sectionTitle": "📚 Documentation Library",
     "architectureTitle": "System Architecture",
-    "architectureDesc": "Overall architecture of the CyberAI platform including FastAPI backend, Next.js frontend, LocalAI, and ChromaDB.",
+    "architectureDesc": "Overall architecture of the CyberAI platform including FastAPI backend, Next.js frontend, Ollama 100% Offline AI, SearXNG, and ChromaDB.",
     "apiTitle": "API Reference",
     "apiDesc": "Complete REST API documentation for all endpoints including chat, assessment, standards, and system routes.",
     "deploymentTitle": "Deployment Guide",
-    "deploymentDesc": "Production deployment guide with Docker Compose, nginx configuration, SSL setup, and scaling strategy.",
+    "deploymentDesc": "Production deployment guide with Docker Compose, pure HTTP Nginx (no certs needed), environment variables, and scaling strategy.",
     "chatbotRagTitle": "Chatbot & RAG Pipeline",
     "chatbotRagDesc": "How the AI chatbot works with Retrieval-Augmented Generation, prompt engineering, and model fallback chains.",
     "chromadbTitle": "ChromaDB Guide",

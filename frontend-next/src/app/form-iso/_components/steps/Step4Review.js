@@ -65,81 +65,85 @@ export default function Step4Review({
                     <span className={styles.modelEngineActiveStatus}>🟢 Local Engine Online</span>
                 </div>
                 <div className={styles.modelGridSelector}>
-                    {/* Option 1: Local Gemma 4 - Active */}
+                    {/* Model 2: Gemma 4 - Primary Reasoning Auditor */}
                     <div className={`${styles.modelOptionCard} ${styles.modelOptionCardActive}`}>
                         <div className={styles.modelOptionTop}>
                             <div className={styles.modelNameGroup}>
                                 <span className={styles.modelMainIcon}>⚡</span>
                                 <div>
-                                    <div className={styles.modelOptionName}>Gemma 4 (Local Offline AI)</div>
+                                    <div className={styles.modelOptionName}>Gemma 4 (Reasoning Auditor)</div>
                                     <span className={styles.modelSubBadge}>
-                                        {locale === 'vi' ? 'Chạy ngoại tuyến qua Ollama' : 'Offline inference via Ollama'}
+                                        {locale === 'vi' ? 'Model 2: Thẩm định Tuân thủ ISO 27001' : 'Model 2: ISO 27001 Compliance Auditor'}
                                     </span>
                                 </div>
                             </div>
                             <span className={styles.modelBadgeActive}>
-                                {locale === 'vi' ? 'Mặc định & Khuyên dùng' : 'Active & Recommended'}
+                                {locale === 'vi' ? 'Chính & Thẩm Định' : 'Primary Auditor'}
                             </span>
                         </div>
                         <p className={styles.modelOptionDesc}>
                             {locale === 'vi'
-                                ? 'Mô hình AI nội bộ xử lý tốc độ cao, phân tích toàn bộ 93 controls & trích xuất báo cáo IT Audit 100% ngoại tuyến, bảo mật tuyệt đối.'
-                                : 'High-speed offline inference analyzing 93 controls with zero external data transfer.'}
+                                ? 'Tiếp nhận Fact Cards từ Model 1 để đối soát chuyên sâu với 93 controls ISO 27001, sinh báo cáo IT Audit, SoA và Risk Register.'
+                                : 'Evaluates Fact Cards against 93 ISO 27001 controls and produces quantitative compliance reports.'}
                         </p>
                         <div className={styles.modelHwBadges}>
-                            <span className={styles.modelOptionHw}>Context: 8,192 Tokens</span>
-                            <span className={styles.modelOptionHw}>100% Offline</span>
-                            <span className={styles.modelOptionHwSafe}>🔒 Zero Data Leakage</span>
+                            <span className={styles.modelOptionHw}>Local GPU (AMD Radeon 860M)</span>
+                            <span className={styles.modelOptionHw}>Ollama Local</span>
+                            <span className={styles.modelOptionHwSafe}>🔒 100% On-Premise</span>
                         </div>
                     </div>
 
-                    {/* Option 2: Cloud Claude 3.5 Sonnet - In Development */}
-                    <div className={`${styles.modelOptionCard} ${styles.modelOptionCardDisabled}`}>
+                    {/* Model 1: Qwen2.5-Coder - Evidence Extractor */}
+                    <div className={`${styles.modelOptionCard} ${styles.modelOptionCardActive}`}>
                         <div className={styles.modelOptionTop}>
                             <div className={styles.modelNameGroup}>
-                                <span className={styles.modelMainIcon} style={{ opacity: 0.5 }}>☁️</span>
+                                <span className={styles.modelMainIcon}>🔬</span>
                                 <div>
-                                    <div className={styles.modelOptionName} style={{ opacity: 0.6 }}>Claude 3.5 Sonnet (Cloud AI)</div>
-                                    <span className={styles.modelSubBadge}>Anthropic / Open Claude</span>
+                                    <div className={styles.modelOptionName}>Qwen2.5-Coder:7b (Evidence Extractor)</div>
+                                    <span className={styles.modelSubBadge}>
+                                        {locale === 'vi' ? 'Model 1: Trích xuất Dữ liệu Kỹ thuật' : 'Model 1: Technical Fact Extractor'}
+                                    </span>
                                 </div>
                             </div>
-                            <span className={styles.modelBadgeDev}>
-                                🔒 {locale === 'vi' ? 'Tính năng đang phát triển' : 'In Development'}
+                            <span className={styles.modelBadgeActive} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.3)' }}>
+                                {locale === 'vi' ? 'Trích Xuất Bằng Chứng' : 'Data Extractor'}
                             </span>
                         </div>
-                        <p className={styles.modelOptionDesc} style={{ opacity: 0.5 }}>
+                        <p className={styles.modelOptionDesc}>
                             {locale === 'vi'
-                                ? 'Xử lý đám mây hiệu năng cao với ngữ cảnh mở rộng cho báo cáo đa tiêu chuẩn quốc tế.'
-                                : 'High performance cloud inference with massive context for international multi-standard audits.'}
+                                ? 'Tự động bóc tách file lớn 50 trang (.docx/.pdf), phân tích Heading/Bảng biểu, log hệ thống thành Security Fact Cards chuẩn hóa.'
+                                : 'Parses large 50-page reports, logs and system configs into structured Security Fact Cards.'}
                         </p>
-                        <div className={styles.modelHwBadges} style={{ opacity: 0.5 }}>
-                            <span className={styles.modelOptionHw}>Cloud API</span>
-                            <span className={styles.modelOptionHw}>200K Context</span>
+                        <div className={styles.modelHwBadges}>
+                            <span className={styles.modelOptionHw}>Tự Động Bóc Tách</span>
+                            <span className={styles.modelOptionHw}>Zero Data Leakage</span>
                         </div>
                     </div>
 
-                    {/* Option 3: Hybrid Engine - In Development */}
-                    <div className={`${styles.modelOptionCard} ${styles.modelOptionCardDisabled}`}>
+                    {/* Model 3: BGE-M3 - Vector RAG Engine */}
+                    <div className={`${styles.modelOptionCard} ${styles.modelOptionCardActive}`}>
                         <div className={styles.modelOptionTop}>
                             <div className={styles.modelNameGroup}>
-                                <span className={styles.modelMainIcon} style={{ opacity: 0.5 }}>🔄</span>
+                                <span className={styles.modelMainIcon}>📚</span>
                                 <div>
-                                    <div className={styles.modelOptionName} style={{ opacity: 0.6 }}>Hybrid Multi-Phase Engine</div>
-                                    <span className={styles.modelSubBadge}>Local AI + Cloud Synthesis</span>
+                                    <div className={styles.modelOptionName}>BGE-M3 / Semantic Vector Engine</div>
+                                    <span className={styles.modelSubBadge}>
+                                        {locale === 'vi' ? 'Model 3: RAG Embedding & Indexing' : 'Model 3: RAG Vector Indexing'}
+                                    </span>
                                 </div>
                             </div>
-                            <span className={styles.modelBadgeDev}>
-                                🔒 {locale === 'vi' ? 'Tính năng đang phát triển' : 'In Development'}
+                            <span className={styles.modelBadgeActive} style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', borderColor: 'rgba(168, 85, 247, 0.3)' }}>
+                                {locale === 'vi' ? 'RAG Tri Thức Chuẩn' : 'RAG Knowledge'}
                             </span>
                         </div>
-                        <p className={styles.modelOptionDesc} style={{ opacity: 0.5 }}>
+                        <p className={styles.modelOptionDesc}>
                             {locale === 'vi'
-                                ? 'Kết hợp phân tích bóc tách PII tại máy nội bộ và tổng hợp báo cáo chuyên sâu qua Cloud.'
-                                : 'Combines local PII-safe parsing with cloud-based comprehensive executive reporting.'}
+                                ? 'Truy vấn ngữ nghĩa vector điều khoản tiêu chuẩn ISO 27001:2022, TCVN 11930 & Nghị định 13 với ngữ cảnh 8,192 tokens.'
+                                : 'Multilingual semantic indexing across ISO 27001:2022 and Vietnamese cybersecurity legal frameworks.'}
                         </p>
-                        <div className={styles.modelHwBadges} style={{ opacity: 0.5 }}>
-                            <span className={styles.modelOptionHw}>Multi-Stage</span>
-                            <span className={styles.modelOptionHw}>PII Redaction</span>
+                        <div className={styles.modelHwBadges}>
+                            <span className={styles.modelOptionHw}>ChromaDB Local</span>
+                            <span className={styles.modelOptionHw}>Multilingual 8K Context</span>
                         </div>
                     </div>
                 </div>

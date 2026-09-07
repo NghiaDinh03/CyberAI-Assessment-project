@@ -105,7 +105,7 @@ sequenceDiagram
 
 ---
 
-## 2. 🛡️ Endpoint Đánh Giá ISO 27001
+## 2. 🛡️ Endpoint Đánh Giá ISO 27001 & Trợ Lý AI
 
 | Method | Path | Mô tả |
 |--------|------|--------|
@@ -113,11 +113,18 @@ sequenceDiagram
 | GET | `/api/iso27001/assessments` | Liệt kê tất cả đánh giá (có phân trang) |
 | GET | `/api/iso27001/assessments/{id}` | Lấy đánh giá theo ID |
 | DELETE | `/api/iso27001/assessments/{id}` | Xóa đánh giá |
+| POST | `/api/iso27001/controls/{control_id}/ai-assist` | Trợ lý AI thời gian thực cho từng control (sinh SOP, thẩm định bằng chứng, Q&A kỹ thuật) |
+| GET | `/api/iso27001/assessments/{id}/audit-trace` | Lấy chi tiết cây vết kiểm toán (Audit Trace) 2 pha của chuyên gia |
+| POST | `/api/iso27001/feedback` | Ghi nhận phản hồi chuyên gia Lead Auditor (Agent 2 Feedback Loop) |
+| GET | `/api/iso27001/feedback/stats` | Thống kê tỷ lệ đồng thuận và dữ liệu học theo ngữ cảnh |
+| POST | `/api/iso27001/assessments/{id}/export-pdf` | Xuất PDF (weasyprint) hoặc HTML dự phòng |
+| POST | `/api/iso27001/assessments/{id}/export-docx` | Xuất Báo cáo thẩm định ISMS định dạng Microsoft Word (.docx) |
+| POST | `/api/iso27001/assessments/{id}/export-risk-register` | Xuất Sổ đăng ký rủi ro an toàn thông tin (.xlsx) chuẩn ISO 27005 |
+| POST | `/api/iso27001/assessments/{id}/export-soa` | Xuất Tuyên bố áp dụng Statement of Applicability (.xlsx) |
 | POST | `/api/iso27001/reindex` | Tái lập chỉ mục tất cả tài liệu ISO vào collection mặc định |
 | POST | `/api/iso27001/reindex-domains` | Tái lập chỉ mục các domain collection theo từng tiêu chuẩn |
 | GET | `/api/iso27001/chromadb/stats` | Thống kê ChromaDB (tất cả domain collection) |
 | POST | `/api/iso27001/chromadb/search` | Tìm kiếm ChromaDB `{query, top_k}` |
-| POST | `/api/iso27001/assessments/{id}/export-pdf` | Xuất PDF (weasyprint) hoặc HTML dự phòng |
 
 ### 📄 Phân Trang — Danh Sách Đánh Giá
 
@@ -162,7 +169,8 @@ sequenceDiagram
 
 | Method | Path | Mô tả |
 |--------|------|--------|
-| POST | `/api/iso27001/evidence/{control_id}` | Tải lên file bằng chứng (tối đa 10 MB) |
+| POST | `/api/iso27001/evidence/batch-ingest` | Tải lên hàng loạt file bằng chứng; Agent 1 tự động bóc tách & gán vào controls |
+| POST | `/api/iso27001/evidence/{control_id}` | Tải lên file bằng chứng cho riêng một control (tối đa 10 MB) |
 | GET | `/api/iso27001/evidence/{control_id}` | Liệt kê file bằng chứng cho control |
 | GET | `/api/iso27001/evidence/{control_id}/{filename}` | Tải xuống file bằng chứng |
 | DELETE | `/api/iso27001/evidence/{control_id}/{filename}` | Xóa file bằng chứng |

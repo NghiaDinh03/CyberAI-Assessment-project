@@ -1,154 +1,213 @@
-# Web Search Service — DuckDuckGo Integration
+# Web Search Service — SearXNG & Web Search Integration
 
-> **Module:** [`backend/services/web_search.py`](../../backend/services/web_search.py)
-> **Trigger:** Hybrid intent classifier in [`backend/services/model_router.py:173-213`](../../backend/services/model_router.py) routes a message to `intent="search"` → `ChatService` calls `WebSearch.search()` and injects `WebSearch.format_context()` into the LLM prompt.
-
----
-
-## 1. Why a Search Service?
-
-CyberAI is built around an offline RAG corpus (`data/iso_documents/`) but
-some user questions need fresh web context (CVE advisories, vendor news,
-"latest version of …"). To stay zero-cost and zero-API-key, the platform
-calls DuckDuckGo via the **`ddgs`** Python package (with
-**`duckduckgo-search`** as a backwards-compatible fallback).
+> **Module:** [`backend/services/web_search.py`](../../backend/services/web_search.py)  
+> **API Route:** [`backend/api/routes/web_search.py`](../../backend/api/routes/web_search.py) (`POST /api/v1/web-search`, `POST /api/web-search`)  
+> **Trigger:** Hybrid intent classifier in [`backend/services/model_router.py`](../../backend/services/model_router.py) routes queries with `intent="search"` → `ChatService` invokes `WebSearch.search()` and injects `WebSearch.format_context()` into the LLM prompt.
 
 ---
 
-## 2. Public API
+## 1. Role of Web Search & SearXNG in the System
+
+While CyberAI operates primarily on an offline knowledge base of cybersecurity standards (RAG corpus in `data/iso_documents/` embedded via `BAAI/bge-m3`), real-world threat analysis requires current internet intelligence (Live Threat Intelligence):
+- Newly disclosed vulnerability identifiers (Zero-day CVEs, NVD/CISA advisories).
+- Active ransomware campaigns and threat actor operations.
+- Security warnings and advisories from national CSIRTs/CERTs.
+
+To uphold **Data Privacy** and **On-Premise independence**, the system deploys a dedicated **SearXNG** container (`cyberai-searxng`) as an on-premise privacy-preserving meta-search aggregator, paired with an automated **Graceful Fallback** to the `ddgs` library.
+
+---
+
+## 2. Dual-Layer Search Architecture
+
+```mermaid
+flowchart TD
+    User(["👤 User / Chatbot Query"]) --> Router["🔀 ModelRouter (Intent Classifier)"]
+    
+    Router -- "intent == 'search'" --> WS["⚙️ WebSearch.search(query)"]
+    Router -- "intent == 'security'" --> RAG["📚 RAG Service (ChromaDB)"]
+    Router -- "intent == 'general'" --> LLM["🧠 LLM (No augmentation)"]
+
+    subgraph SEC_GUARD["🛡️ Data Loss Prevention (DLP)"]
+        WS --> CheckLog{"is_log_analysis_query?\n(Detect logs / attack payloads)"}
+        CheckLog -- "Log detected" --> Skip["Skip web search\n(Protect sensitive internal data)"]
+    end
+
+    subgraph LAYER1["🥇 Layer 1: On-Premise Meta-Search (SearXNG)"]
+        CheckLog -- "No log" --> SearXCall["Query SearXNG JSON API\nGET {SEARXNG_URL}/search?q=...&format=json\n(Timeout 8.0s)"]
+        SearXCall --> SearXNode["🔍 cyberai-searxng :8080\n(Aggregates Google, Bing, Wikipedia...)"]
+        SearXNode --> SearXRes{"Valid results returned?"}
+    end
+
+    subgraph LAYER2["🥈 Layer 2: Graceful Fallback"]
+        SearXRes -- "No / Timeout / Error" --> DDGSCall["Fallback to ddgs\n(DuckDuckGo Python client)\nRetry 1 time · Region vn-vi"]
+    end
+
+    SearXRes -- "Success" --> Format["📝 WebSearch.format_context(results)"]
+    DDGSCall --> Format
+    Format --> Prompt["📑 Inject Context into Chatbot Prompt"]
+    Prompt --> Inference["🦙 Ollama (gemma4) / Cloud Fallback"]
+    Inference --> ClientStream(["🖥️ User Response (SSE Stream with Source Citations)"])
+
+    style User fill:#fbbf24,stroke:#f59e0b,color:#000
+    style Router fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style LAYER1 fill:#064e3b,stroke:#059669,color:#fff
+    style LAYER2 fill:#1e3a5f,stroke:#2563eb,color:#fff
+    style SEC_GUARD fill:#7f1d1d,stroke:#b91c1c,color:#fff
+    style SearXNode fill:#6b21a8,stroke:#a855f7,color:#fff
+    style ClientStream fill:#0f766e,stroke:#14b8a6,color:#fff
+```
+
+---
+
+## 3. SearXNG Container Configuration (`searxng/settings.yml`)
+
+The `cyberai-searxng` service runs off the `searxng/searxng:latest` image and is configured via `searxng/settings.yml` (mounted to `/etc/searxng:rw`):
+
+```yaml
+use_default_settings: true
+
+general:
+  debug: false
+  instance_name: "CyberAI Private Search"
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "vi"
+  formats:
+    - html
+    - json   # MANDATORY: Enables JSON output format for backend integration
+
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  secret_key: "cyberai-searxng-insecure-secret-key-for-local-use"
+  limiter: false  # Disable internal limiter to prevent backend request throttling
+```
+
+### Docker Compose Configuration:
+- **Internal Docker Network:** Backend queries SearXNG directly via `http://searxng:8080`.
+- **Host Port:** Mapped to external port `8888:8080` for diagnostics or direct host queries.
+- **Backend Environment Variable:** `SEARXNG_URL=http://searxng:8080`.
+
+---
+
+## 4. Public API & Data Structures
+
+### Class `WebSearch` ([`backend/services/web_search.py`](../../backend/services/web_search.py))
 
 ```python
 class WebSearch:
     @staticmethod
-    def search(query: str, max_results: int = 5, retries: int = 2) -> List[Dict[str, str]]
+    def _search_searxng(query: str, max_results: int = 5) -> List[Dict[str, str]]:
+        """Query on-premise SearXNG Meta-Search Engine via JSON API."""
+        ...
+
+    @classmethod
+    def search(cls, query: str, max_results: int = 5, retries: int = 1) -> List[Dict[str, str]]:
+        """Search the web prioritizing local SearXNG with automatic fallback to ddgs."""
+        ...
+
     @staticmethod
-    def format_context(results: List[Dict[str, str]]) -> str
+    def format_context(results: List[Dict[str, str]]) -> str:
+        """Format result list into numbered citation blocks for the LLM prompt."""
+        ...
 ```
 
-Source: [`backend/services/web_search.py:14-64`](../../backend/services/web_search.py)
-
-### Result schema
+### Output Schema
 
 ```json
 [
-  { "title": "…", "url": "https://…", "snippet": "…" }
+  {
+    "title": "ISO/IEC 27001 Information Security Management Standard",
+    "url": "https://example.vn/iso-27001",
+    "snippet": "ISO/IEC 27001:2022 is the international standard for information security..."
+  }
 ]
 ```
 
 ---
 
-## 3. Algorithm
+## 5. Processing Flow & Fallback Mechanics
 
-```
-1. Try `from ddgs import DDGS`.
-   On ImportError, try `from duckduckgo_search import DDGS`.
-   If both fail → log error, return [].
+Execution stages within `WebSearch.search()`:
 
-2. For attempt in range(retries + 1):
-     with DDGS(headers={"User-Agent": USER_AGENT}) as ddgs:
-         raw = list(ddgs.text(query, max_results=max_results, region="vn-vi"))
-     if raw:
-         return [ {title, url, snippet} for item in raw ]
-     else:
-         sleep(1) and retry
-   On exception → log warning, sleep(2), retry.
+1. **Data Loss Prevention (DLP) Check:**
+   - Evaluates `is_log_analysis_query(query)`.
+   - If technical logs or attack payloads are detected, **the query is never sent to the internet**; returns `[]` immediately to safeguard corporate data.
+2. **Query Preprocessing:**
+   - Normalizes whitespace and clamps length to 150 characters to maximize search relevance.
+   - If length is `< 3` characters: returns `[]`.
+3. **Priority 1 — On-Premise SearXNG Query (`_search_searxng`):**
+   - Sends HTTP GET request via `httpx` client to `f"{SEARXNG_URL}/search"` with parameters:
+     - `q`: preprocessed query string.
+     - `format`: `"json"`.
+     - `categories`: `"general"`.
+     - `language`: `"vi-VN"`.
+   - Timeout configured to `8.0s`.
+   - Extracts `results[].title`, `results[].url`, `results[].content`.
+   - If valid results are returned: returns immediately, skipping Layer 2.
+4. **Priority 2 — Automated Graceful Fallback (`ddgs`):**
+   - Triggered when SearXNG is unreachable, times out, or returns 0 results.
+   - Loads `ddgs` (or `duckduckgo_search`).
+   - Executes search using Chrome desktop User-Agent and `region="vn-vi"`.
+   - Retries up to `retries` times with linear backoff (0.5s – 1.0s).
+5. **Context Formatting (`format_context`):**
+   - Numbers sources `[1]`, `[2]`... along with URLs and content snippets so the LLM can generate auditable source citations.
 
-3. After retries → log warning, return [].
-```
+---
 
-| Knob | Value | Where |
+## 6. REST API Endpoints
+
+The backend provides HTTP endpoints for external tools or health verification:
+
+- **Endpoint:** `POST /api/v1/web-search` or `POST /api/web-search`
+- **Request Body:**
+  ```json
+  {
+    "query": "Critical cybersecurity vulnerabilities in 2026",
+    "max_results": 5
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": "ok",
+    "query": "Critical cybersecurity vulnerabilities in 2026",
+    "results": [
+      {
+        "title": "New Critical Vulnerability Advisory...",
+        "url": "https://...",
+        "snippet": "..."
+      }
+    ],
+    "total": 5
+  }
+  ```
+
+---
+
+## 7. Routing & Trigger Conditions
+
+Routing decisions are governed by the **Hybrid Model Router** ([`backend/services/model_router.py`](../../backend/services/model_router.py)):
+
+1. **Semantic Intent Classification:**
+   - Embeds query and compares similarity against `intent_collection` (seeded from `INTENT_TEMPLATES`).
+   - If confidence $\ge 0.6 \rightarrow$ applies semantic intent.
+2. **Keyword Fallback:**
+   - Checks presence of `SEARCH_KEYWORDS` (e.g. *"tìm"*, *"search"*, *"google"*, *"news"*, *"cve"*, *"update"*...).
+3. **Final Intent Determination:**
+   - Intent $\in \{\text{"security"}, \text{"search"}, \text{"general"}\}$.
+   - **Only when `intent == "search"`**: `WebSearch.search()` is executed.
+   - Standard ISO 27001 / TCVN 11930 consultation queries classified under `security` **remain 100% local within ChromaDB RAG** and never reach external search engines.
+
+---
+
+## 8. Operational Notes & Troubleshooting
+
+| Symptom | Probable Cause | Resolution |
 |---|---|---|
-| `region` | `vn-vi` | Hard-coded — biases results toward Vietnamese sources |
-| `max_results` | `5` (default) | Tunable per call |
-| `retries` | `2` (default) → 3 attempts total | Tunable per call |
-| `User-Agent` | Chrome 120 desktop string | `web_search.py:7-11` to dodge bot-walls |
-| Back-off | `1s` between empty results, `2s` after exception | Linear, no jitter |
-
----
-
-## 4. Library Resolution Order
-
-| Package | Status | Behaviour |
-|---|---|---|
-| `ddgs` | **preferred** — modern fork | Listed in `backend/requirements.txt` as `ddgs` (alias) and `duckduckgo-search>=6.2` |
-| `duckduckgo-search` | legacy fallback | Same `DDGS` symbol; ddgs is its successor |
-
-If both packages are absent the call returns `[]` rather than raising — the
-caller (`ChatService`) falls back to a no-context generation so chat never
-blocks on a missing optional dep.
-
----
-
-## 5. Context Formatting
-
-`format_context()` joins results into the exact block shape the chat
-prompt expects:
-
-```
-[1] <title>
-URL: <url>
-<snippet>
-
----
-
-[2] <title>
-URL: <url>
-<snippet>
-```
-
-This is appended to the system prompt under the heading produced by
-[`ChatService._build_messages`](../../backend/services/chat_service.py)
-(see lines 208-258). The numbered prefix lets the LLM cite sources back to
-the user (e.g. "according to [2] …").
-
----
-
-## 6. Routing — When Web Search Fires
-
-The decision is made by the **hybrid router** in
-[`backend/services/model_router.py:173-213`](../../backend/services/model_router.py):
-
-1. Semantic classification against the `intent_collection` ChromaDB
-   collection seeded with `INTENT_TEMPLATES`.
-2. If semantic confidence ≥ 0.6 → use semantic intent.
-3. Otherwise, keyword fallback against `SEARCH_KEYWORDS` (e.g. "tìm",
-   "search", "google", "tin tức", "news", "cve", "cập nhật").
-4. Final intent ∈ `{"security", "search", "general"}`. Only `search`
-   triggers `WebSearch.search()`.
-
-This means RAG-eligible cyber-security questions **stay local** and never
-touch the public internet.
-
----
-
-## 7. Operational Notes
-
-| Topic | Notes |
-|---|---|
-| **No API key** | DuckDuckGo HTML/JSON scrape — usage is best-effort, not SLA-backed |
-| **Rate limiting** | DDG can return 202/empty under load — the retry+backoff loop is the only mitigation |
-| **Privacy** | Only the user's verbatim query is sent; no session/PII attached |
-| **Egress** | Outbound HTTPS to `duckduckgo.com`. Allow this in nginx/firewall if you run in a hardened environment |
-| **Disable** | Drop `ddgs` and `duckduckgo-search` from `backend/requirements.txt` — `WebSearch.search()` will safely return `[]` |
-
----
-
-## 8. Failure Modes
-
-| Symptom | Likely cause | Mitigation |
-|---|---|---|
-| Always returns `[]` | DDG temporarily blocking the egress IP | Wait, or proxy egress through a residential exit |
-| `ImportError` log on first call | Neither `ddgs` nor `duckduckgo-search` installed | `pip install ddgs` |
-| Stale or off-topic results | `region="vn-vi"` over-filters English sources | Pass an English query or relax region (requires code change) |
-| Long latency | DDG slow + 2 retries × 2s back-off | Lower `retries` for latency-sensitive flows |
-
----
-
-## 9. See Also
-
-- [`docs/en/algorithms.md`](algorithms.md) — full hybrid intent classifier
-  algorithm.
-- [`docs/en/chatbot_rag.md`](chatbot_rag.md) — how search context blends
-  with RAG context inside the prompt.
-- [`docs/en/architecture.md`](architecture.md) — egress topology in
-  Docker/nginx deployments.
+| SearXNG returns `403 Forbidden` | Missing `search.formats: [html, json]` in configuration | Ensure `searxng/settings.yml` is mounted to `/etc/searxng:rw` with `formats: [html, json]`. |
+| SearXNG response latency / timeout | Upstream search engines responding slowly | Automatic fallback to `ddgs` occurs after 8.0s timeout; engine selection can be customized in `settings.yml`. |
+| SearXNG container stopped | Docker daemon issue or OOM | Check `docker logs cyberai-searxng` and restart with `docker compose up -d searxng`. The system maintains uninterrupted search via `ddgs` fallback. |
+| Empty results from both layers | Network connectivity loss or malformed query | System safely returns `[]`; Chatbot answers from LLM baseline parametric knowledge. |

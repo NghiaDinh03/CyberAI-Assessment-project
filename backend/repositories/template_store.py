@@ -19,13 +19,13 @@ DB_PATH = os.path.join(TEMPLATES_DIR, "templates.db")
 BUILTIN_TEMPLATES = [
     {
         "id": "tpl_evn_tpc",
-        "name": "Công ty TNHH MTV Nhiệt điện Thủ Đức - EVN TPC (Hạ tầng Năng lượng & TCVN 11930 / ISO 27001)",
-        "standard": "tcvn11930",
+        "name": "Công ty TNHH MTV Nhiệt điện Thủ Đức - EVN TPC (Hạ tầng Năng lượng & ISO 27001:2022)",
+        "standard": "iso27001",
         "industry": "Năng lượng & Điện lực (Critical Infrastructure)",
-        "description": "Hệ thống thông tin quản lý sản xuất và văn phòng điều hành của Nhiệt điện Thủ Đức (EVN TPC / EVNGENCO 3). Đánh giá an toàn thông tin theo cấp độ bảo vệ TCVN 11930:2017 Cấp độ 3 và ISO 27001:2022, phát hiện 53 lỗ hổng bảo mật thực tế (EOL OS Windows Server 2008/2016, SQL Server cũ, SWEET32, phân vùng IT/OT).",
+        "description": "Hệ thống thông tin quản lý sản xuất và văn phòng điều hành của Nhiệt điện Thủ Đức (EVN TPC / EVNGENCO 3). Đánh giá an toàn thông tin theo ISO 27001:2022 và TCVN 11930:2017 Cấp độ 3, phát hiện 53 lỗ hổng bảo mật thực tế (EOL OS Windows Server 2008/2016, SQL Server cũ, SWEET32, phân vùng IT/OT).",
         "is_builtin": 1,
         "data": {
-            "assessment_standard": "tcvn11930",
+            "assessment_standard": "iso27001",
             "org_name": "Công ty TNHH MTV Nhiệt điện Thủ Đức (EVN TPC)",
             "org_size": "medium",
             "industry": "Năng lượng & Tiện ích công cộng (Critical Energy Infrastructure)",

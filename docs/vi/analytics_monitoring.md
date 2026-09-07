@@ -30,9 +30,9 @@ Module Analytics (Phân Tích) & Monitoring (Giám Sát) cung cấp:
 
 | Tính năng | Nguồn | Mô tả |
 |-----------|--------|--------|
-| CPU / RAM / Disk / Uptime (Thời gian hoạt động) thời gian thực | `/host/proc/` (filesystem host OS) | Đọc trực tiếp từ procfs của máy host |
-| Cache (Bộ nhớ đệm) stats | Kích thước thư mục `/data/` | Quét thư mục đếm file & dung lượng |
-| AI model health check (Kiểm tra sức khỏe) | Open Claude + LocalAI ping | Gọi thử API với token nhỏ |
+| CPU / RAM / Disk / Uptime thời gian thực | `psutil` (Cross-platform OS metrics) | Thu thập trực tiếp qua thư viện psutil an toàn, độc lập nền tảng |
+| Cache stats | Kích thước thư mục `/data/` | Quét thư mục đếm file & dung lượng (`sessions`, `exports`) |
+| AI model health check | Ollama + Cloud AI ping | Kiểm tra trạng thái ping service và ModelGuard |
 | Lịch sử đánh giá ISO | `/data/assessments/*.json` | Liệt kê & parse JSON đánh giá |
 | ChromaDB semantic explorer | ChromaDB collection `iso_documents` | Tìm kiếm ngữ nghĩa vector |
 
@@ -41,7 +41,7 @@ Module Analytics (Phân Tích) & Monitoring (Giám Sát) cung cấp:
 ```mermaid
 graph TB
     subgraph Host["🖥️ Host Machine"]
-        PROC["/proc filesystem"]
+        OS_METRICS["psutil OS Metrics"]
         DISK["Disk Storage"]
     end
 
@@ -57,14 +57,14 @@ graph TB
     end
 
     subgraph AI["🤖 AI Services"]
-        CLAUDE["Open Claude API"]
-        LOCAL["LocalAI"]
+        OLLAMA["Ollama (gemma4, qwen2.5)"]
+        CLAUDE["Cloud AI Fallback (Optional)"]
     end
 
-    PROC -->|"mount /host/proc:ro"| BE
-    DISK -->|"shutil.disk_usage"| BE
+    OS_METRICS -->|"psutil metrics"| BE
+    DISK -->|"psutil.disk_usage"| BE
+    BE -->|"health ping"| OLLAMA
     BE -->|"health ping"| CLAUDE
-    BE -->|"health ping"| LOCAL
     BE -->|"collection stats"| CHROMA
     BE -->|"scan files"| ASSESS
     BE -->|"scan dirs"| CACHE
@@ -77,29 +77,24 @@ graph TB
 sequenceDiagram
     participant FE as Frontend
     participant API as Backend API
-    participant PROC as /host/proc
-    participant AI as AI Services
+    participant OS as OS / psutil
+    participant AI as Ollama & Cloud AI
     participant DB as ChromaDB
 
     FE->>API: GET /api/system/stats
-    API->>PROC: Đọc /host/proc/stat (snapshot 1)
-    API->>API: sleep(100ms)
-    API->>PROC: Đọc /host/proc/stat (snapshot 2)
-    API->>PROC: Đọc /host/proc/meminfo
-    API->>API: shutil.disk_usage("/")
-    API-->>FE: JSON {cpu, memory, disk, uptime}
+    API->>OS: psutil.cpu_percent(), virtual_memory(), disk_usage()
+    API-->>FE: JSON {cpu, memory, disk, uptime_seconds, platform}
 
     FE->>API: GET /api/system/cache-stats
-    API->>API: Quét thư mục /data/*
-    API-->>FE: JSON {summaries, audio, sessions, assessments}
+    API->>API: Quét thư mục /data/* (sessions, exports)
+    API-->>FE: JSON {sessions, exports, total_size_bytes}
 
-    FE->>API: GET /api/system/ai-health
-    API->>AI: Ping Open Claude (max_tokens=5)
-    API->>AI: Ping LocalAI (max_tokens=5)
-    API-->>FE: JSON {open_claude: status, localai: status}
+    FE->>API: GET /api/system/ai-status
+    API->>AI: Health check Ollama daemon & Cloud AI Keys
+    API-->>FE: JSON {mode_label, models_ready, ollama, open_claude}
 
     FE->>API: POST /api/iso27001/chromadb/search
-    API->>DB: Semantic query (top_k=5)
+    API->>DB: Semantic query (BGE-M3 top_k=5)
     DB-->>API: Kết quả vector search
     API-->>FE: JSON results[]
 ```
@@ -112,24 +107,19 @@ File: [`backend/api/routes/system.py`](../../backend/api/routes/system.py)
 
 ### 🏗️ Kiến Trúc
 
-Container backend mount **filesystem `/proc` của host** ở chế độ chỉ đọc (read-only):
-
-```yaml
-# docker-compose.yml
-volumes:
-  - /proc:/host/proc:ro
-```
-
-Mọi thống kê hệ thống được đọc trực tiếp từ `/host/proc/*` — báo cáo thống kê **máy host**, không phải container-isolated stats (thống kê cô lập của container).
+Hệ thống sử dụng thư viện tiêu chuẩn **`psutil`** đa nền tảng để giám sát CPU, RAM, Disk và Uptime trực tiếp mà không yêu cầu mount thư mục `/proc` đặc quyền của host:
 
 ```python
-def read_proc_file(path: str) -> str:
-    try:
-        with open(path, "r") as f:
-            return f.read()
-    except Exception:
-        return ""
+import psutil
+
+cpu_percent = psutil.cpu_percent(interval=0.3)
+memory = psutil.virtual_memory()
+disk = psutil.disk_usage("/")
+uptime = round(time.time() - psutil.boot_time(), 1)
 ```
+
+Mọi thống kê hệ thống được lấy qua hàm thư viện `psutil` — báo cáo thống kê chính xác của **máy host / container**, tương thích cả Linux và Windows.
+
 
 ### 🔌 Endpoint
 
@@ -352,11 +342,11 @@ File: [`backend/services/cloud_llm_service.py`](../../backend/services/cloud_llm
 
 ```mermaid
 graph TD
-    START["🏁 health_check()"] --> CLAUDE_TEST["Gọi Open Claude<br/>ping, max_tokens=5"]
+    START["🏁 health_check()"] --> CLAUDE_TEST["Gọi Cloud AI Fallback<br/>ping, max_tokens=5"]
     CLAUDE_TEST -->|"Thành công"| CLAUDE_OK["✅ status: ok<br/>latency_ms: N"]
     CLAUDE_TEST -->|"Exception"| CLAUDE_ERR["❌ status: error<br/>error: message"]
 
-    START --> LOCAL_TEST["Gọi LocalAI<br/>ping, max_tokens=5"]
+    START --> LOCAL_TEST["Gọi Ollama :11434<br/>ping, max_tokens=5"]
     LOCAL_TEST -->|"Thành công"| LOCAL_OK["✅ status: ok<br/>latency_ms: N"]
     LOCAL_TEST -->|"Exception"| LOCAL_ERR["❌ status: error<br/>error: message"]
 
@@ -560,7 +550,7 @@ File: [`frontend-next/src/app/analytics/page.js`](../../frontend-next/src/app/an
 graph TD
     subgraph Page["📊 Analytics Page"]
         A["🖥️ System Resources<br/>CPU | RAM | Disk | Uptime"]
-        B["🤖 AI Services<br/>Open Claude | LocalAI"]
+        B["🤖 AI Services<br/>Ollama (100% Offline) | Cloud AI Fallback"]
         C["📋 Assessment History<br/>Danh sách đánh giá"]
         D["🔍 ISO Knowledge Base Search<br/>Tìm kiếm ChromaDB"]
     end
@@ -576,7 +566,7 @@ graph TD
 │  [CPU: 23%] [RAM: 49%] [Disk: 37%] [Uptime: 5n 2g]      │
 ├──────────────────────────────────────────────────────────┤
 │  🤖 Dịch Vụ AI                                           │
-│  [Open Claude: ✅ 342ms] [LocalAI: ❌ offline]            │
+│  [Ollama: ✅ 45ms] [Cloud Fallback: ✅ ready]            │
 ├──────────────────────────────────────────────────────────┤
 │  📋 Lịch Sử Đánh Giá              [3 đánh giá]           │
 │  ┌──────────────────────────────────────────────────┐    │

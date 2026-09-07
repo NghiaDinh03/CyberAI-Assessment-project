@@ -83,7 +83,7 @@ def test_unsupported_extension_rejected():
     from services.document_ingest import UnsupportedFormatError, parse_bytes
 
     with pytest.raises(UnsupportedFormatError):
-        parse_bytes(b"...", "image.png")
+        parse_bytes(b"...", "binary.exe")
 
 
 def test_docx_parser_extracts_heading_and_table():

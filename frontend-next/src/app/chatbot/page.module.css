@@ -1953,3 +1953,185 @@
         width: calc(100vw - 24px);
     }
 }
+
+/* ── Gemini 2.0 Flash Feedback Button & Card ───────────────────────────────── */
+
+.actionBtnFeedback {
+    background: rgba(139, 92, 246, 0.08);
+    border-color: rgba(139, 92, 246, 0.25);
+    color: #c4b5fd;
+}
+
+.actionBtnFeedback:hover {
+    background: rgba(139, 92, 246, 0.18);
+    border-color: rgba(139, 92, 246, 0.45);
+    color: #ede9fe;
+}
+
+.actionBtnFeedbackActive {
+    background: rgba(139, 92, 246, 0.22) !important;
+    border-color: #8b5cf6 !important;
+    color: #ffffff !important;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.feedbackCard {
+    margin-top: 0.85rem;
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(139, 92, 246, 0.35);
+    box-shadow: 0 4px 18px rgba(139, 92, 246, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.feedbackCardHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-bottom: 0.45rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.feedbackHeaderLeft {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #c4b5fd;
+    font-weight: 650;
+    font-size: 0.82rem;
+}
+
+.feedbackSparkleIcon {
+    color: #a78bfa;
+}
+
+.feedbackHeaderRight {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.feedbackScoreBadge {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.scoreHigh {
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #6ee7b7;
+}
+
+.scoreMed {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #fcd34d;
+}
+
+.scoreLow {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+}
+
+.feedbackCloseBtn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: color 0.15s ease;
+}
+
+.feedbackCloseBtn:hover {
+    color: #ffffff;
+}
+
+.feedbackCardBody {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.feedbackSection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.feedbackSectionLabel {
+    font-weight: 600;
+    color: #93c5fd;
+    font-size: 0.76rem;
+}
+
+.feedbackSectionContent {
+    color: #e2e8f0;
+    padding-left: 0.2rem;
+}
+
+.feedbackList {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: #e2e8f0;
+}
+
+.feedbackList li {
+    margin-bottom: 0.2rem;
+}
+
+.feedbackSummaryText {
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 3px solid #8b5cf6;
+    padding: 0.45rem 0.65rem;
+    border-radius: 0 6px 6px 0;
+    color: #cbd5e1;
+    font-style: italic;
+    font-size: 0.78rem;
+}
+
+.feedbackFooter {
+    margin-top: 0.3rem;
+    padding-top: 0.4rem;
+    border-top: 1px dashed rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.feedbackModelInfo {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.feedbackError {
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+    font-size: 0.78rem;
+}
+

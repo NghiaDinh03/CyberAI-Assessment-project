@@ -18,6 +18,7 @@ import HistoryView from './_components/views/HistoryView'
 import TemplatesView from './_components/views/TemplatesView'
 import DetailDrawer from './_components/controls/DetailDrawer'
 import EvidencePreviewModal from './_components/controls/EvidencePreviewModal'
+import AuditorFeedbackDrawer from './_components/controls/AuditorFeedbackDrawer'
 
 const POLL_INTERVAL = 8000
 const FORM_DRAFT_KEY = 'form-iso-draft'
@@ -102,6 +103,12 @@ export default function FormISOPage() {
 
     const pollingRef = useRef(null)
     const pollingIdRef = useRef(null)
+    const eventSourceRef = useRef(null)
+
+    const [showFeedbackDrawer, setShowFeedbackDrawer] = useState(false)
+    const [draftAvailable, setDraftAvailable] = useState(false)
+    const [draftTimestamp, setDraftTimestamp] = useState(null)
+    const [draftData, setDraftData] = useState(null)
 
     const STEP_TITLES = [
         t('assessment.step1Title'),
@@ -186,25 +193,50 @@ export default function FormISOPage() {
     }, [])
 
     const uploadEvidence = async (controlId, files) => {
-        if (!files || files.length === 0) return
-        setEvidenceUploading(controlId)
+        if (!files) return
         const fileList = Array.from(files)
+        if (fileList.length === 0) return
+        setEvidenceUploading(controlId)
+        const savedToken = typeof window !== 'undefined' ? localStorage.getItem('cyberai_auth_token') : null
+        const headers = {}
+        if (savedToken) headers['Authorization'] = `Bearer ${savedToken}`
+
         for (const file of fileList) {
             if (file.size > 10 * 1024 * 1024) {
                 alert('File too large. Maximum size is 10MB.')
-                setEvidenceUploading(null)
-                return
+                continue
             }
             const formData = new FormData()
             formData.append('file', file)
             try {
-                const res = await fetch(`/api/iso27001/evidence/${controlId}`, { method: 'POST', body: formData })
+                const res = await fetch(`/api/iso27001/evidence/${controlId}`, {
+                    method: 'POST',
+                    headers,
+                    body: formData
+                })
                 if (res.ok) {
                     const data = await res.json()
-                    setEvidenceMap(prev => ({
-                        ...prev,
-                        [controlId]: [...(prev[controlId] || []), { filename: data.filename, size_bytes: data.size_bytes }]
-                    }))
+                    setEvidenceMap(prev => {
+                        const current = prev[controlId] || []
+                        const filtered = current.filter(f => f.filename !== data.filename)
+                        return {
+                            ...prev,
+                            [controlId]: [...filtered, { filename: data.filename, size_bytes: data.size_bytes }]
+                        }
+                    })
+                    // Auto-mark control as implemented when user uploads evidence if not already checked
+                    setForm(prev => {
+                        if (!prev.implemented_controls.includes(controlId)) {
+                            return {
+                                ...prev,
+                                implemented_controls: [...prev.implemented_controls, controlId]
+                            }
+                        }
+                        return prev
+                    })
+                } else {
+                    const errText = await res.text().catch(() => '')
+                    console.error('Evidence upload failed:', res.status, errText)
                 }
             } catch (e) {
                 console.error('Evidence upload failed:', e)
@@ -228,23 +260,32 @@ export default function FormISOPage() {
     }
 
     const fetchEvidenceForControl = async (controlId) => {
+        if (!controlId) return
         try {
             const res = await fetch(`/api/iso27001/evidence/${controlId}`)
             if (res.ok) {
                 const data = await res.json()
-                if (data.files?.length > 0) {
+                if (data.files) {
                     setEvidenceMap(prev => ({ ...prev, [controlId]: data.files }))
                 }
             }
         } catch (_) { }
     }
 
+    // Auto-fetch evidence when opening control drawer
+    useEffect(() => {
+        if (drawerControlId) {
+            fetchEvidenceForControl(drawerControlId)
+        }
+    }, [drawerControlId])
+
     const handleBatchEvidenceUpload = async (files) => {
         if (!files || files.length === 0) return
+        const fileList = Array.from(files)
         setBatchUploading(true)
         setBatchResultMsg(null)
         const formData = new FormData()
-        Array.from(files).forEach(f => formData.append('files', f))
+        fileList.forEach(f => formData.append('files', f))
 
         try {
             const savedToken = typeof window !== 'undefined' ? localStorage.getItem('cyberai_auth_token') : null
@@ -268,7 +309,7 @@ export default function FormISOPage() {
 
                 setForm(prev => {
                     const mergedControls = Array.from(new Set([...prev.implemented_controls, ...suggestedControls]))
-                    const newServersCount = hosts.length > 0 ? Math.max(prev.servers, hosts.length) : prev.servers
+                    const newServersCount = hosts.length > 0 ? Math.max(prev.servers || 0, hosts.length) : prev.servers
                     return {
                         ...prev,
                         implemented_controls: mergedControls,
@@ -294,16 +335,28 @@ export default function FormISOPage() {
                     setDetectedHosts(hosts)
                 }
 
+                const summary = data.summary || {}
+                const processedOk = summary.processed_successfully || 0
+                const totalCount = summary.total_files || fileList.length
+                const errorsList = data.errors || []
+
+                let msgText = locale === 'vi'
+                    ? `🎉 Đã bóc tách thành công ${processedOk}/${totalCount} tệp! Tự động gán ${suggestedControls.length} biện pháp kiểm soát và nhận diện ${hosts.length} máy chủ.`
+                    : `🎉 Successfully parsed ${processedOk}/${totalCount} files! Auto-mapped ${suggestedControls.length} controls and detected ${hosts.length} hosts.`
+
+                if (errorsList.length > 0) {
+                    msgText += `\n⚠️ Lưu ý: ${errorsList.slice(0, 3).join('; ')}${errorsList.length > 3 ? ` (+${errorsList.length - 3} lỗi khác)` : ''}`
+                }
+
                 setBatchResultMsg({
-                    type: 'success',
-                    text: locale === 'vi'
-                        ? `🎉 Tự động bóc tách thành công ${data.summary?.processed_successfully || files.length} tệp! Đã nhận diện ${hosts.length} máy chủ và tự động tick ${suggestedControls.length} biện pháp kiểm soát phù hợp.`
-                        : `🎉 Successfully parsed ${data.summary?.processed_successfully || files.length} files! Detected ${hosts.length} hosts and auto-checked ${suggestedControls.length} matching controls.`
+                    type: processedOk > 0 ? 'success' : 'error',
+                    text: msgText
                 })
             } else {
                 let errMsg = (locale === 'vi' ? 'Lỗi khi xử lý hàng loạt tệp bằng chứng.' : 'Error processing batch evidence files.')
                 if (typeof data.detail === 'string') errMsg = data.detail
                 else if (typeof data.message === 'string') errMsg = data.message
+                else if (Array.isArray(data.errors) && data.errors.length > 0) errMsg = data.errors.join('; ')
                 setBatchResultMsg({ type: 'error', text: errMsg })
             }
         } catch (err) {
@@ -329,11 +382,37 @@ export default function FormISOPage() {
         }
     }
 
+    // Auto-save form draft debounced
     useEffect(() => {
-        try {
-            localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(form))
-        } catch (_) { }
-    }, [form])
+        if (activeTab === 'form' && (form.org_name || form.implemented_controls.length > 0)) {
+            const timer = setTimeout(() => {
+                try {
+                    localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify({
+                        form,
+                        step,
+                        evidenceMap,
+                        savedAt: Date.now()
+                    }))
+                } catch (_) { }
+            }, 800)
+            return () => clearTimeout(timer)
+        }
+    }, [form, step, evidenceMap, activeTab])
+
+    const restoreDraft = () => {
+        if (draftData) {
+            if (draftData.form) setForm(draftData.form)
+            if (draftData.step) setStep(draftData.step)
+            if (draftData.evidenceMap) setEvidenceMap(draftData.evidenceMap)
+        }
+        setDraftAvailable(false)
+    }
+
+    const discardDraft = () => {
+        try { localStorage.removeItem(FORM_DRAFT_KEY) } catch (_) { }
+        setDraftAvailable(false)
+        setDraftData(null)
+    }
 
     useEffect(() => {
         const fetchCustomStandards = async () => {
@@ -459,8 +538,13 @@ export default function FormISOPage() {
         if (draft) {
             try {
                 const parsed = JSON.parse(draft)
-                if (parsed.org_name) {
-                    setForm(prev => ({ ...prev, ...parsed }))
+                const formData = parsed.form || parsed
+                if (formData && (formData.org_name || (formData.implemented_controls && formData.implemented_controls.length > 0))) {
+                    setDraftData(parsed.form ? parsed : { form: parsed, step: 1, evidenceMap: {} })
+                    setDraftAvailable(true)
+                    if (parsed.savedAt) {
+                        setDraftTimestamp(new Date(parsed.savedAt).toLocaleTimeString())
+                    }
                 }
             } catch (_) { }
         }
@@ -495,6 +579,10 @@ export default function FormISOPage() {
     }, [])
 
     const stopPolling = useCallback(() => {
+        if (eventSourceRef.current) {
+            try { eventSourceRef.current.close() } catch (_) { }
+            eventSourceRef.current = null
+        }
         if (pollingRef.current) {
             clearInterval(pollingRef.current)
             pollingRef.current = null
@@ -506,6 +594,63 @@ export default function FormISOPage() {
         stopPolling()
         pollingIdRef.current = id
 
+        // 1. Try real-time Server-Sent Events (SSE) Stream
+        try {
+            if (typeof window !== 'undefined' && 'EventSource' in window) {
+                const es = new EventSource(`/api/iso27001/assessments/${id}/stream`)
+                eventSourceRef.current = es
+
+                es.addEventListener('progress', (e) => {
+                    try {
+                        const data = JSON.parse(e.data)
+                        setResult(prev =>
+                            prev?.id === id
+                                ? { ...prev, status: data.status, progress: { message: data.message, percent: data.percent } }
+                                : prev
+                        )
+                    } catch (_) { }
+                })
+
+                es.addEventListener('complete', (e) => {
+                    try {
+                        const data = JSON.parse(e.data)
+                        stopPolling()
+                        setResult({
+                            id: data.id,
+                            status: 'completed',
+                            error: null,
+                            error_code: null,
+                            report: data.result?.report || 'Hoàn thành.',
+                            model_used: data.result?.model_used,
+                            json_data: data.json_data || data.result?.json_data,
+                            compliance_percent: data.compliance_percent ?? null,
+                            standard: data.standard,
+                            org_name: data.org_name,
+                            implemented_controls: data.implemented_controls || [],
+                            progress: null,
+                        })
+                        setActiveTab('result')
+                        fetchHistory()
+                        try {
+                            localStorage.removeItem(FORM_DRAFT_KEY)
+                            sessionStorage.removeItem('active_assessment_id')
+                        } catch (_) { }
+                    } catch (_) { }
+                })
+
+                es.addEventListener('error', () => {
+                    // Fallback to polling on stream interruption
+                    if (eventSourceRef.current) {
+                        try { eventSourceRef.current.close() } catch (_) { }
+                        eventSourceRef.current = null
+                    }
+                })
+            }
+        } catch (streamErr) {
+            console.warn('[SSE] EventSource unavailable, fallback to polling:', streamErr)
+        }
+
+        // 2. Periodic polling fallback
         const poll = async () => {
             const targetId = pollingIdRef.current
             if (!targetId) return
@@ -519,7 +664,10 @@ export default function FormISOPage() {
                     setResult({
                         id: data.id,
                         status: data.status,
-                        report: data.result?.report || data.error || 'Lỗi không xác định.',
+                        error: data.status === 'failed' ? (data.error_summary || data.error || 'Đánh giá không thành công.') : null,
+                        error_code: data.error_code || (data.status === 'failed' ? 'ASSESSMENT_PIPELINE_ERROR' : null),
+                        error_summary: data.error_summary || null,
+                        report: data.result?.report || data.error_summary || data.error || (data.status === 'failed' ? 'Quá trình đánh giá thất bại.' : 'Hoàn thành.'),
                         model_used: data.result?.model_used,
                         json_data: data.result?.json_data || null,
                         compliance_percent: data.compliance_percent ?? null,
@@ -530,6 +678,10 @@ export default function FormISOPage() {
                     })
                     setActiveTab('result')
                     fetchHistory()
+                    try {
+                        localStorage.removeItem(FORM_DRAFT_KEY)
+                        sessionStorage.removeItem('active_assessment_id')
+                    } catch (_) { }
                 } else if (data.status === 'processing' || data.status === 'pending') {
                     setResult(prev =>
                         prev?.id === targetId
@@ -663,6 +815,9 @@ export default function FormISOPage() {
             const data = await res.json()
             if (data.status === 'accepted') {
                 clearDraft()
+                try {
+                    sessionStorage.setItem('active_assessment_id', data.id)
+                } catch (_) { }
                 setResult({
                     id: data.id,
                     status: 'processing',
@@ -676,11 +831,24 @@ export default function FormISOPage() {
                 fetchHistory()
                 startPolling(data.id)
             } else {
-                setResult({ error: true, report: data.error || 'Server error' })
+                const errMsg = data.error || data.error_summary || data.message || (Array.isArray(data.detail) ? data.detail.map(d => `${d.loc ? d.loc.join('.') : ''}: ${d.msg}`).join(', ') : null) || 'Lỗi gửi yêu cầu đánh giá'
+                setResult({
+                    error: errMsg,
+                    error_code: data.error_code || 'INVALID_ASSESSMENT_PAYLOAD',
+                    error_summary: errMsg,
+                    report: errMsg
+                })
                 setActiveTab('result')
             }
-        } catch {
-            setResult({ error: true, report: 'Lỗi kết nối server.' })
+        } catch (err) {
+            const errMsg = 'Lỗi kết nối server: ' + (err?.message || 'Không thể gửi yêu cầu đánh giá')
+            setResult({
+                error: errMsg,
+                error_code: 'CONNECTION_ERROR',
+                error_summary: errMsg,
+                report: errMsg
+            })
+            setActiveTab('result')
         } finally {
             setLoading(false)
         }
@@ -707,6 +875,9 @@ export default function FormISOPage() {
                 })
                 setActiveTab('result')
             } else if (data.status === 'processing' || data.status === 'pending') {
+                try {
+                    sessionStorage.setItem('active_assessment_id', id)
+                } catch (_) { }
                 setResult({
                     id: data.id,
                     status: data.status,
@@ -723,6 +894,16 @@ export default function FormISOPage() {
             console.error('[loadAssessmentById] Error:', e)
         }
     }, [startPolling])
+
+    // Resume running assessment if page reloaded or user switched around
+    useEffect(() => {
+        try {
+            const savedActiveId = sessionStorage.getItem('active_assessment_id')
+            if (savedActiveId && !result?.id) {
+                loadAssessmentById(savedActiveId)
+            }
+        } catch (_) { }
+    }, [loadAssessmentById, result?.id])
 
     const deleteAssessment = useCallback(async (id) => {
         if (!id) return
@@ -789,6 +970,7 @@ export default function FormISOPage() {
                         setDrawerControlId={setDrawerControlId}
                         fetchEvidenceForControl={fetchEvidenceForControl}
                         evidenceMap={evidenceMap}
+                        onOpenFeedbackDrawer={() => setShowFeedbackDrawer(true)}
                     />
                 )
             case 4:
@@ -834,9 +1016,19 @@ export default function FormISOPage() {
                             onClick={() => setActiveTab('result')}
                         >
                             📊 {t('assessment.tabResult')}
-                            {(result.status === 'processing' || result.status === 'pending') && (
-                                <span className={styles.tabBadge}>...</span>
-                            )}
+                            {(result.status === 'processing' || result.status === 'pending') ? (
+                                <span style={{
+                                    background: '#0284c7',
+                                    color: '#ffffff',
+                                    padding: '0.1rem 0.45rem',
+                                    borderRadius: '10px',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    marginLeft: '0.4rem'
+                                }}>
+                                    {result.progress?.percent !== undefined ? `${result.progress.percent}%` : '...'}
+                                </span>
+                            ) : null}
                         </button>
                     )}
                     <button
@@ -851,8 +1043,124 @@ export default function FormISOPage() {
                 </div>
             </header>
 
+            {/* Real-time Assessment Sticky Banner across other tabs */}
+            {activeTab !== 'result' && result && (result.status === 'processing' || result.status === 'pending') && (
+                <div style={{
+                    background: 'linear-gradient(90deg, rgba(2, 132, 199, 0.22), rgba(16, 185, 129, 0.16))',
+                    border: '1px solid rgba(56, 189, 248, 0.45)',
+                    borderRadius: '10px',
+                    padding: '0.75rem 1.25rem',
+                    marginBottom: '1.25rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '1rem',
+                    color: '#e0f2fe',
+                    fontSize: '0.85rem',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                    animation: 'fadeIn 0.3s ease'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
+                        <span style={{ fontSize: '1.25rem', display: 'inline-block' }}>⚡</span>
+                        <div style={{ minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                <strong style={{ color: '#38bdf8' }}>
+                                    {locale === 'vi' ? 'Hệ thống đang thẩm định an toàn' : 'AI Assessment in Progress'} ({result.progress?.percent || 0}%)
+                                </strong>
+                                <span style={{
+                                    background: 'rgba(56, 189, 248, 0.15)',
+                                    color: '#38bdf8',
+                                    padding: '0.1rem 0.45rem',
+                                    borderRadius: '4px',
+                                    fontSize: '0.72rem',
+                                    fontFamily: 'monospace'
+                                }}>
+                                    {result.org_name || form.org_name || 'Hệ thống'}
+                                </span>
+                            </div>
+                            <div style={{ color: '#94a3b8', fontSize: '0.78rem', marginTop: '0.2rem', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                {result.progress?.message || (locale === 'vi' ? 'Đang phân tích dữ liệu ngầm...' : 'Processing background tasks...')}
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        style={{
+                            background: '#0284c7',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '0.45rem 0.9rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            flexShrink: 0
+                        }}
+                        onClick={() => setActiveTab('result')}
+                    >
+                        <span>{locale === 'vi' ? 'Trở về tiến trình đánh giá' : 'View Assessment'}</span>
+                        <span>➔</span>
+                    </button>
+                </div>
+            )}
+
             {activeTab === 'form' && (
                 <div className={styles.formContainer}>
+                    {draftAvailable && (
+                        <div style={{
+                            background: 'rgba(56, 189, 248, 0.1)',
+                            border: '1px solid rgba(56, 189, 248, 0.3)',
+                            borderRadius: '8px',
+                            padding: '0.75rem 1rem',
+                            marginBottom: '1.25rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            color: '#e0f2fe',
+                            fontSize: '0.85rem',
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span>📝</span>
+                                <span>Phát hiện bản nháp Form ISO đã lưu tự động{draftTimestamp ? ` lúc ${draftTimestamp}` : ''}. Bạn có muốn khôi phục không?</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                    type="button"
+                                    style={{
+                                        background: '#0284c7',
+                                        color: '#ffffff',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        padding: '0.35rem 0.75rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        fontSize: '0.8rem'
+                                    }}
+                                    onClick={restoreDraft}
+                                >
+                                    Khôi Phục Bản Nháp
+                                </button>
+                                <button
+                                    type="button"
+                                    style={{
+                                        background: 'transparent',
+                                        color: '#94a3b8',
+                                        border: '1px solid rgba(148, 163, 184, 0.3)',
+                                        borderRadius: '4px',
+                                        padding: '0.35rem 0.6rem',
+                                        cursor: 'pointer',
+                                        fontSize: '0.8rem'
+                                    }}
+                                    onClick={discardDraft}
+                                >
+                                    Bỏ Qua
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     <StepProgress
                         steps={STEP_TITLES}
                         currentStep={step}
@@ -1000,6 +1308,13 @@ export default function FormISOPage() {
                     setPreviewFile(null)
                     previewReturnFocusRef.current?.focus?.()
                 }}
+            />
+
+            {/* Auditor Knowledge Feedback Drawer */}
+            <AuditorFeedbackDrawer
+                isOpen={showFeedbackDrawer}
+                onClose={() => setShowFeedbackDrawer(false)}
+                activeStandard={form.assessment_standard}
             />
 
             {showScrollBottom && (

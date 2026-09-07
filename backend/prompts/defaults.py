@@ -134,12 +134,12 @@ ASSESSMENT_CHUNK_TEMPLATE = (
 
 ASSESSMENT_CHUNK_FEWSHOT = (
     "VÍ DỤ OUTPUT (chỉ trả về JSON, không text thêm):\n"
-    '[{{"id":"A.5.1","severity":"critical","likelihood":4,"impact":5,"risk":20,'
+    '[{"id":"A.5.1","severity":"critical","likelihood":4,"impact":5,"risk":20,'
     '"gap":"Chính sách ATTT chưa được ban hành chính thức, nhân viên không có tài liệu tham chiếu",'
-    '"recommendation":"Ban hành chính sách ATTT cấp tổ chức trong 30 ngày, phê duyệt bởi Ban Giám đốc"}},\n'
-    ' {{"id":"A.5.9","severity":"high","likelihood":3,"impact":3,"risk":9,'
+    '"recommendation":"Ban hành chính sách ATTT cấp tổ chức trong 30 ngày, phê duyệt bởi Ban Giám đốc"},\n'
+    ' {"id":"A.5.9","severity":"high","likelihood":3,"impact":3,"risk":9,'
     '"gap":"Chưa có danh mục tài sản thông tin (hardware, software, data)",'
-    '"recommendation":"Lập asset inventory đầy đủ trong 60 ngày, bao gồm phân loại theo mức độ nhạy cảm"}}]\n\n'
+    '"recommendation":"Lập asset inventory đầy đủ trong 60 ngày, bao gồm phân loại theo mức độ nhạy cảm"}]\n\n'
 )
 
 ASSESSMENT_REPORT_SYSTEM = (

@@ -153,11 +153,22 @@ export default function DetailDrawer({
                     model: selectedModel || 'gemma4:latest'
                 })
             })
-            const data = await res.json()
-            if (data.status === 'success') {
+            if (!res.ok) {
+                const errText = await res.text().catch(() => '')
+                setAiResponse(`❌ **Lỗi máy chủ (${res.status}):** ${errText || 'Dịch vụ AI đang bận hoặc quá tải, vui lòng thử lại sau giây lát.'}`)
+                return
+            }
+            let data = null
+            try {
+                data = await res.json()
+            } catch {
+                setAiResponse(`❌ **Lỗi phản hồi:** Không thể đọc dữ liệu phản hồi từ máy chủ.`)
+                return
+            }
+            if (data && data.status === 'success') {
                 setAiResponse(data.response)
             } else {
-                setAiResponse(`❌ **Lỗi:** ${data.error || 'Không thể kết nối mô hình AI.'}`)
+                setAiResponse(`❌ **Lỗi:** ${data?.error || 'Không thể kết nối mô hình AI.'}`)
             }
         } catch (err) {
             setAiResponse(`❌ **Lỗi kết nối máy chủ:** ${err.message}`)
@@ -237,8 +248,8 @@ export default function DetailDrawer({
     const handleDrop = (e) => {
         e.preventDefault()
         e.stopPropagation()
-        const files = e.dataTransfer?.files
-        if (files?.length > 0 && onUploadFiles) onUploadFiles(control.id, files)
+        const files = Array.from(e.dataTransfer?.files || [])
+        if (files.length > 0 && onUploadFiles) onUploadFiles(control.id, files)
     }
     const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation() }
 
@@ -400,9 +411,9 @@ export default function DetailDrawer({
                                         accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xlsx,.csv,.txt,.log,.conf,.xml,.json"
                                         hidden
                                         onChange={(e) => {
-                                             const files = e.target.files
-                                             if (files?.length > 0 && onUploadFiles) onUploadFiles(control.id, files)
+                                             const files = Array.from(e.target.files || [])
                                              e.target.value = ''
+                                             if (files.length > 0 && onUploadFiles) onUploadFiles(control.id, files)
                                         }}
                                     />
                                 </label>

@@ -54,7 +54,7 @@ data: {"token": "", "done": true, "metadata": {"model_used": "...", "source": "l
 
 ---
 
-## ISO 27001 Assessment Endpoints
+## ISO 27001 Assessment & AI Assistant Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -62,11 +62,18 @@ data: {"token": "", "done": true, "metadata": {"model_used": "...", "source": "l
 | GET | `/api/iso27001/assessments` | List all assessments (paginated) |
 | GET | `/api/iso27001/assessments/{id}` | Get assessment by ID |
 | DELETE | `/api/iso27001/assessments/{id}` | Delete assessment |
+| POST | `/api/iso27001/controls/{control_id}/ai-assist` | Real-time AI assist per control (generate SOP, verify evidence, Q&A) |
+| GET | `/api/iso27001/assessments/{id}/audit-trace` | Retrieve structured Lead Auditor 2-phase audit trace tree |
+| POST | `/api/iso27001/feedback` | Store expert Lead Auditor feedback (Agent 2 Feedback Loop) |
+| GET | `/api/iso27001/feedback/stats` | Alignment stats and in-context learning metrics |
+| POST | `/api/iso27001/assessments/{id}/export-pdf` | Export PDF (weasyprint) or HTML fallback |
+| POST | `/api/iso27001/assessments/{id}/export-docx` | Export Microsoft Word (.docx) formal audit report |
+| POST | `/api/iso27001/assessments/{id}/export-risk-register` | Export ISO 27005 Information Security Risk Register (.xlsx) |
+| POST | `/api/iso27001/assessments/{id}/export-soa` | Export Statement of Applicability (.xlsx) |
 | POST | `/api/iso27001/reindex` | Re-index all ISO docs into default collection |
 | POST | `/api/iso27001/reindex-domains` | Re-index per-standard domain collections |
 | GET | `/api/iso27001/chromadb/stats` | ChromaDB stats (all domain collections) |
 | POST | `/api/iso27001/chromadb/search` | Search ChromaDB `{query, top_k}` |
-| POST | `/api/iso27001/assessments/{id}/export-pdf` | Export PDF (weasyprint) or HTML fallback |
 
 ### Pagination — List Assessments
 
@@ -86,7 +93,8 @@ GET /api/iso27001/assessments?page=1&page_size=50&flat=false
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/iso27001/evidence/{control_id}` | Upload evidence file (max 10 MB) |
+| POST | `/api/iso27001/evidence/batch-ingest` | Multi-file batch ingest; Agent 1 auto-extracts facts & maps to controls |
+| POST | `/api/iso27001/evidence/{control_id}` | Upload evidence file per control (max 10 MB) |
 | GET | `/api/iso27001/evidence/{control_id}` | List evidence files for control |
 | GET | `/api/iso27001/evidence/{control_id}/{filename}` | Download evidence file |
 | DELETE | `/api/iso27001/evidence/{control_id}/{filename}` | Delete evidence file |

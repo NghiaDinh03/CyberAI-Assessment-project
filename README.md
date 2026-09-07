@@ -59,11 +59,12 @@ docker compose up -d --build
 ### 🌐 Service Table
 
 | Service | URL | Description |
-|---------|-----|-------------|
+|---|---|---|
+| 🌐 **Nginx Reverse Proxy** | `http://localhost:80` | Pure HTTP Reverse Proxy, SSE unbuffered, no certs required |
 | 🖥️ **Frontend UI** | `http://localhost:3081` | Next.js 16 Interface (Dark Cyber Theme, i18n EN/VI) |
 | ⚡ **Backend API** | `http://localhost:8000` | FastAPI server, OCR Pipeline, Evidence Mapper |
 | 📖 **Swagger Docs** | `http://localhost:8000/docs` | Interactive OpenAPI Documentation |
-| 🦙 **Ollama Engine** | `http://localhost:11434` | `gemma4:latest` (Local LLM Inference, 9.6GB) |
+| 🦙 **Ollama Engine** | `http://localhost:11434` | `gemma4:latest`, `qwen2.5-coder:7b`, `bge-m3` (Local Offline) |
 | 🔍 **SearXNG Search** | `http://localhost:8888` | Private Meta-Search / Threat Intelligence Engine |
 
 ```bash
@@ -92,26 +93,28 @@ flowchart TB
     User(["👨‍💻 Security Analyst / IT Auditor"])
 
     subgraph Docker["🐳 CyberAI Docker Network (cyberai-network)"]
+        NGINX["🌐 cyberai-nginx<br/>HTTP Reverse Proxy · :80"]
         FE["🎨 cyberai-frontend<br/>Next.js 16 · :3081"]
         BE["⚙️ cyberai-backend<br/>FastAPI · :8000"]
-        OL["🦙 cyberai-ollama<br/>Gemma 4 (9.6GB) · :11434"]
+        OL["🦙 cyberai-ollama<br/>Gemma 4 · Qwen2.5 · BGE-M3 · :11434"]
         SEARX["🔍 cyberai-searxng<br/>Private Search · :8888"]
         DB[(📁 SQLite DBs<br/>users.db / sessions.db / assessments.db)]
     end
 
-    subgraph CloudGateway["☁️ Cloud AI Gateway (Optional)"]
-        DeepSeek["⚡ DeepSeek v4 Flash"]
-        Gemini["🌐 Google Gemini 2.0 Flash"]
+    subgraph CloudGateway["☁️ Cloud AI Gateway (Optional Fallback)"]
+        CloudLLM["☁️ Google Gemini / Claude / DeepSeek<br/>API Key Fallback Channel"]
     end
 
-    User -->|"HTTP / SSE"| FE
-    FE -->|"Proxy /api/*"| BE
+    User -->|"HTTP :80"| NGINX
+    NGINX -->|"Proxy /"| FE
+    NGINX -->|"Proxy /api/*"| BE
     BE -->|"Local Inference (100% Offline)"| OL
     BE -->|"Threat Intelligence Search"| SEARX
     BE -->|"Persistent Storage"| DB
-    BE -.->|"Hybrid Mode (PII Stripped)"| CloudGateway
+    BE -.->|"Optional Cloud Fallback"| CloudGateway
 
     style Docker fill:#0b1329,stroke:#1e293b,color:#60a5fa
+    style NGINX fill:#0f766e,stroke:#14b8a6,color:#fff
     style FE fill:#1e3a8a,stroke:#3b82f6,color:#fff
     style BE fill:#065f46,stroke:#10b981,color:#fff
     style OL fill:#c2410c,stroke:#f97316,color:#fff
@@ -185,13 +188,14 @@ Key variables from [`.env.example`](.env.example):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OLLAMA_URL` | `http://cyberai-ollama:11434` | Internal Ollama endpoint |
-| `OLLAMA_MODEL` | `gemma4:latest` | Primary local inference model (9.6GB) |
-| `LOCAL_NUM_THREADS` | `12` | CPU thread allocation for inference |
-| `PREFER_LOCAL` | `true` | Enforce 100% offline local inference |
-| `DEEPSEEK_API_KEY` | — | API Key for DeepSeek v4 Flash |
-| `GEMINI_API_KEY` | — | API Key for Google Gemini 2.0 Flash |
-| `JWT_SECRET` | — | Secret key for JWT signing |
+| `OLLAMA_URL` | `http://ollama:11434` | Internal Ollama endpoint |
+| `MODEL_NAME` | `gemma4:latest` | Primary Auditor model (9.6GB) |
+| `MODEL_1_EXTRACTOR` | `qwen2.5-coder:7b` | Technical Extractor model (4.7GB) |
+| `MODEL_3_EMBEDDING` | `bge-m3` | Multilingual Embedding model (1.2GB) |
+| `PREFER_LOCAL` | `true` | Enforce 100% offline local inference for audit acceptance |
+| `GOOGLE_AI_STUDIO_API_KEY` | — | Google AI Studio Free API Key for Gemini 2.0 Flash response review |
+| `JWT_SECRET` | — | Secret key for JWT signing (≥32 chars) |
+| `CORS_ORIGINS` | `http://localhost:3000,http://localhost:3081` | Allowed browser origins |
 
 ---
 

@@ -30,7 +30,7 @@ export async function GET(request, context) {
             return new NextResponse(content, {
                 headers: {
                     'Content-Type': 'text/plain; charset=utf-8',
-                    'Cache-Control': 'public, max-age=3600',
+                    'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
                 }
             })
         }
@@ -40,7 +40,7 @@ export async function GET(request, context) {
             return new NextResponse(content, {
                 headers: {
                     'Content-Type': 'text/plain; charset=utf-8',
-                    'Cache-Control': 'public, max-age=3600',
+                    'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
                 }
             })
         }

@@ -59,7 +59,7 @@ self.collection = self.client.get_or_create_collection(
 | Collection name | `iso_documents` | Fixed — used by both RAG and ISO assessment |
 | Distance metric | cosine | 0 = identical, 1 = orthogonal, 2 = opposite |
 | Persist directory | `/data/vector_store` | Survives container restarts |
-| Embedding function | ChromaDB default | `sentence-transformers/all-MiniLM-L6-v2` |
+| Embedding function | `BgeM3EmbeddingFunction` | `BAAI/bge-m3` via Ollama `/api/embed` (dim 1024) |
 
 ---
 

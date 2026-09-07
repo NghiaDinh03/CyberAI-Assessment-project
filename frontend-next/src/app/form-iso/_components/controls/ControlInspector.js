@@ -101,8 +101,9 @@ export default function ControlInspector({
         e.preventDefault()
         e.stopPropagation()
         setIsDragging(false)
-        if (e.dataTransfer?.files?.length > 0) {
-            onUploadFiles?.(control.id, e.dataTransfer.files)
+        const files = Array.from(e.dataTransfer?.files || [])
+        if (files.length > 0) {
+            onUploadFiles?.(control.id, files)
         }
     }
 
@@ -217,9 +218,10 @@ export default function ControlInspector({
                             id={`file-upload-${control.id}`}
                             style={{ display: 'none' }}
                             onChange={(e) => {
-                                if (e.target.files?.length > 0) {
-                                    onUploadFiles?.(control.id, e.target.files)
-                                    e.target.value = ''
+                                const files = Array.from(e.target.files || [])
+                                e.target.value = ''
+                                if (files.length > 0) {
+                                    onUploadFiles?.(control.id, files)
                                 }
                             }}
                         />

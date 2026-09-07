@@ -325,12 +325,15 @@ percentage = (achieved_weighted / max_weighted) × 100
 <summary>📝 Pseudocode: <code>calc_compliance()</code></summary>
 
 ```python
-# Pseudocode
+# Pseudocode (Bảo đảm lọc đúng chuẩn, loại bỏ trùng lặp và chặn trần <= 100%)
 flat = get_flat_controls(standard)
-weight_map = {c["id"]: WEIGHT_SCORE[c["weight"]] for c in flat}
+flat_ids = {c["id"] for c in flat}
+valid_implemented = [cid for cid in dict.fromkeys(implemented) if cid in flat_ids]
+weight_map = {c["id"]: WEIGHT_SCORE.get(c.get("weight", "medium"), 1) for c in flat}
 max_w = sum(weight_map.values())
-achieved_w = sum(weight_map[cid] for cid in implemented if cid in weight_map)
-percentage = round(achieved_w / max_w * 100, 1)
+achieved_w = sum(weight_map.get(cid, 0) for cid in valid_implemented)
+percentage = min(100.0, max(0.0, round(achieved_w / max_w * 100, 1))) if max_w > 0 else 0.0
+score = min(len(valid_implemented), len(flat))
 ```
 
 </details>
@@ -729,15 +732,15 @@ Dự phòng đa tầng theo nhà cung cấp với theo dõi giới hạn tốc �
 ```mermaid
 flowchart TD
     REQ[Request] --> MODE{prefer_cloud?}
-    MODE -->|force_local| LOCAL[LocalAI/Ollama]
+    MODE -->|force_local| LOCAL[Ollama :11434 (100% Offline)]
     LOCAL -->|fail + force_local| ERR1[Raise error]
     LOCAL -->|fail + not forced| CLOUD
 
-    MODE -->|prefer_cloud| CLOUD[Cloud: OpenClaude]
-    CLOUD -->|fail| LOCAL2[LocalAI Fallback]
+    MODE -->|prefer_cloud| CLOUD[Cloud AI: Gemini / Claude / DeepSeek]
+    CLOUD -->|fail| LOCAL2[Ollama Fallback]
     LOCAL2 -->|fail| ERR2[All providers failed]
 
-    MODE -->|local_only| LO[LocalAI only]
+    MODE -->|local_only| LO[Ollama only (100% Offline)]
     LO -->|fail| ERR3[Local-only mode error]
 ```
 
@@ -802,25 +805,25 @@ Ollama được chọn khi mô hình có tiền tố đã biết: `gemma3:`, `ge
 
 ### 7.6 Dự phòng chế độ đánh giá (Assessment Mode Fallback)
 
-Được định nghĩa trong [`ChatService.assess_system()`](backend/services/chat_service.py:368):
+Được định nghĩa trong [`ChatService.assess_system()`](backend/services/chat_service.py):
 
-| Chế độ yêu cầu (Requested Mode) | LocalAI khả dụng | Chế độ thực tế (Effective Mode) |
+| Chế độ yêu cầu (Requested Mode) | Ollama khả dụng | Chế độ thực tế (Effective Mode) |
 |---------------------------------|:-:|--------------------------------|
-| `local` | ✅ | `local` |
+| `local` | ✅ | `local` (100% Offline On-Premise) |
 | `local` | ❌ (+ có khóa cloud) | `hybrid` |
 | `local` | ❌ (không có khóa cloud) | **Lỗi** |
-| `hybrid` | ✅ | `hybrid` |
+| `hybrid` | ✅ | `hybrid` (Ollama trước, Cloud dự phòng) |
 | `hybrid` | ❌ | `cloud` |
 | `cloud` | bất kỳ | `cloud` |
 
 **Pipeline đánh giá hai giai đoạn (Two-phase assessment pipeline)**:
 
-| Giai đoạn (Phase) | Chế độ Local | Chế độ Hybrid | Chế độ Cloud |
-|-------------------|-------------|---------------|-------------|
-| P1: Gap Analysis (Phân tích Gap) | SecurityLM (LocalAI) | SecurityLM (LocalAI) | OpenClaude |
-| P2: Report Formatting (Định dạng báo cáo) | Meta-Llama (LocalAI) | OpenClaude | OpenClaude |
+| Giai đoạn (Phase) | Chế độ Local (100% Offline) | Chế độ Hybrid | Chế độ Cloud |
+|-------------------|-----------------------------|---------------|--------------|
+| P1: Gap Analysis (Phân tích Gap) | `gemma4` / `qwen2.5` (Ollama) | `gemma4:latest` (Ollama) | Cloud AI (Gemini / Claude) |
+| P2: Report Formatting (Định dạng báo cáo) | `gemma4:latest` (Ollama) | `gemma4:latest` (Ollama) | Cloud AI (Gemini / Claude) |
 
-Mỗi giai đoạn có **3 lần thử lại** với kiểm tra JSON hợp lệ giữa các lần.
+Mỗi giai đoạn có **3 lần thử lại** với kiểm tra JSON hợp lệ (`json_repair`) giữa các lần.
 
 ### 7.7 Hằng số
 

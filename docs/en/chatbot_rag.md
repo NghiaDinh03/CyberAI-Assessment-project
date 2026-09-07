@@ -21,7 +21,7 @@ This is **RAG (Retrieval-Augmented Generation)** — in simple terms, "AI with a
 | You ask | Chatbot auto-selects | What happens behind the scenes |
 |---------|---------------------|-------------------------------|
 | *"What does ISO 27001 A.9 say about access control?"* | 🔒 **Security** | Searches 21+ ISO documents → finds 5 most relevant passages → AI synthesizes into a response |
-| *"Latest ransomware news?"* | 🌐 **Search** | Searches DuckDuckGo → gets top 5 results → AI summarizes |
+| *"Latest ransomware news?"* | 🌐 **Search** | Searches web via SearXNG / Web Search → gets top 5 results → AI summarizes |
 | *"Hello, what can you do?"* | 💬 **General** | No search needed → AI responds directly |
 
 > 💡 **The chatbot automatically detects question type** — you don't need to manually select a mode.
@@ -50,17 +50,15 @@ When you chat, the response appears **word by word** (like ChatGPT). This techni
 
 ### Multi-Model Support
 
-18+ models across 5 providers, selectable per request via the `model` field or frontend dropdown (grouped by provider):
+The platform runs primarily on **100% Local AI Offline** models via Ollama, while supporting optional cloud fallbacks selectable per request via the `model` parameter or the chatbot UI dropdown:
 
-| Provider | Examples |
-|----------|----------|
-| **OpenAI** | gpt-4o, gpt-4o-mini, gpt-3.5-turbo |
-| **Google** | gemini-1.5-pro, gemini-1.5-flash |
-| **Anthropic** | claude-3.5-sonnet, claude-3-haiku |
-| **Ollama** | llama3, mistral, phi3 |
-| **LocalAI** | SecurityLLM 7B, Meta-Llama 8B |
-
-Model list is composed from built-in defaults merged with [`models.json`](models.json) at startup.
+| Provider | Model | Role |
+|---|---|---|
+| **Ollama (Local Offline)** | `gemma4:latest` (9.6GB) | Primary Auditor & Chatbot Reasoning |
+| **Ollama (Local Offline)** | `qwen2.5-coder:7b` (4.7GB) | Technical Extractor & Log Analysis |
+| **Ollama (Local Offline)** | `bge-m3:latest` (1.2GB) | Multilingual Vector Embeddings for ChromaDB |
+| **Google AI Studio (Cloud Fallback)** | `gemini-2.0-flash` | Optional cloud fallback channel |
+| **Claude / DeepSeek (Cloud Fallback)** | `claude-3.5-sonnet`, `deepseek-chat` | General cloud fallback channel |
 
 ### Session Management
 
@@ -113,7 +111,7 @@ User message
 | Intent | Action | Flag |
 |--------|--------|------|
 | `security` | RAG lookup against ISO/cybersecurity documents | `use_rag=true` |
-| `search` | Web search via DuckDuckGo | `use_search=true` |
+| `search` | Web search via SearXNG / Web Search | `use_search=true` |
 | `general` | Direct LLM response (no augmentation) | — |
 
 ---
@@ -190,18 +188,20 @@ Storage: ChromaDB `PersistentClient` under `data/vector_store/`.
 
 ---
 
-## 4. Web Search Integration
+## 4. Web Search & Live Threat Intelligence Integration
 
-Implemented in [`web_search.py`](backend/services/web_search.py).
+Implemented in [`backend/services/web_search.py`](backend/services/web_search.py).
 
 | Parameter | Value |
 |-----------|-------|
-| Library | `duckduckgo_search` (`ddgs`) |
-| Retry logic | 2 retries on failure |
-| Region | `vn-vi` (Vietnamese) |
-| Trigger | `ModelRouter` classifies intent as `search` |
+| **Primary Engine (Layer 1)** | On-premise `SearXNG` (`http://searxng:8080`, host port 8888) via JSON API |
+| **Fallback Engine (Layer 2)** | `ddgs` (DuckDuckGo Python client) automatically engaged upon SearXNG failure/timeout |
+| **Data Loss Prevention (DLP)** | `is_log_analysis_query` skips web search if technical logs or attack payloads are detected |
+| **Timeouts** | 8.0s for SearXNG; 5.0s for `ddgs` |
+| **Region & Language** | `language="vi-VN"`, `region="vn-vi"` (Vietnamese biased) |
+| **Trigger** | `ModelRouter` classifies intent as `search` |
 
-Results are injected into the prompt as additional context alongside any RAG results.
+Results are structured into auditable source citations `[1]`, `[2]`... and injected into the LLM prompt as additional context alongside any RAG results.
 
 ---
 
@@ -214,7 +214,7 @@ User message
 ModelRouter.classify(message)
   │
   ├── intent: security ──► RAGService.search(query, domain) ──► context chunks
-  ├── intent: search   ──► WebSearch.search(query)           ──► search results
+  ├── intent: search   ──► WebSearch.search(query)           ──► search results (SearXNG)
   └── intent: general  ──► (no augmentation)
   │
   ▼
@@ -225,8 +225,8 @@ Prompt Construction
   │
   ▼
 LLM Inference
-  ├── LocalAI / Ollama (local mode)
-  ├── OpenAI / Google / Anthropic (cloud mode)
+  ├── Ollama :11434 (gemma4:latest / qwen2.5-coder) [100% Offline]
+  ├── Google Gemini / Claude / DeepSeek (cloud mode)
   └── Hybrid: local first, cloud fallback
   │
   ▼

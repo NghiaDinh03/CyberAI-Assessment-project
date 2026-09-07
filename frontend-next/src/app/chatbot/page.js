@@ -20,8 +20,10 @@ const MAX_INPUT_CLOUD = 15000
 const WARN_OFFSET = 200
 
 const CLOUD_MODELS = [
-    { id: 'gemma4:latest',           label: 'Gemma 4 (Local)',          provider: 'ollama',    badge: 'Primary · Local' },
-    { id: 'gemini-2.0-flash-free',   label: 'Gemini 2.0 Flash (Free)', provider: 'google',    badge: 'Cloud Fallback' },
+    { id: 'gemma4:latest',                   label: 'Gemma 4 (Local)',                 provider: 'ollama',    badge: 'Primary · Local' },
+    { id: 'qwen2.5-coder:7b',               label: 'Qwen2.5-Coder:7b (Local)',        provider: 'ollama',    badge: 'Technical · Local' },
+    { id: 'Foundation-Sec-8B-local:latest', label: 'Foundation-Sec-8B (Local)',       provider: 'ollama',    badge: 'Security · Local' },
+    { id: 'gemini-2.0-flash',               label: 'Gemini 2.0 Flash (Cloud Free)',   provider: 'google',    badge: 'Google AI · Fallback' },
 ]
 
 // Ollama models populated dynamically from backend catalog
@@ -239,8 +241,7 @@ const MessageBubble = memo(function MessageBubble({
     const modelKey = m.model || m.requestedModel || ''
     const providerColor = m.provider && PROVIDER_COLORS[m.provider]
         ? PROVIDER_COLORS[m.provider]
-        : (modelKey.includes('gemma') || modelKey.endsWith('.gguf') ? PROVIDER_COLORS.ollama : PROVIDER_COLORS.openai)
-
+        : (modelKey.includes('gemma') || modelKey.endsWith('.gguf') ? PROVIDER_COLORS.ollama : (modelKey.startsWith('gemini') ? PROVIDER_COLORS.google : PROVIDER_COLORS.openai))
     const [isEditing, setIsEditing] = useState(false)
     const [editText, setEditText] = useState(content)
     const editTextareaRef = useRef(null)
@@ -370,7 +371,7 @@ const MessageBubble = memo(function MessageBubble({
                             <span>Ngữ cảnh hội thoại đã đầy</span>
                         </div>
                         <p className={styles.contextWarningDesc}>
-                            Đoạn hội thoại hiện tại chứa nhiều câu hỏi và dữ liệu log lớn đã đạt giới hạn bộ nhớ ngữ cảnh của mô hình AI cục bộ. Để AI phân tích chính xác và đạt hiệu suất cao nhất, bạn vui lòng mở một phiên chat mới hoặc chuyển sang Cloud AI.
+                            Đoạn hội thoại hiện tại chứa nhiều câu hỏi và dữ liệu log lớn đã đạt giới hạn bộ nhớ ngữ cảnh của mô hình AI cục bộ. Để AI phân tích chính xác và đạt hiệu suất cao nhất, bạn vui lòng mở một phiên chat mới.
                         </p>
                         <div className={styles.contextWarningActions}>
                             <button
@@ -379,13 +380,6 @@ const MessageBubble = memo(function MessageBubble({
                                 onClick={() => onNewChat?.()}
                             >
                                 <Plus size={13} /> Mở phiên chat mới
-                            </button>
-                            <button
-                                type="button"
-                                className={styles.errorCloudBtn}
-                                onClick={() => onSwitchModel?.(index, 'gemini-2.0-flash-free')}
-                            >
-                                <Zap size={13} /> Thử Cloud AI (1M context)
                             </button>
                         </div>
                     </div>
@@ -397,8 +391,8 @@ const MessageBubble = memo(function MessageBubble({
                         </div>
                         <p className={styles.errorDesc}>
                             {isOllama404
-                                ? 'Mô hình gemma4:latest cục bộ đang được tải về (hoặc chưa khởi động xong). Bạn có thể thử lại sau giây lát hoặc chuyển sang mô hình Cloud AI để tiếp tục ngay lập tức.'
-                                : 'Hệ thống không thể hoàn tất câu trả lời do gián đoạn kết nối hoặc timeout. Bạn có thể thử lại hoặc chọn mô hình khác.'}
+                                ? 'Mô hình AI cục bộ đang được tải về (hoặc chưa khởi động xong). Vui lòng kiểm tra lại dịch vụ Ollama nội bộ.'
+                                : 'Hệ thống không thể hoàn tất câu trả lời do gián đoạn kết nối hoặc timeout. Bạn có thể thử lại bằng nút bấm bên dưới.'}
                         </p>
                         <div className={styles.errorActions}>
                             <button
@@ -407,13 +401,6 @@ const MessageBubble = memo(function MessageBubble({
                                 onClick={() => onRegenerate?.(index)}
                             >
                                 <RefreshCw size={13} /> Thử lại
-                            </button>
-                            <button
-                                type="button"
-                                className={styles.errorCloudBtn}
-                                onClick={() => onSwitchModel?.(index, 'gemini-2.0-flash-free')}
-                            >
-                                <Zap size={13} /> Dùng Cloud AI (Miễn phí)
                             </button>
                         </div>
                         <details className={styles.errorDetails}>
@@ -495,18 +482,6 @@ const MessageBubble = memo(function MessageBubble({
                                         >
                                             <RotateCcw size={12} className={styles.actionIcon} />
                                             <span>Tạo lại</span>
-                                        </button>
-                                    )}
-                                    {prevUserPrompt && (modelKey.includes('gemma') || modelKey.includes(':') || modelKey.endsWith('.gguf')) && (
-                                        <button
-                                            type="button"
-                                            className={`${styles.actionBtn} ${styles.actionBtnCloud}`}
-                                            onClick={() => onSwitchModel?.(index, 'gemini-2.0-flash-free')}
-                                            title="Chạy thử câu hỏi này bằng Cloud AI (Nhanh & Miễn phí)"
-                                            aria-label="Try with Cloud AI"
-                                        >
-                                            <Zap size={12} className={styles.actionIcon} />
-                                            <span>Thử Cloud</span>
                                         </button>
                                     )}
                                 </div>

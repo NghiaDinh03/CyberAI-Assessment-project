@@ -46,7 +46,7 @@ Hãy tưởng tượng bạn có một **chuyên gia tư vấn ISO 27001** ngồ
 | Bạn hỏi | Chatbot tự động chọn chế độ | Chatbot làm gì phía sau |
 |----------|----------------------------|------------------------|
 | *"ISO 27001 A.9 nói gì về kiểm soát truy cập?"* | 🔒 **Security** — Hỏi về bảo mật | Tìm trong 21+ tài liệu ISO → lấy 5 đoạn liên quan nhất → AI tổng hợp thành câu trả lời |
-| *"Tin tức ransomware mới nhất?"* | 🌐 **Search** — Tìm trên internet | Tìm kiếm DuckDuckGo → lấy 5 kết quả → AI tổng hợp thành câu trả lời |
+| *"Tin tức ransomware mới nhất?"* | 🌐 **Search** — Tìm trên internet | Tìm kiếm tin tức ATTT qua SearXNG / Web Search → lấy 5 kết quả → AI tổng hợp thành câu trả lời |
 | *"Xin chào, bạn giúp gì được?"* | 💬 **General** — Chat thường | Không cần tra cứu → AI trả lời trực tiếp |
 
 > 💡 **Chatbot tự động nhận diện loại câu hỏi** — bạn không cần chọn chế độ thủ công.
@@ -58,34 +58,24 @@ Hãy nghĩ về sự khác biệt giữa 2 loại AI:
 | | AI thông thường (ví dụ: ChatGPT thuần) | AI + RAG (CyberAI Chatbot) |
 |---|---|---|
 | **Ví dụ đời thực** | Một chuyên gia nhớ kiến thức tổng quát nhưng **không mang theo sách** | Một chuyên gia **có cả thư viện 21+ cuốn sách chuyên ngành** — tra cứu trước khi trả lời |
-| **Khi hỏi về ISO 27001** | Trả lời từ "trí nhớ" → có thể sai hoặc lỗi thời | Tra cứu tài liệu ISO 27001 thật → trích dẫn chính xác từng điều khoản |
-| **Khi hỏi về luật VN** | Có thể bịa ra luật không tồn tại | Tra cứu Luật An ninh Mạng 2018, NĐ 13/2023 thật → trích dẫn điều khoản cụ thể |
-| **Độ tin cậy** | ⚠️ Có thể "ảo giác" (hallucination) | ✅ Trích dẫn có nguồn, giảm thiểu ảo giác |
-
-### SSE Streaming — Tại sao chữ hiện từng từ một?
-
-Khi bạn chat, câu trả lời hiện ra **từ từ từng từ** (giống ChatGPT). Kỹ thuật này gọi là **SSE (Server-Sent Events)**:
-- ⏱️ Bạn thấy phản hồi **ngay** — không phải chờ 10-30 giây
-- 📖 Có thể đọc phần đầu trong khi AI vẫn đang viết phần sau
-- 🔄 Nếu câu trả lời không đúng, bạn có thể dừng sớm mà không phí thời gian
+| **Khi hỏi về ISO 27001** | Trả lời chung chung theo trí nhớ, có thể sai lệch hoặc lỗi thời | Mở đúng sách ISO 27001 ra xem, trích dẫn chính xác từng điều khoản, tiêu chuẩn |
+| **Độ chính xác** | ~70-80% (dễ bị "ảo giác" — tự bịa thông tin) | ~95%+ (thông tin có căn cứ từ tài liệu chính thức) |
 
 ---
 
 ## 1. 🏗️ Kiến Trúc Chatbot
 
-### Hỗ Trợ Đa Mô Hình
+### Hỗ Trợ Đa Mô Hình (Multi-Model Support)
 
-Hỗ trợ **18+ mô hình** từ 5 nhà cung cấp, có thể chọn theo từng request qua trường `model` hoặc dropdown trên giao diện (nhóm theo nhà cung cấp):
+Hệ thống ưu tiên **100% Local AI Offline** qua Ollama, đồng thời hỗ trợ chọn model linh hoạt qua trường `model` hoặc dropdown trên giao diện:
 
-| Nhà cung cấp | Ví dụ |
-|---------------|-------|
-| **OpenAI** | gpt-4o, gpt-4o-mini, gpt-3.5-turbo |
-| **Google** | gemini-1.5-pro, gemini-1.5-flash |
-| **Anthropic** | claude-3.5-sonnet, claude-3-haiku |
-| **Ollama** | llama3, mistral, phi3 |
-| **LocalAI** | SecurityLLM 7B, Meta-Llama 8B |
-
-> 📝 Danh sách mô hình được tổng hợp từ giá trị mặc định tích hợp, gộp với [`models.json`](../../models.json) khi khởi động.
+| Nhà cung cấp | Mô hình chính | Vai trò |
+|---|---|---|
+| **Ollama (Local Offline)** | `gemma4:latest` (9.6GB) | Auditor chính, phân tích tiêu chuẩn & Chatbot |
+| **Ollama (Local Offline)** | `qwen2.5-coder:7b` (4.7GB) | Bóc tách kỹ thuật, phân tích log an ninh |
+| **Ollama (Local Offline)** | `bge-m3:latest` (1.2GB) | Vector Embedding cho RAG & ChromaDB |
+| **Google AI Studio (Cloud Fallback)** | `gemini-2.0-flash` | Kênh dự phòng Cloud khi cấu hình API Key |
+| **OpenClaude / DeepSeek (Cloud Fallback)** | `claude-3.5-sonnet`, `deepseek-chat` | Kênh dự phòng Cloud tổng quan |
 
 ### Quản Lý Phiên
 
@@ -168,7 +158,7 @@ Nếu `confidence < 0.6` → fallback sang khớp từ khóa regex.
 | Intent | Hành động | Cờ |
 |--------|-----------|-----|
 | `security` | RAG (Retrieval-Augmented Generation - Tìm kiếm tăng cường sinh) truy vấn tài liệu ISO/an ninh mạng | `use_rag=true` |
-| `search` | Tìm kiếm web qua DuckDuckGo | `use_search=true` |
+| `search` | Tìm kiếm tin tức ATTT qua SearXNG (hỗ trợ DuckDuckGo fallback) | `use_search=true` |
 | `general` | Phản hồi trực tiếp từ LLM (không tăng cường) | — |
 
 <details>
@@ -305,52 +295,62 @@ Sử dụng hàm Embedding (Nhúng vector) mặc định tích hợp của Chrom
 
 ---
 
-## 4. 🌐 Tích Hợp Tìm Kiếm Web
+## 4. 🌐 Tích Hợp Tìm Kiếm Web & Tình Báo An Ninh Mạng
 
 Triển khai trong [`web_search.py`](../../backend/services/web_search.py).
 
 | Tham số | Giá trị |
 |---------|---------|
-| Thư viện | `duckduckgo_search` (`ddgs`) |
-| Logic retry (Thử lại) | 2 lần thử lại khi thất bại |
-| Khu vực | `vn-vi` (Tiếng Việt) |
-| Điều kiện kích hoạt | `ModelRouter` phân loại intent là `search` |
+| **Công cụ chính (Tầng 1)** | SearXNG on-premise nội bộ (`http://searxng:8080`, port host 8888) qua JSON API |
+| **Dự phòng (Tầng 2)** | Thư viện `ddgs` (DuckDuckGo Python client) tự động kích hoạt khi SearXNG lỗi/timeout |
+| **Bảo vệ rò rỉ dữ liệu** | `is_log_analysis_query` — phát hiện log/payload kỹ thuật thì chặn tìm kiếm ra ngoài |
+| **Thời gian chờ (Timeout)** | 8.0s cho SearXNG; 5.0s cho `ddgs` |
+| **Khu vực & Ngôn ngữ** | `language="vi-VN"`, `region="vn-vi"` (Ưu tiên tiếng Việt) |
+| **Điều kiện kích hoạt** | `ModelRouter` phân loại intent là `search` |
 
-> Kết quả tìm kiếm được đưa vào prompt dưới dạng ngữ cảnh bổ sung, kết hợp cùng kết quả RAG (Tìm kiếm tăng cường sinh) nếu có.
+> Kết quả tìm kiếm được chuẩn hóa thành trích dẫn nguồn có đánh số `[1]`, `[2]`... và đưa vào prompt dưới dạng ngữ cảnh bổ sung, kết hợp cùng kết quả RAG nếu có.
 
 <details>
-<summary>📖 Chi tiết mã nguồn Web Search</summary>
+<summary>📖 Chi tiết luồng thực thi WebSearch</summary>
 
 ```python
-from duckduckgo_search import DDGS
+# Trích từ backend/services/web_search.py
+class WebSearch:
+    @staticmethod
+    def _search_searxng(query: str, max_results: int = 5) -> List[Dict[str, str]]:
+        """Truy vấn trực tiếp SearXNG qua endpoint GET /search?format=json (Timeout 8.0s)"""
+        searxng_base = getattr(settings, "SEARXNG_URL", "http://searxng:8080").rstrip("/")
+        # Gọi JSON API...
+        ...
 
-def search(query, max_results=5, retries=2):
-    for attempt in range(retries):
-        try:
-            with DDGS() as ddgs:
-                raw = list(ddgs.text(query, max_results=max_results))
-            if raw:
-                return [{"title": r["title"], "body": r["body"], "href": r["href"]}
-                        for r in raw]
-        except Exception as e:
-            if attempt < retries - 1:
-                time.sleep(1)
-    return []
+    @classmethod
+    def search(cls, query: str, max_results: int = 5, retries: int = 1) -> List[Dict[str, str]]:
+        # 1. DLP: Chặn rò rỉ log
+        if is_log_analysis_query(query):
+            return []
+        
+        # 2. Ưu tiên 1: SearXNG Cục bộ (JSON API)
+        searx_results = cls._search_searxng(query, max_results=max_results)
+        if searx_results:
+            return searx_results
+
+        # 3. Ưu tiên 2: Fallback tự động sang ddgs
+        # Thực hiện tìm kiếm dự phòng...
 ```
 
-Kết quả được format thành context cho prompt:
+Kết quả được format thành context cho prompt với đánh số trích dẫn:
 
 ```python
 @staticmethod
-def format_context(results):
-    if not results:
-        return "Không có kết quả tìm kiếm web."
-    lines = ["## Kết Quả Tìm Kiếm Web\n"]
+def format_context(results: List[Dict[str, str]]) -> str:
+    parts = []
     for i, r in enumerate(results, 1):
-        lines.append(f"**[{i}] {r['title']}**")
-        lines.append(r['body'])
-        lines.append(f"Nguồn: {r['href']}\n")
-    return "\n".join(lines)
+        parts.append(
+            f"[{i}] {r['title']}\n"
+            f"URL: {r['url']}\n"
+            f"{r['snippet']}"
+        )
+    return "\n\n---\n\n".join(parts)
 ```
 
 </details>
@@ -383,8 +383,8 @@ flowchart TD
     K --> M
     L --> M
 
-    M -->|"Local mode"| N["LocalAI / Ollama"]
-    M -->|"Cloud mode"| O["OpenAI / Google /\nAnthropic"]
+    M -->|"Local mode (100% Offline)"| N["Ollama :11434\n(gemma4 / qwen2.5)"]
+    M -->|"Cloud mode"| O["Google Gemini /\nClaude / DeepSeek"]
     M -->|"Hybrid"| P["Local trước,\nCloud dự phòng"]
 
     N --> Q["📤 Response + Metadata"]
@@ -410,10 +410,10 @@ flowchart TD
 
 | Bước | Mô tả | Thành phần |
 |------|--------|------------|
-| 1 | Người dùng gửi tin nhắn | Frontend → `POST /api/chat` |
+| 1 | Người dùng gửi tin nhắn | Frontend → `POST /api/chat` (hoặc `/api/chat/stream`) |
 | 2 | Phân loại intent | [`ModelRouter`](../../backend/services/model_router.py) |
-| 3a | Truy xuất tài liệu ISO (nếu `security`) | [`RAGService`](../../backend/services/rag_service.py) |
-| 3b | Tìm kiếm web (nếu `search`) | [`WebSearch`](../../backend/services/web_search.py) |
+| 3a | Truy xuất tài liệu ISO (nếu `security`) | [`RAGService`](../../backend/services/rag_service.py) (ChromaDB BGE-M3) |
+| 3b | Tìm kiếm web riêng tư (nếu `search`) | [`WebSearch`](../../backend/services/web_search.py) (SearXNG :8888) |
 | 3c | Không tăng cường (nếu `general`) | — |
 | 4 | Xây dựng prompt với context | [`ChatService`](../../backend/services/chat_service.py) |
 | 5 | Gọi LLM (local/cloud/hybrid) | [`CloudLLMService`](../../backend/services/cloud_llm_service.py) |
@@ -427,11 +427,11 @@ flowchart TD
 
 ```mermaid
 graph TB
-    subgraph Frontend["🖥️ Frontend (Next.js)"]
+    subgraph Frontend["🖥️ Frontend (Next.js :3081)"]
         UI["Chat UI"]
     end
 
-    subgraph Backend["⚙️ Backend (FastAPI)"]
+    subgraph Backend["⚙️ Backend (FastAPI :8000)"]
         CS["ChatService"]
         MR["ModelRouter"]
         RS["RAGService"]
@@ -440,13 +440,13 @@ graph TB
     end
 
     subgraph AI["🤖 AI Providers"]
-        LOCAL["LocalAI / Ollama"]
-        CLOUD["OpenAI / Google / Anthropic"]
+        LOCAL["Ollama :11434\n(gemma4, qwen2.5)"]
+        CLOUD["Cloud Fallback\n(Gemini, Claude, DeepSeek)"]
     end
 
     subgraph Storage["🗄️ Storage"]
-        CHROMA["ChromaDB\n(Vector Store)"]
-        FILES["data/sessions/\n(JSON Files)"]
+        CHROMA["ChromaDB\n(BGE-M3 Embeddings)"]
+        FILES["data/chat_sessions.db\n(SQLite Sessions)"]
         DOCS["data/iso_documents/\n(21+ Markdown)"]
     end
 

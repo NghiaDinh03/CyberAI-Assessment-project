@@ -219,12 +219,13 @@ These standards are indexed into ChromaDB collections and available for RAG cont
 
 | Feature | Description |
 |---------|-------------|
-| Upload | Per-control file upload via `/api/iso27001/evidence/{control_id}` (max 10 MB) |
+| Per-Control Upload | Direct file upload via `/api/iso27001/evidence/{control_id}` (max 10 MB). Snapshots file inputs and auto-transitions control state to **"✓ IMPLEMENTED"**. |
+| Batch Ingest | Multi-file drag & drop via `/api/iso27001/evidence/batch-ingest`. Agent 1 extracts cybersecurity facts and automatically assigns files to multiple controls and detects server hosts/IPs. |
 | Storage | `data/evidence/{control_id}/` directory |
-| Content extraction | File contents extracted and injected as AI context during assessment |
+| Content extraction | File contents structured by Agent 1 and injected as AI context during assessment. |
 | Summary | `/api/iso27001/evidence-summary` aggregates evidence across all controls |
 | Preview | `/api/iso27001/evidence/{control_id}/{filename}/preview` returns text content for supported types |
-| Management | List, download, delete per control per file |
+| Management | Real-time list, download, delete per control synced with Detail Drawer |
 
 ---
 
@@ -232,7 +233,10 @@ These standards are indexed into ChromaDB collections and available for RAG cont
 
 | Method | Implementation | Details |
 |--------|---------------|---------|
-| **PDF** (server) | weasyprint | HTML → PDF with professional styling, via `/api/iso27001/assessments/{id}/export-pdf` |
+| **PDF** (server) | weasyprint | HTML → PDF with professional audit styling, via `/api/iso27001/assessments/{id}/export-pdf` |
+| **Word DOCX** | python-docx | Formal ISMS Assessment Report (.docx) with GAP tables and risk charts via `/api/iso27001/assessments/{id}/export-docx` |
+| **Risk Register (Excel)** | pandas / openpyxl | ISO 27005 Information Security Risk Register (.xlsx) via `/api/iso27001/assessments/{id}/export-risk-register` |
+| **SoA (Excel)** | pandas / openpyxl | Statement of Applicability with all 93 controls via `/api/iso27001/assessments/{id}/export-soa` |
 | **HTML fallback** (server) | Jinja2 | Returns styled HTML if weasyprint is unavailable |
 | **HTML** (client) | Browser | Client-side HTML export with browser print-to-PDF |
 
@@ -255,9 +259,21 @@ Implemented in [`/form-iso`](frontend-next/src/app/form-iso/page.js).
 | History | Paginated list of past assessments |
 | Templates | Pre-filled assessment templates |
 
-### Processing UX
+---
 
-- Submit triggers background task
-- **Polling interval**: every 8 seconds until completion
-- Compliance gauge visualization on result
-- Structured JSON dashboard for machine-readable output
+## 10. Per-Control Detail Drawer & CyberAI Assistant
+
+Each control card provides a **Detail Drawer** with 3 dedicated workspaces:
+
+1. **Criteria Tab:**
+   - Detailed control description, audit criteria, and common pitfalls.
+   - Recommended technical commands (PowerShell / Linux Bash).
+2. **Evidence Tab:**
+   - Dedicated drag & drop / browse file uploader for the specific control.
+   - Live synchronization with `/api/iso27001/evidence/{control_id}` and instant status updates.
+3. **CyberAI Assistant Tab:**
+   - Asynchronous execution via `asyncio.to_thread` with 15s timeout protection against proxy dropouts.
+   - **"Generate SOP & Scripts" (`generate_sop`):** Produces 4-step enterprise SOPs, practical PowerShell/Bash scripts, audit checklists, and RACI matrices.
+   - **"Verify Evidence" (`verify_evidence`):** Audits uploaded files against control acceptance criteria.
+   - **"Ask Question" (`custom_query`):** Interactive technical Q&A with context awareness.
+   - **Enterprise SOP Fallback Generator:** Guarantees deterministic, domain-specific guidance even during 100% background GPU/CPU saturation.

@@ -367,14 +367,17 @@ export const WEIGHT_SCORE = { critical: 4, high: 3, medium: 2, low: 1 };
 // Tính điểm có trọng số từ danh sách controls đã tick
 export function calcWeightedScore(implementedIds, allControls) {
     const allFlat = allControls.flatMap(cat => cat.controls)
+    const validIds = new Set(allFlat.map(c => c.id))
+    const uniqueImplemented = Array.from(new Set(implementedIds || [])).filter(id => validIds.has(id))
     const weightMap = {}
     allFlat.forEach(c => { weightMap[c.id] = WEIGHT_SCORE[c.weight] || 1 })
     const maxScore = allFlat.reduce((s, c) => s + (WEIGHT_SCORE[c.weight] || 1), 0)
-    const achieved  = implementedIds.reduce((s, id) => s + (weightMap[id] || 0), 0)
+    const achieved  = uniqueImplemented.reduce((s, id) => s + (weightMap[id] || 0), 0)
+    const rawPercent = maxScore > 0 ? parseFloat(((achieved / maxScore) * 100).toFixed(1)) : 0
     return {
-        achieved,
+        achieved: Math.min(achieved, maxScore),
         maxScore,
-        percent: maxScore > 0 ? parseFloat(((achieved / maxScore) * 100).toFixed(1)) : 0
+        percent: Math.min(100.0, Math.max(0.0, rawPercent))
     }
 }
 
@@ -446,22 +449,25 @@ export function removeCustomStandard(standardId) {
  * Returns array of { category, total, implemented, percent, weightScore, maxWeightScore, weightPercent }
  */
 export function calcCategoryBreakdown(implementedIds, allControls) {
+    const validSet = new Set(implementedIds || [])
     return allControls.map(cat => {
         const catControls = cat.controls
         const total = catControls.length
-        const implemented = catControls.filter(c => implementedIds.includes(c.id)).length
+        const implemented = catControls.filter(c => validSet.has(c.id)).length
         const maxWeightScore = catControls.reduce((s, c) => s + (WEIGHT_SCORE[c.weight] || 1), 0)
         const weightScore = catControls
-            .filter(c => implementedIds.includes(c.id))
+            .filter(c => validSet.has(c.id))
             .reduce((s, c) => s + (WEIGHT_SCORE[c.weight] || 1), 0)
+        const rawPct = total > 0 ? parseFloat(((implemented / total) * 100).toFixed(1)) : 0
+        const rawWeightPct = maxWeightScore > 0 ? parseFloat(((weightScore / maxWeightScore) * 100).toFixed(1)) : 0
         return {
             category: cat.category,
             total,
             implemented,
-            percent: total > 0 ? parseFloat(((implemented / total) * 100).toFixed(1)) : 0,
+            percent: Math.min(100.0, Math.max(0.0, rawPct)),
             weightScore,
             maxWeightScore,
-            weightPercent: maxWeightScore > 0 ? parseFloat(((weightScore / maxWeightScore) * 100).toFixed(1)) : 0,
+            weightPercent: Math.min(100.0, Math.max(0.0, rawWeightPct)),
         }
     })
 }

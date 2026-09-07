@@ -286,30 +286,53 @@ Các tiêu chuẩn sau được index vào ChromaDB collections và sẵn dùng 
 
 | Tính Năng | Mô Tả |
 |-----------|--------|
-| Upload | Upload file theo từng control qua `/api/iso27001/evidence/{control_id}` (tối đa 10 MB) |
+| Upload từng Control | Upload file theo từng control qua `/api/iso27001/evidence/{control_id}` (tối đa 10 MB). Tự động snapshot FileList và chuyển trạng thái control thành **"✓ ĐÃ TRIỂN KHAI"**. |
+| Batch Ingest (Hàng loạt) | `/api/iso27001/evidence/batch-ingest` cho phép kéo thả nhiều tệp scan, log máy chủ cùng lúc. Agent 1 tự động bóc tách sự thật ATTT và tự động gán vào nhiều biện pháp kiểm soát (`A.*`, `SV.*`, `NW.*`) cũng như nhận diện danh sách máy chủ/IP. |
 | Storage (Lưu trữ) | Thư mục `data/evidence/{control_id}/` |
-| Content extraction (Trích xuất) | Nội dung file được trích xuất và đưa vào AI context trong quá trình Assessment (Đánh giá) |
+| Content extraction (Trích xuất) | Nội dung file được phân tích cấu trúc bởi Agent 1 và đưa vào AI context trong quá trình Assessment. |
 | Summary (Tóm tắt) | `/api/iso27001/evidence-summary` tổng hợp Evidence (Bằng chứng) trên tất cả controls |
 | Preview (Xem trước) | `/api/iso27001/evidence/{control_id}/{filename}/preview` trả về nội dung text cho các định dạng được hỗ trợ |
-| Management (Quản lý) | Liệt kê, tải xuống, xóa cho từng file của từng control |
+| Management (Quản lý) | Liệt kê, tải xuống, xóa cho từng file của từng control với đồng bộ thời gian thực vào Detail Drawer |
 
 ```mermaid
 flowchart LR
-    U["📤 Upload File<br>per control"] --> S["💾 Storage<br>data/evidence/{id}/"]
-    S --> E["🔍 Content<br>Extraction"]
-    E --> AI["🤖 AI Context<br>Injection"]
-    S --> P["👁️ Preview<br>& Download"]
+    U["📤 Upload File<br>(Single or Batch)"] --> A1["🕵️ Agent 1<br>Fact Extractor & Auto-Map"]
+    A1 --> S["💾 Storage<br>data/evidence/{id}/"]
+    S --> AI["🤖 Agent 2 Audit Context<br>& AI Assistant"]
+    S --> P["👁️ Preview, Download<br>& Verification"]
 ```
 
 ---
 
-## 📤 8. Export (Xuất Báo Cáo)
+## 📤 8. Export (Xuất Báo Cáo Chuyên Nghiệp)
 
-| Phương Thức | Công Nghệ | Chi Tiết |
-|-------------|-----------|----------|
-| **PDF** (server) | weasyprint | HTML → PDF với định dạng chuyên nghiệp, qua `/api/iso27001/assessments/{id}/export-pdf` |
-| **HTML fallback** (server) | Jinja2 | Trả về HTML có style nếu weasyprint không khả dụng |
-| **HTML** (client) | Browser | Xuất HTML phía client với tính năng in-sang-PDF của trình duyệt |
+| Phương Thức | Công Nghệ | Endpoint / Chi Tiết |
+|-------------|-----------|----------------------|
+| **PDF** (server) | weasyprint | HTML → PDF định dạng chuẩn thẩm định, qua `/api/iso27001/assessments/{id}/export-pdf` |
+| **Word DOCX** | python-docx | Xuất báo cáo đánh giá ISMS hoàn chỉnh kèm biểu đồ, bảng GAP, ma trận rủi ro qua `/api/iso27001/assessments/{id}/export-docx` |
+| **Risk Register (Excel/CSV)** | pandas / openpyxl | Xuất Sổ đăng ký rủi ro an toàn thông tin theo chuẩn ISO 27005 qua `/api/iso27001/assessments/{id}/export-risk-register` |
+| **SoA (Statement of Applicability)** | pandas / openpyxl | Xuất Tuyên bố áp dụng (SoA) đầy đủ 93 controls qua `/api/iso27001/assessments/{id}/export-soa` |
+| **HTML fallback** | Jinja2 / Client | Xem và in trực tiếp trên giao diện trình duyệt |
+
+---
+
+## 🤖 9. Detail Drawer & Trợ Lý CyberAI Từng Biện Pháp
+
+Mỗi biện pháp kiểm soát trong danh sách đều có thể mở hộp thoại chi tiết (**Detail Drawer**) với 3 tab chức năng chuyên sâu:
+
+1. **Tab Tiêu chí (Criteria):**
+   - Hiển thị mô tả chi tiết, mục tiêu kiểm toán, tiêu chí nghiệm thu của chuẩn ISO 27001 / TCVN 11930.
+   - Hiển thị lệnh kỹ thuật trích xuất thực tế (PowerShell / Linux Bash) và các cạm bẫy kiểm toán thường gặp (Audit Pitfalls).
+2. **Tab Bằng chứng (Evidence):**
+   - Cho phép kéo thả hoặc duyệt tệp từ máy tính cho riêng biện pháp đó.
+   - Tự động lưu trữ vào hệ thống và kích hoạt trạng thái **"✓ ĐÃ TRIỂN KHAI"**.
+   - Hỗ trợ xem trước nội dung tệp trực tiếp và xóa tệp an toàn.
+3. **Tab CyberAI (Trợ lý Thẩm định & Sinh SOP):**
+   - Gọi endpoint `/api/iso27001/controls/{control_id}/ai-assist` hoàn toàn bất đồng bộ (`asyncio.to_thread`) với timeout bảo vệ 15s.
+   - **Chế độ "Sinh Quy Trình & Lệnh Mẫu" (`generate_sop`):** Tự động sinh khung SOP 4 bước, kịch bản PowerShell/Bash trích xuất cấu hình thực tế, danh mục bằng chứng kiểm toán (Checklist) và ma trận RACI.
+   - **Chế độ "Thẩm Định Bằng Chứng" (`verify_evidence`):** Đối chiếu các tệp đính kèm với tiêu chí nghiệm thu của chuẩn để đưa ra kết luận Đạt/Chưa đạt và các khoảng cách (GAPs) cần hoàn thiện.
+   - **Chế độ "Hỏi Đáp Chuyên Sâu" (`custom_query`):** Tư vấn giải pháp kỹ thuật theo ngữ cảnh thực tế của tổ chức.
+   - **Enterprise SOP Fallback Engine:** Tự động phản hồi kịch bản kỹ thuật chuẩn xác theo từng nhóm mã (`A.5.*`, `A.6.*`, `A.7.*`, `A.8.*`) ngay cả khi mô hình AI cục bộ đang bận 100% xử lý đánh giá nền.
 
 ---
 

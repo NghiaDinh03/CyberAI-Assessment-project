@@ -1,5 +1,6 @@
 """Smart Model Router — Hybrid intent classification (semantic + keyword fallback)."""
 
+import os
 import re
 import logging
 from typing import Dict
@@ -8,8 +9,36 @@ from core.config import settings
 
 logger = logging.getLogger(__name__)
 
-SECURITY_MODEL = settings.SECURITY_MODEL_NAME
-GENERAL_MODEL = settings.MODEL_NAME
+# Multi-Agent Model Roles (100% On-Premise / Local GPU)
+# Model 1: Technical Data Extraction & Dataset Standardization
+MODEL_1_EXTRACTOR = getattr(settings, "MODEL_1_EXTRACTOR", os.getenv("MODEL_1_EXTRACTOR", "qwen2.5-coder:7b"))
+# Model 2: Compliance Audit & SoA Reasoning Auditor
+MODEL_2_AUDITOR = getattr(settings, "MODEL_2_AUDITOR", os.getenv("MODEL_2_AUDITOR", "gemma4:latest"))
+# Model 3: RAG Embedding & Indexing
+MODEL_3_EMBEDDING = getattr(settings, "EMBEDDING_MODEL_NAME", os.getenv("MODEL_3_EMBEDDING", "bge-m3"))
+
+SECURITY_MODEL = getattr(settings, "SECURITY_MODEL_NAME", MODEL_2_AUDITOR)
+GENERAL_MODEL = getattr(settings, "MODEL_NAME", MODEL_2_AUDITOR)
+
+
+def get_extractor_model() -> str:
+    """Model 1: Trích xuất Dữ liệu Kỹ thuật & Chuẩn hóa Dataset."""
+    return getattr(settings, "MODEL_1_EXTRACTOR", MODEL_1_EXTRACTOR)
+
+
+def get_auditor_model() -> str:
+    """Model 2: Thẩm định Tuân thủ & Lập Báo cáo (Reasoning Auditor)."""
+    return getattr(settings, "MODEL_2_AUDITOR", MODEL_2_AUDITOR)
+
+
+def get_embedding_model() -> str:
+    """Model 3: RAG Embedding & Indexing (BAAI/bge-m3)."""
+    return getattr(settings, "EMBEDDING_MODEL_NAME", MODEL_3_EMBEDDING)
+
+
+def get_all_required_models() -> list:
+    """Return the list of all 3 required on-premise local models."""
+    return [get_extractor_model(), get_auditor_model(), get_embedding_model()]
 
 
 def get_security_model() -> str:

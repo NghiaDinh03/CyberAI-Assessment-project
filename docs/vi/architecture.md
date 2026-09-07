@@ -47,38 +47,38 @@ Hệ thống hỗ trợ cơ chế suy luận cục bộ độc lập (**100% Off
 flowchart LR
     Browser(["🖥️ Trình duyệt (Người dùng)"])
 
-    subgraph PROD["⚡ Production Only"]
-        Nginx["cyberai-nginx\nnginx:alpine\n:80 / :443"]
+    subgraph PROD["⚡ Production & Ingress"]
+        Nginx["cyberai-nginx\nnginx:alpine\nHTTP :80 (Không cert)"]
     end
 
     subgraph DOCKER["🐳 Docker Network (cyberai-network)"]
-        Frontend["🎨 cyberai-frontend\nNext.js 16\n:3081"]
+        Frontend["🎨 cyberai-frontend\nNext.js 16\n:3081 / :3000"]
         Backend["⚙️ cyberai-backend\nFastAPI (Python 3.11)\n:8000"]
-        Ollama["🦙 cyberai-ollama\nOllama (Gemma 4)\n:11434"]
-        SearX["🔍 cyberai-searxng\nSearXNG Meta-Search\n:8888"]
+        Ollama["🦙 cyberai-ollama\nOllama (Gemma 4 · Qwen2.5 · BGE-M3)\n:11434"]
+        SearX["🔍 cyberai-searxng\nSearXNG Meta-Search\nHost :8888 / Docker :8080"]
         DB[(📁 SQLite Storage\nusers / chat / assessments)]
     end
 
-    Cloud(["☁️ Cloud AI Gateway\nDeepSeek / Gemini"])
+    Cloud(["☁️ Cloud AI Gateway (Tùy chọn Fallback)\nDeepSeek / Gemini / Claude"])
 
-    Browser -- "HTTPS" --> Nginx
-    Browser -- "HTTP dev :3081" --> Frontend
-    Nginx -- "proxy_pass" --> Frontend
-    Nginx -- "/api/*" --> Backend
+    Browser -- "HTTP :80" --> Nginx
+    Browser -- "HTTP :3081" --> Frontend
+    Nginx -- "proxy_pass /" --> Frontend
+    Nginx -- "proxy_pass /api/*" --> Backend
     Frontend -- "proxy /api/*" --> Backend
-    Backend -- "Inference" --> Ollama
-    Backend -- "Live Search" --> SearX
+    Backend -- "Inference (100% Offline)" --> Ollama
+    Backend -- "Live Search (JSON API :8080)" --> SearX
     Backend -- "ORM / SQL" --> DB
-    Backend -. "Hybrid Mode (Khử PII)" .-> Cloud
+    Backend -. "Tùy chọn Cloud Fallback" .-> Cloud
 
-    style Nginx fill:#f59e0b,stroke:#d97706,color:#000
+    style Nginx fill:#0f766e,stroke:#14b8a6,color:#fff
     style Frontend fill:#1e40af,stroke:#3b82f6,color:#fff
     style Backend fill:#065f46,stroke:#10b981,color:#fff
     style Ollama fill:#c2410c,stroke:#f97316,color:#fff
     style SearX fill:#6b21a8,stroke:#a855f7,color:#fff
     style DB fill:#1e293b,stroke:#475569,color:#fff
     style Cloud fill:#4338ca,stroke:#6366f1,color:#fff
-    style PROD fill:#78350f,stroke:#f59e0b,color:#fff
+    style PROD fill:#042f2e,stroke:#0d9488,color:#fff
     style DOCKER fill:#0b1329,stroke:#3b82f6,color:#fff
 ```
 
@@ -86,11 +86,11 @@ flowchart LR
 
 | Container | Image / Base | Port | Giới hạn tài nguyên (WSL2 / Host) | Mục đích & Vai trò |
 |-----------|--------------|------|-----------------------------------|-------------------|
-| `cyberai-frontend` | Node 20-alpine (Next.js 16) | 3081 | 2 GB RAM, 2 vCPUs | Giao diện người dùng Web (Dark Cyber Theme, i18n EN/VI, AuthGuard) |
+| `cyberai-frontend` | Node 20-alpine (Next.js 16) | 3081 (prod) / 3000 (dev) | 2 GB RAM, 2 vCPUs | Giao diện người dùng Web (Dark Cyber Theme, i18n EN/VI, AuthGuard) |
 | `cyberai-backend` | Python 3.11-slim (FastAPI) | 8000 | 4 GB RAM, 4 vCPUs | Xử lý nghiệp vụ đánh giá, OCR Tesseract, Evidence Mapper, SQLite Stores |
-| `cyberai-ollama` | `ollama/ollama:latest` | 11434 | 14 GB RAM, 12 vCPUs | Động cơ suy luận AI cục bộ (Mô hình chính `gemma4:latest` 9.6GB) |
-| `cyberai-searxng` | `searxng/searxng:latest` | 8888 | 1 GB RAM, 1 vCPU | Công cụ tìm kiếm thông tin an ninh mạng cục bộ (Private Search) |
-| `cyberai-nginx` *(chỉ prod)* | `nginx:alpine` | 80, 443 | — | Reverse Proxy & SSL Termination cho môi trường Production |
+| `cyberai-ollama` | `ollama/ollama:latest` | 11434 | 14 GB RAM, 12 vCPUs | Động cơ suy luận AI cục bộ 100% Offline (`gemma4:latest`, `qwen2.5-coder:7b`, `bge-m3`) |
+| `cyberai-searxng` | `searxng/searxng:latest` | 8888 (host) / 8080 (docker) | 1 GB RAM, 1 vCPU | Meta-search engine riêng tư on-premise, JSON API nội bộ, mount `searxng/settings.yml` |
+| `cyberai-nginx` *(chỉ prod)* | `nginx:alpine` | 80 | — | Reverse Proxy HTTP thuần (Port 80, không cần cert), Rate Limit, SSE unbuffered |
 
 ---
 
@@ -103,21 +103,21 @@ flowchart TB
     BE(["⚙️ cyberai-backend\nFastAPI :8000"])
 
     subgraph LOCAL["🦙 Local Edge Engine (Ollama :11434)"]
-        O1["gemma4:latest (9.6 GB)\n12 CPU Threads / 14 vCPUs\nMô hình đánh giá chính, phân tích GAP & Chat"]
+        O1["gemma4:latest (9.6 GB) — Lead Auditor & Chatbot\nqwen2.5-coder:7b (4.7 GB) — Technical Extractor & Log Parser\nbge-m3:latest (1.2 GB) — Multilingual Embedding cho ChromaDB"]
     end
 
     subgraph REPAIR["🔧 Self-Healing Engine"]
         R1["json_repair (Cục bộ)\nTự động vá cú pháp JSON AST cho Local Model"]
     end
 
-    subgraph CLOUD["☁️ Cloud AI Gateway (Tùy chọn)"]
-        C1["DeepSeek-V4 Flash / Gemini 2.0 Flash\nChế độ Hybrid: Tự động chạy Privacy Filter khử PII"]
+    subgraph CLOUD["☁️ Cloud AI Gateway (Tùy chọn Fallback)"]
+        C1["DeepSeek / Gemini / Claude\nKênh dự phòng khi có API Key: Tự động chạy Privacy Filter khử PII"]
     end
 
     BE -- "Mặc định (100% Offline)" --> LOCAL
     LOCAL -->|"Lỗi định dạng cú pháp nhẹ"| REPAIR
     REPAIR --> BE
-    BE -. "Chế độ Hybrid / Cloud" .-> CLOUD
+    BE -. "Tùy chọn Fallback khi cấu hình" .-> CLOUD
 
     style BE fill:#10b981,stroke:#059669,color:#fff
     style LOCAL fill:#c2410c,stroke:#f97316,color:#fff
@@ -125,13 +125,16 @@ flowchart TB
     style CLOUD fill:#4338ca,stroke:#6366f1,color:#fff
 ```
 
-### 1. Ollama Inference Engine (Cục bộ - Port 11434)
-- **Mô hình:** `gemma4:latest` (9.6 GB, Google DeepMind Gemma 4).
-- **Tối ưu phần cứng:** Cấu hình `num_thread: 12` và `num_ctx: 4096` cho cả streaming SSE và batch inference, tối ưu hóa trên CPU AMD Ryzen AI 7 350 / 32GB RAM.
+### 1. Ollama Inference Engine (Cục bộ 100% Offline - Port 11434)
+- **Bộ 3 mô hình cốt lõi:**
+  - `gemma4:latest` (~9.6 GB): Mô hình chính đảm nhiệm vai trò Lead Auditor, suy luận tuân thủ ISO 27001/TCVN 11930 và trợ lý Chatbot.
+  - `qwen2.5-coder:7b` (~4.7 GB): Bóc tách cấu hình máy chủ, phân tích log an ninh, trích xuất sự kiện kiểm toán.
+  - `bge-m3:latest` (~1.2 GB): Trích xuất vector embeddings đa ngữ chất lượng cao phục vụ tìm kiếm ngữ nghĩa ChromaDB.
+- **Tối ưu phần cứng:** Cấu hình `num_thread: 12` và `num_ctx: 4096` cho cả streaming SSE và batch inference, tối ưu hóa trên CPU AMD Ryzen AI / Intel đa nhân và 32GB RAM.
 - **Tự động vá lỗi:** Tích hợp bộ giải mã `json_repair` xử lý triệt để các lỗi cú pháp (trailing commas, thiếu ngoặc, single quotes) sinh ra từ quá trình lượng tử hóa trên CPU.
 
-### 2. Cloud AI Gateway & Privacy Guard (Tùy chọn)
-- Khi người dùng chủ động chọn chế độ **Cloud** hoặc **Hybrid**, dữ liệu trước khi rời khỏi máy chủ sẽ được lọc qua **`PrivacyFilter`** (`backend/services/privacy_filter.py`) để che giấu toàn bộ địa chỉ IP nội bộ, email, số điện thoại, mật khẩu, và mã định danh tổ chức.
+### 2. Cloud AI Gateway & Privacy Guard (Tùy chọn Dự Phòng)
+- Khi người dùng chủ động cấu hình Cloud API Key và chọn chế độ **Cloud** hoặc **Hybrid**, dữ liệu trước khi rời khỏi máy chủ sẽ được lọc qua **`PrivacyFilter`** (`backend/services/privacy_filter.py`) để che giấu toàn bộ địa chỉ IP nội bộ, email, số điện thoại, mật khẩu, và mã định danh tổ chức.
 
 ---
 
@@ -198,18 +201,15 @@ Nếu confidence ngữ nghĩa ≤ 0.6, regex matching chạy trên ba danh sách
 
 ### Ưu tiên suy luận (Inference Priority)
 
-Được kiểm soát bởi biến môi trường trong [`CloudLLMService.chat_completion()`](../../backend/services/cloud_llm_service.py:302):
+Được kiểm soát bởi biến môi trường trong [`CloudLLMService.chat_completion()`](../../backend/services/cloud_llm_service.py):
 
 | Cài đặt | Hành vi |
 |---------|----------|
-| [`PREFER_LOCAL=true`](../../.env.example:4) | LocalAI/Ollama trước → Cloud Fallback (Dự phòng đám mây) khi lỗi |
-| `PREFER_LOCAL=false` | Cloud trước → LocalAI Fallback (Dự phòng) |
-| [`LOCAL_ONLY_MODE=true`](../../backend/core/config.py:53) | Không gọi API cloud; lỗi nếu model cục bộ không khả dụng |
+| [`PREFER_LOCAL=true`](../../.env.example) | Ollama trước (100% Offline) → Cloud Fallback (Gemini / Claude / DeepSeek) khi có API Key và gặp lỗi |
+| `PREFER_LOCAL=false` | Cloud trước → Ollama Fallback khi lỗi |
+| [`LOCAL_ONLY_MODE=true`](../../backend/core/config.py) | Hoàn toàn Offline; không gọi API cloud; lỗi nếu mô hình Ollama không khả dụng |
 
-**Phát hiện Ollama:** Các model bắt đầu bằng tiền tố sau được chuyển tới Ollama thay vì LocalAI (định nghĩa trong [`OLLAMA_MODEL_PREFIXES`](../../backend/services/cloud_llm_service.py:310)):
-`gemma3:`, `gemma3n:`, `gemma4:`, `phi4:`, `llama3:`, `mistral:`, `qwen3:`
-
-Ngoài ra, các Gemma ID của LocalAI (`gemma-3-4b-it`, `gemma-3-12b-it`, `gemma-4-31b-it`) được ánh xạ sang tương đương Ollama qua [`_LOCALAI_TO_OLLAMA`](../../backend/services/cloud_llm_service.py:32).
+**Định tuyến suy luận Ollama:** Toàn bộ các yêu cầu cục bộ được định tuyến trực tiếp qua Ollama daemon cổng 11434, tự động nhận diện và sử dụng các model `gemma4:latest`, `qwen2.5-coder:7b`, và `bge-m3:latest`.
 
 ---
 
@@ -230,7 +230,7 @@ Thứ tự quan trọng — middleware ngoài cùng thực thi trước:
 | 1 | Giám sát kích thước request body | [`limit_request_size()`](../../backend/main.py:159) | Giới hạn 2 MB; miễn trừ: endpoint upload/validate/evidence |
 | 2 | Request ID | [`add_request_id()`](../../backend/main.py:141) | Truyền tiếp header `X-Request-ID` hoặc tạo UUID4 |
 | 3 | Prometheus metrics | [`record_metrics()`](../../backend/main.py:113) | `cyberai_requests_total`, `cyberai_request_duration_seconds` |
-| 4 | CORS | [`CORSMiddleware`](../../backend/main.py:103) | Origins cấu hình qua [`CORS_ORIGINS`](../../.env.example:33) |
+| 4 | CORS | [`CORSMiddleware`](../../backend/main.py:103) | Origins cấu hình qua [`CORS_ORIGINS`](../../.env.example) |
 | 5 | Rate Limiting (Giới hạn tốc độ) | [`slowapi`](../../backend/core/limiter.py) | Giới hạn theo endpoint (chat: 10/phút, assess: 3/phút, benchmark: 5/phút) |
 
 ### Service Layer (Tầng dịch vụ)
@@ -238,13 +238,13 @@ Thứ tự quan trọng — middleware ngoài cùng thực thi trước:
 | Dịch vụ | File | Trách nhiệm |
 |---------|------|---------------|
 | **ChatService** | [`chat_service.py`](../../backend/services/chat_service.py) | Singleton VectorStore/SessionStore, phát hiện prompt injection, bộ nhớ session (10 tin nhắn cho ngữ cảnh LLM), SSE streaming |
-| **CloudLLMService** | [`cloud_llm_service.py`](../../backend/services/cloud_llm_service.py) | Round-robin API keys, làm nguội Rate Limiting (30s), Fallback Chain (Chuỗi dự phòng) model, định tuyến LocalAI/Ollama/Cloud |
+| **CloudLLMService** | [`cloud_llm_service.py`](../../backend/services/cloud_llm_service.py) | Round-robin API keys, làm nguội Rate Limiting (30s), Fallback Chain model, định tuyến Ollama (cục bộ) / Cloud Fallback |
 | **RAGService** | [`rag_service.py`](../../backend/services/rag_service.py) | Tìm kiếm multi-query, ngưỡng confidence 0.35, Prometheus counter (`hit`/`miss`) |
-| **ModelRouter** | [`model_router.py`](../../backend/services/model_router.py) | Phân loại intent hybrid ngữ nghĩa + keyword |
-| **AssessmentHelpers** | [`assessment_helpers.py`](../../backend/services/assessment_helpers.py) | Prompt chia chunk, xác thực JSON (chống ảo giác), chuẩn hóa mức độ nghiêm trọng |
+| **ModelRouter** | [`model_router.py`](../../backend/services/model_router.py) | Phân loại intent hybrid ngữ nghĩa (ChromaDB) + keyword |
+| **AssessmentHelpers** | [`assessment_helpers.py`](../../backend/services/assessment_helpers.py) | Prompt chia chunk, xác thực JSON (chống ảo giác với `json_repair`), chuẩn hóa mức độ nghiêm trọng |
 | **StandardService** | [`standard_service.py`](../../backend/services/standard_service.py) | Upload JSON/YAML, xác thực (tối đa 500 controls), ChromaDB indexing theo domain |
-| **WebSearch** | [`web_search.py`](../../backend/services/web_search.py) | DuckDuckGo qua `ddgs`, logic retry, khu vực Việt Nam |
-| **ModelGuard** | [`model_guard.py`](../../backend/services/model_guard.py) | Kiểm tra file GGUF tồn tại khi khởi động |
+| **WebSearch** | [`web_search.py`](../../backend/services/web_search.py) | Tìm kiếm 2 tầng: SearXNG cục bộ (`http://searxng:8080`), fallback sang `ddgs`, cơ chế DLP chặn rò rỉ log |
+| **ModelGuard** | [`model_guard.py`](../../backend/services/model_guard.py) | Kiểm tra tình trạng kết nối Ollama daemon và models sẵn sàng |
 
 ### Repository Layer (Tầng kho dữ liệu)
 
@@ -292,16 +292,16 @@ Thứ tự quan trọng — middleware ngoài cùng thực thi trước:
 flowchart TD
     User(["👤 Người dùng"]) --> FE
 
-    FE["🎨 Frontend\nNext.js :3000"]
+    FE["🎨 Frontend\nNext.js :3081 / :3000"]
     FE -- "/api/chat (SSE)" --> BE
 
     BE["⚙️ Backend\nFastAPI :8000"]
     BE --> Router["🔀 ModelRouter\nintent + keyword"]
 
     subgraph CONTEXT["Xây dựng ngữ cảnh"]
-        RAG["📚 RAG Service\nChromaDB"]
-        WS["🌐 Web Search\nDuckDuckGo"]
-        MEM["💾 Session Memory\n10 tin nhắn gần nhất"]
+        RAG["📚 RAG Service\nChromaDB (BGE-M3)"]
+        WS["🔍 Private Search\nSearXNG (:8080) / ddgs"]
+        MEM["💾 Session Memory\nSQLite / 10 tin gần nhất"]
         SEC["🛡️ Prompt Injection\nDetection"]
     end
 
@@ -312,10 +312,9 @@ flowchart TD
 
     RAG & WS & MEM --> LLM
 
-    subgraph LLM["☁️ CloudLLM Service — Định tuyến suy luận"]
-        LAI["🧠 LocalAI :8080\nGGUF models"]
-        OLL["🦙 Ollama :11434\nGemma 3n"]
-        CLD["☁️ Open Claude\nCloud Fallback"]
+    subgraph LLM["🧠 CloudLLM Service — Điều phối suy luận"]
+        OLL["🦙 Ollama :11434\n(gemma4 / qwen2.5-coder)\n100% Offline On-Premise"]
+        CLD["☁️ Cloud AI Fallback\n(Gemini / Claude / DeepSeek)\nKhi có API Key"]
     end
 
     LLM -- "SSE stream" --> FE
@@ -349,40 +348,80 @@ User Input
                                         │
                     ┌───────────┬───────┴───────┬───────────┐
                     ▼           ▼               ▼           ▼
-              ┌──────────┐ ┌────────┐   ┌──────────┐ ┌──────────┐
-              │ RAG      │ │ Web    │   │ Session  │ │ Prompt   │
-              │ Service  │ │ Search │   │ Memory   │ │ Injection│
-              │ (ChromaDB)│ │(ddgs)  │   │ (10 msg) │ │ Detection│
-              └────┬─────┘ └───┬────┘   └────┬─────┘ └──────────┘
-                   └───────────┴──────────────┘
+              ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+              │ RAG      │ │SearXNG / │ │ Session  │ │ Prompt   │
+              │ Service  │ │   ddgs   │ │ Memory   │ │ Injection│
+              │(ChromaDB)│ │ (:8080)  │ │ (SQLite) │ │ Detection│
+              └────┬─────┘ └────┬─────┘ └────┬─────┘ └──────────┘
+                   └────────────┴────────────┘
                                 │
                          ┌──────▼───────┐
                          │ CloudLLM     │
                          │ Service      │
                          └──────┬───────┘
                                 │
-              ┌─────────────────┼─────────────────┐
-              ▼                 ▼                  ▼
-        ┌──────────┐    ┌──────────┐       ┌──────────┐
-        │ LocalAI  │    │  Ollama  │       │  Cloud   │
-        │ :8080    │    │  :11434  │       │ (Open    │
-        │ (GGUF)   │    │ (Gemma)  │       │  Claude) │
-        └──────────┘    └──────────┘       └──────────┘
+              ┌─────────────────┴─────────────────┐
+              ▼                                   ▼
+        ┌──────────┐                        ┌──────────┐
+        │  Ollama  │                        │  Cloud   │
+        │  :11434  │                        │ Fallback │
+        │(gemma4/  │                        │ (Gemini/ │
+        │ qwen2.5) │                        │ Claude)  │
+        └──────────┘                        └──────────┘
 ```
-
 </details>
+
+### Luồng Tìm Kiếm Web & Tình Báo Mối Đe Dọa (Web Search Data Flow)
+
+Cơ chế tìm kiếm web được thiết kế 2 tầng ưu tiên bảo mật nội bộ và chịu lỗi cao:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Người dùng
+    participant Chat as ChatService
+    participant Router as ModelRouter
+    participant Search as WebSearch (Service)
+    participant SearX as cyberai-searxng (:8080)
+    participant DDGS as DuckDuckGo (ddgs)
+    participant LLM as Ollama (gemma4) / Cloud
+
+    User->>Chat: Gửi câu hỏi (vd: "Chiến dịch ransomware LockBit mới nhất?")
+    Chat->>Router: Phân loại ý định (classify intent)
+    Router-->>Chat: intent = "search"
+    Chat->>Search: search(query, max_results=5)
+    
+    alt Kiểm tra an toàn dữ liệu (DLP)
+        Note over Search: is_log_analysis_query(query) == True
+        Search-->>Chat: Bỏ qua web search (Trả về [])
+    else Truy vấn hợp lệ
+        Search->>SearX: GET http://searxng:8080/search?q=...&format=json (Timeout 8s)
+        alt SearXNG phản hồi thành công (HTTP 200)
+            SearX-->>Search: Danh sách kết quả JSON
+        else SearXNG lỗi / timeout / không kết quả
+            Note over Search: Kích hoạt Graceful Fallback
+            Search->>DDGS: ddgs.text(query, region="vn-vi")
+            DDGS-->>Search: Danh sách kết quả dự phòng
+        end
+        Search->>Search: format_context(results) -> [1] Title / URL / Snippet...
+        Search-->>Chat: Chuỗi context nguồn trích dẫn
+    end
+
+    Chat->>LLM: Stream prompt kèm ngữ cảnh tìm kiếm
+    LLM-->>User: Phản hồi kèm trích dẫn nguồn [1], [2] theo thời gian thực (SSE)
+```
 
 ### Pipeline đánh giá (Assessment Pipeline)
 
 ```mermaid
 flowchart TD
-    Submit(["📝 Gửi Form ISO 27001\nDanh sách controls cần đánh giá"])
+    Submit(["📝 Gửi Form ISO 27001 / TCVN 11930\nDanh sách controls cần đánh giá"])
     Submit --> P1A
 
     subgraph Phase1["🔍 Giai đoạn 1 — Phân tích GAP"]
-        P1A["Chia prompt thành chunk nhỏ"]
-        P1B["SecurityLLM 7B\nqua LocalAI :8080"]
-        P1C["Xác thực JSON mỗi chunk"]
+        P1A["Chia prompt thành chunk nhỏ\n(8-15 controls / chunk)"]
+        P1B["gemma4:latest / qwen2.5-coder\nqua Ollama :11434 (hoặc Cloud AI)"]
+        P1C["Xác thực JSON mỗi chunk\nvới json_repair tự phục hồi"]
         P1D["Chuẩn hóa severity\nCritical / High / Medium / Low"]
         P1E["Kiểm tra chống ảo giác\n(anti-hallucination)"]
         P1A --> P1B --> P1C --> P1D --> P1E
@@ -391,18 +430,18 @@ flowchart TD
     P1E --> P2A
 
     subgraph Phase2["📊 Giai đoạn 2 — Tạo báo cáo"]
-        P2A["Meta-Llama 3.1 8B\nqua LocalAI :8080"]
+        P2A["gemma4:latest\nqua Ollama :11434 (hoặc Cloud AI)"]
         P2B["Executive Summary\n(Tóm tắt điều hành)"]
         P2C["Recommendations\n(Khuyến nghị hành động)"]
-        P2D["Structured JSON Output"]
+        P2D["Structured JSON Output\nĐiểm tuân thủ ≤ 100%"]
         P2A --> P2B --> P2C --> P2D
     end
 
     P2D --> O1
     P2D --> O2
 
-    O1["📄 /data/assessments\n{uuid}.json"]
-    O2["📦 /data/exports\nPDF / HTML"]
+    O1["📄 /data/assessments\n{uuid}.json (SQLite & JSON)"]
+    O2["📦 /data/exports\nPDF / DOCX / HTML"]
 
     style Submit fill:#92400e,stroke:#fbbf24,color:#fff
     style Phase1 fill:#4a1a1a,stroke:#f87171,color:#fff
@@ -415,35 +454,35 @@ flowchart TD
 <summary>📋 Pipeline đánh giá dạng text (bấm để mở)</summary>
 
 ```
-Form Submit (ISO 27001 controls)
+Form Submit (ISO 27001 / TCVN 11930 controls)
     │
     ▼
-┌──────────────────────────────────┐
-│  Giai đoạn 1: Phân tích GAP      │
-│  - Prompt chia chunk              │
-│  - SecurityLLM qua LocalAI       │
-│  - Xác thực JSON mỗi chunk       │
-│  - Chuẩn hóa mức độ nghiêm trọng │
-│  - Kiểm tra chống ảo giác        │
-└──────────────┬───────────────────┘
-               │
-               ▼
-┌──────────────────────────────────┐
-│  Giai đoạn 2: Tạo báo cáo       │
-│  - Meta-Llama 3.1 8B            │
-│  - Tóm tắt điều hành             │
-│  - Khuyến nghị                    │
-│  - Đầu ra JSON có cấu trúc       │
-└──────────────┬───────────────────┘
-               │
-               ▼
-┌──────────────────────────────────┐
-│  Đầu ra                          │
-│  - JSON lưu vào /data/           │
-│    assessments/{uuid}.json       │
-│  - Xuất PDF/HTML vào             │
-│    /data/exports/                │
-└──────────────────────────────────┘
+┌───────────────────────────────────────┐
+│  Giai đoạn 1: Phân tích GAP           │
+│  - Prompt chia chunk (8-15 controls)  │
+│  - gemma4 / qwen2.5 qua Ollama        │
+│  - json_repair tự vá lỗi AST          │
+│  - Chuẩn hóa mức độ nghiêm trọng      │
+│  - Kiểm tra chống ảo giác             │
+└───────────────────┬───────────────────┘
+                    │
+                    ▼
+┌───────────────────────────────────────┐
+│  Giai đoạn 2: Tạo báo cáo             │
+│  - gemma4:latest qua Ollama           │
+│  - Tóm tắt điều hành                  │
+│  - Khuyến nghị hành động              │
+│  - JSON có cấu trúc (Điểm ≤ 100%)     │
+└───────────────────┬───────────────────┘
+                    │
+                    ▼
+┌───────────────────────────────────────┐
+│  Đầu ra                               │
+│  - JSON lưu vào /data/                │
+│    assessments/{uuid}.json            │
+│  - Xuất PDF/DOCX/HTML vào             │
+│    /data/exports/                     │
+└───────────────────────────────────────┘
 ```
 
 </details>
@@ -580,11 +619,11 @@ Giới hạn tốc độ theo endpoint qua [`slowapi`](../../backend/core/limite
 flowchart LR
     Client(["🌐 Client"])
 
-    Client -- "HTTPS" --> Nginx
+    Client -- "HTTP :80" --> Nginx
     Nginx -- "static / SSR" --> FE
     Nginx -- "/api/*" --> BE
 
-    Nginx["⚡ Nginx\nTLS 1.2/1.3 + HSTS\nRate Limit: 30r/s per IP"]
+    Nginx["⚡ Nginx\nHTTP :80 (Không cert)\nRate Limit: 30r/s per IP"]
     FE["🎨 Frontend\nCSP · X-Frame-Options DENY"]
 
     subgraph BE_SEC["⚙️ Backend — Middleware Stack (thứ tự thực thi)"]

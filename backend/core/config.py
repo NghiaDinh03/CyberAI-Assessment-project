@@ -44,6 +44,13 @@ class Settings:
 
     MODEL_NAME: str = os.getenv("MODEL_NAME", "gemma4:latest")
     SECURITY_MODEL_NAME: str = os.getenv("SECURITY_MODEL_NAME", os.getenv("MODEL_NAME", "gemma4:latest"))
+    EMBEDDING_MODEL_NAME: str = os.getenv("EMBEDDING_MODEL_NAME", "bge-m3")
+
+    # Multi-Agent On-Premise Roles
+    MODEL_1_EXTRACTOR: str = os.getenv("MODEL_1_EXTRACTOR", "qwen2.5-coder:7b")
+    MODEL_2_AUDITOR: str = os.getenv("MODEL_2_AUDITOR", "gemma4:latest")
+    MODEL_3_EMBEDDING: str = os.getenv("MODEL_3_EMBEDDING", "bge-m3")
+
     # Ollama — OpenAI-compatible local inference for Gemma 3/4
     OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://ollama:11434")
     MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "-1"))
@@ -51,7 +58,7 @@ class Settings:
     PREFER_LOCAL: bool = os.getenv("PREFER_LOCAL", "true").lower() == "true"
     REQUIRED_MODEL_IDS: str = os.getenv(
         "REQUIRED_MODEL_IDS",
-        "gemma4:latest",
+        "gemma4:latest,qwen2.5-coder:7b,bge-m3:latest",
     )
 
     CLOUD_LLM_API_URL: str = os.getenv("CLOUD_LLM_API_URL", "https://open-claude.com/v1")
@@ -65,6 +72,8 @@ class Settings:
         "GOOGLE_AI_STUDIO_URL",
         "https://generativelanguage.googleapis.com/v1beta",
     )
+
+    SEARXNG_URL: str = os.getenv("SEARXNG_URL", "http://searxng:8080")
 
     ISO_DOCS_PATH: str = os.getenv("ISO_DOCS_PATH", "/data/iso_documents")
     VECTOR_STORE_PATH: str = os.getenv("VECTOR_STORE_PATH", "/data/vector_store")

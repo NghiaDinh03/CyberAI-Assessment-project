@@ -40,9 +40,9 @@ const DOCS_LIST = [
     { id: 'benchmark', icon: FlaskConical, titleKey: 'docs.benchmarkTitle', descKey: 'docs.benchmarkDesc', fileEn: 'benchmark.md', fileVi: 'benchmark.md' },
     { id: 'case_studies', icon: Building2, titleKey: 'docs.caseStudiesTitle', descKey: 'docs.caseStudiesDesc', fileEn: 'case_studies.md', fileVi: 'case_studies.md' },
     { id: 'iso_form', icon: ClipboardList, titleKey: 'docs.isoFormTitle', descKey: 'docs.isoFormDesc', fileEn: 'iso_assessment_form.md', fileVi: 'iso_assessment_form.md' },
-    { id: 'backup', icon: HardDrive, titleKey: 'docs.backupTitle', descKey: 'docs.backupDesc', fileEn: 'backup_strategy.md', fileVi: null },
-    { id: 'markdown_rag', icon: FileText, titleKey: 'docs.markdownRagTitle', descKey: 'docs.markdownRagDesc', fileEn: 'markdown_rag_standard.md', fileVi: null },
-    { id: 'multi_standard', icon: Shield, titleKey: 'docs.multiStandardTitle', descKey: 'docs.multiStandardDesc', fileEn: 'multi_standard_assessment_plan_v2.md', fileVi: null },
+    { id: 'backup', icon: HardDrive, titleKey: 'docs.backupTitle', descKey: 'docs.backupDesc', fileEn: 'backup_strategy.md', fileVi: 'backup_strategy.md' },
+    { id: 'markdown_rag', icon: FileText, titleKey: 'docs.markdownRagTitle', descKey: 'docs.markdownRagDesc', fileEn: 'markdown_rag_standard.md', fileVi: 'markdown_rag_standard.md' },
+    { id: 'multi_standard', icon: Shield, titleKey: 'docs.multiStandardTitle', descKey: 'docs.multiStandardDesc', fileEn: 'multi_standard_assessment_plan_v2.md', fileVi: 'multi_standard_assessment_plan_v2.md' },
 ]
 
 export default function SettingsPage() {

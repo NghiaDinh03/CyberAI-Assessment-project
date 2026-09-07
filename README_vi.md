@@ -59,11 +59,12 @@ docker compose up -d --build
 ### 🌐 Bảng dịch vụ
 
 | Dịch vụ | URL | Mô tả |
-|---------|-----|--------|
+|---|---|---|
+| 🌐 **Nginx Reverse Proxy** | `http://localhost:80` | Cổng HTTP phân phối tải, SSE unbuffered, không cần cert |
 | 🖥️ **Frontend UI** | `http://localhost:3081` | Giao diện Next.js 16 (Dark Cyber Theme, i18n EN/VI) |
 | ⚡ **Backend API** | `http://localhost:8000` | FastAPI server, OCR Pipeline, Evidence Mapper |
 | 📖 **Swagger Docs** | `http://localhost:8000/docs` | Tài liệu API tương tác OpenAPI |
-| 🦙 **Ollama Engine** | `http://localhost:11434` | Mô hình `gemma4:latest` (Local LLM Inference) |
+| 🦙 **Ollama Engine** | `http://localhost:11434` | Mô hình `gemma4:latest`, `qwen2.5-coder:7b`, `bge-m3` (Local Offline) |
 | 🔍 **SearXNG Search** | `http://localhost:8888` | Công cụ tìm kiếm nội bộ / Threat Intelligence |
 
 ```bash
@@ -101,24 +102,25 @@ flowchart TB
     User(["👨‍💻 Chuyên viên ATTT / Kiểm toán viên"])
 
     subgraph Docker["🐳 CyberAI Docker Network (cyberai-network)"]
+        NGINX["🌐 cyberai-nginx<br/>HTTP Reverse Proxy · :80"]
         FE["🎨 cyberai-frontend<br/>Next.js 16 · :3081"]
         BE["⚙️ cyberai-backend<br/>FastAPI · :8000"]
-        OL["🦙 cyberai-ollama<br/>Gemma 4 (9.6GB) · :11434"]
+        OL["🦙 cyberai-ollama<br/>Gemma 4 · Qwen2.5 · BGE-M3 · :11434"]
         SEARX["🔍 cyberai-searxng<br/>Private Search · :8888"]
         DB[(📁 SQLite DBs<br/>users.db / sessions.db / assessments.db)]
     end
 
-    subgraph CloudGateway["☁️ Cloud AI Gateway (Tùy chọn)"]
-        DeepSeek["⚡ DeepSeek v4 Flash"]
-        Gemini["🌐 Google Gemini 2.0 Flash"]
+    subgraph CloudGateway["☁️ Cloud AI Gateway (Tùy chọn Fallback)"]
+        CloudLLM["☁️ Google Gemini / Claude / DeepSeek<br/>Kênh dự phòng khi cấu hình API Key"]
     end
 
-    User -->|"HTTP / SSE"| FE
-    FE -->|"Proxy /api/*"| BE
+    User -->|"HTTP :80"| NGINX
+    NGINX -->|"Proxy /"| FE
+    NGINX -->|"Proxy /api/*"| BE
     BE -->|"Local Inference (100% Offline)"| OL
     BE -->|"Threat Intelligence Search"| SEARX
     BE -->|"Persistent Storage"| DB
-    BE -.->|"Hybrid Mode (Khử PII)"| CloudGateway
+    BE -.->|"Tùy chọn Fallback Cloud"| CloudGateway
 
     style Docker fill:#0b1329,stroke:#1e293b,color:#60a5fa
     style FE fill:#1e3a8a,stroke:#3b82f6,color:#fff

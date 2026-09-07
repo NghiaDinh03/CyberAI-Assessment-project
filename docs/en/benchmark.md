@@ -50,7 +50,7 @@ Defined in [`score_report()`](backend/api/routes/benchmark.py:27):
 
 | Property | Gemma 3n E4B | Llama 3.1 8B | Gemini 3 Flash | Gemini 3 Pro |
 |----------|-------------|-------------|----------------|--------------|
-| **Provider** | Ollama (local) | LocalAI (local) | Cloud (OpenClaude) | Cloud (OpenClaude) |
+| **Provider** | Ollama (local) | LocalAI (local) | Cloud (Google AI) | Cloud (Google AI) |
 | **Parameters** | ~4B effective (MoE) | 8B | Undisclosed (MoE) | Undisclosed (MoE) |
 | **Quantization** | Q4_K_M via Ollama | Q4_K_M GGUF | Native FP | Native FP |
 | **Context window** | 8,192 tokens | 131,072 tokens | 1,048,576 tokens | 1,048,576 tokens |
@@ -540,7 +540,7 @@ time curl -s http://localhost:8080/v1/chat/completions \
         "cloud": {
           "status": "ok",
           "elapsed_seconds": 8.1,
-          "model_used": {"model": "gemini-3-flash-preview", "provider": "open-claude"},
+          "model_used": {"model": "gemini-2.0-flash", "provider": "cloud"},
           "quality_score": {
             "total": 13,
             "max": 15,

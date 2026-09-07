@@ -1,420 +1,311 @@
-# CyberAI Assessment Platform — Deployment Guide
+# 🚀 CyberAI Assessment Platform — Installation & Deployment Guide
 
-## 1. Prerequisites
+<div align="center">
 
-| Requirement | Minimum | Recommended |
-|-------------|---------|-------------|
-| Docker | 24+ | Latest stable |
-| Docker Compose | v2 | v2.20+ |
-| RAM | 16 GB | 32 GB |
-| Disk | 20 GB (model files) | 40 GB+ |
-| GPU | — | NVIDIA (optional, faster inference) |
+[![🇬🇧 English](https://img.shields.io/badge/English-Deployment-blue?style=flat-square)](deployment.md)
+[![🇻🇳 Tiếng Việt](https://img.shields.io/badge/Tiếng_Việt-Triển_khai-red?style=flat-square)](../vi/deployment.md)
 
-> **Memory breakdown:** LocalAI alone requires 12 GB (dev) / 16 GB (prod) for loading GGUF models. Ollama needs an additional 12 GB. The backend and frontend add ~8 GB combined.
+</div>
 
 ---
 
-## 2. Quick Start (Development)
+## 📑 Table of Contents
+
+1. [System Prerequisites](#-1-system-prerequisites)
+2. [Quick Start (Development)](#-2-quick-start-development)
+3. [AI Model Suite (Ollama Local Offline Inference)](#-3-ai-model-suite-ollama-local-offline-inference)
+4. [Environment Variables](#-4-environment-variables)
+5. [Production Deployment](#-5-production-deployment)
+6. [Nginx Configuration (Pure HTTP Port 80 - No Certs Required)](#-6-nginx-configuration-pure-http-port-80---no-certs-required)
+7. [Health Checks & Verification](#-7-health-checks--verification)
+8. [Data Persistence](#-8-data-persistence)
+9. [Backup & Restore](#-9-backup--restore)
+10. [Troubleshooting](#-10-troubleshooting)
+
+---
+
+## 🏗️ Production System Architecture
+
+The CyberAI Assessment Platform is architected for **100% On-Premise Local AI Offline operation** to satisfy stringent enterprise data privacy and national compliance standards. Nginx operates as a high-performance reverse proxy running strictly on HTTP (Port 80), eliminating SSL/TLS certificate requirements for air-gapped or internal deployments.
+
+```mermaid
+graph TB
+    subgraph "Clients"
+        USER[👤 IT Auditor / Security Analyst]
+    end
+
+    subgraph "Reverse Proxy (HTTP Port 80 - No Certs)"
+        NGINX[🌐 cyberai-nginx<br/>HTTP :80 · Rate Limiting · Unbuffered SSE]
+    end
+
+    subgraph "Docker Network (cyberai-network)"
+        FE[🎨 cyberai-frontend<br/>Next.js 16 · :3081 / :3000]
+        BE[⚙️ cyberai-backend<br/>FastAPI · :8000]
+        OLL[🦙 cyberai-ollama<br/>Gemma 4 · Qwen2.5 · BGE-M3 · :11434]
+        SEARX[🔍 cyberai-searxng<br/>Private Search & Threat Intel · :8888]
+    end
+
+    subgraph "Persistent Storage"
+        SQLITE[(📁 SQLite DBs<br/>users.db / chat_sessions.db / assessments.db)]
+        VECTOR[(🟣 ChromaDB Vector Store<br/>/data/vector_store)]
+        OLLDATA[(🦙 Ollama Cache<br/>ollama_data volume)]
+    end
+
+    subgraph "Cloud AI Gateway (Optional Fallback)"
+        CLOUD[☁️ Google Gemini / Claude / DeepSeek<br/>Optional Cloud Fallback]
+    end
+
+    USER -->|"HTTP :80"| NGINX
+    NGINX -->|"Proxy /"| FE
+    NGINX -->|"Proxy /api/*"| BE
+    BE -->|"100% Local Offline Inference"| OLL
+    BE -->|"Threat Intel Search"| SEARX
+    BE --> SQLITE
+    BE --> VECTOR
+    OLL --> OLLDATA
+    BE -.->|"Optional Cloud Fallback"| CLOUD
+```
+
+---
+
+## 📋 1. System Prerequisites
+
+| Component | Minimum Requirement | Recommended Production |
+|---|---|---|
+| **Operating System** | Linux (Ubuntu 22.04+), Windows 11 (WSL2), macOS | Ubuntu Server 22.04 LTS / 24.04 LTS |
+| **Docker Engine** | Docker Engine 24.0+ | Latest stable release |
+| **Docker Compose** | Docker Compose v2.20+ | Docker Compose v2.27+ |
+| **RAM** | 16 GB RAM (CPU offload mode) | 32 GB RAM or more |
+| **Storage** | 30 GB free space (SSD) | 60 GB+ NVMe SSD (Models + Vector DB) |
+| **GPU (Optional)** | Multi-core x86_64 CPU (8+ cores) | NVIDIA GPU (RTX 3060/4060+, VRAM ≥ 12GB) for accelerated inference |
+
+---
+
+## ⚡ 2. Quick Start (Development)
+
+Deploy the system in development mode:
 
 ```bash
-# 1. Clone and configure
+# 1. Clone the repository
+git clone https://github.com/NghiaDinh03/CyberAI-Assessment-project.git
+cd CyberAI-Assessment-project
+
+# 2. Configure environment
 cp .env.example .env
-# Edit .env — at minimum set CLOUD_API_KEYS if you want cloud fallback
 
-# 2. Start all containers
-docker compose up -d
+# 3. Launch all containers using Docker Compose
+docker compose up -d --build
 
-# 3. Verify
+# 4. Verify running containers
 docker compose ps
 ```
 
-**Service endpoints after startup:**
+### 🌐 Service Endpoints
 
-| Service | URL | Notes |
-|---------|-----|-------|
-| Frontend | http://localhost:3000 | Next.js dev server with hot reload |
-| Backend API docs | http://localhost:8000/docs | Swagger UI |
-| Backend ReDoc | http://localhost:8000/redoc | Alternative API docs |
-| LocalAI | http://localhost:8080 | OpenAI-compatible API |
-| Ollama | http://localhost:11434 | OpenAI-compatible API |
-
-> **Note:** LocalAI takes up to 120 seconds to become ready (model loading). The backend container starts immediately but will fail inference calls until LocalAI passes its health check.
-
----
-
-## 3. Model Download
-
-GGUF model files for LocalAI must be downloaded before first use:
-
-```bash
-pip install huggingface_hub hf_transfer
-python scripts/download_models.py --model llama --model security
-```
-
-### Available Models
-
-| Model ID | File | Size | Description |
-|----------|------|------|-------------|
-| `llama` | `Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf` | ~4.9 GB | General LLM (report formatting, chat) |
-| `security` | `SecurityLLM-7B-Q4_K_M.gguf` | ~4.2 GB | Cybersecurity domain (GAP analysis) |
-| `gemma-3-4b` | `google_gemma-3-4b-it-Q4_K_M.gguf` | ~2.5 GB | Fast, lightweight |
-| `gemma-3-12b` | `google_gemma-3-12b-it-Q4_K_M.gguf` | ~7.3 GB | Balanced quality/speed |
-| `gemma-4-31b` | `gemma-4-31B-it-Q4_K_M.gguf` | ~19 GB | Best quality, high RAM |
-| `gemma-4-31b-q3` | `gemma-4-31B-it-Q3_K_M.gguf` | ~13.5 GB | Lighter quantization |
-
-Models download to [`models/llm/weights/`](scripts/download_models.py:32) via HuggingFace Hub.
-
-```bash
-# Check download status
-python scripts/download_models.py --status
-
-# Download all models
-python scripts/download_models.py --model all
-```
-
-**Ollama models:** Gemma 3n E4B is auto-pulled on container startup via the [entrypoint](docker-compose.yml:127). No manual download required.
+| Service | URL | Description |
+|---|---|---|
+| **Nginx Reverse Proxy** | `http://localhost:80` | Primary gateway (pure HTTP, no certificates required) |
+| **Frontend UI/UX** | `http://localhost:3081` | Next.js 16 Web Application (Dark Cyber Theme, Bilingual) |
+| **Backend API Docs** | `http://localhost:8000/docs` | Interactive OpenAPI Swagger UI |
+| **Backend Health Check** | `http://localhost:8000/health` | Service status endpoint (`{"status": "healthy"}`) |
+| **Ollama Local Engine** | `http://localhost:11434` | 100% Offline Local LLM Inference Engine |
+| **SearXNG Search** | `http://localhost:8888` | Local private search & threat intelligence engine |
 
 ---
 
-## 4. Environment Variables
+## 🧠 3. AI Model Suite (Ollama Local Offline Inference)
 
-All configuration is via environment variables defined in [`.env.example`](.env.example). Copy to `.env` and customize.
+System audit and acceptance runs on 3 specialized local offline models:
 
-### Model & LLM Settings
+| Role | Model ID | Size | Description |
+|---|---|---|---|
+| **Lead Auditor / Primary LLM** | `gemma4:latest` | ~9.6 GB | Compliance reasoning (ISO 27001 / TCVN 11930), audit reporting, chatbot assistant |
+| **Technical Extractor** | `qwen2.5-coder:7b` | ~4.7 GB | Server configuration extraction, Windows hotfix parsing, network log audit |
+| **Multilingual Embedding** | `bge-m3:latest` | ~1.2 GB | Dense/sparse vector representations for ChromaDB RAG and Semantic Search |
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `LOCALAI_URL` | `http://localai:8080` | LocalAI service URL (internal Docker DNS) |
-| `OLLAMA_URL` | `http://ollama:11434` | Ollama service URL (internal Docker DNS) |
-| `MODEL_NAME` | `Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf` | Primary GGUF model for general chat/reports |
-| `SECURITY_MODEL_NAME` | *(falls back to MODEL_NAME)* | Security-specific GGUF model for GAP analysis |
-| `MAX_TOKENS` | `-1` | Max generation tokens (`-1` = model default) |
-| `PREFER_LOCAL` | `true` | `true`: LocalAI/Ollama first, cloud fallback. `false`: cloud first |
-| `LOCAL_ONLY_MODE` | `false` | `true`: never call cloud APIs |
-| `THREADS` | `6` | CPU threads for LocalAI inference |
-| `CONTEXT_SIZE` | `8192` | Context window size for LocalAI |
-| `DEBUG` | `true` | Enable debug logging and relaxed JWT validation |
-
-### Cloud LLM API
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CLOUD_LLM_API_URL` | `https://open-claude.com/v1` | Open Claude gateway URL |
-| `CLOUD_MODEL_NAME` | `gemini-3-flash-preview` | Default cloud model |
-| `CLOUD_API_KEYS` | *(empty)* | Comma-separated API keys for round-robin rotation |
-
-### Data Paths
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ISO_DOCS_PATH` | `/data/iso_documents` | Knowledge base markdown files |
-| `VECTOR_STORE_PATH` | `/data/vector_store` | ChromaDB persistent storage |
-| `DATA_PATH` | `/data` | Root data directory |
-
-### Security
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `JWT_SECRET` | `change-me-in-production` | JWT signing secret (**must** be ≥32 chars in production) |
-| `JWT_EXPIRE_MINUTES` | `60` | Token expiry in minutes |
-| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated allowed origins |
-
-> **Important:** The application refuses to start in production (`DEBUG=false`) if `JWT_SECRET` is a known weak value or shorter than 32 characters. Generate a secure secret:
-> ```bash
-> python -c "import secrets; print(secrets.token_hex(32))"
-> ```
-
-### Rate Limiting
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `RATE_LIMIT_CHAT` | `10/minute` | Chat endpoint rate limit |
-| `RATE_LIMIT_ASSESS` | `3/minute` | Assessment endpoint rate limit |
-| `RATE_LIMIT_BENCHMARK` | `5/minute` | Benchmark endpoint rate limit |
-
-### Performance
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `INFERENCE_TIMEOUT` | `300` | LocalAI/Ollama request timeout (seconds) |
-| `CLOUD_TIMEOUT` | `60` | Cloud API request timeout (seconds) |
-| `MAX_CONCURRENT_REQUESTS` | `3` | Semaphore limit for concurrent LLM requests |
-
----
-
-## 5. Production Deployment
-
-Production uses [`docker-compose.prod.yml`](docker-compose.prod.yml) which overrides the base configuration:
-
-### Key Differences from Development
-
-| Aspect | Development | Production |
-|--------|-------------|------------|
-| Nginx | Not included | [`cyberai-nginx`](docker-compose.prod.yml:12) with TLS |
-| Volumes | Bind mounts (hot reload) | Named volume `cyberai-data` |
-| Backend | Single uvicorn worker | [`WORKERS=2`](docker-compose.prod.yml:50) |
-| Frontend | `Dockerfile.dev` (dev server) | `Dockerfile` (production build, standalone) |
-| LocalAI image | `localai/localai:v2.24.2` | `localai/localai:latest` |
-| LocalAI memory | 12 GB / 4 GB reserved | 16 GB / 8 GB reserved |
-| Frontend memory | 2 GB | 1 GB |
-| Backend memory | 6 GB / 2 GB reserved | 4 GB / 1 GB reserved |
-| DEBUG | `true` | `false` |
-| LOG_LEVEL | `INFO` | `WARNING` |
-| Container prefix | `phobert-*` | `cyberai-*` |
-| Network | `phobert-network` | `cyberai-network` |
-
-### Deploy Command
+### Pulling Models into Ollama Container:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Pull primary Auditor model
+docker exec -it cyberai-ollama ollama pull gemma4:latest
+
+# Pull technical Extractor model
+docker exec -it cyberai-ollama ollama pull qwen2.5-coder:7b
+
+# Pull multilingual Embedding model
+docker exec -it cyberai-ollama ollama pull bge-m3
 ```
 
-### SSL Certificates
-
-Place TLS certificates in [`nginx/certs/`](nginx/nginx.conf:82):
-
-```
-nginx/certs/
-├── fullchain.pem    # Certificate chain
-└── privkey.pem      # Private key
-```
-
-The [Nginx configuration](nginx/nginx.conf) includes:
-- **TLS hardening:** TLSv1.2 + TLSv1.3 only, modern cipher suites, OCSP stapling
-- **Rate limiting:** 30 req/s per IP on `/api/` (burst 20), 100 req/s global (burst 50)
-- **Security headers:** HSTS, CSP, X-Frame-Options DENY, X-Content-Type-Options nosniff
-- **WebSocket support:** Connection upgrade headers for SSE streaming
-- **Hidden file denial:** Blocks access to `.env`, `.git`, etc.
-- **Let's Encrypt:** ACME challenge support at `/.well-known/acme-challenge/`
-- **Gzip compression:** Enabled for text, JSON, CSS, JS, SVG
-
----
-
-## 6. Health Checks
-
-| Service | Endpoint | Method | Expected Response | Notes |
-|---------|----------|--------|-------------------|-------|
-| Backend | `GET /health` | HTTP | `{"status": "healthy"}` | 30s interval, 30s start\_period |
-| LocalAI | `GET /readyz` | HTTP | 200 OK | 30s interval, **120s start\_period** (model loading) |
-| Ollama | `GET /api/tags` | HTTP | 200 OK with model list | 30s interval, 60s start\_period |
-| AI Status | `GET /api/system/ai-status` | HTTP | JSON with model status | Comprehensive LLM health (LocalAI + Ollama + Cloud) |
-
-### Checking Health Manually
-
+Verify installed models:
 ```bash
-# Backend
-curl -f http://localhost:8000/health
-
-# LocalAI
-curl -f http://localhost:8080/readyz
-
-# Ollama
-curl -sf http://localhost:11434/api/tags
-
-# Full AI status
-curl http://localhost:8000/api/system/ai-status
+docker exec -it cyberai-ollama ollama list
 ```
 
 ---
 
-## 7. Data Persistence
+## ⚙️ 4. Environment Variables
 
-### Development (Bind Mounts)
+All configurations are controlled via `.env` (copied from `.env.example`):
 
-In development, [`docker-compose.yml`](docker-compose.yml:33) mounts host directories directly into the backend container for live editing:
-
-```yaml
-volumes:
-  - ./backend:/app                          # Source code (hot reload)
-  - ./data/iso_documents:/data/iso_documents
-  - ./data/vector_store:/data/vector_store
-  - ./data/assessments:/data/assessments
-  - ./data/evidence:/data/evidence
-  - ./data/exports:/data/exports
-  - ./data/sessions:/data/sessions
-  - ./data/standards:/data/standards
-  - ./data/knowledge_base:/data/knowledge_base
-  - ./data/uploads:/data/uploads
+### 🦙 Local AI Configuration (Required)
+```ini
+OLLAMA_URL=http://ollama:11434
+MODEL_NAME=gemma4:latest
+SECURITY_MODEL_NAME=gemma4:latest
+EMBEDDING_MODEL_NAME=bge-m3
+MODEL_1_EXTRACTOR=qwen2.5-coder:7b
+MODEL_2_AUDITOR=gemma4:latest
+MODEL_3_EMBEDDING=bge-m3
+REQUIRED_MODEL_IDS=gemma4:latest,qwen2.5-coder:7b,bge-m3:latest
+PREFER_LOCAL=true
+INFERENCE_TIMEOUT=1200
 ```
 
-Frontend source is also bind-mounted for hot reload via `WATCHPACK_POLLING=true`.
+### ✨ Cloud AI Configuration (Optional Fallback Channel)
+> **Note:** The platform runs 100% offline. Cloud features are optional fallbacks when API keys are configured:
+```ini
+# Google AI Studio (Gemini 2.0 Flash / Pro) — Optional Cloud Fallback
+GOOGLE_AI_STUDIO_API_KEY=your_google_ai_studio_key_here
+GOOGLE_AI_STUDIO_MODEL=gemini-2.0-flash
+GOOGLE_AI_STUDIO_URL=https://generativelanguage.googleapis.com/v1beta
 
-### Production (Named Volumes)
-
-In production, [`docker-compose.prod.yml`](docker-compose.prod.yml:54) uses a single named volume:
-
-```yaml
-volumes:
-  - cyberai-data:/data    # All persistent data
+# Claude / DeepSeek General Cloud Fallback (Optional)
+CLOUD_LLM_API_URL=https://api.anthropic.com/v1
+CLOUD_MODEL_NAME=claude-3-5-sonnet-latest
+CLOUD_API_KEYS=your_cloud_key_here
 ```
 
-Ollama model storage uses a separate named volume in both environments:
-
-```yaml
-volumes:
-  - ollama_data:/root/.ollama
+### 🔒 Security & Tokens
+```ini
+# JWT Signing Secret (Minimum 32 random characters)
+JWT_SECRET=super-secret-jwt-key-minimum-32-chars-long
+JWT_EXPIRE_MINUTES=60
+CORS_ORIGINS=http://localhost:3000,http://localhost:3081,http://127.0.0.1:3000,http://127.0.0.1:3081
 ```
 
 ---
 
-## 8. Backup & Restore
+## 🏭 5. Production Deployment
 
-The platform includes a production backup script at [`scripts/backup.sh`](scripts/backup.sh):
+Production uses [`docker-compose.prod.yml`](docker-compose.prod.yml) which is aligned directly with the development architecture:
 
+### Key Architectural Highlights:
+1. **Pure HTTP Nginx**: Listens strictly on port **80**, completely removing SSL/TLS certificates and Let's Encrypt volume mounts.
+2. **Direct Port Binding**: Direct exposure of ports (`80:80`, `8000:8000`, `3081:3000`, `11434:11434`, `8888:8080`) for local network access and firewall rules.
+3. **Host Gateway Access**: Configured with `extra_hosts: ["host.docker.internal:host-gateway"]` to connect with host services.
+4. **Unified CORS**: Permits connections from both `:3081` and `:3000`.
+
+### Production Commands:
 ```bash
-# Default: backs up to ./backups/ with 30-day retention
-./scripts/backup.sh
+# Launch production cluster
+docker compose -f docker-compose.prod.yml up -d --build
 
-# Custom destination and retention
-./scripts/backup.sh --dest /backup/path --retention-days 30
+# Validate compose configuration
+docker compose -f docker-compose.prod.yml config --quiet
 ```
 
-### What Gets Backed Up
+### Production Port Map:
+| Container Name | Service | Port Binding |
+|---|---|---|
+| `cyberai-nginx` | Pure HTTP Reverse Proxy | `80:80` |
+| `cyberai-backend` | FastAPI Core Engine | `8000:8000` |
+| `cyberai-frontend` | Next.js Frontend | `3081:3000` |
+| `cyberai-ollama` | Local LLM Inference | `11434:11434` |
+| `cyberai-searxng` | Private Search Engine | `8888:8080` |
 
-| Component | Source Path | Content |
-|-----------|------------|---------|
-| Assessments | `data/assessments/` | Assessment JSON records |
-| Sessions | `data/sessions/` | Chat session history (JSON) |
-| Knowledge Base | `data/knowledge_base/` | Benchmark + controls data |
-| Vector Store | `data/vector_store/` | ChromaDB persistent index |
+---
 
-### Backup Output
+## 🌐 6. Nginx Configuration (Pure HTTP Port 80 - No Certs Required)
 
-- Creates a timestamped `tar.gz` archive (e.g., `cyberai_backup_20260405_143700.tar.gz`)
-- Includes a `manifest.json` with schema version, timestamp, and component list
-- Automatically cleans up archives older than the retention period
+The Nginx configuration [`nginx/nginx.conf`](nginx/nginx.conf) is mounted to `/etc/nginx/nginx.conf:ro`:
 
-### Restore
+- **No SSL/TLS Certificates**: Listens on port 80 only (`listen 80 default_server;`).
+- **Unbuffered SSE Streaming**: Configures `proxy_buffering off;` and `proxy_read_timeout 600s;` for `/api/` to ensure immediate token delivery for LLM chat responses.
+- **Rate Limiting**: Applies `30r/s` limit for `/api/` (burst 20) and `100r/s` globally to prevent DoS attacks.
+- **WebSocket Upgrade**: Supports HTTP upgrade connections via `map $http_upgrade $connection_upgrade`.
+- **Gzip Compression**: Compresses JSON, HTML, JavaScript, CSS, and SVG assets on the fly.
+
+---
+
+## 🩺 7. Health Checks & Verification
+
+Verify platform operational status:
 
 ```bash
-# Extract archive
-tar -xzf cyberai_backup_20260405_143700.tar.gz
+# 1. Check Backend API status
+curl -s http://localhost:8000/health
+# Expected output: {"status":"healthy"}
 
-# Copy data back to project
-cp -r cyberai_backup_20260405_143700/assessments/ data/assessments/
-cp -r cyberai_backup_20260405_143700/sessions/ data/sessions/
-cp -r cyberai_backup_20260405_143700/knowledge_base/ data/knowledge_base/
-cp -r cyberai_backup_20260405_143700/vector_store/ data/vector_store/
+# 2. Check installed Ollama models
+curl -s http://localhost:11434/api/tags
 
-# Restart backend to pick up restored data
+# 3. Check via Nginx Reverse Proxy
+curl -s http://localhost/health
+
+# 4. Check SearXNG Meta-Search JSON API
+curl -s "http://localhost:8888/search?q=ransomware&format=json" | grep -o '"results"'
+```
+
+---
+
+## 💾 8. Data Persistence
+
+All stateful data is persisted across container rebuilds:
+
+| Directory / Volume | Type | Content |
+|---|---|---|
+| `./data/users.db` | SQLite file | User credentials hashed with PBKDF2/SHA-256 |
+| `./data/chat_sessions.db` | SQLite file | User chat histories and sessions |
+| `./data/assessments/` | JSON files | ISO 27001 & TCVN 11930 assessment reports |
+| `./data/vector_store/` | ChromaDB dir | Vector embeddings for standards and knowledge base |
+| `./data/uploads/` | Host dir | Uploaded audit evidence and server scan dumps |
+| `./searxng/` | Host dir | SearXNG configuration (`settings.yml`: JSON format enabled, limiter disabled) |
+| `ollama_data` | Named volume | Downloaded Ollama model weights (`/root/.ollama`) |
+
+---
+
+## 💿 9. Backup & Restore
+
+### Automated Backup:
+```bash
+bash scripts/backup.sh --dest ./backups --retention-days 30
+```
+
+### Data Restore:
+```bash
+# Extract backup archive
+tar -xzf ./backups/cyberai_backup_<TIMESTAMP>.tar.gz -C ./
+
+# Restart backend to load restored files
 docker compose restart backend
 ```
 
 ---
 
-## 9. Troubleshooting
+## 🔧 10. Troubleshooting
 
-### LocalAI Slow Start
+### 1. Model Not Found in Ollama (404 Error)
+- **Symptom:** Chat returns `"model 'gemma4:latest' not found"`.
+- **Solution:** Pull the model inside the running container:
+  ```bash
+  docker exec -it cyberai-ollama ollama pull gemma4:latest
+  ```
 
-**Symptom:** Backend returns "LocalAI connection error" for the first ~2 minutes.
+### 2. Browser CORS Error
+- **Symptom:** Console displays `Access-Control-Allow-Origin` error.
+- **Solution:** Verify `CORS_ORIGINS` in `.env` includes both ports:
+  ```ini
+  CORS_ORIGINS=http://localhost:3000,http://localhost:3081,http://127.0.0.1:3000,http://127.0.0.1:3081
+  ```
+  Then restart backend: `docker compose restart backend`.
 
-**Cause:** LocalAI loads GGUF models into memory at startup. The health check has a 120-second `start_period` to accommodate this.
+### 3. Backend Refuses to Start (Insecure JWT Secret)
+- **Symptom:** Logs show `ValueError: JWT_SECRET is insecure...`.
+- **Solution:** Generate a secure 32+ character key:
+  ```bash
+  python -c "import secrets; print(secrets.token_hex(32))"
+  ```
+  Set this key into `JWT_SECRET=` in `.env`.
 
-**Fix:** Wait for the health check to pass:
-```bash
-docker compose ps   # Check health status column
-docker logs phobert-localai --tail 20   # Watch model loading progress
-```
-
-### Model Not Found
-
-**Symptom:** `"could not load model"` or `"rpc error"` in logs.
-
-**Fix:**
-1. Verify GGUF files exist in `models/llm/weights/`:
-   ```bash
-   ls -la models/llm/weights/*.gguf
-   ```
-2. Re-download if missing:
-   ```bash
-   python scripts/download_models.py --model llama --model security
-   ```
-3. Verify `MODEL_NAME` and `SECURITY_MODEL_NAME` in `.env` match the filenames.
-
-### Out of Memory (OOM)
-
-**Symptom:** Container killed by Docker or `Canceled` errors in logs.
-
-**Fix:**
-- Ensure the host has sufficient RAM (16 GB minimum).
-- Only use 8B-parameter models with the default 12 GB LocalAI memory limit.
-- Do **not** set `MODEL_NAME` to a 70B model — it requires ~40 GB RAM.
-- Reduce `CONTEXT_SIZE` from 8192 to 4096 if RAM is tight.
-
-### CORS Errors
-
-**Symptom:** Browser console shows `Access-Control-Allow-Origin` errors.
-
-**Fix:** Set `CORS_ORIGINS` in `.env` to include your frontend URL:
-```bash
-CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
-```
-
-### Cloud API Key Issues
-
-**Symptom:** `"[OpenClaude] No API key configured"` or all keys rate-limited.
-
-**Fix:**
-1. Set `CLOUD_API_KEYS` in `.env` with one or more valid keys (comma-separated).
-2. If all keys are in cooldown (429 rate limit), wait 30 seconds or add more keys.
-3. Check key validity at `https://open-claude.com`.
-4. If cloud is not needed, set `LOCAL_ONLY_MODE=true`.
-
-### Ollama Model Not Pulling
-
-**Symptom:** Ollama container is running but `gemma3n:e4b` is not available.
-
-**Fix:**
-```bash
-# Check Ollama logs
-docker logs phobert-ollama --tail 30
-
-# Manually pull the model
-docker exec phobert-ollama ollama pull gemma3n:e4b
-
-# Verify
-curl http://localhost:11434/api/tags
-```
-
----
-
-## 10. Scaling Considerations
-
-### Uvicorn Workers
-
-Production uses [`WORKERS=2`](docker-compose.prod.yml:50) (set in the backend environment). Increase for higher throughput on multi-core machines:
-
-```yaml
-environment:
-  - WORKERS=4
-```
-
-> **Caveat:** Each worker loads its own in-memory VectorStore and SessionStore. File-based session storage ensures consistency across workers.
-
-### Concurrent Request Semaphore
-
-[`MAX_CONCURRENT_REQUESTS=3`](.env.example:51) limits simultaneous LLM inference calls to prevent memory exhaustion. Increase only if the host has sufficient RAM:
-
-```bash
-MAX_CONCURRENT_REQUESTS=5
-```
-
-### Memory Allocation per Container
-
-Tune memory limits in [`docker-compose.yml`](docker-compose.yml) based on available host RAM:
-
-| Container | Dev Default | Light (16 GB host) | Full (64 GB host) |
-|-----------|-------------|--------------------|--------------------|
-| Backend | 6 GB | 4 GB | 8 GB |
-| Frontend | 2 GB | 1 GB | 2 GB |
-| LocalAI | 12 GB | 8 GB* | 24 GB |
-| Ollama | 12 GB | 8 GB | 16 GB |
-
-\* With 8 GB, only load one model at a time (set `PARALLEL_REQUESTS=false`).
-
-### Horizontal Scaling
-
-The current architecture is designed for single-node deployment. For horizontal scaling:
-- **Backend:** Stateless except for file-based sessions. Move sessions to Redis for multi-node.
-- **ChromaDB:** Currently uses `PersistentClient` (local disk). Migrate to ChromaDB server mode for shared access.
-- **LocalAI/Ollama:** Each instance loads models into RAM. Use a dedicated inference node.
+### 4. Compliance Percentage Exceeding 100%
+- **Status:** Resolved in `controls_catalog.py` and `standards.js`. Control IDs are strictly filtered against the assessed standard's catalog and clamped within $[0.0, 100.0]\%$.

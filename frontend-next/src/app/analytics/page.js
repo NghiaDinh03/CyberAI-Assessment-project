@@ -349,11 +349,11 @@ export default function AnalyticsPage() {
 
     const SERVICE_ROWS = [
         { name: 'FastAPI Backend', detail: 'Core API Service · Port 8000', ready: backendReady, status: backendReady ? 'Running' : 'Offline' },
-        { name: 'Ollama Engine', detail: `${ollamaModelName} (Local AI) · Port 11434`, ready: ollamaReady, status: ollamaReady ? 'Running' : 'Offline' },
-        { name: 'ChromaDB Vector Store', detail: 'ISO RAG Documents & Embeddings', ready: chromaReady, status: chromaReady ? 'Running' : 'Offline' },
+        { name: 'Model 2 (Gemma 4)', detail: 'Compliance Reasoning Auditor & SoA · Ollama 11434', ready: ollamaReady, status: ollamaReady ? 'Active (Local)' : 'Offline' },
+        { name: 'Model 1 (Qwen2.5-Coder)', detail: 'Technical Fact Extractor & 50-Page DOCX Parser', ready: ollamaReady, status: ollamaReady ? 'Active (Local)' : 'Offline' },
+        { name: 'Model 3 (BGE-M3 RAG)', detail: 'ChromaDB Vector Store · ISO 8K Context', ready: chromaReady, status: chromaReady ? 'Ready' : 'Offline' },
         { name: 'SearXNG Search', detail: 'Live Threat Intelligence · Port 8888', ready: searxngReady, status: searxngReady ? 'Running' : 'Offline' },
         { name: 'SQLite System DB', detail: 'Persistent Auth, Chat Sessions & Audits', ready: sqliteReady, status: sqliteReady ? 'Ready' : 'Offline' },
-        { name: 'Cloud AI Gateway', detail: 'Gemini, Claude & OpenAI Fallback', ready: cloudReady, status: cloudReady ? 'Ready' : 'Standby' },
     ]
 
     const filteredAssessments = useMemo(() => {
@@ -406,6 +406,12 @@ export default function AnalyticsPage() {
                     }}
                 >
                     <FlaskConical size={14} style={{ marginRight: '5px', verticalAlign: 'middle' }} />{t('analytics.tabBenchmark')}
+                </button>
+                <button
+                    className={`${styles.mainTab} ${activeMainTab === 'dataset' ? styles.mainTabActive : ''}`}
+                    onClick={() => setActiveMainTab('dataset')}
+                >
+                    <BookOpen size={14} style={{ marginRight: '5px', verticalAlign: 'middle' }} />{locale === 'vi' ? 'Dataset & Bằng Chứng' : 'Dataset & Evidence'}
                 </button>
                 <span className={styles.mainTabSpacer} />
                 <Link href="/form-iso" className={styles.newAssessmentBtn}>
@@ -1177,6 +1183,139 @@ export default function AnalyticsPage() {
                             </div>
                         </div>
                         <p className={styles.benchmarkAuditNote2} dangerouslySetInnerHTML={{ __html: t('analytics.benchmarkConclusion') }} />
+                    </div>
+                </div>
+            )}
+
+            {activeMainTab === 'dataset' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '1rem' }}>
+                    {/* Multi-Agent Roles Overview */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                        <div style={{ background: 'rgba(30, 41, 59, 0.45)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '8px', padding: '1.25rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                                <span style={{ fontSize: '1.4rem' }}>🔬</span>
+                                <div>
+                                    <div style={{ fontWeight: 700, color: '#38bdf8', fontSize: '0.95rem' }}>Model 1: Qwen2.5-Coder:7b</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Technical Fact Extractor & Dataset Normalizer</div>
+                                </div>
+                            </div>
+                            <p style={{ fontSize: '0.825rem', color: '#cbd5e1', lineHeight: 1.5, margin: 0 }}>
+                                {locale === 'vi'
+                                    ? 'Quét tài liệu lớn (DOCX 50 trang, PDF, Log PowerShell/Bash), bóc tách Heading và phân rã các lỗ hổng/cấu hình thành Fact Cards chuẩn hóa.'
+                                    : 'Parses large documents (50-page DOCX, scan logs) into structured Security Fact Cards.'}
+                            </p>
+                            <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.725rem' }}>
+                                <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>Heading Parser</span>
+                                <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>Table Row Extractor</span>
+                                <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>0% Truncation</span>
+                            </div>
+                        </div>
+
+                        <div style={{ background: 'rgba(30, 41, 59, 0.45)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', padding: '1.25rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                                <span style={{ fontSize: '1.4rem' }}>⚡</span>
+                                <div>
+                                    <div style={{ fontWeight: 700, color: '#34d399', fontSize: '0.95rem' }}>Model 2: Gemma 4 (AMD GPU)</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Compliance Reasoning Auditor & SoA Generator</div>
+                                </div>
+                            </div>
+                            <p style={{ fontSize: '0.825rem', color: '#cbd5e1', lineHeight: 1.5, margin: 0 }}>
+                                {locale === 'vi'
+                                    ? 'Tiếp nhận Fact Cards từ Model 1, đối soát đa chiều với 93 controls ISO 27001 và tính điểm rủi ro định lượng L × I cho Risk Register.'
+                                    : 'Cross-evaluates Fact Cards against 93 controls with quantitative L × I risk scoring.'}
+                            </p>
+                            <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.725rem' }}>
+                                <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>SSE Stream 100%</span>
+                                <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>Few-Shot Exemplars</span>
+                                <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>Local GPU</span>
+                            </div>
+                        </div>
+
+                        <div style={{ background: 'rgba(30, 41, 59, 0.45)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '8px', padding: '1.25rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                                <span style={{ fontSize: '1.4rem' }}>📚</span>
+                                <div>
+                                    <div style={{ fontWeight: 700, color: '#c084fc', fontSize: '0.95rem' }}>Model 3: BGE-M3 (ChromaDB)</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Multilingual Semantic Indexing & Legal Knowledge</div>
+                                </div>
+                            </div>
+                            <p style={{ fontSize: '0.825rem', color: '#cbd5e1', lineHeight: 1.5, margin: 0 }}>
+                                {locale === 'vi'
+                                    ? 'Ngữ cảnh vector 8,192 tokens hỗ trợ tra cứu toàn văn các văn bản luật ATTT Việt Nam (TCVN 11930, Nghị định 13) và ISO 27001:2022.'
+                                    : 'Dense & sparse multilingual retrieval across 8,192 tokens legal documents.'}
+                            </p>
+                            <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.725rem' }}>
+                                <span style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>8,192 Context</span>
+                                <span style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>Vietnamese Legal</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Dataset & Evidence Inventory */}
+                    <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(51, 65, 85, 0.7)', borderRadius: '8px', padding: '1.25rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <div>
+                                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#f8fafc', margin: 0 }}>
+                                    📋 {locale === 'vi' ? 'Dữ Liệu Bằng Chứng Đã Thu Thập & Trích Xuất Fact Cards' : 'Collected Evidence & Fact Cards'}
+                                </h3>
+                                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0.25rem 0 0 0' }}>
+                                    {locale === 'vi'
+                                        ? 'Tổng hợp bằng chứng từ các dự án kiểm toán thực tế và các Fact Cards đã nạp vào hệ thống'
+                                        : 'Aggregated evidence files and standardized Fact Cards parsed across assessments'}
+                                </p>
+                            </div>
+                            <span style={{ fontSize: '0.8rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '0.3rem 0.6rem', borderRadius: '4px' }}>
+                                {assessments.length} {locale === 'vi' ? 'đợt đánh giá' : 'assessments recorded'}
+                            </span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {assessments.slice(0, 10).map((a) => {
+                                return (
+                                    <div
+                                        key={a.id}
+                                        style={{
+                                            background: 'rgba(30, 41, 59, 0.4)',
+                                            border: '1px solid rgba(51, 65, 85, 0.6)',
+                                            borderRadius: '6px',
+                                            padding: '0.85rem 1rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            fontSize: '0.85rem',
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <span style={{ fontSize: '1.1rem' }}>📁</span>
+                                            <div>
+                                                <strong style={{ color: '#f1f5f9' }}>{a.org_name || 'Hệ thống IT'}</strong>
+                                                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                                    ID: {a.id} · Tiêu chuẩn: {a.standard || 'ISO 27001:2022'} · {new Date(a.created_at).toLocaleDateString()}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <span style={{
+                                                padding: '0.2rem 0.5rem',
+                                                borderRadius: '4px',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 600,
+                                                background: (a.compliance_percent ?? 0) >= 70 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                                color: (a.compliance_percent ?? 0) >= 70 ? '#34d399' : '#f87171'
+                                            }}>
+                                                {a.compliance_percent != null ? `${a.compliance_percent}% Tuân thủ` : a.status}
+                                            </span>
+                                            <Link
+                                                href={`/form-iso?assessment_id=${a.id}`}
+                                                style={{ color: '#38bdf8', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+                                            >
+                                                Chi Tiết Bằng Chứng →
+                                            </Link>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
                     </div>
                 </div>
             )}

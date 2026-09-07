@@ -1,0 +1,767 @@
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(4, 8, 16, 0.88);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modalContainer {
+    background: #0b1329;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 1200px;
+    height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Top Toolbar */
+.topBar {
+    background: #070c1a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.6rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.topLeft {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.brandBadge {
+    background: #1e3a8a;
+    color: #93c5fd;
+    font-weight: 700;
+    font-size: 0.72rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    border: 1px solid rgba(147, 197, 253, 0.3);
+}
+
+.fileTitle {
+    color: #f1f5f9;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.fileTypeBadge {
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+}
+
+/* Segmented Toggle Control */
+.segmentedControl {
+    display: flex;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.2rem;
+    border-radius: 8px;
+    gap: 0.25rem;
+}
+
+.segmentBtn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.35rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.segmentBtn:hover {
+    color: #ffffff;
+}
+
+.segmentActive {
+    background: #2563eb;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+}
+
+.topRight {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.actionBtn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.actionBtn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+.actionBtnPrimary {
+    background: #16a34a;
+    border: 1px solid #22c55e;
+    color: #ffffff;
+    padding: 0.35rem 0.85rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.actionBtnPrimary:hover {
+    background: #15803d;
+}
+
+.closeBtn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.closeBtn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+/* Editor Body */
+.editorArea {
+    flex: 1;
+    background: #040813;
+    overflow-y: auto;
+    padding: 1.5rem 1rem;
+    display: flex;
+    justify-content: center;
+}
+
+/* Document Preview Mode: Multi-Page A4 Paginated Sheets */
+.a4PagesContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5rem;
+    width: 100%;
+    max-width: 860px;
+    margin: 0 auto;
+    padding-bottom: 3rem;
+}
+
+.a4Sheet {
+    background: #ffffff;
+    color: #1e293b;
+    width: 100%;
+    max-width: 820px;
+    min-height: 1140px;
+    padding: 2.5rem 3rem;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.2);
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 12pt;
+    line-height: 1.35;
+    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.a4SheetBody {
+    flex: 1;
+}
+
+.pageHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 8.5pt;
+    color: #64748b;
+    font-style: italic;
+}
+
+.pageFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #cbd5e1;
+    padding-top: 0.65rem;
+    margin-top: 1.5rem;
+    font-size: 8.5pt;
+    color: #64748b;
+}
+
+.pageNumberPill {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.pageDivider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 1rem;
+    color: #94a3b8;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.pageDividerLine {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.15);
+    flex: 1;
+}
+
+.docLetterhead {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    font-size: 10.5pt;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 1rem;
+}
+
+.letterheadLeft {
+    text-align: center;
+    width: 46%;
+}
+
+.orgMainUpper {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 10.5pt;
+}
+
+.orgSubUpper {
+    font-size: 9.5pt;
+    color: #475569;
+}
+
+.dividerLine {
+    width: 80px;
+    height: 1px;
+    background: #334155;
+    margin: 4px auto;
+}
+
+.docCode {
+    font-size: 9pt;
+    font-style: italic;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+.letterheadRight {
+    text-align: center;
+    width: 48%;
+}
+
+.nationUpper {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 10.5pt;
+}
+
+.motto {
+    font-weight: 700;
+    font-size: 10pt;
+}
+
+.docDate {
+    font-size: 9.5pt;
+    font-style: italic;
+    color: #475569;
+    margin-top: 4px;
+}
+
+.docTitleBlock {
+    text-align: center;
+    margin: 1.5rem 0 1.25rem;
+}
+
+.docTitleMain {
+    font-size: 16pt;
+    font-weight: 700;
+    color: #0a2540;
+    margin: 0;
+    letter-spacing: 0.02em;
+}
+
+.docTitleSub {
+    font-size: 11pt;
+    font-style: italic;
+    color: #475569;
+    margin-top: 4px;
+}
+
+/* Administrative Table */
+.adminTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+    font-size: 11pt;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+}
+
+.adminTable td {
+    padding: 6px 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.adminLabel {
+    width: 22%;
+    color: #475569;
+    font-weight: 500;
+}
+
+.adminVal {
+    color: #0f172a;
+}
+
+.scoreText {
+    color: #2563eb;
+    font-weight: 700;
+    font-size: 11.5pt;
+}
+
+.docSection {
+    margin-bottom: 1.5rem;
+}
+
+.sectionHeadingA4 {
+    font-size: 12.5pt;
+    font-weight: 700;
+    color: #0a2540;
+    border-bottom: 1.5px solid #0a2540;
+    padding-bottom: 3px;
+    margin: 1rem 0 0.6rem;
+}
+
+.docParagraph {
+    text-align: justify;
+    margin-bottom: 0.75rem;
+    font-size: 11pt;
+}
+
+.statCardsRow {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin: 0.85rem 0;
+}
+
+.statCardA4 {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 0.65rem 0.5rem;
+    text-align: center;
+}
+
+.statCardNum {
+    font-size: 16pt;
+    font-weight: 700;
+    color: #0a2540;
+}
+
+.statCardLabel {
+    font-size: 8.5pt;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+/* Word-styled Table */
+.docTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.85rem 0;
+    font-size: 10pt;
+}
+
+.docTable th {
+    background: #0a2540;
+    color: #ffffff;
+    font-weight: 700;
+    padding: 7px 8px;
+    border: 1px solid #0a2540;
+    font-size: 9.5pt;
+}
+
+.docTable td {
+    padding: 6px 8px;
+    border: 1px solid #cbd5e1;
+    vertical-align: middle;
+}
+
+.docTable tr:nth-child(even) {
+    background: #f8fafc;
+}
+
+.riskBadge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 7.5pt;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.badgeCrit {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #f87171;
+}
+
+.badgeHigh {
+    background: #ffedd5;
+    color: #c2410c;
+    border: 1px solid #fb923c;
+}
+
+.badgeMed {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border: 1px solid #93c5fd;
+}
+
+.badgeLow {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+/* Roadmap Cards */
+.roadmapCards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin: 0.85rem 0;
+}
+
+.roadmapCard {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 0.75rem;
+    font-size: 9.5pt;
+}
+
+.roadmapCard p {
+    margin: 0.35rem 0 0;
+    color: #334155;
+}
+
+.roadmapBadgeImmediate {
+    font-size: 8pt;
+    font-weight: 700;
+    color: #b91c1c;
+    border-bottom: 2px solid #b91c1c;
+    padding-bottom: 2px;
+}
+
+.roadmapBadgeMedium {
+    font-size: 8pt;
+    font-weight: 700;
+    color: #c2410c;
+    border-bottom: 2px solid #c2410c;
+    padding-bottom: 2px;
+}
+
+.roadmapBadgeLong {
+    font-size: 8pt;
+    font-weight: 700;
+    color: #1d4ed8;
+    border-bottom: 2px solid #1d4ed8;
+    padding-bottom: 2px;
+}
+
+/* Sign-off Block */
+.signBlock {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2.5rem;
+    page-break-inside: avoid;
+}
+
+.signColumn {
+    width: 45%;
+    text-align: center;
+}
+
+.signTitle {
+    font-weight: 700;
+    font-size: 10.5pt;
+    color: #0f172a;
+}
+
+.signSub {
+    font-size: 9pt;
+    font-style: italic;
+    color: #64748b;
+}
+
+.signSpace {
+    height: 70px;
+}
+
+.signName {
+    font-weight: 700;
+    font-size: 10.5pt;
+    color: #0f172a;
+}
+
+/* Field-Value Form Editor Mode */
+.fieldsContainer {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.fieldSectionCard {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+}
+
+.fieldSectionTitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #38bdf8;
+    margin: 0 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.fieldGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.fieldGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.fieldGroup label, .fieldGroupFull label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+.fieldGroup input, .fieldGroupFull input, .fieldGroupFull textarea {
+    background: #070c1a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    color: #f8fafc;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.fieldGroup input:focus, .fieldGroupFull input:focus, .fieldGroupFull textarea:focus {
+    border-color: #3b82f6;
+}
+
+.fieldGroupFull {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.85rem;
+}
+
+/* Spreadsheet Mode */
+.sheetPaper {
+    width: 100%;
+    max-width: 1100px;
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 1.25rem;
+}
+
+.sheetHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.sheetMainTitle {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0;
+}
+
+.sheetSubtitle {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin: 0.2rem 0 0;
+}
+
+.addRowBtn {
+    background: #1e3a8a;
+    border: 1px solid #3b82f6;
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.tableScroll {
+    overflow-x: auto;
+}
+
+.spreadsheetTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+
+.spreadsheetTable th {
+    background: #1e293b;
+    color: #e2e8f0;
+    font-weight: 600;
+    padding: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: left;
+}
+
+.spreadsheetTable td {
+    padding: 0.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    vertical-align: middle;
+}
+
+.cellInputBold {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #f8fafc;
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+.cellTextarea {
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #f1f5f9;
+    font-size: 0.8rem;
+    padding: 2px 4px;
+    resize: vertical;
+}
+
+.cellTextarea:focus {
+    border-color: #3b82f6;
+    background: rgba(15, 23, 42, 0.8);
+}
+
+.cellSelect {
+    width: 100%;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    color: #f8fafc;
+    padding: 2px 4px;
+    text-align: center;
+}
+
+.deleteRowBtn {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 2px 6px;
+}
+
+/* Bottom Status Bar */
+.bottomStatusBar {
+    background: #070c1a;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.5rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: #64748b;
+}
+
+.statusIndicator {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+}

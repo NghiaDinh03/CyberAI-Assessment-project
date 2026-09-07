@@ -30,9 +30,9 @@ The Analytics & Monitoring module provides:
 
 | Feature | Source |
 |---------|--------|
-| Real-time CPU / RAM / Disk / Uptime | `/host/proc/` (host OS filesystem) |
-| Cache size stats | `/data/` directory sizes |
-| AI model health check | Open Claude + LocalAI ping |
+| Real-time CPU / RAM / Disk / Uptime | `psutil` (Cross-platform OS metrics) |
+| Cache size stats | `/data/` directory sizes (`sessions`, `exports`) |
+| AI model health check | Ollama + Cloud AI ping |
 | ISO assessment history | `/data/assessments/*.json` |
 | ChromaDB semantic explorer | ChromaDB `iso_documents` collection |
 
@@ -44,23 +44,15 @@ File: [`backend/api/routes/system.py`](../backend/api/routes/system.py)
 
 ### Architecture
 
-The backend container mounts the **host's `/proc` filesystem** read-only:
-
-```yaml
-# docker-compose.yml
-volumes:
-  - /proc:/host/proc:ro
-```
-
-All system stats are read directly from `/host/proc/*` — this reports **host machine** stats, not container-isolated stats.
+System metrics are gathered using the standard, cross-platform `psutil` library, ensuring secure, container-friendly operation across both Linux and Windows environments without requiring raw `/proc` mount privileges:
 
 ```python
-def read_proc_file(path: str) -> str:
-    try:
-        with open(path, "r") as f:
-            return f.read()
-    except Exception:
-        return ""
+import psutil
+
+cpu_percent = psutil.cpu_percent(interval=0.3)
+vm = psutil.virtual_memory()
+du = psutil.disk_usage("/")
+uptime = round(time.time() - psutil.boot_time(), 1)
 ```
 
 ### Endpoint
@@ -252,31 +244,20 @@ File: [`backend/services/cloud_llm_service.py`](../backend/services/cloud_llm_se
 @classmethod
 def health_check(cls) -> Dict[str, Any]:
     status = {
+        "ollama":      { "status": "unknown", "latency_ms": None },
         "open_claude": { "status": "unknown", "latency_ms": None },
-        "localai":     { "status": "unknown", "latency_ms": None },
     }
 
-    # Test Open Claude
+    # Test Ollama Local Inference
     try:
         t0 = time.time()
-        cls._call_open_claude([{"role":"user","content":"ping"}], max_tokens=5)
-        status["open_claude"] = {
+        cls._call_ollama([{"role":"user","content":"ping"}], max_tokens=5)
+        status["ollama"] = {
             "status": "ok",
             "latency_ms": round((time.time()-t0)*1000)
         }
     except Exception as e:
-        status["open_claude"] = {"status": "error", "error": str(e)}
-
-    # Test LocalAI
-    try:
-        t0 = time.time()
-        cls._call_localai(LOCAL_AI_MODEL, [{"role":"user","content":"ping"}], max_tokens=5)
-        status["localai"] = {
-            "status": "ok",
-            "latency_ms": round((time.time()-t0)*1000)
-        }
-    except Exception as e:
-        status["localai"] = {"status": "error", "error": str(e)}
+        status["ollama"] = {"status": "error", "error": str(e)}
 
     return status
 ```
@@ -285,8 +266,8 @@ def health_check(cls) -> Dict[str, Any]:
 
 ```json
 {
-  "open_claude": { "status": "ok",    "latency_ms": 342 },
-  "localai":     { "status": "error", "error": "Connection refused" }
+  "ollama":      { "status": "ok",    "latency_ms": 45 },
+  "open_claude": { "status": "ok",    "latency_ms": 342 }
 }
 ```
 
@@ -408,7 +389,7 @@ File: [`frontend-next/src/app/analytics/page.js`](../frontend-next/src/app/analy
 │  [CPU: 23%] [RAM: 49%] [Disk: 37%] [Uptime: 5d 2h]    │
 ├─────────────────────────────────────────────────────────┤
 │  AI Services                                            │
-│  [Open Claude: ✅ 342ms] [LocalAI: ❌ offline]          │
+│  [Ollama: ✅ 45ms] [Cloud Fallback: ✅ ready]           │
 ├─────────────────────────────────────────────────────────┤
 │  Assessment History          [3 assessments]            │
 │  ┌────────────────────────────────────────────────────┐ │

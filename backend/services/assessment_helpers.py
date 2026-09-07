@@ -83,7 +83,9 @@ def build_chunk_prompt(cat_name: str, cat_controls: list, implemented: list,
                        pct: float, sc: int, mx: int,
                        sys_summary: str, std_name: str, rag_ctx: str = "",
                        evidence_summary: Optional[str] = None,
-                       evidence_text: Optional[str] = None) -> str:
+                       evidence_text: Optional[str] = None,
+                       fact_cards_text: Optional[str] = None,
+                       feedback_exemplars_text: Optional[str] = None) -> str:
     """Build a per-control-group assessment prompt.
 
     Args:
@@ -98,6 +100,8 @@ def build_chunk_prompt(cat_name: str, cat_controls: list, implemented: list,
         rag_ctx: RAG context from ChromaDB.
         evidence_summary: Pre-computed evidence summary from SecurityLM.
         evidence_text: Raw evidence text for this control group (optional).
+        fact_cards_text: Structured Security Fact Cards from Agent 1 (optional).
+        feedback_exemplars_text: Few-shot historical auditor feedback (optional).
     """
     missing = [c for c in cat_controls if c["id"] not in implemented]
     present = [c for c in cat_controls if c["id"] in implemented]
@@ -112,9 +116,17 @@ def build_chunk_prompt(cat_name: str, cat_controls: list, implemented: list,
             f"\nEVIDENCE SUMMARY:\n{evidence_summary.strip()[:600]}\n"
             + rag_section
         )
+    # Inject structured fact cards from Agent 1
+    if fact_cards_text and fact_cards_text.strip():
+        rag_section += f"\n{fact_cards_text.strip()}\n"
     # Inject raw evidence for this control group if available
-    if evidence_text and evidence_text.strip():
+    elif evidence_text and evidence_text.strip():
         rag_section += f"\nEVIDENCE TEXT:\n{evidence_text.strip()[:2000]}\n"
+        
+    # Inject historical auditor few-shot corrections from Feedback Store
+    if feedback_exemplars_text and feedback_exemplars_text.strip():
+        rag_section += f"\n{feedback_exemplars_text.strip()}\n"
+
     few_shot = _load_prompt(
         "assessment.chunk_fewshot", prompt_defaults.ASSESSMENT_CHUNK_FEWSHOT,
     )
@@ -164,33 +176,86 @@ def infer_gap_from_control(ctrl: dict, cat_name: str) -> dict:
     }
 
 
+def extract_json_payload(content: str) -> Any:
+    """Safely extract JSON array or object from LLM response."""
+    if not content or not content.strip():
+        return None
+    cleaned = content.strip()
+
+    # Strip thinking blocks <think>...</think> or <thought>...</thought>
+    cleaned = re.sub(r'<think(?:ing)?>.*?</think(?:ing)?>', '', cleaned, flags=re.DOTALL)
+    cleaned = re.sub(r'<thought>.*?</thought>', '', cleaned, flags=re.DOTALL)
+
+    # Strategy 1: Code fences ```json ... ``` or ``` ... ```
+    fence_matches = re.findall(r'```(?:json)?\s*([\s\S]*?)\s*```', cleaned, re.IGNORECASE)
+    for block in fence_matches:
+        block_str = block.strip()
+        try:
+            return json.loads(block_str)
+        except Exception:
+            try:
+                return json.loads(repair_json_string(block_str))
+            except Exception:
+                pass
+
+    # Strategy 2: Outermost brackets [ ... ]
+    start_bracket = cleaned.find('[')
+    end_bracket = cleaned.rfind(']')
+    if start_bracket != -1 and end_bracket > start_bracket:
+        candidate = cleaned[start_bracket:end_bracket + 1]
+        try:
+            return json.loads(candidate)
+        except Exception:
+            try:
+                return json.loads(repair_json_string(candidate))
+            except Exception:
+                pass
+
+    # Strategy 3: Outermost braces { ... } (unwrap if contains gaps list)
+    start_brace = cleaned.find('{')
+    end_brace = cleaned.rfind('}')
+    if start_brace != -1 and end_brace > start_brace:
+        candidate = cleaned[start_brace:end_brace + 1]
+        try:
+            obj = json.loads(candidate)
+            for k in ("gaps", "items", "controls", "data"):
+                if isinstance(obj, dict) and isinstance(obj.get(k), list):
+                    return obj[k]
+            return obj
+        except Exception:
+            try:
+                obj = json.loads(repair_json_string(candidate))
+                for k in ("gaps", "items", "controls", "data"):
+                    if isinstance(obj, dict) and isinstance(obj.get(k), list):
+                        return obj[k]
+                return obj
+            except Exception:
+                pass
+
+    # Strategy 4: Full-text repair fallback
+    try:
+        return json.loads(repair_json_string(cleaned))
+    except Exception:
+        return None
+
+
 def validate_chunk_output(content: str, cat_name: str,
                           valid_ids: Optional[List[str]] = None) -> Optional[List[Dict]]:
     """Parse and validate JSON output from SecurityLM.
     valid_ids: if provided, reject items with IDs not in this set (anti-hallucination).
     """
     try:
-        content = content.strip()
-        
-        # 1. Thử parse JSON chuẩn trước
-        data = None
-        match = re.search(r'\[.*?\]', content, re.DOTALL)
-        if match:
-            try:
-                data = json.loads(match.group())
-            except Exception:
-                pass
-                
-        # 2. Nếu thất bại, chạy json_repair để sửa lỗi
+        data = extract_json_payload(content)
         if data is None:
-            try:
-                repaired = repair_json_string(content)
-                data = json.loads(repaired)
-                logger.info(f"[Validate] JSON repaired successfully for chunk '{cat_name}'")
-            except Exception as repair_exc:
-                logger.warning(f"[Validate] JSON repair failed for chunk '{cat_name}': {repair_exc}")
-                return None
-                
+            logger.warning(f"[Validate] Could not extract valid JSON from chunk '{cat_name}'")
+            return None
+
+        if isinstance(data, dict):
+            for k in ("gaps", "items", "controls", "data"):
+                if isinstance(data.get(k), list):
+                    data = data[k]
+                    break
+
         if not isinstance(data, list):
             return None
         # Empty list is valid (all controls implemented)
