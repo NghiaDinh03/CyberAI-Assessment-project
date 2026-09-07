@@ -148,6 +148,20 @@ W = Σ(implemented_weight) / Σ(all_weights) × 100%
 
 **Severity weights:**
 
+## 4. Compliance Scoring
+
+The platform strictly distinguishes two complementary measurement sets:
+
+### 1. Control Coverage (Raw Quantity Metric)
+- **Formula:** `(Implemented Controls / Total Controls) × 100%`
+- Reflects literal control completion (e.g., `47/93 controls` ~ `50.54%`).
+- Itemized into: `self_declared_implemented`, `evidence_supported_implemented`, `not_evidenced_or_missing`.
+
+### 2. Weighted Compliance (Security Depth Metric)
+- **Formula:** `W = Σ(achieved_weight) / Σ(max_weight) × 100%`
+- Critical controls carry weight **4**, High **3**, Medium **2**, and Low **1**.
+- Accurately captures prioritized security posture (e.g., `237.5 / 430.0` ~ `55.23%`).
+
 | Severity | Weight |
 |----------|--------|
 | Critical | 4 |
@@ -166,32 +180,64 @@ W = Σ(implemented_weight) / Σ(all_weights) × 100%
 
 ---
 
-## 5. Structured JSON Output
+## 5. Unified Assessment Result Schema
 
-[`_build_structured_json`](backend/services/assessment_helpers.py) produces a machine-readable summary:
+All APIs, UI views, and exporters share a single standardized data contract [`UnifiedAssessmentResult`](backend/schemas/assessment_schema.py):
+
+<details>
+<summary>📄 View Unified Assessment Result JSON Schema</summary>
 
 ```json
 {
-  "compliance_tier": "medium",
-  "compliance_score": 62.5,
-  "weight_breakdown": {
-    "critical": {"implemented": 3, "total": 5, "weight": 4},
-    "high": {"implemented": 10, "total": 15, "weight": 3},
-    "medium": {"implemented": 8, "total": 10, "weight": 2},
-    "low": {"implemented": 4, "total": 5, "weight": 1}
+  "assessment_id": "assess-7c81a29f-3d18-4f51-b841-8664b58e76a0",
+  "run_id": "run_43bce82f1092",
+  "code_version": "6a15651c9d0f",
+  "created_at": "2026-09-07T09:20:10.104Z",
+  "completed_at": "2026-09-07T09:20:16.120Z",
+  "status": "completed",
+  "standard": {
+    "id": "iso27001",
+    "name": "ISO/IEC 27001:2022"
   },
-  "risk_summary": {
-    "critical": 2,
-    "high": 5,
-    "medium": 2,
-    "low": 1
+  "control_coverage": {
+    "self_declared_implemented": 47,
+    "evidence_supported_implemented": 15,
+    "not_evidenced_or_missing": 46,
+    "total_controls": 93,
+    "raw_percentage": 50.54
   },
-  "top_gaps": [
-    {"id": "A.8.7", "severity": "critical", "gap": "..."},
-    {"id": "A.5.23", "severity": "critical", "gap": "..."}
-  ]
+  "weighted_compliance": {
+    "weighted_score": 237.5,
+    "weighted_max_score": 430.0,
+    "percentage": 55.23,
+    "algorithm": "iso27001_domain_weighted_v1"
+  },
+  "controls": [
+    {
+      "control_id": "A.8.8",
+      "user_declaration": "implemented",
+      "evidence_status": "direct_attachment",
+      "evidence_file_ids": ["patch_report_masked.pdf"],
+      "fact_card_ids": ["fc_patch_01"],
+      "auto_match_confidence": null,
+      "assessment_verdict": "satisfied",
+      "verdict_basis": ["user_declaration", "direct_evidence"],
+      "expert_review_status": "pending"
+    }
+  ],
+  "evidence_manifest_ref": "data/evidence_manifests/assess-7c81a29f.json",
+  "audit_trace_ref": "data/audit_traces/assess-7c81a29f.json"
 }
 ```
+
+</details>
+
+**Standardized Control Statuses:**
+- `user_declaration`: `implemented` | `not_implemented` | `unknown`
+- `evidence_status`: `direct_attachment` | `auto_matched` | `no_evidence` | `not_reviewed`
+- `assessment_verdict`: `satisfied` | `not_evidenced` | `missing` | `needs_expert_review`
+- `verdict_basis`: `user_declaration`, `direct_evidence`, `auto_match`, `ai_inference`
+- `expert_review_status`: `pending` | `approved` | `modified` | `rejected`
 
 ---
 
@@ -207,38 +253,28 @@ W = Σ(implemented_weight) / Σ(all_weights) × 100%
 
 Control catalogs defined in [`controls_catalog.py`](backend/services/controls_catalog.py).
 
-### Additional Standards for RAG Domain Mapping
+---
 
-These standards are indexed into ChromaDB collections and available for RAG context, but do not have dedicated control checklists:
+## 7. Evidence Manifest & Privacy Sanitization
 
-`nd13`, `nist_csf`, `pci_dss`, `hipaa`, `gdpr`, `soc2`
+The evidence subsystem automatically builds a cryptographic manifest for each assessment run:
+- **Masked Filenames**: Private IP patterns (`192.168.***.***`) and credentials in filenames are sanitized prior to reporting.
+- **SHA-256 Hashing**: Generates SHA-256 digests for all uploaded artifacts without embedding raw configs or logs.
+- **Fact Card Linkage**: Links Fact Card IDs to targeted control codes.
+- **Objective Reporting**: Explicitly states *"chưa ghi nhận đủ minh chứng trong phạm vi dữ liệu đánh giá; cần chuyên gia xác minh"* instead of presuming unevidenced controls are completely absent.
 
 ---
 
-## 7. Evidence System
+## 8. Export Specifications
 
-| Feature | Description |
-|---------|-------------|
-| Per-Control Upload | Direct file upload via `/api/iso27001/evidence/{control_id}` (max 10 MB). Snapshots file inputs and auto-transitions control state to **"✓ IMPLEMENTED"**. |
-| Batch Ingest | Multi-file drag & drop via `/api/iso27001/evidence/batch-ingest`. Agent 1 extracts cybersecurity facts and automatically assigns files to multiple controls and detects server hosts/IPs. |
-| Storage | `data/evidence/{control_id}/` directory |
-| Content extraction | File contents structured by Agent 1 and injected as AI context during assessment. |
-| Summary | `/api/iso27001/evidence-summary` aggregates evidence across all controls |
-| Preview | `/api/iso27001/evidence/{control_id}/{filename}/preview` returns text content for supported types |
-| Management | Real-time list, download, delete per control synced with Detail Drawer |
+All export routines consume the unified `UnifiedAssessmentResult` model:
 
----
-
-## 8. Export
-
-| Method | Implementation | Details |
-|--------|---------------|---------|
-| **PDF** (server) | weasyprint | HTML → PDF with professional audit styling, via `/api/iso27001/assessments/{id}/export-pdf` |
-| **Word DOCX** | python-docx | Formal ISMS Assessment Report (.docx) with GAP tables and risk charts via `/api/iso27001/assessments/{id}/export-docx` |
-| **Risk Register (Excel)** | pandas / openpyxl | ISO 27005 Information Security Risk Register (.xlsx) via `/api/iso27001/assessments/{id}/export-risk-register` |
-| **SoA (Excel)** | pandas / openpyxl | Statement of Applicability with all 93 controls via `/api/iso27001/assessments/{id}/export-soa` |
-| **HTML fallback** (server) | Jinja2 | Returns styled HTML if weasyprint is unavailable |
-| **HTML** (client) | Browser | Client-side HTML export with browser print-to-PDF |
+| Format | Target Standards | Features & Guarantees |
+|--------|------------------|-----------------------|
+| **SoA XLSX** | ISO 27001 (93 rows) / TCVN 11930 (34 rows) | Metadata header banner, `Score (0-5)` at column index 7, Verdict, Verdict Basis, and masked evidence list. |
+| **Risk Register XLSX** | ISO 27001 / TCVN 11930 | Structured $L \times I$ matrix with transparent `risk_assessment_basis` and metadata banner. |
+| **DOCX** | A4 Professional Layout | `<w:tblHeader/>` repeats on page breaks, `<w:cantSplit/>` prevents row fragmentation, zero raw markdown (`#`, `*`), zero emoji font failures, mandatory audit disclaimer. |
+| **PDF** | WeasyPrint / Paged Media | Clean pagination, repeated table headers, no orphan titles, automated `report_exported` audit trace event with SHA-256 digest. |
 
 ---
 

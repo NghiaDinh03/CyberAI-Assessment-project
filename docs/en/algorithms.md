@@ -298,34 +298,53 @@ Defined in [`WEIGHT_SCORE`](backend/services/controls_catalog.py:159):
 | `medium` | **2** | Standard controls (e.g., contact with authorities, web filtering) |
 | `low` | **1** | Nice-to-have controls (e.g., NTP sync, desk policy) |
 
-### 3.3 Formula
+### 3.3 Separation of Raw Control Coverage & Weighted Compliance
 
-Defined in [`calc_compliance()`](backend/services/controls_catalog.py:173):
+The platform strictly separates raw control counts from weighted compliance under `assessment_schema.py`:
 
 ```
-weight_map = { control_id: WEIGHT_SCORE[control.weight] for each control }
+1. Control Coverage (Raw Metric):
+   - self_declared_implemented: Number of controls declared implemented
+   - evidence_supported_implemented: Controls supported by uploaded files/logs
+   - not_evidenced_or_missing: Controls lacking evidence or not implemented
+   - total_controls: Total controls in standard (93 for ISO 27001, 34 for TCVN 11930)
+   - raw_percentage = round((self_declared_implemented / total_controls) * 100, 2)
 
-max_weighted    = Σ weight_map[all_controls]
-achieved_weighted = Σ weight_map[implemented_controls]
-
-percentage = (achieved_weighted / max_weighted) × 100
+2. Weighted Compliance (Weighted Metric):
+   - weighted_score: Achieved score based on severity weights and verdicts
+   - weighted_max_score: Maximum potential score across all standard controls
+   - percentage = round((weighted_score / weighted_max_score) * 100, 2)
+   - algorithm: "iso27001_domain_weighted_v1" or "tcvn11930_level_weighted_v1"
 ```
+
+> ⚠️ **UI Display Requirement:** Never conflate both scores into a single metric. The UI renders:
+> **"47/93 controls marked achieved (50.5%)"** alongside **"Weighted Compliance: 55.2%"**.
+
+<details>
+<summary>📝 Implementation: <code>calc_compliance()</code> in <code>controls_catalog.py</code></summary>
 
 ```python
-# Pseudocode (Ensures standard filtering, deduplication, and <= 100% clamping)
-flat = get_flat_controls(standard)
-flat_ids = {c["id"] for c in flat}
-valid_implemented = [cid for cid in dict.fromkeys(implemented) if cid in flat_ids]
-weight_map = {c["id"]: WEIGHT_SCORE.get(c.get("weight", "medium"), 1) for c in flat}
-max_w = sum(weight_map.values())
-achieved_w = sum(weight_map.get(cid, 0) for cid in valid_implemented)
-percentage = min(100.0, max(0.0, round(achieved_w / max_w * 100, 1))) if max_w > 0 else 0.0
-score = min(len(valid_implemented), len(flat))
+control_coverage = {
+    "self_declared_implemented": len(valid_implemented),
+    "evidence_supported_implemented": len(evidenced_controls),
+    "not_evidenced_or_missing": max(0, total_controls - len(valid_implemented)),
+    "total_controls": total_controls,
+    "raw_percentage": round(len(valid_implemented) / total_controls * 100, 2) if total_controls > 0 else 0.0
+}
+
+weighted_compliance = {
+    "weighted_score": round(achieved_weighted, 2),
+    "weighted_max_score": round(max_weighted, 2),
+    "percentage": round(achieved_weighted / max_weighted * 100, 2) if max_weighted > 0 else 0.0,
+    "algorithm": "iso27001_domain_weighted_v1" if standard == "iso27001" else "tcvn11930_level_weighted_v1"
+}
 ```
+
+</details>
 
 ### 3.4 Compliance Tier Classification
 
-Defined in [`_build_structured_json()`](backend/services/chat_service.py:731):
+Defined in [`_build_structured_json()`](backend/services/chat_service.py):
 
 | Percentage | Tier | Label |
 |-----------|------|-------|
@@ -336,7 +355,7 @@ Defined in [`_build_structured_json()`](backend/services/chat_service.py:731):
 
 ### 3.5 Weight Breakdown
 
-Defined in [`build_weight_breakdown()`](backend/services/controls_catalog.py:192):
+Defined in [`build_weight_breakdown()`](backend/services/controls_catalog.py):
 
 For each severity tier, tracks:
 - `total`: number of controls in that tier
@@ -345,61 +364,50 @@ For each severity tier, tracks:
 
 ### 3.6 ISO 27001:2022 Control Distribution
 
-From [`ISO_27001_CATEGORIES`](backend/services/controls_catalog.py:3):
+From [`ISO_27001_CATEGORIES`](backend/services/controls_catalog.py):
 
 | Category | Controls | Critical | High | Medium | Low |
 |----------|----------|----------|------|--------|-----|
-| A.5 Tổ chức | 37 | 10 | 14 | 10 | 3 |
-| A.6 Con người | 8 | 1 | 5 | 2 | 0 |
-| A.7 Vật lý | 14 | 0 | 5 | 7 | 2 |
-| A.8 Công nghệ | 34 | 14 | 12 | 7 | 1 |
+| A.5 Organizational | 37 | 10 | 14 | 10 | 3 |
+| A.6 People | 8 | 1 | 5 | 2 | 0 |
+| A.7 Physical | 14 | 0 | 5 | 7 | 2 |
+| A.8 Technological | 34 | 14 | 12 | 7 | 1 |
 | **Total** | **93** | **25** | **36** | **26** | **6** |
-
-### 3.7 Example Calculation
-
-```
-Organization has implemented: [A.5.1, A.5.15, A.8.1, A.7.7]
-
-Control weights:
-  A.5.1  (critical) = 4
-  A.5.15 (critical) = 4
-  A.8.1  (critical) = 4
-  A.7.7  (low)      = 1
-
-achieved_weighted = 4 + 4 + 4 + 1 = 13
-
-max_weighted (all 93 controls):
-  25 critical × 4 = 100
-  36 high     × 3 = 108
-  26 medium   × 2 =  52
-   6 low      × 1 =   6
-  total           = 266
-
-percentage = (13 / 266) × 100 = 4.9%
-tier = "critical" (< 25%)
-```
 
 ---
 
 ## 4. Risk Register Scoring
 
-Sources: [`assessment_helpers.py`](backend/services/assessment_helpers.py), [`chat_service.py`](backend/services/chat_service.py)
+Sources: [`assessment_helpers.py`](backend/services/assessment_helpers.py), [`chat_service.py`](backend/services/chat_service.py), [`risk_register_exporter.py`](backend/services/risk_register_exporter.py)
 
-### 4.1 Mechanism
+### 4.1 Mechanism & Transparent Risk Matrix
 
-Each unimplemented control is assigned a **Likelihood × Impact** risk score by the SecurityLM model during Phase 1 assessment. When the LLM fails, a deterministic fallback infers risk from control weight metadata.
+Each unimplemented or unevidenced control is assigned a **Likelihood × Impact** risk score derived from control severity and factual verification. Blindly assigning identical $L=4, I=5, \text{Risk}=20$ across the board is prohibited.
 
-### 4.2 Risk Score Formula
+Mandatory fields in the Risk Register:
+- `control_id`: Standard control ID (e.g., `A.8.8`)
+- `control_weight`: Severity weight (`Critical`, `High`, `Medium`, `Low`)
+- `assessment_verdict`: Assessment conclusion (`satisfied`, `not_evidenced`, `missing`, `needs_expert_review`)
+- `risk_severity`: Risk tier (`Critical`, `High`, `Medium`, `Low`)
+- `likelihood`: Exploitability probability (1–5)
+- `impact`: Business consequence severity (1–5)
+- `risk_score`: Product of $\text{Likelihood} \times \text{Impact}$ (1–25)
+- `risk_assessment_basis`: Classification rationale:
+  - `evidence_based`: Confirmed vulnerabilities or gap logs
+  - `rule_based`: Deterministic mapping from standard catalog
+  - `ai_provisional`: Provisional AI inference pending review
+  - `expert_validated`: Formally signed off by lead auditor
 
-```
-Risk = Likelihood × Impact
-```
+### 4.2 Standard Deterministic Likelihood & Impact Matrix
 
-| Parameter | Range | Description |
-|-----------|-------|-------------|
-| Likelihood (L) | 1–5 | Probability of exploitation |
-| Impact (I) | 1–5 | Business impact if exploited |
-| Risk | 1–25 | Composite risk score |
+| Control Weight | Default Likelihood | Default Impact | Risk Score ($L \times I$) | Risk Severity |
+|----------------|--------------------|----------------|---------------------------|---------------|
+| **Critical**   | 4                  | 5              | 20                        | **Critical**  |
+| **High**       | 3                  | 4              | 12                        | **High**      |
+| **Medium**     | 2                  | 3              | 6                         | **Medium**    |
+| **Low**        | 1                  | 2              | 2                         | **Low**       |
+
+> 💡 **Objective AI Wording:** When evidence is missing, reports explicitly state: *"chưa ghi nhận đủ minh chứng trong phạm vi dữ liệu đánh giá; cần chuyên gia xác minh"*, avoiding unfounded claims that the organization has no measures implemented.
 
 ### 4.3 LLM-Generated Risk Register
 

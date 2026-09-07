@@ -183,13 +183,17 @@ Báo cáo hoàn chỉnh được cấu trúc theo 5 phần chuẩn mực IT Audi
 
 ## 📐 4. Compliance Scoring (Chấm Điểm Tuân Thủ)
 
-### Công Thức Weighted Average (Trung Bình Có Trọng Số)
+Hệ thống phân định rành mạch hai hệ thống chỉ số:
 
-```
-W = Σ(implemented_weight) / Σ(all_weights) × 100%
-```
+### 1. Control Coverage (Độ phủ số lượng biện pháp kiểm soát)
+- **Công thức:** `(Số control đạt / Tổng số control của chuẩn) × 100%`
+- Phản ánh trung thực số lượng control đã được triển khai (ví dụ: `47/93 controls` ~ `50.54%`).
+- Được phân chia thành: `self_declared_implemented`, `evidence_supported_implemented`, `not_evidenced_or_missing`.
 
-> **📌 Phương pháp Scoring (Chấm điểm):** Điểm Compliance (Tuân thủ) sử dụng trọng số theo severity — các control Critical có trọng số **gấp 4 lần** control Low. Điều này đảm bảo các biện pháp bảo mật quan trọng nhất có ảnh hưởng lớn hơn đến điểm tổng thể.
+### 2. Weighted Compliance (Điểm tuân thủ có trọng số)
+- **Công thức:** `W = Σ(achieved_weight) / Σ(max_weight) × 100%`
+- Các control `Critical` có trọng số **4**, `High` là **3**, `Medium` là **2**, và `Low` là **1**.
+- Phản ánh chiều sâu bảo mật tổng thể (ví dụ: `237.5 / 430.0` ~ `55.23%`).
 
 **Trọng số theo Severity:**
 
@@ -211,47 +215,64 @@ W = Σ(implemented_weight) / Σ(all_weights) × 100%
 
 ---
 
-## 📦 5. Structured JSON Output (Đầu Ra JSON Có Cấu Trúc)
+## 📦 5. Hợp Đồng Dữ Liệu Chuẩn (Unified Assessment Result Schema)
 
-[`_build_structured_json`](../../backend/services/assessment_helpers.py) tạo ra bản tóm tắt dạng machine-readable:
+Toàn bộ API, giao diện và các bộ xuất báo cáo (DOCX, PDF, SoA XLSX, Risk Register XLSX) đều đồng bộ từ một schema duy nhất [`UnifiedAssessmentResult`](../../backend/schemas/assessment_schema.py):
 
 <details>
-<summary>📄 Xem ví dụ Structured JSON Output đầy đủ</summary>
+<summary>📄 Xem ví dụ Unified Assessment Result Schema</summary>
 
 ```json
 {
-  "compliance_tier": "medium",
-  "compliance_score": 62.5,
-  "weight_breakdown": {
-    "critical": {"implemented": 3, "total": 5, "weight": 4},
-    "high": {"implemented": 10, "total": 15, "weight": 3},
-    "medium": {"implemented": 8, "total": 10, "weight": 2},
-    "low": {"implemented": 4, "total": 5, "weight": 1}
+  "assessment_id": "assess-7c81a29f-3d18-4f51-b841-8664b58e76a0",
+  "run_id": "run_43bce82f1092",
+  "code_version": "6a15651c9d0f",
+  "created_at": "2026-09-07T09:20:10.104Z",
+  "completed_at": "2026-09-07T09:20:16.120Z",
+  "status": "completed",
+  "standard": {
+    "id": "iso27001",
+    "name": "ISO/IEC 27001:2022"
   },
-  "risk_summary": {
-    "critical": 2,
-    "high": 5,
-    "medium": 2,
-    "low": 1
+  "control_coverage": {
+    "self_declared_implemented": 47,
+    "evidence_supported_implemented": 15,
+    "not_evidenced_or_missing": 46,
+    "total_controls": 93,
+    "raw_percentage": 50.54
   },
-  "top_gaps": [
-    {"id": "A.8.7", "severity": "critical", "gap": "..."},
-    {"id": "A.5.23", "severity": "critical", "gap": "..."}
-  ]
+  "weighted_compliance": {
+    "weighted_score": 237.5,
+    "weighted_max_score": 430.0,
+    "percentage": 55.23,
+    "algorithm": "iso27001_domain_weighted_v1"
+  },
+  "controls": [
+    {
+      "control_id": "A.8.8",
+      "user_declaration": "implemented",
+      "evidence_status": "direct_attachment",
+      "evidence_file_ids": ["patch_report_masked.pdf"],
+      "fact_card_ids": ["fc_patch_01"],
+      "auto_match_confidence": null,
+      "assessment_verdict": "satisfied",
+      "verdict_basis": ["user_declaration", "direct_evidence"],
+      "expert_review_status": "pending"
+    }
+  ],
+  "evidence_manifest_ref": "data/evidence_manifests/assess-7c81a29f.json",
+  "audit_trace_ref": "data/audit_traces/assess-7c81a29f.json"
 }
 ```
 
 </details>
 
-**Giải thích các trường:**
-
-| Trường | Mô Tả |
-|--------|--------|
-| `compliance_tier` | Mức Compliance (Tuân thủ): `critical` / `low` / `medium` / `high` |
-| `compliance_score` | Điểm Compliance (Tuân thủ) theo Weighted Average (Trung bình có trọng số) (0–100) |
-| `weight_breakdown` | Phân bổ trọng số theo severity: số đã triển khai / tổng / trọng số |
-| `risk_summary` | Số lượng gaps theo severity |
-| `top_gaps` | Danh sách gaps nghiêm trọng nhất cần ưu tiên Remediation (Khắc phục) |
+**Quy chuẩn trạng thái Control:**
+- `user_declaration`: `implemented` | `not_implemented` | `unknown`
+- `evidence_status`: `direct_attachment` | `auto_matched` | `no_evidence` | `not_reviewed`
+- `assessment_verdict`: `satisfied` | `not_evidenced` | `missing` | `needs_expert_review`
+- `verdict_basis`: `user_declaration`, `direct_evidence`, `auto_match`, `ai_inference`
+- `expert_review_status`: `pending` | `approved` | `modified` | `rejected`
 
 ---
 
@@ -267,52 +288,28 @@ W = Σ(implemented_weight) / Σ(all_weights) × 100%
 
 Danh mục Control (Biện pháp kiểm soát) được định nghĩa trong [`controls_catalog.py`](../../backend/services/controls_catalog.py).
 
-### Additional Standards cho RAG Domain (Lĩnh vực) Mapping
+---
 
-Các tiêu chuẩn sau được index vào ChromaDB collections và sẵn dùng cho RAG context, nhưng không có control checklist riêng:
+## 📎 7. Evidence Manifest & Khử Nhạy Cảm (Sanitization)
 
-| Standard | ID |
-|----------|-----|
-| Nghị định 13/2023 | `nd13` |
-| NIST CSF | `nist_csf` |
-| PCI DSS | `pci_dss` |
-| HIPAA | `hipaa` |
-| GDPR | `gdpr` |
-| SOC 2 | `soc2` |
+Hệ thống quản lý bằng chứng tự động tạo `evidence_manifest` cho mỗi assessment:
+- **Che dấu IP & Secrets:** Tất cả địa chỉ IP cục bộ (`192.168.***.***`) và token bảo mật trong tên tệp đều được che trước khi đưa vào metadata hoặc báo cáo.
+- **Băm SHA-256:** Tính toán mã băm SHA-256 cho từng file để bảo đảm tính toàn vẹn mà không lưu trữ log thô hay cấu hình nhạy cảm.
+- **Ánh xạ Fact Card:** Lưu vết liên kết giữa Fact Card ID, file ID và mã control tương ứng.
+- **Phát biểu khách quan:** Không quy kết "doanh nghiệp không có biện pháp" chỉ vì chưa tải file. Báo cáo luôn ghi rõ: *"chưa ghi nhận đủ minh chứng trong phạm vi dữ liệu đánh giá; cần chuyên gia xác minh"*.
 
 ---
 
-## 📎 7. Evidence System (Hệ Thống Bằng Chứng)
+## 📤 8. Export (Xuất Báo Cáo Nhất Quán)
 
-| Tính Năng | Mô Tả |
-|-----------|--------|
-| Upload từng Control | Upload file theo từng control qua `/api/iso27001/evidence/{control_id}` (tối đa 10 MB). Tự động snapshot FileList và chuyển trạng thái control thành **"✓ ĐÃ TRIỂN KHAI"**. |
-| Batch Ingest (Hàng loạt) | `/api/iso27001/evidence/batch-ingest` cho phép kéo thả nhiều tệp scan, log máy chủ cùng lúc. Agent 1 tự động bóc tách sự thật ATTT và tự động gán vào nhiều biện pháp kiểm soát (`A.*`, `SV.*`, `NW.*`) cũng như nhận diện danh sách máy chủ/IP. |
-| Storage (Lưu trữ) | Thư mục `data/evidence/{control_id}/` |
-| Content extraction (Trích xuất) | Nội dung file được phân tích cấu trúc bởi Agent 1 và đưa vào AI context trong quá trình Assessment. |
-| Summary (Tóm tắt) | `/api/iso27001/evidence-summary` tổng hợp Evidence (Bằng chứng) trên tất cả controls |
-| Preview (Xem trước) | `/api/iso27001/evidence/{control_id}/{filename}/preview` trả về nội dung text cho các định dạng được hỗ trợ |
-| Management (Quản lý) | Liệt kê, tải xuống, xóa cho từng file của từng control với đồng bộ thời gian thực vào Detail Drawer |
+Tất cả các định dạng xuất đều sử dụng chung nguồn dữ liệu `UnifiedAssessmentResult`:
 
-```mermaid
-flowchart LR
-    U["📤 Upload File<br>(Single or Batch)"] --> A1["🕵️ Agent 1<br>Fact Extractor & Auto-Map"]
-    A1 --> S["💾 Storage<br>data/evidence/{id}/"]
-    S --> AI["🤖 Agent 2 Audit Context<br>& AI Assistant"]
-    S --> P["👁️ Preview, Download<br>& Verification"]
-```
-
----
-
-## 📤 8. Export (Xuất Báo Cáo Chuyên Nghiệp)
-
-| Phương Thức | Công Nghệ | Endpoint / Chi Tiết |
-|-------------|-----------|----------------------|
-| **PDF** (server) | weasyprint | HTML → PDF định dạng chuẩn thẩm định, qua `/api/iso27001/assessments/{id}/export-pdf` |
-| **Word DOCX** | python-docx | Xuất báo cáo đánh giá ISMS hoàn chỉnh kèm biểu đồ, bảng GAP, ma trận rủi ro qua `/api/iso27001/assessments/{id}/export-docx` |
-| **Risk Register (Excel/CSV)** | pandas / openpyxl | Xuất Sổ đăng ký rủi ro an toàn thông tin theo chuẩn ISO 27005 qua `/api/iso27001/assessments/{id}/export-risk-register` |
-| **SoA (Statement of Applicability)** | pandas / openpyxl | Xuất Tuyên bố áp dụng (SoA) đầy đủ 93 controls qua `/api/iso27001/assessments/{id}/export-soa` |
-| **HTML fallback** | Jinja2 / Client | Xem và in trực tiếp trên giao diện trình duyệt |
+| Định Dạng | Tiêu Chuẩn Áp Dụng | Đặc Điểm Kỹ Thuật |
+|-----------|--------------------|-------------------|
+| **SoA XLSX** | ISO 27001 (93 dòng) / TCVN 11930 (34 dòng) | Header metadata (Assessment ID, Run ID, Code Version, Org Name), cột điểm `Score (0-5)` tại index 7, hiển thị Verdict, Verdict Basis và file minh chứng đã che. |
+| **Risk Register XLSX** | ISO 27001 / TCVN 11930 | Ma trận Likelihood (1-5) x Impact (1-5) = Risk Score (1-25), cột `risk_assessment_basis` minh bạch, banner metadata đồng bộ. |
+| **DOCX** | A4 Professional Layout | Bảng có `<w:tblHeader/>` lặp ở trang mới, `<w:cantSplit/>` chống cắt dòng, loại bỏ Markdown thô (`#`, `*`, backtick) và emoji lỗi font, có disclaimer kiểm định chuyên gia bắt buộc. |
+| **PDF** | WeasyPrint / CSS Paged Media | Header lặp, layout chống trang trắng mồ côi, bảng grid metadata chuẩn hóa, tự động ghi nhận event `report_exported` với SHA-256. |
 
 ---
 

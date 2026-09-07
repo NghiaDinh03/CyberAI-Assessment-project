@@ -299,7 +299,7 @@ Các biện pháp kiểm soát được gán trọng số theo mức độ nghi�
 
 ### 3.2 Bảng ánh xạ trọng số (Weight Score Mapping)
 
-Được định nghĩa trong [`WEIGHT_SCORE`](backend/services/controls_catalog.py:159):
+Được định nghĩa trong [`WEIGHT_SCORE`](backend/services/controls_catalog.py):
 
 | Mức độ nghiêm trọng (Severity) | Trọng số (Weight) | Mô tả |
 |---------------------------------|-------------------|-------|
@@ -308,39 +308,54 @@ Các biện pháp kiểm soát được gán trọng số theo mức độ nghi�
 | `medium` | **2** | Biện pháp tiêu chuẩn (ví dụ: liên hệ cơ quan chức năng, lọc web) |
 | `low` | **1** | Biện pháp bổ sung (ví dụ: đồng bộ NTP, chính sách bàn làm việc) |
 
-### 3.3 Công thức
+### 3.3 Tách Biệt Raw Control Coverage và Weighted Compliance
 
-Được định nghĩa trong [`calc_compliance()`](backend/services/controls_catalog.py:173):
+Hệ thống phân định rành mạch hai đại lượng đo lường khác nhau theo chuẩn `assessment_schema.py`:
 
 ```
-weight_map = { control_id: WEIGHT_SCORE[control.weight] for each control }
+1. Control Coverage (Độ phủ số lượng control thô):
+   - self_declared_implemented: Số control người dùng khai báo đã triển khai
+   - evidence_supported_implemented: Số control có tài liệu/log minh chứng đi kèm
+   - not_evidenced_or_missing: Số control chưa có minh chứng hoặc chưa làm
+   - total_controls: Tổng số control theo chuẩn (93 với ISO 27001, 34 với TCVN 11930)
+   - raw_percentage = round((self_declared_implemented / total_controls) * 100, 2)
 
-max_weighted    = Σ weight_map[all_controls]
-achieved_weighted = Σ weight_map[implemented_controls]
-
-percentage = (achieved_weighted / max_weighted) × 100
+2. Weighted Compliance (Mức tuân thủ có trọng số):
+   - weighted_score: Điểm đạt được theo trọng số severity và verdict
+   - weighted_max_score: Điểm tối đa có thể đạt được của toàn bộ chuẩn
+   - percentage = round((weighted_score / weighted_max_score) * 100, 2)
+   - algorithm: "iso27001_domain_weighted_v1" hoặc "tcvn11930_level_weighted_v1"
 ```
+
+> ⚠️ **Quy tắc hiển thị UI:** Không gộp chung hai con số. Giao diện luôn thể hiện trực quan dạng:
+> **"47/93 controls được đánh dấu đạt (50.5%)"** và **"Mức tuân thủ có trọng số: 55.2%"**.
 
 <details>
-<summary>📝 Pseudocode: <code>calc_compliance()</code></summary>
+<summary>📝 Code: <code>calc_compliance()</code> trong <code>controls_catalog.py</code></summary>
 
 ```python
-# Pseudocode (Bảo đảm lọc đúng chuẩn, loại bỏ trùng lặp và chặn trần <= 100%)
-flat = get_flat_controls(standard)
-flat_ids = {c["id"] for c in flat}
-valid_implemented = [cid for cid in dict.fromkeys(implemented) if cid in flat_ids]
-weight_map = {c["id"]: WEIGHT_SCORE.get(c.get("weight", "medium"), 1) for c in flat}
-max_w = sum(weight_map.values())
-achieved_w = sum(weight_map.get(cid, 0) for cid in valid_implemented)
-percentage = min(100.0, max(0.0, round(achieved_w / max_w * 100, 1))) if max_w > 0 else 0.0
-score = min(len(valid_implemented), len(flat))
+# Tách bạch rõ rệt hai metrics
+control_coverage = {
+    "self_declared_implemented": len(valid_implemented),
+    "evidence_supported_implemented": len(evidenced_controls),
+    "not_evidenced_or_missing": max(0, total_controls - len(valid_implemented)),
+    "total_controls": total_controls,
+    "raw_percentage": round(len(valid_implemented) / total_controls * 100, 2) if total_controls > 0 else 0.0
+}
+
+weighted_compliance = {
+    "weighted_score": round(achieved_weighted, 2),
+    "weighted_max_score": round(max_weighted, 2),
+    "percentage": round(achieved_weighted / max_weighted * 100, 2) if max_weighted > 0 else 0.0,
+    "algorithm": "iso27001_domain_weighted_v1" if standard == "iso27001" else "tcvn11930_level_weighted_v1"
+}
 ```
 
 </details>
 
 ### 3.4 Phân loại mức tuân thủ (Compliance Tier Classification)
 
-Được định nghĩa trong [`_build_structured_json()`](backend/services/chat_service.py:731):
+Được định nghĩa trong [`_build_structured_json()`](backend/services/chat_service.py):
 
 | Tỷ lệ phần trăm | Mức (Tier) | Nhãn (Label) |
 |-----------------|------------|--------------|
@@ -351,7 +366,7 @@ score = min(len(valid_implemented), len(flat))
 
 ### 3.5 Phân tích chi tiết trọng số (Weight Breakdown)
 
-Được định nghĩa trong [`build_weight_breakdown()`](backend/services/controls_catalog.py:192):
+Được định nghĩa trong [`build_weight_breakdown()`](backend/services/controls_catalog.py):
 
 Với mỗi mức độ nghiêm trọng, theo dõi:
 - `total`: số lượng biện pháp trong mức đó
@@ -360,7 +375,7 @@ Với mỗi mức độ nghiêm trọng, theo dõi:
 
 ### 3.6 Phân bổ biện pháp kiểm soát ISO 27001:2022
 
-Từ [`ISO_27001_CATEGORIES`](backend/services/controls_catalog.py:3):
+Từ [`ISO_27001_CATEGORIES`](backend/services/controls_catalog.py):
 
 | Danh mục | Biện pháp | Critical | High | Medium | Low |
 |----------|-----------|----------|------|--------|-----|
@@ -370,51 +385,40 @@ Từ [`ISO_27001_CATEGORIES`](backend/services/controls_catalog.py:3):
 | A.8 Công nghệ | 34 | 14 | 12 | 7 | 1 |
 | **Tổng** | **93** | **25** | **36** | **26** | **6** |
 
-### 3.7 Ví dụ tính toán
-
-```
-Organization has implemented: [A.5.1, A.5.15, A.8.1, A.7.7]
-
-Control weights:
-  A.5.1  (critical) = 4
-  A.5.15 (critical) = 4
-  A.8.1  (critical) = 4
-  A.7.7  (low)      = 1
-
-achieved_weighted = 4 + 4 + 4 + 1 = 13
-
-max_weighted (all 93 controls):
-  25 critical × 4 = 100
-  36 high     × 3 = 108
-  26 medium   × 2 =  52
-   6 low      × 1 =   6
-  total           = 266
-
-percentage = (13 / 266) × 100 = 4.9%
-tier = "critical" (< 25%)
-```
-
 ---
 
 ## 4. 📊 Chấm điểm sổ đăng ký rủi ro (Risk Register Scoring)
 
-Nguồn: [`assessment_helpers.py`](backend/services/assessment_helpers.py), [`chat_service.py`](backend/services/chat_service.py)
+Nguồn: [`assessment_helpers.py`](backend/services/assessment_helpers.py), [`chat_service.py`](backend/services/chat_service.py), [`risk_register_exporter.py`](backend/services/risk_register_exporter.py)
 
-### 4.1 Cơ chế hoạt động
+### 4.1 Cơ chế hoạt động & Ma trận minh bạch
 
-Mỗi biện pháp kiểm soát chưa được triển khai được gán điểm rủi ro **Likelihood (Khả năng xảy ra) × Impact (Mức độ ảnh hưởng)** bởi mô hình SecurityLM trong Giai đoạn 1 đánh giá. Khi LLM (Mô hình ngôn ngữ lớn) thất bại, hệ thống sẽ suy luận rủi ro theo phương pháp tất định từ metadata trọng số của biện pháp.
+Mỗi biện pháp kiểm soát chưa được triển khai hoặc thiếu minh chứng được gán điểm rủi ro **Likelihood (Khả năng xảy ra) × Impact (Mức độ ảnh hưởng)** dựa trên trọng số control và đánh giá chuyên gia. Hệ thống không gán ngẫu nhiên hoặc gán mặc định L=4, I=5, Score=20 cho mọi control.
 
-### 4.2 Công thức điểm rủi ro (Risk Score Formula)
+Các trường bắt buộc trong Risk Register:
+- `control_id`: Mã biện pháp (ví dụ: `A.8.8`)
+- `control_weight`: Trọng số của control (`Critical`, `High`, `Medium`, `Low`)
+- `assessment_verdict`: Kết luận đánh giá (`satisfied`, `not_evidenced`, `missing`, `needs_expert_review`)
+- `risk_severity`: Mức nghiêm trọng rủi ro (`Critical`, `High`, `Medium`, `Low`)
+- `likelihood`: Khả năng xảy ra (1–5)
+- `impact`: Mức độ tác động nếu bị xâm phạm (1–5)
+- `risk_score`: Tích số `Likelihood × Impact` (1–25)
+- `risk_assessment_basis`: Cơ sở đánh giá rủi ro:
+  - `evidence_based`: Dựa trên bằng chứng/log cụ thể phát hiện lỗ hổng
+  - `rule_based`: Tính toán tất định từ catalog ma trận rủi ro chuẩn
+  - `ai_provisional`: Do mô hình AI đề xuất tạm thời, chờ thẩm định
+  - `expert_validated`: Đã được Lead Auditor / chuyên gia an ninh phê duyệt
 
-```
-Risk = Likelihood × Impact
-```
+### 4.2 Bảng tính Likelihood & Impact chuẩn theo Trọng số Control
 
-| Tham số | Phạm vi | Mô tả |
-|---------|---------|-------|
-| Likelihood (Khả năng xảy ra - L) | 1–5 | Xác suất bị khai thác |
-| Impact (Mức độ ảnh hưởng - I) | 1–5 | Tác động kinh doanh nếu bị khai thác |
-| Risk (Rủi ro) | 1–25 | Điểm rủi ro tổng hợp |
+| Control Weight | Likelihood (Mặc định rule-based) | Impact (Mặc định rule-based) | Risk Score ($L \times I$) | Risk Severity |
+|----------------|----------------------------------|------------------------------|---------------------------|---------------|
+| **Critical**   | 4                                | 5                            | 20                        | **Critical**  |
+| **High**       | 3                                | 4                            | 12                        | **High**      |
+| **Medium**     | 2                                | 3                            | 6                         | **Medium**    |
+| **Low**        | 1                                | 2                            | 2                         | **Low**       |
+
+> 💡 **Khách quan hóa kết luận AI:** Khi thiếu minh chứng, hệ thống ghi rõ lý do: *"Chưa ghi nhận đủ minh chứng trong phạm vi dữ liệu đánh giá; cần chuyên gia xác minh"*, không quy chụp rằng doanh nghiệp chưa ban hành hay hoàn toàn không triển khai biện pháp.
 
 ### 4.3 Sổ đăng ký rủi ro do LLM tạo (LLM-Generated Risk Register)
 
