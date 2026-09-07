@@ -7,7 +7,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
     Send, Copy, Plus, Trash2, ChevronDown, Bot, User, Loader2, ArrowDown, Check, Download, X, Pencil,
-    AlertTriangle, RefreshCw, Zap, Sparkles, RotateCcw
+    AlertTriangle, RefreshCw, Zap, Sparkles, RotateCcw, Globe
 } from 'lucide-react'
 import { useTranslation } from '@/components/LanguageProvider'
 import { useAuth } from '@/contexts/AuthContext'
@@ -745,6 +745,7 @@ export default function ChatbotPage() {
     const [aiStatus, setAiStatus] = useState(null)
     const [copiedMsgId, setCopiedMsgId] = useState(null)
     const [showScrollBtn, setShowScrollBtn] = useState(false)
+    const [webSearchEnabled, setWebSearchEnabled] = useState(false)
     const isSubmitting = useRef(false)
     const mountedRef = useRef(true)
     const endRef = useRef(null)
@@ -1152,6 +1153,7 @@ export default function ChatbotPage() {
                 locale,
                 token,
                 userId: user?.id,
+                useSearch: webSearchEnabled ? true : undefined,
                 onFinalize: (finalMessages) => {
                     if (!mountedRef.current) return
                     setLocalMsgs(finalMessages)
@@ -1162,7 +1164,7 @@ export default function ChatbotPage() {
         } finally {
             isSubmitting.current = false
         }
-    }, [activeId, selectedModel, updateSessions, localMsgs, t, locale, token, user])
+    }, [activeId, selectedModel, updateSessions, localMsgs, t, locale, token, user, webSearchEnabled])
 
     const handleRegenerate = useCallback(async (botIdx) => {
         if (isSubmitting.current || streamStore.getState().streaming) return
@@ -1202,6 +1204,7 @@ export default function ChatbotPage() {
                 locale,
                 token,
                 userId: user?.id,
+                useSearch: webSearchEnabled ? true : undefined,
                 onFinalize: (finalMessages) => {
                     if (!mountedRef.current) return
                     setLocalMsgs(finalMessages)
@@ -1212,7 +1215,7 @@ export default function ChatbotPage() {
         } finally {
             isSubmitting.current = false
         }
-    }, [activeId, selectedModel, updateSessions, localMsgs, t, locale, token, user])
+    }, [activeId, selectedModel, updateSessions, localMsgs, t, locale, token, user, webSearchEnabled])
 
     const handleSwitchModelAndRegenerate = useCallback(async (botIdx, modelId) => {
         handleModelChange(modelId)
@@ -1251,6 +1254,7 @@ export default function ChatbotPage() {
                 locale,
                 token,
                 userId: user?.id,
+                useSearch: webSearchEnabled ? true : undefined,
                 onFinalize: (finalMessages) => {
                     if (!mountedRef.current) return
                     setLocalMsgs(finalMessages)
@@ -1261,7 +1265,7 @@ export default function ChatbotPage() {
         } finally {
             isSubmitting.current = false
         }
-    }, [activeId, handleModelChange, updateSessions, localMsgs, t, locale, token, user])
+    }, [activeId, handleModelChange, updateSessions, localMsgs, t, locale, token, user, webSearchEnabled])
 
     const send = useCallback(async (text) => {
         if (!text.trim()) return
@@ -1297,6 +1301,7 @@ export default function ChatbotPage() {
                 locale,
                 token,
                 userId: user?.id,
+                useSearch: webSearchEnabled ? true : undefined,
                 onFinalize: (finalMessages) => {
                     if (!mountedRef.current) return
                     // Persist the finalized conversation into the component's
@@ -1312,7 +1317,7 @@ export default function ChatbotPage() {
         } finally {
             isSubmitting.current = false
         }
-    }, [activeId, selectedModel, updateSessions, localMsgs, t, locale, token, user])
+    }, [activeId, selectedModel, updateSessions, localMsgs, t, locale, token, user, webSearchEnabled])
 
     const newChat = useCallback(() => {
         setActiveId(null); setLocalMsgs([]); setSidebar(false)
@@ -1516,6 +1521,16 @@ export default function ChatbotPage() {
                                     onPull={handlePullModel}
                                     onDelete={handleDeleteModel}
                                 />
+                                <button
+                                    type="button"
+                                    className={`${styles.webSearchToggle} ${webSearchEnabled ? styles.webSearchActive : ''}`}
+                                    onClick={() => setWebSearchEnabled(prev => !prev)}
+                                    title={webSearchEnabled ? (t('chatbot.webSearchOn') || "Tìm kiếm Web (SearXNG): ĐANG BẬT") : (t('chatbot.webSearchAuto') || "Tìm kiếm Web (SearXNG): Tự động nhận diện")}
+                                    aria-label="Toggle web search"
+                                >
+                                    <Globe size={13} />
+                                    <span>{webSearchEnabled ? (t('chatbot.webSearchOnBadge') || 'Web Search: BẬT') : (t('chatbot.webSearch') || 'Web Search')}</span>
+                                </button>
                             </div>
                             <div className={styles.inputCardRight}>
                                 <span className={`${styles.charCounter} ${input.length >= warnThreshold ? styles.charCounterWarn : ''}`}>

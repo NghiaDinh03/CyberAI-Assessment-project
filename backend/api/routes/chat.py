@@ -43,6 +43,7 @@ class ChatRequest(BaseModel):
     prefer_cloud: bool = Field(default=False)
     organisation: Optional[str] = Field(default="")
     user_id: Optional[str] = Field(default=None)
+    use_search: Optional[bool] = Field(default=None)
 
 
 class ChatResponse(BaseModel):
@@ -78,6 +79,7 @@ async def chat(http_request: Request, request: ChatRequest, background_tasks: Ba
             prefer_cloud=request.prefer_cloud,
             background_tasks=background_tasks,
             organisation=request.organisation,
+            use_search=request.use_search,
         )
     except HTTPException:
         raise
@@ -93,8 +95,8 @@ async def chat_stream(request: ChatRequest, http_request: Request):
     user_id = _extract_user_id(http_request, request.user_id)
 
     logger.info(
-        "[chat/stream] received — model=%s msg_len=%d session=%s user=%s prefer_cloud=%s",
-        request.model, len(request.message), request.session_id, user_id, request.prefer_cloud,
+        "[chat/stream] received — model=%s msg_len=%d session=%s user=%s prefer_cloud=%s use_search=%s",
+        request.model, len(request.message), request.session_id, user_id, request.prefer_cloud, request.use_search,
     )
 
     def event_generator():
@@ -113,6 +115,7 @@ async def chat_stream(request: ChatRequest, http_request: Request):
                     prefer_cloud=request.prefer_cloud,
                     organisation=request.organisation,
                     user_id=user_id,
+                    use_search=request.use_search,
                 ):
                     event_queue.put(event)
             except Exception as exc:

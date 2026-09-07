@@ -309,6 +309,7 @@ export async function startStream({
     locale,         // reserved for future use
     token,
     userId,
+    useSearch,
     onFinalize,
 }) {
     if (state.streaming) {
@@ -348,16 +349,21 @@ export async function startStream({
         const reqHeaders = { 'Content-Type': 'application/json' }
         if (token) reqHeaders['Authorization'] = `Bearer ${token}`
 
+        const requestPayload = {
+            message: userText,
+            session_id: sessionId,
+            model: selectedModel,
+            prefer_cloud: !isLocal,
+            user_id: userId,
+        }
+        if (typeof useSearch === 'boolean') {
+            requestPayload.use_search = useSearch
+        }
+
         const res = await fetch('/api/chat/stream', {
             method: 'POST',
             headers: reqHeaders,
-            body: JSON.stringify({
-                message: userText,
-                session_id: sessionId,
-                model: selectedModel,
-                prefer_cloud: !isLocal,
-                user_id: userId,
-            }),
+            body: JSON.stringify(requestPayload),
             signal: controller.signal,
         })
         clearTimeout(timeoutId)

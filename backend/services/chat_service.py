@@ -587,11 +587,17 @@ class ChatService:
             "\n\n[IMPORTANT: User inquiry is in ENGLISH. Respond entirely in natural, professional ENGLISH. Keep all explanations, answers, and formatting in English.]"
         )
 
-        # Short system prompt for local CPU/GPU models — no RAG context, minimal tokens
+        # Short system prompt for local CPU/GPU models — minimal tokens, but inject web search if active
         if is_local:
             if is_log:
                 system_prompt = log_prompt + lang_directive
                 user_content = log_message
+            elif use_search and search_context:
+                system_prompt = ChatService._safe_prompt(
+                    "chat.web_search",
+                    "You are CyberAI, an expert cybersecurity assistant. Use the provided web search results to answer the user's question accurately."
+                ) + lang_directive
+                user_content = f"Search Results / Kết quả tìm kiếm:\n{search_context}\n\nQuestion / Câu hỏi: {message}"
             else:
                 system_prompt = ChatService._safe_prompt(
                     "chat.local_default",
@@ -637,7 +643,8 @@ class ChatService:
     @staticmethod
     async def generate_response(message: str, session_id: str = "default",
                                 model_override: str = None, prefer_cloud: bool = True,
-                                background_tasks=None, organisation: str = "") -> Dict[str, Any]:
+                                background_tasks=None, organisation: str = "",
+                                use_search: Optional[bool] = None) -> Dict[str, Any]:
         message = sanitize_user_input(message)
         
         # Kiểm tra Prompt Injection / Jailbreak
@@ -669,13 +676,24 @@ class ChatService:
             routing = route_model(message)
             model_name = model_override or routing["model"]
             use_rag = routing["use_rag"]
-            use_search = routing.get("use_search", False)
 
-            # Disable RAG for local CPU models — keeps context small, avoids timeouts
-            # Web search is kept active as a useful chatbot feature
             is_local = ChatService._is_local_model(model_name)
             if is_local:
                 use_rag = False
+
+            # Web search is active for both local and cloud models
+            is_log = (
+                ChatService._is_log_analysis(message)
+            )
+            if is_log:
+                effective_search = False
+            elif use_search is not None:
+                effective_search = use_search
+            else:
+                effective_search = routing.get("use_search", False)
+
+            use_search = effective_search
+            routing["use_search"] = use_search
 
             context, search_context = "", ""
             sources, web_sources = [], []
@@ -827,7 +845,8 @@ class ChatService:
     @staticmethod
     def generate_response_stream(message: str, session_id: str = "default",
                                   model_override: str = None, prefer_cloud: bool = True,
-                                  organisation: str = "", user_id: str = None) -> Generator:
+                                  organisation: str = "", user_id: str = None,
+                                  use_search: Optional[bool] = None) -> Generator:
         message = sanitize_user_input(message)
         
         # Kiểm tra Prompt Injection / Jailbreak
@@ -862,22 +881,25 @@ class ChatService:
             eff_model = model_override or settings.MODEL_NAME
             is_local = (not prefer_cloud) and ChatService._is_local_model(eff_model)
 
-            if is_local:
-                # Fast path: local models use direct inference without heavy semantic RAG search
-                model_name = eff_model
-                use_rag = False
-                use_search = False
-                routing = {
-                    "model": model_name,
-                    "use_rag": False,
-                    "use_search": False,
-                    "route": "security" if ChatService._is_log_analysis(message) else "general",
-                }
+            routing = route_model(message)
+            model_name = eff_model if is_local else (model_override or routing["model"])
+            use_rag = False if is_local else routing.get("use_rag", False)
+
+            is_log = (
+                ChatService._is_log_analysis(message)
+            )
+
+            # Web search is supported for both local and cloud models
+            if is_log:
+                effective_search = False
+            elif use_search is not None:
+                effective_search = use_search
             else:
-                routing = route_model(message)
-                model_name = model_override or routing["model"]
-                use_rag = routing["use_rag"]
-                use_search = routing.get("use_search", False)
+                effective_search = routing.get("use_search", False)
+
+            use_search = effective_search
+            routing["use_search"] = use_search
+            routing["use_rag"] = use_rag
 
             from services.audit_service import audit_service, AuditContext
             stream_audit_ctx = AuditContext(chat_session_id=session_id)

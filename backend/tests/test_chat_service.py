@@ -190,5 +190,38 @@ class TestChatQueueAndLogRouting:
             if ev.get("step") == "queue_granted":
                 ticket2 = ev["ticket"]
                 break
-        assert ticket2 is not None
+            assert ticket2 is not None
         qm.release_turn(ticket2)
+
+    def test_build_messages_with_web_search_for_local_model(self):
+        """When web search is active for a local model, search_context must be injected into user_content."""
+        from services.chat_service import ChatService
+        routing = {"use_rag": False, "use_search": True}
+        search_ctx = "1. CVE-2026-1001: Critical zero-day in VPN\n2. CISA advisory published."
+        messages = ChatService._build_messages(
+            message="Tin tức CVE mới nhất là gì?",
+            routing=routing,
+            context="",
+            search_context=search_ctx,
+            history=[],
+            is_local=True,
+        )
+        assert len(messages) == 2
+        system_msg = messages[0]["content"]
+        user_msg = messages[1]["content"]
+        assert "CVE-2026-1001" in user_msg
+        assert "Search Results / Kết quả tìm kiếm:" in user_msg
+
+    def test_model_router_activates_search_for_threat_intel_queries(self):
+        """Model router must route queries with threat intel and recent news keywords to search."""
+        from services.model_router import route_model
+        res1 = route_model("Tin tức an ninh mạng mới nhất")
+        assert res1["use_search"] is True
+
+        res2 = route_model("tin tuc moi nhat ve ransomware")
+        assert res2["use_search"] is True
+
+        # Log payloads must NEVER trigger web search
+        res3 = route_model("srcip=192.168.1.5 dstip=10.0.0.1 action=deny proto=TCP")
+        assert res3["use_search"] is False
+

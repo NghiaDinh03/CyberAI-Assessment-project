@@ -80,7 +80,7 @@ services:
       - ./data/knowledge_base:/data/knowledge_base
       - ./data/uploads:/data/uploads
     depends_on:
-      ollama:
+      searxng:
         condition: service_started
     restart: unless-stopped
     deploy:
@@ -119,7 +119,8 @@ services:
     networks:
       - cyberai-network
     depends_on:
-      - backend
+      backend:
+        condition: service_started
     restart: unless-stopped
     deploy:
       resources:
@@ -132,9 +133,11 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: cyberai-ollama
-    entrypoint: ["/bin/sh", "-c", "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done && (ollama list | grep -q 'gemma4' || ollama pull gemma4:latest) && (ollama list | grep -q 'qwen2.5-coder' || ollama pull qwen2.5-coder:7b) && (ollama list | grep -q 'bge-m3' || ollama pull bge-m3:latest); wait"]
+    profiles:
+      - ollama-container
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT:-11435}:11434"
+    entrypoint: ["/bin/sh", "-c", "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done && (ollama list | grep -q 'gemma4' || ollama pull gemma4:latest) && (ollama list | grep -q 'qwen2.5-coder' || ollama pull qwen2.5-coder:7b) && (ollama list | grep -q 'bge-m3' || ollama pull bge-m3:latest); wait"]
     devices:
       - /dev/dxg:/dev/dxg
     environment:

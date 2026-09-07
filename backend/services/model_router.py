@@ -145,7 +145,7 @@ ISO_KEYWORDS = [
 ]
 
 SEARCH_KEYWORDS = [
-    # Vietnamese search intent
+    # Vietnamese search intent (có dấu)
     "tìm kiếm", "tra cứu", "tìm giúp",
     "mới nhất", "gần đây", "hiện tại", "bây giờ",
     "năm 2024", "năm 2025", "năm 2026",
@@ -153,11 +153,27 @@ SEARCH_KEYWORDS = [
     "giá cổ phiếu", "thị trường chứng khoán", "xu hướng",
     "sự kiện", "ai biết", "cho tôi biết",
     "tình hình", "diễn biến", "thông tin về", "nói cho tôi",
+    "tin an ninh mạng", "tin bảo mật", "tin tức bảo mật", "cảnh báo an ninh",
+    "ransomware mới", "cve mới", "lỗ hổng mới", "lỗ hổng zero-day",
+    "tấn công mạng", "chiến dịch tấn công", "threat intel", "tình báo mối đe dọa",
+    # Vietnamese search intent (không dấu / telex)
+    "tim kiem", "tra cuu", "tim giup", "moi nhat", "gan day", "hien tai",
+    "tin tuc", "cap nhat", "tin an ninh mang", "tin bao mat", "cve moi",
+    "lo hong moi", "tan cong mang", "chien dich tan cong", "thong tin ve",
     # English search intent
     "search", "latest", "recent", "currently", "news",
     "compare", "trend", "event", "stock price", "market",
     "what happened", "today", "this week", "breaking",
+    "vulnerability alert", "zero-day", "0-day", "cve-", "exploit",
+    "cyberattack", "threat report", "security news", "threat intel",
 ]
+
+def _strip_vietnamese_accents(text: str) -> str:
+    """Normalize and remove Vietnamese accents for robust keyword matching."""
+    import unicodedata
+    normalized = unicodedata.normalize('NFD', text)
+    stripped = re.sub(r'[\u0300-\u036f]', '', normalized)
+    return stripped.replace('đ', 'd').replace('Đ', 'D')
 
 ISO_STRICT_KEYWORDS = [
     # Standards / framework identifiers
@@ -319,11 +335,12 @@ def route_model(message: str) -> dict:
     # High confidence semantic → use semantic result
     if confidence > 0.6 and semantic_intent:
         if semantic_intent == "security":
-            route, use_rag, use_search, model = "security", True, False, SECURITY_MODEL
+            # If user explicitly asks for recent news/search on security, enable live web search
+            route, use_rag, use_search, model = "security", True, bool(has_search), SECURITY_MODEL
         elif semantic_intent == "search":
             route, use_rag, use_search, model = "search", False, True, GENERAL_MODEL
         else:
-            route, use_rag, use_search, model = "general", False, False, GENERAL_MODEL
+            route, use_rag, use_search, model = "general", False, bool(has_search), GENERAL_MODEL
     else:
         # Keyword fallback
         if has_search and has_iso and not has_iso_strict:
