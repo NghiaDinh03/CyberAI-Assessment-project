@@ -199,9 +199,11 @@ Implemented in [`backend/services/web_search.py`](backend/services/web_search.py
 | **Data Loss Prevention (DLP)** | `is_log_analysis_query` skips web search if technical logs or attack payloads are detected |
 | **Timeouts** | 8.0s for SearXNG; 5.0s for `ddgs` |
 | **Region & Language** | `language="vi-VN"`, `region="vn-vi"` (Vietnamese biased) |
-| **Trigger** | `ModelRouter` classifies intent as `search` |
+| **Trigger** | Automatic via `ModelRouter` (supports accent-insensitive keywords) or manual UI override |
+| **Manual Override** | Chatbot UI toggle button: **🌐 Web Search: Auto / ON / OFF** (`use_search`) |
+| **Supported Models** | Both Local Models (`gemma4`, `qwen2.5-coder`) and Cloud Models (`gemini`, `claude`) |
 
-Results are structured into auditable source citations `[1]`, `[2]`... and injected into the LLM prompt as additional context alongside any RAG results.
+Results are structured into auditable source citations `[1]`, `[2]`... and injected into the LLM prompt as additional `search_context` for both local and cloud inference engines.
 
 ---
 

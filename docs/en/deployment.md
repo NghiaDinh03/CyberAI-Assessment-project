@@ -309,3 +309,26 @@ docker compose restart backend
 
 ### 4. Compliance Percentage Exceeding 100%
 - **Status:** Resolved in `controls_catalog.py` and `standards.js`. Control IDs are strictly filtered against the assessed standard's catalog and clamped within $[0.0, 100.0]\%$.
+
+### 5. `cyberai-searxng` Container Consumes 0% CPU
+- **Symptom:** `docker stats` shows `0.00% CPU` for `cyberai-searxng` during chatbot conversations.
+- **Root Cause:**
+  1. **SearXNG is an On-Demand Service:** It only consumes CPU/RAM when actively processing HTTP search requests forwarded from the backend. During normal chat or offline RAG queries, it remains idle.
+  2. **Legacy Local Model Fast-Path Bypass:** Previously, local model streaming hardcoded `use_search = False`.
+- **Solution:**
+  - Web search is now fully supported for both Local Models and Cloud Models in `chat_service.py`.
+  - Added unaccented Vietnamese keyword recognition for threat intelligence queries (`tin tuc`, `moi nhat`, `cve moi`).
+  - Added a manual toggle directly on the Chatbot UI: **🌐 Web Search: Auto / ON / OFF**.
+  - Validate search independently via:
+    ```bash
+    curl -s "http://localhost:8888/search?q=ransomware&format=json" | grep -o '"results"'
+    ```
+
+### 6. Port 11434 Collision with Host Ollama on Windows
+- **Symptom:** Docker fails with `bind: Only one usage of each socket address is normally permitted` on port 11434.
+- **Root Cause:** Windows host already runs native Ollama on port 11434 to utilize local GPU acceleration.
+- **Solution:**
+  - Isolated the containerized Ollama under the `ollama-container` Docker profile and assigned fallback port `11435:11434`.
+  - Backend defaults to host Ollama via `OLLAMA_URL=http://host.docker.internal:11434`.
+  - Running `docker compose up -d` now starts cleanly without port conflicts.
+

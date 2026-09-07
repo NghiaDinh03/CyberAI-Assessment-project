@@ -189,17 +189,18 @@ Hệ thống cung cấp endpoint HTTP để kiểm tra hoặc phục vụ các c
 
 ## 7. Định Tuyến & Điều Kiện Kích Hoạt (Routing)
 
-Quyết định gọi Web Search được điều phối bởi **Hybrid Model Router** ([`backend/services/model_router.py`](../../backend/services/model_router.py)):
+Quyết định gọi Web Search được điều phối bởi **Hybrid Model Router** ([`backend/services/model_router.py`](../../backend/services/model_router.py)) kết hợp với cờ ghi đè trực tiếp từ người dùng:
 
-1. **Phân loại ngữ nghĩa (Semantic Intent):**
-   - Nhúng câu hỏi và so khớp với vector collection `intent_collection` (được huấn luyện từ `INTENT_TEMPLATES`).
-   - Nếu độ tin cậy $\ge 0.6 \rightarrow$ sử dụng nhãn ngữ nghĩa tương ứng.
-2. **Fallback từ khóa (Keyword Fallback):**
-   - So khớp với tập `SEARCH_KEYWORDS` (ví dụ: *"tìm"*, *"search"*, *"google"*, *"tin tức"*, *"news"*, *"cve"*, *"cập nhật"*...).
-3. **Kết luận Intent:**
-   - Intent $\in \{\text{"security"}, \text{"search"}, \text{"general"}\}$.
-   - **Chỉ khi `intent == "search"`**: Hệ thống mới kích hoạt `WebSearch.search()`.
-   - Các câu hỏi tư vấn tiêu chuẩn ISO 27001 / TCVN 11930 thông thường thuộc phạm vi `security` sẽ **hoàn toàn tra cứu cục bộ bằng RAG ChromaDB**, không gửi truy vấn ra ngoài.
+1. **Cờ ghi đè trực tiếp từ Chatbot UI (`use_search`):**
+   - Người dùng có thể chủ động chuyển đổi chế độ thông qua nút **🌐 Tìm kiếm Web** trên giao diện:
+     - **Tự động (`use_search = None`):** Hệ thống tự động phân tích câu hỏi qua ModelRouter.
+     - **BẬT (`use_search = True`):** Ép buộc kích hoạt tìm kiếm web qua SearXNG (trừ khi phát hiện rò rỉ log).
+     - **TẮT (`use_search = False`):** Tắt hoàn toàn tìm kiếm web, chỉ dùng RAG offline hoặc tri thức sẵn có của LLM.
+2. **Phân loại ngữ nghĩa & Từ khóa (ModelRouter):**
+   - **Nhận diện không dấu:** Chuẩn hóa tiếng Việt (`_strip_vietnamese_accents`) để bắt chính xác các truy vấn không dấu như *"tin tuc an ninh mang moi nhat"*, *"cve moi"*, *"lo hong moi"*.
+   - **Ưu tiên Threat Intel:** Nếu câu hỏi an ninh mạng chứa các từ khóa thời sự (`tin tức`, `mới nhất`, `cập nhật`, `vừa công bố`), router tự động gắn cờ `use_search = True`.
+3. **Hỗ trợ toàn diện cho cả Local Models & Cloud Models:**
+   - Cả mô hình cục bộ (`gemma4:latest`, `qwen2.5-coder:7b`) và mô hình đám mây (`gemini-2.0-flash`, `claude-3.5-sonnet`) đều được nạp ngữ cảnh tìm kiếm (`search_context`) định dạng rõ ràng vào prompt suy luận.
 
 ---
 
@@ -207,7 +208,9 @@ Quyết định gọi Web Search được điều phối bởi **Hybrid Model Ro
 
 | Tình huống | Nguyên nhân | Biện pháp xử lý |
 |---|---|---|
+| Container `cyberai-searxng` có 0% CPU | SearXNG là dịch vụ On-Demand (chỉ xử lý khi có request); hoặc Chatbot đang xử lý câu hỏi offline | Đây là trạng thái bình thường khi rảnh. Khi gửi câu hỏi cần tra cứu web, CPU và Network I/O của SearXNG sẽ tăng tương ứng. |
 | SearXNG trả mã `403 Forbidden` | Thiếu `search.formats: [html, json]` trong cấu hình | Đảm bảo file `searxng/settings.yml` đã mount đúng và chứa `formats: [html, json]`. |
 | SearXNG phản hồi chậm hoặc timeout | Các công cụ tìm kiếm thượng tầng (Google, Bing...) phản hồi chậm | Hệ thống tự động chuyển sang `ddgs` sau 8.0s timeout; có thể tinh chỉnh engine trong `settings.yml`. |
 | Container SearXNG bị dừng | Docker daemon hoặc hết RAM | Kiểm tra `docker logs cyberai-searxng` và khởi động lại với `docker compose up -d searxng`. Hệ thống vẫn hoạt động nhờ fallback `ddgs`. |
 | Không có kết quả từ cả 2 tầng | Mất kết nối internet hoặc query không hợp lệ | Hệ thống trả về `[]` một cách an toàn, Chatbot tiếp tục suy luận từ tri thức sẵn có của LLM. |
+

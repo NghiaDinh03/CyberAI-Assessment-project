@@ -189,17 +189,18 @@ The backend provides HTTP endpoints for external tools or health verification:
 
 ## 7. Routing & Trigger Conditions
 
-Routing decisions are governed by the **Hybrid Model Router** ([`backend/services/model_router.py`](../../backend/services/model_router.py)):
+Routing decisions are governed by the **Hybrid Model Router** ([`backend/services/model_router.py`](../../backend/services/model_router.py)) combined with explicit UI override flags:
 
-1. **Semantic Intent Classification:**
-   - Embeds query and compares similarity against `intent_collection` (seeded from `INTENT_TEMPLATES`).
-   - If confidence $\ge 0.6 \rightarrow$ applies semantic intent.
-2. **Keyword Fallback:**
-   - Checks presence of `SEARCH_KEYWORDS` (e.g. *"tìm"*, *"search"*, *"google"*, *"news"*, *"cve"*, *"update"*...).
-3. **Final Intent Determination:**
-   - Intent $\in \{\text{"security"}, \text{"search"}, \text{"general"}\}$.
-   - **Only when `intent == "search"`**: `WebSearch.search()` is executed.
-   - Standard ISO 27001 / TCVN 11930 consultation queries classified under `security` **remain 100% local within ChromaDB RAG** and never reach external search engines.
+1. **Explicit Chatbot UI Override (`use_search`):**
+   - Users can manually set the search mode via the **🌐 Web Search** toggle button on the Chatbot page:
+     - **Auto (`use_search = None`):** Automatically classified by the hybrid ModelRouter.
+     - **ON (`use_search = True`):** Forces web search execution via SearXNG (unless DLP detects raw log payloads).
+     - **OFF (`use_search = False`):** Completely disables web search; relies strictly on offline RAG or parametric LLM weights.
+2. **Semantic & Keyword Classification:**
+   - **Accent-Insensitive Matching:** Preprocessing normalizes Vietnamese diacritics (`_strip_vietnamese_accents`) to ensure queries like *"tin tuc an ninh mang moi nhat"*, *"cve moi"*, and *"lo hong moi"* match search rules.
+   - **Threat Intel Prioritization:** Security questions containing temporal triggers (*"news"*, *"latest"*, *"recent advisory"*) automatically activate `use_search = True`.
+3. **Full Local Model & Cloud Model Support:**
+   - Both local offline models (`gemma4:latest`, `qwen2.5-coder:7b`) and cloud models (`gemini-2.0-flash`, `claude-3.5-sonnet`) receive formatted `search_context` injected into the prompt.
 
 ---
 
@@ -207,7 +208,9 @@ Routing decisions are governed by the **Hybrid Model Router** ([`backend/service
 
 | Symptom | Probable Cause | Resolution |
 |---|---|---|
+| Container `cyberai-searxng` has 0% CPU | SearXNG is an On-Demand service (only active during incoming search queries); or Chatbot is processing offline RAG | Normal idle behavior. When a web search query is executed, CPU and Network I/O will show active usage. |
 | SearXNG returns `403 Forbidden` | Missing `search.formats: [html, json]` in configuration | Ensure `searxng/settings.yml` is mounted to `/etc/searxng:rw` with `formats: [html, json]`. |
 | SearXNG response latency / timeout | Upstream search engines responding slowly | Automatic fallback to `ddgs` occurs after 8.0s timeout; engine selection can be customized in `settings.yml`. |
 | SearXNG container stopped | Docker daemon issue or OOM | Check `docker logs cyberai-searxng` and restart with `docker compose up -d searxng`. The system maintains uninterrupted search via `ddgs` fallback. |
 | Empty results from both layers | Network connectivity loss or malformed query | System safely returns `[]`; Chatbot answers from LLM baseline parametric knowledge. |
+

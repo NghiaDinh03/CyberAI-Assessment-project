@@ -313,3 +313,26 @@ docker compose restart backend
 
 ### 4. Tỷ lệ tuân thủ hiển thị $> 100\%$
 - **Trạng thái:** Đã được khắc phục triệt để trong code lõi `controls_catalog.py` và `standards.js`. Toàn bộ control ID đều được phân loại theo chuẩn và clamp trần $[0.0, 100.0]\%$.
+
+### 5. Container `cyberai-searxng` không thấy tiêu thụ CPU (0% CPU)
+- **Triệu chứng:** Khi chạy `docker stats`, container `cyberai-searxng` duy trì mức `0.00% CPU` ngay cả khi đang chat.
+- **Nguyên nhân:**
+  1. **SearXNG là dịch vụ On-Demand:** Chỉ tiêu thụ CPU/RAM khi nhận được request tìm kiếm HTTP từ Backend. Ở trạng thái rảnh, container gần như 0% CPU.
+  2. **Trước đây bị bypass ở Local Model:** Trong code cũ, luồng stream của mô hình local gán cứng `use_search = False` và chưa hỗ trợ từ khóa không dấu.
+- **Cách khắc phục:**
+  - Đã kích hoạt Web Search cho cả Local Models và Cloud Models trong `chat_service.py`.
+  - Bổ sung nhận diện từ khóa an ninh mạng không dấu (`tin tuc`, `moi nhat`, `cve moi`...).
+  - Bổ sung nút bấm trực tiếp trên giao diện Chatbot: **🌐 Tìm kiếm Web: Tự động / BẬT / TẮT**.
+  - Kiểm tra độc lập bằng lệnh:
+    ```bash
+    curl -s "http://localhost:8888/search?q=ransomware&format=json" | grep -o '"results"'
+    ```
+
+### 6. Xung đột cổng 11434 với Ollama trên máy chủ Windows (Port Collision)
+- **Triệu chứng:** Docker báo lỗi `bind: Only one usage of each socket address is normally permitted` trên cổng 11434.
+- **Nguyên nhân:** Máy chủ Windows đã chạy Ollama native trên cổng 11434 để tận dụng GPU phần cứng.
+- **Cách khắc phục:**
+  - Hệ thống đã phân tách container `cyberai-ollama` vào profile `ollama-container` và đổi cổng dự phòng thành `11435:11434`.
+  - Backend mặc định kết nối với Ollama của máy chủ qua `OLLAMA_URL=http://host.docker.internal:11434`.
+  - Chỉ cần chạy lệnh thông thường `docker compose up -d` mà không lo bị đụng cổng.
+

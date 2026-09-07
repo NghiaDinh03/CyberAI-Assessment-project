@@ -306,9 +306,11 @@ Triển khai trong [`web_search.py`](../../backend/services/web_search.py).
 | **Bảo vệ rò rỉ dữ liệu** | `is_log_analysis_query` — phát hiện log/payload kỹ thuật thì chặn tìm kiếm ra ngoài |
 | **Thời gian chờ (Timeout)** | 8.0s cho SearXNG; 5.0s cho `ddgs` |
 | **Khu vực & Ngôn ngữ** | `language="vi-VN"`, `region="vn-vi"` (Ưu tiên tiếng Việt) |
-| **Điều kiện kích hoạt** | `ModelRouter` phân loại intent là `search` |
+| **Điều kiện kích hoạt** | Tự động qua `ModelRouter` (nhận diện cả từ khóa tiếng Việt không dấu) hoặc chủ động qua nút toggle UI |
+| **Ghi đè thủ công** | Nút bấm **🌐 Tìm kiếm Web** trên Chatbot UI: Tự động / BẬT / TẮT (`use_search`) |
+| **Mô hình hỗ trợ** | Cả Local Models (`gemma4`, `qwen2.5-coder`) và Cloud Models (`gemini`, `claude`) |
 
-> Kết quả tìm kiếm được chuẩn hóa thành trích dẫn nguồn có đánh số `[1]`, `[2]`... và đưa vào prompt dưới dạng ngữ cảnh bổ sung, kết hợp cùng kết quả RAG nếu có.
+> Kết quả tìm kiếm được chuẩn hóa thành trích dẫn nguồn có đánh số `[1]`, `[2]`... và tiêm trực tiếp vào prompt dưới dạng ngữ cảnh `search_context` cho cả mô hình cục bộ và mô hình đám mây.
 
 <details>
 <summary>📖 Chi tiết luồng thực thi WebSearch</summary>

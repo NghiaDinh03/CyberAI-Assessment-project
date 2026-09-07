@@ -210,4 +210,5 @@ For every assessment, an `evidence_manifest` is compiled:
 
 2. **Chat Session Audit Trace**:
    - `GET /api/chat/sessions/{session_id}/audit-trace`
-   - Returns chronological LLM inference and RAG query events for the dialogue.
+   - Returns chronological LLM inference, RAG query events, and Web Search telemetry (SearXNG source citations count, sanitized query hash, and layer routing) for the dialogue.
+
