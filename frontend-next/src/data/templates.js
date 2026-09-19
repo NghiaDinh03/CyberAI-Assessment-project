@@ -42,6 +42,42 @@ export const BUILTIN_TEMPLATES = [
         }
     },
     {
+        id: 'tpl_tcvn11930_capdo3',
+        name: 'Hệ Thống Điều Hành Sản Xuất EVN TPC — Hồ Sơ Đề Xuất Cấp Độ 3 (TCVN 11930:2017 & NĐ 85/2016)',
+        standard: 'tcvn11930',
+        industry: 'Năng lượng & Điện lực (Hạ tầng Thông tin Trọng yếu)',
+        description: 'Hồ sơ đề xuất cấp độ an toàn thông tin Cấp độ 3 cho Hệ thống Quản trị Vận hành Sản xuất và Điều hành Văn phòng - Công ty TNHH MTV Nhiệt điện Thủ Đức (EVN TPC / EVNGENCO 3). Thẩm định hiện trạng 34 phương án kỹ thuật theo TCVN 11930:2017 & Thông tư 12/2022/TT-BTTTT, tổng hợp 53 lỗ hổng bảo mật đợt 4/2026, phân vùng IT/OT, kiểm soát 09 máy chủ điều hành.',
+        is_builtin: true,
+        data: {
+            assessment_standard: 'tcvn11930',
+            org_name: 'Công ty TNHH MTV Nhiệt điện Thủ Đức (EVN TPC)',
+            org_size: 'medium',
+            industry: 'Năng lượng & Điện lực (Critical Energy Infrastructure)',
+            compliance_status: 'partially_compliant',
+            employees: 320,
+            servers: 9,
+            firewalls: 2,
+            vpn: true,
+            cloud_provider: 'None (On-Premises Dell PowerEdge R740 / Hyper-V Cluster)',
+            antivirus: 'Trend Micro Apex One + Windows Defender',
+            backup_solution: 'Veeam Backup & Replication (Offline tape hàng tuần + NAS Synology)',
+            siem: 'Splunk Enterprise (Tập trung log từ DC01, FortiGate NGFW, Core Switch Cisco)',
+            incidents_12m: 2,
+            it_staff: 5,
+            assessment_scope: 'full',
+            scope_description: 'Toàn bộ hạ tầng mạng LAN/DMZ, 09 máy chủ vật lý và ảo hóa phục vụ điều hành sản xuất và văn phòng điện tử (EOFFICE-DB, DC01, Web Portal, Mail Server, Hệ thống Điều hành Kỹ thuật) thuộc dải mạng 10.140.0.0/24, domain thuducpp.evn.vn.',
+            network_diagram: 'Mô hình mạng phân cấp 2 lớp theo tiêu chuẩn Cấp độ 3: Vùng mạng biên Internet qua cặp Firewall FortiGate HA kết nối VPN IPsec về EVN Tập đoàn; Vùng DMZ cô lập cho Web Portal và Mail Gateway; Vùng Server Farm nội bộ (10.140.0.0/24) chứa 9 máy chủ điều hành. Vùng vận hành công nghệ OT/SCADA được phân tách vật lý và kiểm soát qua Firewall công nghiệp chuyên dụng.',
+            notes: 'Hồ sơ đề xuất cấp độ an toàn hệ thống thông tin theo Nghị định 85/2016/NĐ-CP và Thông tư 12/2022/TT-BTTTT. Kết quả rà quét Đợt 4/2026 ghi nhận 53 lỗ hổng tồn tại (18 Nghiêm trọng, 14 Cao, 12 Trung bình, 9 Thấp), bao gồm thiếu Hotfix KB5070247, HĐH Windows Server 2008 EOL, SWEET32 CVE-2016-2183, cấu hình SMBv1 và NLA RDP. Lộ trình khắc phục ưu tiên 30 ngày cho các máy chủ chứa CSDL quan trọng.',
+            implemented_controls: [
+                'NW.01', 'NW.02', 'NW.04', 'NW.05',
+                'SV.01', 'SV.02', 'SV.05',
+                'APP.01', 'APP.02', 'APP.04', 'APP.07',
+                'DAT.01', 'DAT.02', 'DAT.03',
+                'MNG.01', 'MNG.02', 'MNG.03', 'MNG.04'
+            ]
+        }
+    },
+    {
         id: 'tpl_momo_fintech',
         name: 'Ví Điện Tử MoMo (Fintech PCI DSS v4.0 & ISO 27001:2022)',
         standard: 'pci_dss',

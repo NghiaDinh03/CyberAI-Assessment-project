@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import styles from './OfficeEditorModal.module.css'
+import { TCVN_11930_CONTROLS_VI, ISO_27001_CONTROLS_VI } from '../data/standards'
+import EvidenceExtractionProofModal from './EvidenceExtractionProofModal'
+
 
 export default function OfficeEditorModal({
     isOpen,
@@ -16,22 +19,66 @@ export default function OfficeEditorModal({
     const [viewMode, setViewMode] = useState('preview') // 'preview' | 'fields'
     const [saving, setSaving] = useState(false)
     const [saveStatus, setSaveStatus] = useState('Đã đồng bộ')
+    const [showProofModal, setShowProofModal] = useState(false)
 
     // Field-Value State Model
     const [fields, setFields] = useState({
         orgName: orgName || 'Doanh nghiệp',
         industry: jsonData?.system_info?.industry || 'Công nghệ & Dịch vụ số',
         standardName: standardName || 'ISO/IEC 27001:2022',
+        assessmentLevel: jsonData?.system_info?.assessment_level || (standardName?.includes('11930') ? 'Cấp độ 3 (TCVN 11930 & NĐ 85/2016)' : 'Tiêu chuẩn Doanh nghiệp'),
+        servers: jsonData?.system_info?.servers || 9,
+        firewalls: jsonData?.system_info?.firewalls || 2,
+        ipRange: jsonData?.system_info?.ip_range || '10.140.0.0/24',
+        networkDiagram: jsonData?.system_info?.network_diagram || 'Mô hình phân cấp 2 lớp: Firewall biên Internet HA + Vùng DMZ + Vùng Server Farm nội bộ + Phân vùng OT cách ly.',
         assessmentDate: new Date().toISOString().slice(0, 10),
         auditorName: 'Chuyên gia Đánh giá Trưởng (Lead Auditor)',
+        approverName: 'Đại diện Lãnh đạo Đơn vị Chủ quản',
         compliancePercent: jsonData?.compliance?.percentage || 0,
         executiveSummary: 'Báo cáo đánh giá mức độ tuân thủ và các khoảng trống an toàn thông tin của hệ thống dựa trên tiêu chuẩn quy định. Mặc dù tổ chức đã nỗ lực triển khai các biện pháp bảo vệ, hệ thống vẫn tồn tại các điểm rủi ro cần khắc phục theo lộ trình.',
-        scope: jsonData?.system_info?.scope || 'Toàn bộ hạ tầng mạng, máy chủ cơ sở dữ liệu, ứng dụng nghiệp vụ và quy trình vận hành an toàn thông tin.',
+        scope: jsonData?.system_info?.scope || 'Toàn bộ hạ tầng mạng LAN/DMZ, 09 máy chủ cơ sở dữ liệu, ứng dụng điều hành và văn phòng điện tử thuộc dải mạng 10.140.0.0/24.',
         keyStrengths: 'Đã triển khai hệ thống xác thực tập trung, tường lửa phân vùng mạng cơ bản và ban hành sơ bộ quy chế an toàn thông tin.',
         roadmap30d: 'Khắc phục các lỗ hổng Critical (cập nhật bản vá máy chủ, đổi mật khẩu mặc định, tắt giao thức truyền thông không mã hóa).',
         roadmap90d: 'Triển khai xác thực đa yếu tố (MFA) toàn diện, cấu hình giám sát nhật ký SIEM tập trung, diễn tập phương án sao lưu dự phòng định kỳ.',
-        roadmap180d: 'Hoàn thiện hệ thống quản lý an toàn thông tin ISMS theo chuẩn ISO 27001:2022, đánh giá độc lập định kỳ hàng năm.',
+        roadmap180d: 'Hoàn thiện hệ thống quản lý an toàn thông tin ISMS theo chuẩn ISO 27001:2022 / TCVN 11930 Cấp độ 3, đánh giá độc lập định kỳ hàng năm.',
     })
+
+    // Active tab in Fields:Values mode
+    const [activeFieldsTab, setActiveFieldsTab] = useState('tab_admin') // 'tab_admin' | 'tab_technical' | 'tab_risks'
+
+    // Implemented controls set for technical domain evaluation
+    const [implementedControls, setImplementedControls] = useState(() => {
+        const raw = jsonData?.system_info?.implemented_controls || jsonData?.implemented_controls
+        if (Array.isArray(raw) && raw.length > 0) return new Set(raw)
+        return new Set([
+            'NW.01', 'NW.02', 'NW.04', 'NW.05',
+            'SV.01', 'SV.02', 'SV.05',
+            'APP.01', 'APP.02', 'APP.04', 'APP.07',
+            'DAT.01', 'DAT.02', 'DAT.03',
+            'MNG.01', 'MNG.02', 'MNG.03', 'MNG.04'
+        ])
+    })
+
+    const activeStandardControls = useMemo(() => {
+        const std = fields.standardName || standardName || ''
+        if (std.toLowerCase().includes('11930') || std.toLowerCase().includes('tcvn')) {
+            return TCVN_11930_CONTROLS_VI
+        }
+        return ISO_27001_CONTROLS_VI
+    }, [fields.standardName, standardName])
+
+    const totalStandardControlsCount = useMemo(() => {
+        return activeStandardControls.reduce((acc, cat) => acc + (cat.controls?.length || 0), 0)
+    }, [activeStandardControls])
+
+    const toggleControl = (cid) => {
+        setImplementedControls(prev => {
+            const next = new Set(prev)
+            if (next.has(cid)) next.delete(cid)
+            else next.add(cid)
+            return next
+        })
+    }
 
     // Risk Register Table State
     const [riskRows, setRiskRows] = useState([])
@@ -192,12 +239,31 @@ export default function OfficeEditorModal({
         setRiskRows(prev => prev.filter((_, idx) => idx !== index))
     }
 
-    const handleDownloadDocument = () => {
+    const handleDownloadExport = async (type = 'docx') => {
         if (!assessmentId) return
-        const endpoint = fileType === 'xlsx'
+        const endpoint = type === 'xlsx'
             ? `/api/iso27001/assessments/${assessmentId}/export-risk-register`
             : `/api/iso27001/assessments/${assessmentId}/export-docx`
-        window.open(endpoint, '_blank')
+        try {
+            const res = await fetch(endpoint, { method: 'POST' })
+            if (res.ok) {
+                const blob = await res.blob()
+                const url = window.URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = type === 'xlsx'
+                    ? `Risk_Register_${assessmentId.slice(0, 8)}.xlsx`
+                    : `Bao_Cao_Kiem_Toan_${assessmentId.slice(0, 8)}.docx`
+                document.body.appendChild(a)
+                a.click()
+                window.URL.revokeObjectURL(url)
+                document.body.removeChild(a)
+            } else {
+                window.open(endpoint, '_blank')
+            }
+        } catch (err) {
+            window.open(endpoint, '_blank')
+        }
     }
 
     const handleSave = () => {
@@ -243,8 +309,11 @@ export default function OfficeEditorModal({
                     )}
 
                     <div className={styles.topRight}>
-                        <button className={styles.actionBtn} onClick={handleDownloadDocument}>
-                            Tải file ({fileType.toUpperCase()})
+                        <button className={styles.actionBtn} onClick={() => handleDownloadExport('docx')} title="Tải file Word báo cáo về máy">
+                            📥 Tải Word (.docx)
+                        </button>
+                        <button className={styles.actionBtn} onClick={() => handleDownloadExport('xlsx')} title="Tải file Excel Sổ rủi ro về máy">
+                            📊 Tải Excel (.xlsx)
                         </button>
                         <button className={styles.actionBtnPrimary} onClick={handleSave} disabled={saving}>
                             {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
@@ -352,117 +421,409 @@ export default function OfficeEditorModal({
                             </div>
                         </div>
                     ) : viewMode === 'fields' ? (
-                        /* Field-Value Form Editor Mode */
+                        /* Field-Value Multi-Page Tabbed Form Editor Mode */
                         <div className={styles.fieldsContainer}>
-                            <div className={styles.fieldSectionCard}>
-                                <h4 className={styles.fieldSectionTitle}>1. Thông tin hành chính & Phạm vi kiểm toán</h4>
-                                <div className={styles.fieldGrid}>
-                                    <div className={styles.fieldGroup}>
-                                        <label>Tổ chức / Doanh nghiệp</label>
-                                        <input
-                                            type="text"
-                                            value={fields.orgName}
-                                            onChange={(e) => handleFieldChange('orgName', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className={styles.fieldGroup}>
-                                        <label>Lĩnh vực hoạt động</label>
-                                        <input
-                                            type="text"
-                                            value={fields.industry}
-                                            onChange={(e) => handleFieldChange('industry', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className={styles.fieldGroup}>
-                                        <label>Tiêu chuẩn an toàn thông tin</label>
-                                        <input
-                                            type="text"
-                                            value={fields.standardName}
-                                            onChange={(e) => handleFieldChange('standardName', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className={styles.fieldGroup}>
-                                        <label>Ngày thực hiện đánh giá</label>
-                                        <input
-                                            type="date"
-                                            value={fields.assessmentDate}
-                                            onChange={(e) => handleFieldChange('assessmentDate', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className={styles.fieldGroup}>
-                                        <label>Chuyên gia kiểm toán (Lead Auditor)</label>
-                                        <input
-                                            type="text"
-                                            value={fields.auditorName}
-                                            onChange={(e) => handleFieldChange('auditorName', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className={styles.fieldGroup}>
-                                        <label>Tỷ lệ tuân thủ (%)</label>
-                                        <input
-                                            type="number"
-                                            value={fields.compliancePercent}
-                                            onChange={(e) => handleFieldChange('compliancePercent', e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                                <div className={styles.fieldGroupFull}>
-                                    <label>Phạm vi hệ thống thông tin kiểm toán</label>
-                                    <textarea
-                                        rows={2}
-                                        value={fields.scope}
-                                        onChange={(e) => handleFieldChange('scope', e.target.value)}
-                                    />
-                                </div>
+                            {/* Navigation Tabs Bar */}
+                            <div className={styles.fieldsTabsBar}>
+                                <button
+                                    type="button"
+                                    className={`${styles.fieldsTabPill} ${activeFieldsTab === 'tab_admin' ? styles.fieldsTabPillActive : ''}`}
+                                    onClick={() => setActiveFieldsTab('tab_admin')}
+                                >
+                                    <span className={styles.tabIcon}>🏛️</span>
+                                    <span className={styles.tabTitle}>Trang 1: Hành chính & Cấp độ</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${styles.fieldsTabPill} ${activeFieldsTab === 'tab_technical' ? styles.fieldsTabPillActive : ''}`}
+                                    onClick={() => setActiveFieldsTab('tab_technical')}
+                                >
+                                    <span className={styles.tabIcon}>🛡️</span>
+                                    <span className={styles.tabTitle}>Trang 2: 5 Miền an toàn TCVN</span>
+                                    <span className={styles.tabBadge}>{implementedControls.size}/{totalStandardControlsCount} Đạt</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${styles.fieldsTabPill} ${activeFieldsTab === 'tab_risks' ? styles.fieldsTabPillActive : ''}`}
+                                    onClick={() => setActiveFieldsTab('tab_risks')}
+                                >
+                                    <span className={styles.tabIcon}>📋</span>
+                                    <span className={styles.tabTitle}>Trang 3: Sổ rủi ro & Lộ trình</span>
+                                    <span className={styles.tabBadgeWarn}>{riskRows.length} GAPs</span>
+                                </button>
                             </div>
 
-                            <div className={styles.fieldSectionCard}>
-                                <h4 className={styles.fieldSectionTitle}>2. Nhận định điều hành & Điểm mạnh bảo mật</h4>
-                                <div className={styles.fieldGroupFull}>
-                                    <label>Tóm tắt điều hành (Executive Summary cho CISO / Ban lãnh đạo)</label>
-                                    <textarea
-                                        rows={4}
-                                        value={fields.executiveSummary}
-                                        onChange={(e) => handleFieldChange('executiveSummary', e.target.value)}
-                                    />
-                                </div>
-                                <div className={styles.fieldGroupFull}>
-                                    <label>Điểm mạnh an toàn thông tin đã ghi nhận</label>
-                                    <textarea
-                                        rows={3}
-                                        value={fields.keyStrengths}
-                                        onChange={(e) => handleFieldChange('keyStrengths', e.target.value)}
-                                    />
-                                </div>
-                            </div>
+                            {/* TAB 1: THÔNG TIN HÀNH CHÍNH & CẤP ĐỘ / PHẠM VI */}
+                            {activeFieldsTab === 'tab_admin' && (
+                                <>
+                                    <div className={styles.fieldSectionCard}>
+                                        <h4 className={styles.fieldSectionTitle}>1.1 Thông tin tổ chức & Tiêu chuẩn đánh giá</h4>
+                                        <div className={styles.fieldGrid}>
+                                            <div className={styles.fieldGroup}>
+                                                <label>Tổ chức / Doanh nghiệp được đánh giá</label>
+                                                <input
+                                                    type="text"
+                                                    value={fields.orgName}
+                                                    onChange={(e) => handleFieldChange('orgName', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className={styles.fieldGroup}>
+                                                <label>Lĩnh vực hoạt động & Hạ tầng</label>
+                                                <input
+                                                    type="text"
+                                                    value={fields.industry}
+                                                    onChange={(e) => handleFieldChange('industry', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className={styles.fieldGroup}>
+                                                <label>Tiêu chuẩn an toàn thông tin áp dụng</label>
+                                                <input
+                                                    type="text"
+                                                    value={fields.standardName}
+                                                    onChange={(e) => handleFieldChange('standardName', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className={styles.fieldGroup}>
+                                                <label>Cấp độ an toàn hệ thống thông tin đề xuất</label>
+                                                <input
+                                                    type="text"
+                                                    value={fields.assessmentLevel}
+                                                    onChange={(e) => handleFieldChange('assessmentLevel', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className={styles.fieldGroup}>
+                                                <label>Ngày lập hồ sơ / Đánh giá</label>
+                                                <input
+                                                    type="date"
+                                                    value={fields.assessmentDate}
+                                                    onChange={(e) => handleFieldChange('assessmentDate', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className={styles.fieldGroup}>
+                                                <label>Chuyên gia kiểm toán (Lead Auditor)</label>
+                                                <input
+                                                    type="text"
+                                                    value={fields.auditorName}
+                                                    onChange={(e) => handleFieldChange('auditorName', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
 
-                            <div className={styles.fieldSectionCard}>
-                                <h4 className={styles.fieldSectionTitle}>3. Lộ trình khắc phục rủi ro (Remediation Roadmap)</h4>
-                                <div className={styles.fieldGroupFull}>
-                                    <label>Giai đoạn 1: Ngắn hạn (30 ngày - Khắc phục ngay các lỗ hổng Critical)</label>
-                                    <textarea
-                                        rows={2}
-                                        value={fields.roadmap30d}
-                                        onChange={(e) => handleFieldChange('roadmap30d', e.target.value)}
-                                    />
-                                </div>
-                                <div className={styles.fieldGroupFull}>
-                                    <label>Giai đoạn 2: Trung hạn (90 ngày - Củng cố phòng thủ & Giám sát)</label>
-                                    <textarea
-                                        rows={2}
-                                        value={fields.roadmap90d}
-                                        onChange={(e) => handleFieldChange('roadmap90d', e.target.value)}
-                                    />
-                                </div>
-                                <div className={styles.fieldGroupFull}>
-                                    <label>Giai đoạn 3: Dài hạn (180 ngày - Chuẩn hóa ISMS & Đánh giá định kỳ)</label>
-                                    <textarea
-                                        rows={2}
-                                        value={fields.roadmap180d}
-                                        onChange={(e) => handleFieldChange('roadmap180d', e.target.value)}
-                                    />
-                                </div>
-                            </div>
+                                    <div className={styles.fieldSectionCard}>
+                                        <h4 className={styles.fieldSectionTitle}>1.2 Quy mô hạ tầng kỹ thuật & Mạng điều hành</h4>
+                                        <div className={styles.fieldGrid}>
+                                            <div className={styles.fieldGroup}>
+                                                <label>Số lượng máy chủ vật lý & ảo hóa</label>
+                                                <input
+                                                    type="number"
+                                                    value={fields.servers}
+                                                    onChange={(e) => handleFieldChange('servers', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className={styles.fieldGroup}>
+                                                <label>Số lượng Tường lửa bảo vệ (Firewall NGFW)</label>
+                                                <input
+                                                    type="number"
+                                                    value={fields.firewalls}
+                                                    onChange={(e) => handleFieldChange('firewalls', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className={styles.fieldGroup}>
+                                                <label>Dải địa chỉ mạng LAN / Server Farm</label>
+                                                <input
+                                                    type="text"
+                                                    value={fields.ipRange}
+                                                    onChange={(e) => handleFieldChange('ipRange', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className={styles.fieldGroup}>
+                                                <label>Tỷ lệ tuân thủ sơ bộ (%)</label>
+                                                <input
+                                                    type="number"
+                                                    value={fields.compliancePercent}
+                                                    onChange={(e) => handleFieldChange('compliancePercent', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className={styles.fieldGroupFull}>
+                                            <label>Phạm vi hệ thống thông tin kiểm toán</label>
+                                            <textarea
+                                                rows={2}
+                                                value={fields.scope}
+                                                onChange={(e) => handleFieldChange('scope', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className={styles.fieldGroupFull}>
+                                            <label>Mô tả kiến trúc mạng và phân vùng an toàn</label>
+                                            <textarea
+                                                rows={2}
+                                                value={fields.networkDiagram}
+                                                onChange={(e) => handleFieldChange('networkDiagram', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className={styles.fieldSectionCard}>
+                                        <h4 className={styles.fieldSectionTitle}>1.3 Nhận định điều hành cho Ban Lãnh đạo (CISO)</h4>
+                                        <div className={styles.fieldGroupFull}>
+                                            <label>Tóm tắt điều hành (Executive Summary)</label>
+                                            <textarea
+                                                rows={4}
+                                                value={fields.executiveSummary}
+                                                onChange={(e) => handleFieldChange('executiveSummary', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className={styles.fieldGroupFull}>
+                                            <label>Điểm mạnh bảo mật đã ghi nhận (Bằng chứng đạt)</label>
+                                            <textarea
+                                                rows={3}
+                                                value={fields.keyStrengths}
+                                                onChange={(e) => handleFieldChange('keyStrengths', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* TAB 2: 5 MIỀN AN TOÀN TCVN / KIỂM SOÁT KỸ THUẬT */}
+                            {activeFieldsTab === 'tab_technical' && (
+                                <>
+                                    <div className={styles.statsHeaderBar}>
+                                        <div className={styles.statsTitleGroup}>
+                                            <h4>Bảng thẩm định phương án kỹ thuật — {fields.standardName || 'TCVN 11930:2017 Cấp độ 3'}</h4>
+                                            <p>Đánh giá nhị phân nghiêm ngặt (Đạt / Không Đạt) — Đối soát trực tiếp với log và bằng chứng kỹ thuật</p>
+                                        </div>
+                                        <div className={styles.statsPillsGroup}>
+                                            <div className={styles.statsMetricPill}>
+                                                <span>Đạt:</span>
+                                                <strong style={{ color: '#22c55e' }}>{implementedControls.size}</strong>
+                                            </div>
+                                            <div className={styles.statsMetricPill}>
+                                                <span>Không Đạt:</span>
+                                                <strong style={{ color: '#ef4444' }}>{Math.max(0, totalStandardControlsCount - implementedControls.size)}</strong>
+                                            </div>
+                                            <div className={styles.statsMetricPill}>
+                                                <span>Tuân thủ:</span>
+                                                <strong>{totalStandardControlsCount > 0 ? ((implementedControls.size / totalStandardControlsCount) * 100).toFixed(1) : 0}%</strong>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className={styles.proofModalOpenBtn}
+                                                onClick={() => setShowProofModal(true)}
+                                                title="Xem bảng chứng minh bóc tách 100%"
+                                            >
+                                                🛡️ Xem bóc tách 100%
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {activeStandardControls.map((cat, catIdx) => {
+                                        const catControls = cat.controls || []
+                                        const catPassed = catControls.filter(c => implementedControls.has(c.id)).length
+                                        return (
+                                            <div key={catIdx} className={styles.categoryBlock}>
+                                                <div className={styles.categoryHeader}>
+                                                    <h5 className={styles.categoryTitle}>{cat.category}</h5>
+                                                    <span className={styles.categoryBadge}>{catPassed} / {catControls.length} Tiêu chí đạt</span>
+                                                </div>
+                                                <div className={styles.controlsList}>
+                                                    {catControls.map((ctrl) => {
+                                                        const isPass = implementedControls.has(ctrl.id)
+                                                        const w = (ctrl.weight || 'medium').toLowerCase()
+                                                        return (
+                                                            <div key={ctrl.id} className={styles.controlRow}>
+                                                                <div className={styles.controlInfo}>
+                                                                    <div className={styles.controlTopRow}>
+                                                                        <span className={styles.controlId}>{ctrl.id}</span>
+                                                                        <span className={styles.controlLabel}>{ctrl.label}</span>
+                                                                        <span className={`${styles.controlWeightBadge} ${
+                                                                            w === 'critical' ? styles.ctrlWeightCrit :
+                                                                            w === 'high' ? styles.ctrlWeightHigh :
+                                                                            w === 'medium' ? styles.ctrlWeightMed :
+                                                                            styles.ctrlWeightLow
+                                                                        }`}>
+                                                                            {w}
+                                                                        </span>
+                                                                    </div>
+                                                                    {isPass ? (
+                                                                        <span className={styles.ctrlSourceTag}>
+                                                                            🏷️ Nguồn: Bằng chứng kỹ thuật đối soát khớp
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className={styles.ctrlSourceTagWarn}>
+                                                                            🏷️ Nguồn: Mâu thuẫn với log hoặc thiếu log đối chứng
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <div className={styles.controlActions}>
+                                                                    <button
+                                                                        type="button"
+                                                                        className={isPass ? styles.ctrlStatusBtnPass : styles.ctrlStatusBtnFail}
+                                                                        onClick={() => toggleControl(ctrl.id)}
+                                                                    >
+                                                                        {isPass ? '✓ ĐẠT' : '✕ KHÔNG ĐẠT'}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </>
+                            )}
+
+                            {/* TAB 3: SỔ RỦI RO & LỘ TRÌNH KHẮC PHỤC */}
+                            {activeFieldsTab === 'tab_risks' && (
+                                <>
+                                    <div className={styles.sheetPaper}>
+                                        <div className={styles.sheetHeader}>
+                                            <div className={styles.sheetTitleGroup}>
+                                                <h2 className={styles.sheetMainTitle}>3.1 Sổ đăng ký rủi ro an toàn thông tin (Risk Register L × I)</h2>
+                                                <p className={styles.sheetSubtitle}>Đơn vị: {fields.orgName} | Tiêu chuẩn: {fields.standardName}</p>
+                                            </div>
+                                            <button type="button" className={styles.addRowBtn} onClick={handleAddRiskRow}>
+                                                + Thêm mục rủi ro
+                                            </button>
+                                        </div>
+
+                                        <div className={styles.tableScroll}>
+                                            <table className={styles.spreadsheetTable}>
+                                                <thead>
+                                                    <tr>
+                                                        <th style={{ width: '48px' }}>STT</th>
+                                                        <th style={{ width: '110px' }}>Mã</th>
+                                                        <th>Khoảng trống an ninh (GAP)</th>
+                                                        <th style={{ width: '80px' }}>L</th>
+                                                        <th style={{ width: '80px' }}>I</th>
+                                                        <th style={{ width: '90px' }}>L×I</th>
+                                                        <th style={{ width: '110px' }}>Mức độ</th>
+                                                        <th>Biện pháp khắc phục khuyến nghị</th>
+                                                        <th style={{ width: '45px' }}>Xóa</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {riskRows.map((r, idx) => (
+                                                        <tr key={idx}>
+                                                            <td style={{ textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
+                                                            <td>
+                                                                <input
+                                                                    type="text"
+                                                                    className={styles.cellInputBold}
+                                                                    value={r.control_id}
+                                                                    onChange={(e) => handleRiskCellChange(idx, 'control_id', e.target.value)}
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <textarea
+                                                                    className={styles.cellTextarea}
+                                                                    rows={2}
+                                                                    value={r.gap}
+                                                                    onChange={(e) => handleRiskCellChange(idx, 'gap', e.target.value)}
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <select
+                                                                    className={styles.cellSelect}
+                                                                    value={r.likelihood}
+                                                                    onChange={(e) => handleRiskCellChange(idx, 'likelihood', e.target.value)}
+                                                                >
+                                                                    {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
+                                                                </select>
+                                                            </td>
+                                                            <td>
+                                                                <select
+                                                                    className={styles.cellSelect}
+                                                                    value={r.impact}
+                                                                    onChange={(e) => handleRiskCellChange(idx, 'impact', e.target.value)}
+                                                                >
+                                                                    {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
+                                                                </select>
+                                                            </td>
+                                                            <td style={{ textAlign: 'center', fontWeight: 700, fontSize: '1rem' }}>
+                                                                {r.risk_score}
+                                                            </td>
+                                                            <td style={{ textAlign: 'center' }}>
+                                                                <span className={`${styles.riskBadge} ${
+                                                                    r.severity === 'critical' ? styles.badgeCrit :
+                                                                    r.severity === 'high' ? styles.badgeHigh :
+                                                                    r.severity === 'medium' ? styles.badgeMed :
+                                                                    styles.badgeLow
+                                                                }`}>
+                                                                    {r.severity.toUpperCase()}
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <textarea
+                                                                    className={styles.cellTextarea}
+                                                                    rows={2}
+                                                                    value={r.recommendation}
+                                                                    onChange={(e) => handleRiskCellChange(idx, 'recommendation', e.target.value)}
+                                                                />
+                                                            </td>
+                                                            <td style={{ textAlign: 'center' }}>
+                                                                <button type="button" className={styles.deleteRowBtn} onClick={() => handleDeleteRiskRow(idx)}>✕</button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div className={styles.fieldSectionCard}>
+                                        <h4 className={styles.fieldSectionTitle}>3.2 Lộ trình khắc phục rủi ro (Remediation Roadmap 30 - 90 - 180 ngày)</h4>
+                                        <div className={styles.fieldGroupFull}>
+                                            <label>Giai đoạn 1: Ngắn hạn (30 ngày - Khắc phục ngay các lỗ hổng Critical & Thiếu Hotfix)</label>
+                                            <textarea
+                                                rows={2}
+                                                value={fields.roadmap30d}
+                                                onChange={(e) => handleFieldChange('roadmap30d', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className={styles.fieldGroupFull}>
+                                            <label>Giai đoạn 2: Trung hạn (90 ngày - Củng cố phòng thủ, EDR & Giám sát SIEM)</label>
+                                            <textarea
+                                                rows={2}
+                                                value={fields.roadmap90d}
+                                                onChange={(e) => handleFieldChange('roadmap90d', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className={styles.fieldGroupFull}>
+                                            <label>Giai đoạn 3: Dài hạn (180 ngày - Chuẩn hóa ISMS Cấp độ 3 & Diễn tập ứng cứu)</label>
+                                            <textarea
+                                                rows={2}
+                                                value={fields.roadmap180d}
+                                                onChange={(e) => handleFieldChange('roadmap180d', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className={styles.fieldSectionCard}>
+                                        <h4 className={styles.fieldSectionTitle}>3.3 Thông tin thẩm định & Ký duyệt hồ sơ</h4>
+                                        <div className={styles.fieldGrid}>
+                                            <div className={styles.fieldGroup}>
+                                                <label>Đại diện Đơn vị Vận hành Hệ thống</label>
+                                                <input
+                                                    type="text"
+                                                    value={fields.auditorName}
+                                                    onChange={(e) => handleFieldChange('auditorName', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className={styles.fieldGroup}>
+                                                <label>Đại diện Đơn vị Chủ quản Hệ thống Thông tin</label>
+                                                <input
+                                                    type="text"
+                                                    value={fields.approverName}
+                                                    onChange={(e) => handleFieldChange('approverName', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     ) : (
                         /* Document Preview Mode: True Multi-Page Paginated A4 Sheets */
@@ -673,6 +1034,13 @@ export default function OfficeEditorModal({
                     </div>
                 </div>
             </div>
+
+            {/* Evidence Extraction Proof Modal */}
+            <EvidenceExtractionProofModal
+                isOpen={showProofModal}
+                onClose={() => setShowProofModal(false)}
+                assessmentId={assessmentId}
+            />
         </div>
     )
 }

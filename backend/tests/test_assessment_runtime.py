@@ -39,43 +39,45 @@ def test_system_info_schema_flexibility():
 def test_process_assessment_bg_ollama_unavailable_categorization(tmp_path):
     """When Ollama connection fails, assessment transitions to 'failed' with error_code 'OLLAMA_UNAVAILABLE'."""
     aid = "test-fail-ollama-001"
-    save_assessment(aid, {
-        "id": aid,
-        "status": "pending",
-        "created_at": "2026-08-26T00:00:00Z"
-    })
+    with patch("api.routes.iso27001.ASSESSMENTS_DIR", str(tmp_path)):
+        save_assessment(aid, {
+            "id": aid,
+            "status": "pending",
+            "created_at": "2026-08-26T00:00:00Z"
+        })
 
-    with patch("services.chat_service.ChatService.assess_system", side_effect=Exception("[Ollama] Connection error: Connection refused")):
-        process_assessment_bg(
-            assessment_id=aid,
-            system_data={"assessment_standard": "iso27001", "organization": {"name": "Test"}},
-            model_mode="local",
-            run_id="run_test001"
-        )
+        with patch("services.chat_service.ChatService.assess_system", side_effect=Exception("[Ollama] Connection error: Connection refused")):
+            process_assessment_bg(
+                assessment_id=aid,
+                system_data={"assessment_standard": "iso27001", "organization": {"name": "Test"}},
+                model_mode="local",
+                run_id="run_test001"
+            )
 
-    data = load_assessment(aid)
-    assert data["status"] == "failed"
-    assert data["error_code"] == "OLLAMA_UNAVAILABLE"
-    assert "Connection refused" in data["error_summary"]
+        data = load_assessment(aid)
+        assert data["status"] == "failed"
+        assert data["error_code"] == "OLLAMA_UNAVAILABLE"
+        assert "Connection refused" in data["error_summary"]
 
 
 def test_process_assessment_bg_model_timeout_categorization(tmp_path):
     """When model inference times out, error_code is 'MODEL_TIMEOUT'."""
     aid = "test-fail-timeout-002"
-    save_assessment(aid, {
-        "id": aid,
-        "status": "pending",
-        "created_at": "2026-08-26T00:00:00Z"
-    })
+    with patch("api.routes.iso27001.ASSESSMENTS_DIR", str(tmp_path)):
+        save_assessment(aid, {
+            "id": aid,
+            "status": "pending",
+            "created_at": "2026-08-26T00:00:00Z"
+        })
 
-    with patch("services.chat_service.ChatService.assess_system", side_effect=Exception("Request timed out after 120s")):
-        process_assessment_bg(
-            assessment_id=aid,
-            system_data={"assessment_standard": "iso27001", "organization": {"name": "Test"}},
-            model_mode="local",
-            run_id="run_test002"
-        )
+        with patch("services.chat_service.ChatService.assess_system", side_effect=Exception("Request timed out after 120s")):
+            process_assessment_bg(
+                assessment_id=aid,
+                system_data={"assessment_standard": "iso27001", "organization": {"name": "Test"}},
+                model_mode="local",
+                run_id="run_test002"
+            )
 
-    data = load_assessment(aid)
-    assert data["status"] == "failed"
-    assert data["error_code"] == "MODEL_TIMEOUT"
+        data = load_assessment(aid)
+        assert data["status"] == "failed"
+        assert data["error_code"] == "MODEL_TIMEOUT"

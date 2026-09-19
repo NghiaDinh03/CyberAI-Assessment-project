@@ -67,7 +67,7 @@ class Settings:
 
     # Google AI Studio (Gemini free-tier) — used as last-resort cloud fallback
     GOOGLE_AI_STUDIO_API_KEY: str = os.getenv("GOOGLE_AI_STUDIO_API_KEY", "")
-    GOOGLE_AI_STUDIO_MODEL: str = os.getenv("GOOGLE_AI_STUDIO_MODEL", "gemini-2.0-flash")
+    GOOGLE_AI_STUDIO_MODEL: str = os.getenv("GOOGLE_AI_STUDIO_MODEL", "gemini-2.5-flash")
     GOOGLE_AI_STUDIO_URL: str = os.getenv(
         "GOOGLE_AI_STUDIO_URL",
         "https://generativelanguage.googleapis.com/v1beta",

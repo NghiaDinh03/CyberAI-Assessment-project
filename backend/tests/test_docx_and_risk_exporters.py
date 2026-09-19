@@ -44,6 +44,55 @@ def test_generate_report_docx():
     assert docx_bytes[:2] == b"PK"
 
 
+def test_generate_tcvn11930_capdo3_report_docx():
+    tcvn_sample = {
+        "standard": "tcvn11930",
+        "created_at": "2026-09-08T08:00:00Z",
+        "compliance_percent": 52.9,
+        "system_info": {
+            "organization": {"name": "Công ty TNHH MTV Nhiệt điện Thủ Đức (EVN TPC)", "industry": "Năng lượng"},
+            "assessment_standard": "tcvn11930",
+            "servers": 9,
+            "firewalls": 2,
+            "implemented_controls": [
+                "NW.01", "NW.02", "NW.04", "NW.05",
+                "SV.01", "SV.02", "SV.05",
+                "APP.01", "APP.02", "APP.04", "APP.07",
+                "DAT.01", "DAT.02", "DAT.03",
+                "MNG.01", "MNG.02", "MNG.03", "MNG.04"
+            ]
+        },
+        "json_data": {
+            "compliance": {"percentage": 52.9},
+            "risk_register": [
+                {
+                    "control_id": "SV.07",
+                    "gap": "Hệ điều hành Windows Server 2008 R2 EOL và thiếu Hotfix KB5070247",
+                    "severity": "critical",
+                    "likelihood": 5,
+                    "impact": 5,
+                    "risk_score": 25,
+                    "recommendation": "Lập kế hoạch nâng cấp HĐH và cập nhật bản vá khẩn cấp."
+                },
+                {
+                    "control_id": "SV.03",
+                    "gap": "Chưa cài đặt giải pháp EDR trên 9 máy chủ điều hành",
+                    "severity": "high",
+                    "likelihood": 4,
+                    "impact": 4,
+                    "risk_score": 16,
+                    "recommendation": "Trang bị phần mềm EDR tập trung."
+                }
+            ]
+        }
+    }
+
+    docx_bytes = generate_report_docx(tcvn_sample)
+    assert docx_bytes is not None
+    assert len(docx_bytes) > 2000
+    assert docx_bytes[:2] == b"PK"
+
+
 def test_generate_risk_register_xlsx():
     sample_data = {
         "standard": "ISO 27001:2022",

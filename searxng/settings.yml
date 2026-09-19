@@ -1,0 +1,34 @@
+use_default_settings:
+  engines:
+    remove:
+      - ahmia
+      - torch
+      - wikidata
+      - startpage
+      - brave
+      - brave.images
+      - brave.videos
+      - brave.news
+      - duckduckgo
+
+general:
+  debug: false
+  instance_name: "CyberAI SearXNG"
+
+server:
+  secret_key: "cyberai-searxng-secret-key-assessment-platform"
+  limiter: false
+  image_proxy: false
+  method: "GET"
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "vi"
+  formats:
+    - html
+    - json
+
+outgoing:
+  request_timeout: 2.5
+  max_request_timeout: 4.0

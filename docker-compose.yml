@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     image: cyberai-backend:latest
     container_name: cyberai-backend
-    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     ports:
       - "8000:8000"
     extra_hosts:
@@ -17,7 +17,7 @@ services:
       - MAX_TOKENS=-1
       - PREFER_LOCAL=${PREFER_LOCAL:-true}
       - CLOUD_LLM_API_URL=${CLOUD_LLM_API_URL:-https://open-claude.com/v1}
-      - CLOUD_MODEL_NAME=${CLOUD_MODEL_NAME:-gemini-3.1-pro-preview}
+      - CLOUD_MODEL_NAME=${CLOUD_MODEL_NAME:-gemini-2.0-flash}
       - CLOUD_API_KEYS=${CLOUD_API_KEYS}
       - GOOGLE_AI_STUDIO_API_KEY=${GOOGLE_AI_STUDIO_API_KEY:-}
       - GOOGLE_AI_STUDIO_MODEL=${GOOGLE_AI_STUDIO_MODEL:-gemini-2.0-flash}
@@ -27,7 +27,7 @@ services:
       - DATA_PATH=/data
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - DEBUG=${DEBUG:-true}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:3081,http://127.0.0.1:3000,http://127.0.0.1:3081}
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       - RATE_LIMIT_CHAT=${RATE_LIMIT_CHAT:-10/minute}
       - RATE_LIMIT_ASSESS=${RATE_LIMIT_ASSESS:-3/minute}

@@ -1,9 +1,10 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import styles from './steps.module.css'
 import { useTranslation } from '@/components/LanguageProvider'
 import ControlRow from '../controls/ControlRow'
+import UploadedFilesModal from '../controls/UploadedFilesModal'
 import { deriveInputEvidenceMap } from '../../utils/evidenceMatcher'
 
 export default function Step3Controls({
@@ -18,6 +19,9 @@ export default function Step3Controls({
     handleBatchEvidenceUpload,
     batchResultMsg,
     detectedHosts,
+    onRemoveDetectedHost,
+    uploadedFilesList = [],
+    onDeleteUploadedFile,
     controlSearch,
     setControlSearch,
     filterTag,
@@ -35,6 +39,75 @@ export default function Step3Controls({
     onOpenFeedbackDrawer,
 }) {
     const { t, locale } = useTranslation()
+    const batchFolderInputRef = useRef(null)
+    const [isDragging, setIsDragging] = useState(false)
+    const [showUploadedFilesModal, setShowUploadedFilesModal] = useState(false)
+
+    // Handle Drag & Drop with folder traversal
+    const handleDragOver = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (!isDragging) setIsDragging(true)
+    }
+
+    const handleDragLeave = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsDragging(false)
+    }
+
+    const handleDrop = async (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsDragging(false)
+        if (batchUploading) return
+
+        const dt = e.dataTransfer
+        if (!dt) return
+
+        const items = dt.items
+        if (!items || items.length === 0) {
+            if (dt.files && dt.files.length > 0) {
+                handleBatchEvidenceUpload(Array.from(dt.files))
+            }
+            return
+        }
+
+        const collectedFiles = []
+        const traverseEntry = async (entry) => {
+            if (entry.isFile) {
+                const file = await new Promise((resolve) => entry.file(resolve))
+                collectedFiles.push(file)
+            } else if (entry.isDirectory) {
+                const reader = entry.createReader()
+                let entries = []
+                let batch
+                do {
+                    batch = await new Promise((resolve) => reader.readEntries(resolve))
+                    entries = entries.concat(batch)
+                } while (batch && batch.length > 0)
+                for (const child of entries) {
+                    await traverseEntry(child)
+                }
+            }
+        }
+
+        const promises = []
+        for (let i = 0; i < items.length; i++) {
+            const entry = items[i].webkitGetAsEntry ? items[i].webkitGetAsEntry() : null
+            if (entry) {
+                promises.push(traverseEntry(entry))
+            } else if (items[i].kind === 'file') {
+                const f = items[i].getAsFile()
+                if (f) collectedFiles.push(f)
+            }
+        }
+
+        await Promise.all(promises)
+        if (collectedFiles.length > 0) {
+            handleBatchEvidenceUpload(collectedFiles)
+        }
+    }
 
     // Real-time input & file evidence matching
     const inputEvidenceMap = useMemo(() => {
@@ -108,33 +181,91 @@ export default function Step3Controls({
                 </div>
             </div>
 
-            <div className={styles.batchIngestCard}>
+            <div
+                className={`${styles.batchIngestCard} ${isDragging ? styles.batchDropActive : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+            >
                 <div className={styles.batchIngestHeader}>
                     <div className={styles.batchIngestTitle}>
-                        <span className={styles.batchIcon}>⚡</span>
+                        <div style={{ width: 36, height: 36, borderRadius: '8px', background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#60a5fa', flexShrink: 0 }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                        </div>
                         <div>
                             <div className={styles.batchMainTitle}>
-                                {locale === 'vi' ? 'Nạp Hàng Loạt Log & Tệp Bằng Chứng' : 'Batch Evidence & Scan Log Ingestion'}
+                                {locale === 'vi' ? 'Nạp Hàng Loạt Log & Thư Mục Bằng Chứng' : 'Batch Evidence & Folder Ingestion'}
                             </div>
                             <div className={styles.batchSub}>
                                 {locale === 'vi'
-                                    ? 'Tự động bóc tách log máy chủ (systeminfo, Hotfix KB, Firewall...) & tự động tick chọn Controls phù hợp'
-                                    : 'Auto-parse server scan logs & auto-populate compliance controls with mapped evidence'}
+                                    ? 'Hỗ trợ chọn tệp lẻ hoặc nạp cả thư mục (kèm tính năng kéo thả). Hệ thống tự bóc tách và đối chiếu tiêu chí phù hợp.'
+                                    : 'Upload multiple files or entire folder (drag & drop supported). System auto-parses and maps to compliance controls.'}
                             </div>
+                            <span className={styles.batchDropHint}>
+                                {locale === 'vi'
+                                    ? '💡 Mẹo: Bạn có thể kéo thả trực tiếp cả thư mục từ máy tính vào khung này.'
+                                    : '💡 Tip: You can drag & drop an entire folder directly from your desktop into this card.'}
+                            </span>
                         </div>
                     </div>
-                    <button
-                        type="button"
-                        className={styles.batchBtn}
-                        onClick={() => batchFileInputRef.current?.click()}
-                        disabled={batchUploading}
-                    >
-                        {batchUploading ? (
-                            <>⏳ {locale === 'vi' ? 'Đang phân tích...' : 'Analyzing...'}</>
-                        ) : (
-                            <>📁 {locale === 'vi' ? 'Chọn nhiều tệp log/bằng chứng' : 'Upload Batch Files'}</>
-                        )}
-                    </button>
+
+                    <div className={styles.batchButtonGroup}>
+                        <button
+                            type="button"
+                            className={styles.batchBtn}
+                            onClick={() => batchFileInputRef.current?.click()}
+                            disabled={batchUploading}
+                            title={locale === 'vi' ? 'Chọn nhiều tệp lẻ từ hộp thoại tệp' : 'Upload individual files'}
+                        >
+                            {batchUploading ? (
+                                <>{locale === 'vi' ? 'Đang phân tích...' : 'Analyzing...'}</>
+                            ) : (
+                                <>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                        <polyline points="14 2 14 8 20 8" />
+                                    </svg>
+                                    {locale === 'vi' ? 'Chọn tệp lẻ' : 'Select Files'}
+                                </>
+                            )}
+                        </button>
+
+                        <button
+                            type="button"
+                            className={styles.batchBtnFolder}
+                            onClick={() => batchFolderInputRef.current?.click()}
+                            disabled={batchUploading}
+                            title={locale === 'vi' ? 'Tải lên toàn bộ thư mục mà không cần Ctrl+A' : 'Upload entire folder directly'}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                            </svg>
+                            {locale === 'vi' ? 'Chọn cả thư mục (Folder)' : 'Upload Folder'}
+                        </button>
+
+                        <button
+                            type="button"
+                            className={styles.batchBtnReview}
+                            onClick={() => setShowUploadedFilesModal(true)}
+                            title={locale === 'vi' ? 'Xem danh mục tệp đã nạp, nội dung bóc tách thô và xóa tệp rác' : 'Review uploaded files, view raw text and delete noise'}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <line x1="16" y1="13" x2="8" y2="13" />
+                                <line x1="16" y1="17" x2="8" y2="17" />
+                            </svg>
+                            {locale === 'vi'
+                                ? `Quản lý tệp (${uploadedFilesList.length})`
+                                : `Manage Files (${uploadedFilesList.length})`}
+                        </button>
+                    </div>
+
+                    {/* Hidden individual files input */}
                     <input
                         type="file"
                         multiple
@@ -148,21 +279,71 @@ export default function Step3Controls({
                             }
                         }}
                     />
+
+                    {/* Hidden folder input with webkitdirectory */}
+                    <input
+                        type="file"
+                        webkitdirectory=""
+                        directory=""
+                        multiple
+                        ref={batchFolderInputRef}
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                                const selectedFiles = Array.from(e.target.files)
+                                e.target.value = ''
+                                handleBatchEvidenceUpload(selectedFiles)
+                            }
+                        }}
+                    />
                 </div>
 
                 {batchResultMsg && (
-                    <div className={`${styles.batchAlert} ${batchResultMsg.type === 'success' ? styles.batchAlertSuccess : styles.batchAlertError}`}>
-                        {batchResultMsg.text}
+                    <div className={`${styles.batchAlert} ${
+                        batchResultMsg.type === 'success'
+                            ? styles.batchAlertSuccess
+                            : batchResultMsg.type === 'warning'
+                            ? styles.batchAlertWarning
+                            : styles.batchAlertError
+                    }`}>
+                        <div className={styles.batchAlertContent}>
+                            <span className={styles.batchAlertIcon}>
+                                {batchResultMsg.type === 'success' ? '✓' : batchResultMsg.type === 'warning' ? '⚠️' : '✕'}
+                            </span>
+                            <span className={styles.batchAlertText}>{batchResultMsg.text}</span>
+                            {uploadedFilesList.length > 0 && (
+                                <button
+                                    type="button"
+                                    className={styles.batchAlertActionBtn}
+                                    onClick={() => setShowUploadedFilesModal(true)}
+                                >
+                                    {locale === 'vi' ? 'Xem danh mục tệp →' : 'Review files →'}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
 
                 {detectedHosts.length > 0 && (
                     <div className={styles.detectedHostsRow}>
-                        <span className={styles.detectedLabel}>🖥️ {locale === 'vi' ? 'Máy chủ phát hiện được:' : 'Detected Hosts:'}</span>
+                        <span className={styles.detectedLabel}>
+                            {locale === 'vi' ? 'Máy chủ phát hiện được:' : 'Detected Hosts:'}
+                        </span>
                         <div className={styles.hostBadges}>
                             {detectedHosts.map((h, i) => (
                                 <span key={i} className={styles.hostBadge} title={h.os || ''}>
-                                    <strong>{h.hostname || h.ip}</strong> {h.ip && h.hostname ? `(${h.ip})` : ''}
+                                    <strong>{h.hostname || h.ip}</strong> {h.ip && h.hostname && h.hostname !== h.ip ? `(${h.ip})` : ''}
+                                    {onRemoveDetectedHost && (
+                                        <button
+                                            type="button"
+                                            className={styles.hostRemoveBtn}
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                onRemoveDetectedHost(h)
+                                            }}
+                                            title={locale === 'vi' ? 'Gỡ máy chủ này' : 'Remove host'}
+                                        >✕</button>
+                                    )}
                                 </span>
                             ))}
                         </div>
@@ -346,6 +527,14 @@ export default function Step3Controls({
                     )
                 })}
             </div>
+
+            <UploadedFilesModal
+                isOpen={showUploadedFilesModal}
+                onClose={() => setShowUploadedFilesModal(false)}
+                files={uploadedFilesList}
+                onDeleteFile={onDeleteUploadedFile}
+                locale={locale}
+            />
         </div>
     )
 }

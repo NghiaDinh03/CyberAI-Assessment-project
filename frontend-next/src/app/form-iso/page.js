@@ -99,6 +99,7 @@ export default function FormISOPage() {
     const [batchUploading, setBatchUploading] = useState(false)
     const [batchResultMsg, setBatchResultMsg] = useState(null)
     const [detectedHosts, setDetectedHosts] = useState([])
+    const [uploadedFilesList, setUploadedFilesList] = useState([])
     const batchFileInputRef = useRef(null)
 
     const pollingRef = useRef(null)
@@ -306,6 +307,7 @@ export default function FormISOPage() {
                 const mapped = data.mapped_controls || {}
                 const suggestedControls = data.suggested_implemented_controls || []
                 const hosts = data.detected_hosts || []
+                const incomingFiles = data.files || []
 
                 setForm(prev => {
                     const mergedControls = Array.from(new Set([...prev.implemented_controls, ...suggestedControls]))
@@ -321,35 +323,83 @@ export default function FormISOPage() {
                     const next = { ...prev }
                     Object.entries(mapped).forEach(([ctrlId, fileList]) => {
                         const existing = next[ctrlId] || []
-                        const newFiles = fileList.map(f => ({
-                            filename: f.filename,
-                            size_bytes: f.size_bytes,
-                            confidence: f.confidence
-                        }))
+                        const existingNames = new Set(existing.map(f => f.filename))
+                        const newFiles = fileList
+                            .filter(f => !existingNames.has(f.filename))
+                            .map(f => ({
+                                filename: f.filename,
+                                clean_name: f.clean_name || f.filename,
+                                original_name: f.original_name || f.filename,
+                                size_bytes: f.size_bytes,
+                                confidence: f.confidence
+                            }))
                         next[ctrlId] = [...existing, ...newFiles]
                     })
                     return next
                 })
 
+                // Cumulative Host Merging (deduplicate by IP or Hostname)
                 if (hosts.length > 0) {
-                    setDetectedHosts(hosts)
+                    setDetectedHosts(prev => {
+                        const hostMap = new Map()
+                        prev.forEach(h => {
+                            const key = h.ip || h.hostname
+                            if (key) hostMap.set(key, h)
+                        })
+                        hosts.forEach(h => {
+                            const key = h.ip || h.hostname
+                            if (key) hostMap.set(key, h)
+                        })
+                        return Array.from(hostMap.values())
+                    })
                 }
+
+                // Cumulative Files Ingestion
+                setUploadedFilesList(prev => {
+                    const fileMap = new Map()
+                    prev.forEach(f => fileMap.set(f.filename || f.clean_name, f))
+                    incomingFiles.forEach(f => fileMap.set(f.filename || f.clean_name, f))
+                    return Array.from(fileMap.values())
+                })
 
                 const summary = data.summary || {}
                 const processedOk = summary.processed_successfully || 0
                 const totalCount = summary.total_files || fileList.length
+                const failedCount = summary.failed_count || 0
                 const errorsList = data.errors || []
 
-                let msgText = locale === 'vi'
-                    ? `🎉 Đã bóc tách thành công ${processedOk}/${totalCount} tệp! Tự động gán ${suggestedControls.length} biện pháp kiểm soát và nhận diện ${hosts.length} máy chủ.`
-                    : `🎉 Successfully parsed ${processedOk}/${totalCount} files! Auto-mapped ${suggestedControls.length} controls and detected ${hosts.length} hosts.`
+                const cleanErrors = errorsList.map(err => {
+                    return err.replace(/\[Errno \d+\][^\n:]*:/gi, 'Lỗi ghi tệp:').replace(/\/data\/evidence\/[^\s]*/g, '')
+                })
 
-                if (errorsList.length > 0) {
-                    msgText += `\n⚠️ Lưu ý: ${errorsList.slice(0, 3).join('; ')}${errorsList.length > 3 ? ` (+${errorsList.length - 3} lỗi khác)` : ''}`
+                let msgText = ''
+                let alertType = 'success'
+
+                if (processedOk > 0 && failedCount === 0) {
+                    msgText = locale === 'vi'
+                        ? `✓ Đã bóc tách thành công ${processedOk}/${totalCount} tệp. Tự động đối chiếu ${suggestedControls.length} biện pháp kiểm soát và nhận diện ${hosts.length} máy chủ.`
+                        : `✓ Successfully parsed ${processedOk}/${totalCount} files. Auto-mapped ${suggestedControls.length} controls and detected ${hosts.length} hosts.`
+                    alertType = 'success'
+                } else if (processedOk > 0 && failedCount > 0) {
+                    msgText = locale === 'vi'
+                        ? `⚠️ Đã bóc tách ${processedOk}/${totalCount} tệp (${failedCount} tệp gặp cảnh báo). Đã gán ${suggestedControls.length} biện pháp.`
+                        : `⚠️ Processed ${processedOk}/${totalCount} files (${failedCount} files warning). Mapped ${suggestedControls.length} controls.`
+                    if (cleanErrors.length > 0) {
+                        msgText += ` Lưu ý: ${cleanErrors.slice(0, 2).join('; ')}`
+                    }
+                    alertType = 'warning'
+                } else {
+                    msgText = locale === 'vi'
+                        ? `❌ Không thể bóc tách nội dung từ ${totalCount} tệp đã chọn.`
+                        : `❌ Could not parse content from ${totalCount} selected files.`
+                    if (cleanErrors.length > 0) {
+                        msgText += ` Chi tiết: ${cleanErrors.slice(0, 2).join('; ')}`
+                    }
+                    alertType = 'error'
                 }
 
                 setBatchResultMsg({
-                    type: processedOk > 0 ? 'success' : 'error',
+                    type: alertType,
                     text: msgText
                 })
             } else {
@@ -368,6 +418,34 @@ export default function FormISOPage() {
         } finally {
             setBatchUploading(false)
         }
+    }
+
+    const handleDeleteUploadedFile = async (file) => {
+        const targetName = file.filename || file.clean_name
+        if (!targetName) return
+
+        try {
+            await fetch(`/api/iso27001/evidence/file/${encodeURIComponent(targetName)}`, {
+                method: 'DELETE'
+            })
+        } catch (e) {
+            console.warn('Backend delete file failed, pruning local state anyway:', e)
+        }
+
+        // 1. Remove from uploadedFilesList
+        setUploadedFilesList(prev => prev.filter(f => (f.filename || f.clean_name) !== targetName))
+
+        // 2. Remove from evidenceMap across all controls
+        setEvidenceMap(prev => {
+            const next = {}
+            Object.entries(prev).forEach(([ctrlId, files]) => {
+                const filtered = (files || []).filter(f => f.filename !== targetName && f.clean_name !== targetName)
+                if (filtered.length > 0) {
+                    next[ctrlId] = filtered
+                }
+            })
+            return next
+        })
     }
 
     const deleteEvidence = async (controlId, filename) => {
@@ -391,19 +469,23 @@ export default function FormISOPage() {
                         form,
                         step,
                         evidenceMap,
+                        detectedHosts,
+                        uploadedFilesList,
                         savedAt: Date.now()
                     }))
                 } catch (_) { }
             }, 800)
             return () => clearTimeout(timer)
         }
-    }, [form, step, evidenceMap, activeTab])
+    }, [form, step, evidenceMap, detectedHosts, uploadedFilesList, activeTab])
 
     const restoreDraft = () => {
         if (draftData) {
             if (draftData.form) setForm(draftData.form)
             if (draftData.step) setStep(draftData.step)
             if (draftData.evidenceMap) setEvidenceMap(draftData.evidenceMap)
+            if (draftData.detectedHosts && Array.isArray(draftData.detectedHosts)) setDetectedHosts(draftData.detectedHosts)
+            if (draftData.uploadedFilesList && Array.isArray(draftData.uploadedFilesList)) setUploadedFilesList(draftData.uploadedFilesList)
         }
         setDraftAvailable(false)
     }
@@ -412,6 +494,8 @@ export default function FormISOPage() {
         try { localStorage.removeItem(FORM_DRAFT_KEY) } catch (_) { }
         setDraftAvailable(false)
         setDraftData(null)
+        setUploadedFilesList([])
+        setDetectedHosts([])
     }
 
     useEffect(() => {
@@ -956,6 +1040,11 @@ export default function FormISOPage() {
                         handleBatchEvidenceUpload={handleBatchEvidenceUpload}
                         batchResultMsg={batchResultMsg}
                         detectedHosts={detectedHosts}
+                        onRemoveDetectedHost={(h) => {
+                            setDetectedHosts(prev => prev.filter(item => (item.ip || item.hostname) !== (h.ip || h.hostname)))
+                        }}
+                        uploadedFilesList={uploadedFilesList}
+                        onDeleteUploadedFile={handleDeleteUploadedFile}
                         controlSearch={controlSearch}
                         setControlSearch={setControlSearch}
                         filterTag={filterTag}

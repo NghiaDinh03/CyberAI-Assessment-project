@@ -141,6 +141,36 @@
     transform: translateY(-1px);
 }
 
+/* ── Citation Pill (Perplexity / Claude style) ───────────────────────────── */
+.citationPill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    margin: 0 2px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--accent-cyan, #06b6d4);
+    background: rgba(6, 182, 212, 0.12);
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    border-radius: 9999px;
+    text-decoration: none;
+    vertical-align: super;
+    cursor: pointer;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.citationPill:hover {
+    background: var(--accent-cyan, #06b6d4);
+    color: #0f172a;
+    border-color: var(--accent-cyan, #06b6d4);
+    transform: translateY(-1px) scale(1.08);
+    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.35);
+}
+
 /* ── Images & Badges ─────────────────────────────────────────────────────── */
 
 .badge {

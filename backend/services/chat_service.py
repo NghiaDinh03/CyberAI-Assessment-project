@@ -93,27 +93,80 @@ class ChatService:
         "SecurityLLM-7B-Q4_K_M.gguf",
     }
 
-    _OLLAMA_PREFIXES = ("gemma2:", "gemma3:", "gemma3n:", "gemma4:", "phi4:", "llama3:", "mistral:", "qwen3:")
+    _OLLAMA_PREFIXES = (
+        "gemma", "phi", "llama", "mistral", "qwen", "foundation", "deepseek-r1", "sec"
+    )
 
     @classmethod
     def _is_local_model(cls, model_name: str) -> bool:
-        """Check if a model is a local/Ollama model (CPU-bound, needs short prompts)."""
+        """Check if a model is a local/Ollama model (CPU/GPU local inference)."""
         if not model_name:
             return False
-        if any(model_name.startswith(p) for p in cls._OLLAMA_PREFIXES):
+        lowered = model_name.lower()
+        if any(lowered.startswith(c) for c in ("gemini", "gpt", "claude", "deepseek-v", "deepseek-chat")):
+            return False
+        if any(lowered.startswith(p) for p in cls._OLLAMA_PREFIXES):
             return True
-        if model_name in cls._LOCALAI_GGUF_IDS:
-            return True
-        if model_name.endswith(".gguf"):
+        if model_name in cls._LOCALAI_GGUF_IDS or lowered.endswith(".gguf") or ":" in model_name:
             return True
         return False
 
     @classmethod
     def _is_ollama_model(cls, model_name: str) -> bool:
-        """True only for Ollama-served models (excludes LocalAI GGUF files)."""
+        """True only for Ollama-served models (excludes LocalAI GGUF files and Cloud models)."""
         if not model_name:
             return False
-        return any(model_name.startswith(p) for p in cls._OLLAMA_PREFIXES)
+        lowered = model_name.lower()
+        if any(lowered.startswith(c) for c in ("gemini", "gpt", "claude", "deepseek-v", "deepseek-chat")):
+            return False
+        if any(lowered.startswith(p) for p in cls._OLLAMA_PREFIXES) or ":" in model_name:
+            return True
+        return False
+
+    @staticmethod
+    def _normalize_references_layout(text: str) -> str:
+        """Ensure that references [1] ... [2] ... are never crammed together on a single line."""
+        if not text:
+            return ""
+
+        def _split_citations(line: str) -> str:
+            markers = list(re.finditer(r'\[\d+\]', line))
+            if len(markers) > 1 and any(proto in line for proto in ('http://', 'https://', 'www.')):
+                subbed = re.sub(r'(?<!^)(?<!\n)\s*(\[\d+\])', r'\n- \1', line)
+                if not subbed.strip().startswith('- ') and subbed.strip().startswith('['):
+                    subbed = '- ' + subbed.strip()
+                return subbed
+            return line
+
+        lines = text.split('\n')
+        normalized_lines = [_split_citations(l) for l in lines]
+        return '\n'.join(normalized_lines)
+
+    @staticmethod
+    def _strip_trailing_references(text: str) -> str:
+        """Strip redundant trailing references section (e.g. '## Nguồn tham khảo', '[1] Title - url')
+        since frontend UI cards automatically render structured web_sources."""
+        if not text:
+            return ""
+        # 1. Section with header (e.g., '## Nguồn tham khảo', '| Nguồn tham khảo / References', '### References')
+        cleaned = re.sub(
+            r'(?:\r?\n|\s)+(?:#{1,4}\s*|\|?\s*\*{0,2})(?:Nguồn tham khảo|References|Tài liệu tham khảo)(?:\s*[\/\-]\s*References)?\*{0,2}\s*[:\-\|]?[\s\S]*$',
+            '',
+            text,
+            flags=re.IGNORECASE
+        )
+        if cleaned.strip():
+            return cleaned.strip()
+        # 2. Trailing raw citation list without explicit header
+        cleaned_raw = re.sub(
+            r'(?:\r?\n|\s)+(?:[-*•]\s*)?(?:\[\d+\]|\[.*?\]\(https?:\/\/[^\)]+\))[^\n\r]*(?:[\r\n]+(?:[-*•]\s*)?(?:\[\d+\]|\[.*?\]\(https?:\/\/[^\)]+\))[^\n\r]*)*\s*$',
+            '',
+            text,
+            flags=re.IGNORECASE
+        )
+        if cleaned_raw.strip():
+            return cleaned_raw.strip()
+        return text.strip()
 
     @staticmethod
     def clean_response(text: str) -> str:
@@ -123,6 +176,8 @@ class ChatService:
         text = _THINKING_TAG_RE.sub('', text)
         text = _THINKING_HEADER_RE.sub('', text)
         text = ChatService._normalize_symbols_and_bytes(text)
+        text = ChatService._normalize_references_layout(text)
+        text = ChatService._strip_trailing_references(text)
         return text.strip()
 
     @staticmethod
@@ -592,12 +647,24 @@ class ChatService:
             if is_log:
                 system_prompt = log_prompt + lang_directive
                 user_content = log_message
+            elif use_search and search_context and use_rag and context:
+                system_prompt = ChatService._safe_prompt(
+                    "chat.web_search",
+                    "You are CyberAI, an expert cybersecurity assistant. Use the provided reference context and search results to answer the user's question accurately."
+                ) + lang_directive
+                user_content = f"Reference Context / Tài liệu tham chiếu:\n{context}\n\nSearch Results / Kết quả tìm kiếm:\n{search_context}\n\nQuestion / Câu hỏi: {message}"
             elif use_search and search_context:
                 system_prompt = ChatService._safe_prompt(
                     "chat.web_search",
                     "You are CyberAI, an expert cybersecurity assistant. Use the provided web search results to answer the user's question accurately."
                 ) + lang_directive
                 user_content = f"Search Results / Kết quả tìm kiếm:\n{search_context}\n\nQuestion / Câu hỏi: {message}"
+            elif use_rag and context:
+                system_prompt = ChatService._safe_prompt(
+                    "chat.rag",
+                    "You are CyberAI, an expert cybersecurity assistant. Use the provided reference context to answer the user's question accurately."
+                ) + lang_directive
+                user_content = f"Reference Context / Tài liệu tham chiếu:\n{context}\n\nQuestion / Câu hỏi: {message}"
             else:
                 system_prompt = ChatService._safe_prompt(
                     "chat.local_default",
@@ -676,10 +743,7 @@ class ChatService:
             routing = route_model(message)
             model_name = model_override or routing["model"]
             use_rag = routing["use_rag"]
-
             is_local = ChatService._is_local_model(model_name)
-            if is_local:
-                use_rag = False
 
             # Web search is active for both local and cloud models
             is_log = (
@@ -792,6 +856,8 @@ class ChatService:
             response_text = ChatService.clean_response(result["content"]) if result.get("content") else ""
             if is_log and response_text:
                 response_text = ChatService._normalize_log_output(response_text)
+            if web_sources and response_text:
+                response_text = ChatService._strip_trailing_references(response_text)
 
             audit_service.record_llm_inference_completed(
                 ctx=audit_ctx,
@@ -883,7 +949,7 @@ class ChatService:
 
             routing = route_model(message)
             model_name = eff_model if is_local else (model_override or routing["model"])
-            use_rag = False if is_local else routing.get("use_rag", False)
+            use_rag = routing.get("use_rag", False)
 
             is_log = (
                 ChatService._is_log_analysis(message)
@@ -1047,6 +1113,8 @@ class ChatService:
 
             if is_log and response_text:
                 response_text = ChatService._normalize_log_output(response_text)
+            if web_sources and response_text:
+                response_text = ChatService._strip_trailing_references(response_text)
 
             ss.add_message(session_id, "user", message, user_id=user_id)
             if response_text:
@@ -1417,7 +1485,7 @@ class ChatService:
                         try:
                             from services.evidence_fact_extractor import EvidenceFactExtractor
                             fc = EvidenceFactExtractor.extract_facts(evidence_for_prompt, "assessment_evidence")
-                            fact_cards_text = EvidenceFactExtractor.format_for_auditor([fc])
+                            fact_cards_text = EvidenceFactExtractor.format_for_auditor([fc], self_attested_controls=implemented)
                         except Exception as fc_err:
                             logger.debug(f"[Assessment] Fact extraction in assess_system: {fc_err}")
 

@@ -72,15 +72,32 @@ export default function ControlRow({
                 {/* Evidence Insight Badges (from Infra inputs or Uploaded files) */}
                 {evidenceInsights && evidenceInsights.length > 0 && (
                     <div className={styles.evidenceInsightWrap}>
-                        {evidenceInsights.map((insight, iIdx) => (
-                            <span
-                                key={iIdx}
-                                className={`${styles.evidenceInsightBadge} ${insight.source === 'Tệp bằng chứng' ? styles.evidenceInsightBadgeFile : ''}`}
-                                title={insight.text}
-                            >
-                                💡 <strong>{insight.source}:</strong> {insight.text}
-                            </span>
-                        ))}
+                        {evidenceInsights.map((insight, iIdx) => {
+                            const isFile = insight.type === 'evidence_file' || insight.source === 'Tệp bằng chứng'
+                            const fullTooltip = insight.fullList 
+                                ? `${insight.source}: ${insight.fullList}` 
+                                : `${insight.source}: ${insight.text}`
+                            const sourceLabel = isFile 
+                                ? (locale === 'vi' ? 'Minh chứng' : 'Evidence') 
+                                : insight.source
+
+                            return (
+                                <span
+                                    key={iIdx}
+                                    className={`${styles.evidenceInsightBadge} ${isFile ? styles.evidenceInsightBadgeFile : styles.evidenceInsightBadgeInfra}`}
+                                    title={fullTooltip}
+                                >
+                                    <span className={styles.insightDot} />
+                                    <span className={styles.insightSource}>{sourceLabel}:</span>
+                                    <span className={styles.insightText}>{insight.text}</span>
+                                    {insight.count > 2 && (
+                                        <span className={styles.insightCountPill}>
+                                            {insight.count} tệp
+                                        </span>
+                                    )}
+                                </span>
+                            )
+                        })}
                     </div>
                 )}
             </div>

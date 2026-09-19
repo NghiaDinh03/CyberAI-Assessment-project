@@ -50,11 +50,18 @@ data/templates/*.json
 data/samples/
 data/evidence/
 data/evidence/*
+data/evidence_manifests/
+data/evidence_manifests/*
+data/audit_traces/
+data/audit_traces/*
 data/uploads/
 data/uploads/*
 data/assessments/
 data/assessments/*
 *.parquet
+report_evidence_update/
+evidence_*/
+report_evidence_*/
 
 # ====== Logs & Diagnostics ======
 *.log
@@ -149,6 +156,10 @@ data/exports/*
 !data/exports/.gitkeep
 data/evidence/*
 !data/evidence/.gitkeep
+data/evidence_manifests/*
+!data/evidence_manifests/.gitkeep
+data/audit_traces/*
+!data/audit_traces/.gitkeep
 data/vector_store/*.faiss
 data/vector_store/chroma.sqlite3
 data/vector_store/*/
@@ -157,6 +168,7 @@ data/translations/*.json
 backend/data/
 
 # ====== Backups / Dumps / Archives ======
+xOffice_rawC/
 *.bak
 *.backup
 *.old

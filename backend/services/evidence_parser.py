@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# Max content characters extracted per file to inject into LLM prompts
-MAX_EVIDENCE_CHARS = 10000
+# Max content characters extracted per file to inject into LLM prompts (expanded for 50+ page reports / full logs)
+MAX_EVIDENCE_CHARS = 30000
 # Max file size: 50MB
 MAX_EVIDENCE_SIZE_BYTES = 50 * 1024 * 1024
 
@@ -130,6 +130,36 @@ def parse_docx_file(content_bytes: bytes, filename: str) -> Tuple[str, Optional[
         return f"[Lỗi đọc tệp DOCX: {str(e)[:120]}]", str(e)
 
 
+def parse_xlsx_file(content_bytes: bytes, filename: str) -> Tuple[str, Optional[str]]:
+    """Extract tabular grid data from XLSX/XLS workbook across sheets preserving row and column structure."""
+    try:
+        import openpyxl
+        stream = io.BytesIO(content_bytes)
+        wb = openpyxl.load_workbook(stream, data_only=True, read_only=True)
+        text_lines = []
+
+        for sheet_name in wb.sheetnames[:10]:  # Read up to 10 sheets
+            sheet = wb[sheet_name]
+            text_lines.append(f"\n[Bảng tính Sheet: {sheet_name}]")
+            row_count = 0
+            for row in sheet.iter_rows(values_only=True):
+                row_count += 1
+                if row_count > 350:
+                    text_lines.append(f"... (Đã giới hạn 350 dòng cho sheet '{sheet_name}')")
+                    break
+                row_vals = [str(c).strip() for c in row if c is not None and str(c).strip()]
+                if row_vals:
+                    text_lines.append(" | ".join(row_vals))
+
+        wb.close()
+        return _safe_clean_text("\n".join(text_lines)), None
+    except ImportError:
+        return "[Lỗi hệ thống: Thư viện openpyxl chưa được cài đặt]", "OPENPYXL_LIB_MISSING"
+    except Exception as e:
+        logger.warning(f"[EvidenceParser] XLSX error on {filename}: {e}")
+        return f"[Lỗi đọc tệp Excel: {str(e)[:120]}]", str(e)
+
+
 def parse_image_file(content_bytes: bytes, filename: str) -> Tuple[str, bool, Optional[str]]:
     """OCR image via Tesseract if available, else describe metadata."""
     try:
@@ -243,7 +273,23 @@ def parse_evidence_file(content_bytes: bytes, filename: str) -> Dict[str, Any]:
             "error_message": err
         }
 
-    # 4. Images
+    # 4. XLSX / XLS
+    elif ext in {".xlsx", ".xls"}:
+        text, err = parse_xlsx_file(content_bytes, filename)
+        status = "success" if not err else "failed"
+        parsed_result = {
+            "filename": filename,
+            "status": status,
+            "parsed_text": text[:MAX_EVIDENCE_CHARS],
+            "full_text": text,
+            "char_count": len(text),
+            "page_count": 1,
+            "ocr_applied": False,
+            "error_code": err,
+            "error_message": err
+        }
+
+    # 5. Images
     elif ext in {".png", ".jpg", ".jpeg", ".webp"}:
         text, ocr_applied, err = parse_image_file(content_bytes, filename)
         status = "success"  # Image attachment itself succeeds even if OCR binary is not installed
@@ -283,6 +329,15 @@ def parse_evidence_file(content_bytes: bytes, filename: str) -> Dict[str, Any]:
         fact_card = EvidenceFactExtractor.extract_facts(raw_to_extract, filename, use_llm=False)
         parsed_result["fact_card"] = fact_card.to_dict()
         parsed_result["fact_summary"] = fact_card.to_compact_summary()
+        logger.info(
+            f"[EvidenceParser] File '{filename}' successfully parsed: "
+            f"size={size_bytes}B, chars={parsed_result.get('char_count')}, "
+            f"pages={parsed_result.get('page_count')}, ocr={parsed_result.get('ocr_applied')}, "
+            f"category={fact_card.category}, host={fact_card.host_metadata.get('hostname', 'N/A')}, "
+            f"eol={fact_card.host_metadata.get('is_eol', False)}, "
+            f"strengths={len(fact_card.security_strengths)}, deficiencies={len(fact_card.security_deficiencies)}, "
+            f"controls_mapped={len(fact_card.relevant_controls)}"
+        )
     except Exception as fact_err:
         logger.warning(f"[EvidenceParser] Fact extraction error on {filename}: {fact_err}")
         parsed_result["fact_card"] = {}

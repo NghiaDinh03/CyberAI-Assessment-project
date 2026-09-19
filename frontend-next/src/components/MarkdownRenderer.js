@@ -361,6 +361,23 @@ export default function MarkdownRenderer({ content }) {
                     </a>
                 )
             }
+            // Check if link is an inline citation like "[1]" or "1"
+            const textContent = typeof children === 'string' ? children.trim() : (Array.isArray(children) && typeof children[0] === 'string' ? children[0].trim() : '')
+            const isCitation = /^\[?\d+\]?$/.test(textContent)
+            if (isCitation) {
+                return (
+                    <a
+                        href={href}
+                        className={styles.citationPill}
+                        title={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        {...props}
+                    >
+                        {textContent.replace(/[\[\]]/g, '')}
+                    </a>
+                )
+            }
             return (
                 <a
                     href={href}
@@ -479,6 +496,21 @@ export default function MarkdownRenderer({ content }) {
         },
     }), [])
 
+    const processedContent = useMemo(() => {
+        if (!content || typeof content !== 'string') return ''
+        let text = content
+
+        // 1. Separate crammed citations on a single line (e.g. "[1] ... https://... [2] ... https://...")
+        text = text.replace(/((?:^|\n)\s*(?:[-*]\s*)?\[\d+\][^\n]+?)(?=\s+\[\d+\])/g, '$1\n')
+
+        // 2. Ensure each reference line starting with `[N]` becomes a bullet item `- [N]`
+        text = text.replace(/^(\s*)\[(\d+)\]\s+(.+)$/gm, (match, indent, num, rest) => {
+            return `${indent}- [${num}] ${rest}`
+        })
+
+        return text
+    }, [content])
+
     if (!content) return null
 
     return (
@@ -488,7 +520,7 @@ export default function MarkdownRenderer({ content }) {
                 rehypePlugins={[rehypeRaw]}
                 components={components}
             >
-                {content}
+                {processedContent}
             </ReactMarkdown>
         </div>
     )

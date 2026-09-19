@@ -7,7 +7,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
     Send, Copy, Plus, Trash2, ChevronDown, Bot, User, Loader2, ArrowDown, Check, Download, X, Pencil,
-    AlertTriangle, RefreshCw, Zap, Sparkles, RotateCcw, Globe
+    AlertTriangle, RefreshCw, Zap, Sparkles, RotateCcw, Globe, ExternalLink
 } from 'lucide-react'
 import { useTranslation } from '@/components/LanguageProvider'
 import { useAuth } from '@/contexts/AuthContext'
@@ -20,10 +20,10 @@ const MAX_INPUT_CLOUD = 15000
 const WARN_OFFSET = 200
 
 const CLOUD_MODELS = [
-    { id: 'gemma4:latest',                   label: 'Gemma 4 (Local)',                 provider: 'ollama',    badge: 'Primary · Local' },
-    { id: 'qwen2.5-coder:7b',               label: 'Qwen2.5-Coder:7b (Local)',        provider: 'ollama',    badge: 'Technical · Local' },
-    { id: 'Foundation-Sec-8B-local:latest', label: 'Foundation-Sec-8B (Local)',       provider: 'ollama',    badge: 'Security · Local' },
-    { id: 'gemini-2.0-flash',               label: 'Gemini 2.0 Flash (Cloud Free)',   provider: 'google',    badge: 'Google AI · Fallback' },
+    { id: 'gemma4:latest',                   label: 'Gemma 4',                   provider: 'ollama',    badge: 'Chính · 8B' },
+    { id: 'qwen2.5-coder:7b',               label: 'Qwen2.5-Coder:7b',          provider: 'ollama',    badge: 'Kỹ thuật · 7B' },
+    { id: 'Foundation-Sec-8B-local:latest', label: 'Foundation-Sec-8B',         provider: 'ollama',    badge: 'Bảo mật · 8B' },
+    { id: 'gemini-2.5-flash',               label: 'Gemini 2.5 Flash',          provider: 'google',    badge: 'Google AI · Fallback' },
 ]
 
 // Ollama models populated dynamically from backend catalog
@@ -215,6 +215,52 @@ function cleanAndFormatMarkdown(text) {
     return formatted.join('\n')
 }
 
+function stripTrailingReferences(text) {
+    if (!text || typeof text !== 'string') return text || ''
+    
+    // 1. Header pattern: "## Nguồn tham khảo", "| Nguồn tham khảo / References", "### References", "**Nguồn tham khảo**"
+    const headerPattern = /(?:\r?\n|\s)+(?:#{1,4}\s*|\|?\s*\*{0,2})(?:Nguồn tham khảo|References|Tài liệu tham khảo)(?:\s*[\/\-]\s*References)?\*{0,2}\s*[:\-\|]?[\s\S]*$/i
+    const cleaned = text.replace(headerPattern, '')
+    if (cleaned !== text && cleaned.trim().length > 0) {
+        return cleaned.trimEnd()
+    }
+
+    // 2. Trailing raw citation list e.g. [1] http... [4] http... or - [Title](url)
+    const rawCitationsPattern = /(?:\r?\n|\s)+(?:[-*•]\s*)?(?:\[\d+\]|\[.*?\]\(https?:\/\/[^\)]+\))[^\n\r]*(?:[\r\n]+(?:[-*•]\s*)?(?:\[\d+\]|\[.*?\]\(https?:\/\/[^\)]+\))[^\n\r]*)*\s*$/i
+    const cleanedRaw = text.replace(rawCitationsPattern, '')
+    if (cleanedRaw !== text && cleanedRaw.trim().length > 0) {
+        return cleanedRaw.trimEnd()
+    }
+
+    return text
+}
+
+function linkifyInlineCitations(text, webSources) {
+    if (!text || !webSources || webSources.length === 0) return text
+
+    const urlMap = {}
+    webSources.forEach((src, idx) => {
+        if (src && src.url) {
+            urlMap[idx + 1] = src.url
+        }
+    })
+
+    // Avoid converting citations inside fenced code blocks or inline code
+    const parts = text.split(/(```[\s\S]*?```|`[^`\n]+`)/g)
+
+    return parts.map((part, index) => {
+        if (index % 2 === 1) return part
+        return part.replace(/(?<!\[)(?<!\w)\[([1-9]\d*)\](?!\()/g, (match, numStr) => {
+            const num = parseInt(numStr, 10)
+            const url = urlMap[num]
+            if (url) {
+                return `[${num}](${url})`
+            }
+            return match
+        })
+    }).join('')
+}
+
 const MessageBubble = memo(function MessageBubble({
     m,
     index,
@@ -234,9 +280,16 @@ const MessageBubble = memo(function MessageBubble({
     const isStreaming = !!m._streaming
     const isCopied = copiedMsgId === msgKey
     const content = typeof m.content === 'string' ? m.content : (m.content ? JSON.stringify(m.content) : '')
+    const hasWebSources = m.webSources && m.webSources.length > 0
     const displayContent = useMemo(() => {
-        return isBot ? cleanAndFormatMarkdown(content) : content
-    }, [isBot, content])
+        if (!isBot) return content
+        let cleaned = cleanAndFormatMarkdown(content)
+        cleaned = stripTrailingReferences(cleaned)
+        if (hasWebSources) {
+            cleaned = linkifyInlineCitations(cleaned, m.webSources)
+        }
+        return cleaned
+    }, [isBot, content, hasWebSources, m.webSources])
     const charCount = content.length
     const modelKey = m.model || m.requestedModel || ''
     const providerColor = m.provider && PROVIDER_COLORS[m.provider]
@@ -446,7 +499,37 @@ const MessageBubble = memo(function MessageBubble({
                         ) : (
                             content ? (
                                 <div className={styles.md}>
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent || ' '}</ReactMarkdown>
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                            a: ({ node, href, children, ...props }) => {
+                                                const text = String(children || '').trim()
+                                                const isCitation = /^\[?\d+\]?$/.test(text)
+                                                if (isCitation) {
+                                                    const num = text.replace(/\D/g, '')
+                                                    return (
+                                                        <a
+                                                            href={href}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className={styles.inlineCitationBadge}
+                                                            title={href}
+                                                            {...props}
+                                                        >
+                                                            [{num}]
+                                                        </a>
+                                                    )
+                                                }
+                                                return (
+                                                    <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                                                        {children}
+                                                    </a>
+                                                )
+                                            }
+                                        }}
+                                    >
+                                        {displayContent || ' '}
+                                    </ReactMarkdown>
                                     {isLastStreaming && <span className={styles.blinkCursor}>|</span>}
                                 </div>
                             ) : null
@@ -456,6 +539,52 @@ const MessageBubble = memo(function MessageBubble({
                             <div className={styles.streamMeta}>
                                 <span className={styles.streamDot} />
                                 <span>{charCount > 0 ? `${charCount} chars · streaming…` : 'thinking…'}</span>
+                            </div>
+                        )}
+
+                        {!isStreaming && m.ragUsed && m.sources?.length > 0 && (
+                            <div className={styles.sourcesList}>
+                                {m.sources.slice(0, 4).map((src, idx) => (
+                                    <a key={idx} href={src.startsWith('http') ? src : '#'} target="_blank" rel="noreferrer" className={styles.sourceItem}>
+                                        {src}
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+
+                        {!isStreaming && m.webSources?.length > 0 && (
+                            <div className={styles.webSourcesContainer}>
+                                <div className={styles.webSourcesHeader}>
+                                    <Globe size={13} className={styles.webSourcesHeaderIcon} />
+                                    <span className={styles.webSourcesTitle}>Nguồn tham khảo web ({m.webSources.length})</span>
+                                </div>
+                                <div className={styles.webSourcesGrid}>
+                                    {m.webSources.map((src, idx) => {
+                                        let domain = ''
+                                        try {
+                                            domain = new URL(src.url).hostname.replace(/^www\./, '')
+                                        } catch (e) {
+                                            domain = src.url
+                                        }
+                                        return (
+                                            <a
+                                                key={idx}
+                                                href={src.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={styles.webSourceCard}
+                                                title={`${src.title}\n${src.url}`}
+                                            >
+                                                <div className={styles.webSourceMeta}>
+                                                    <span className={styles.webSourceIndex}>[{idx + 1}]</span>
+                                                    <span className={styles.webSourceDomain}>{domain}</span>
+                                                    <ExternalLink size={10} className={styles.webSourceExternalIcon} />
+                                                </div>
+                                                <div className={styles.webSourceCardTitle}>{src.title}</div>
+                                            </a>
+                                        )
+                                    })}
+                                </div>
                             </div>
                         )}
 
@@ -511,16 +640,6 @@ const MessageBubble = memo(function MessageBubble({
                                 </div>
                             </div>
                         )}
-
-                        {!isStreaming && m.ragUsed && m.sources?.length > 0 && (
-                            <div className={styles.sourcesList}>
-                                {m.sources.slice(0, 4).map((src, idx) => (
-                                    <a key={idx} href={src.startsWith('http') ? src : '#'} target="_blank" rel="noreferrer" className={styles.sourceItem}>
-                                        {src}
-                                    </a>
-                                ))}
-                            </div>
-                        )}
                     </>
                 )}
             </div>
@@ -543,7 +662,79 @@ const ModelDropdown = memo(function ModelDropdown({
     onToggle, onSelect, onKeyDown, modelBtnRef, dropdownRef,
     models, pullingModels, onPull, onDelete
 }) {
+    const { t } = useTranslation()
     const activeModelInfo = models.find(m => m.id === selectedModel) || models[0]
+
+    const localModels = useMemo(() => models.filter(m => m.provider === 'ollama' || m.provider === 'local'), [models])
+    const cloudModels = useMemo(() => models.filter(m => m.provider !== 'ollama' && m.provider !== 'local'), [models])
+
+    const renderOption = (m, idx) => {
+        const isInstalled = m.provider === 'ollama' ? m.installed !== false : true
+        const pulling = pullingModels?.[m.id]
+        const isPulling = !!pulling
+        const isSelected = selectedModel === m.id
+
+        return (
+            <div
+                key={m.id}
+                id={`model-opt-${m.id}`}
+                role="option"
+                aria-selected={isSelected}
+                className={`${styles.modelOption} ${isSelected ? styles.modelOptionActive : ''} ${focusedModelIdx === idx ? styles.modelOptionFocused : ''}`}
+                onClick={() => isInstalled ? onSelect(m.id) : null}
+                title={m.label}
+            >
+                <div className={styles.modelOptionLeft}>
+                    <span
+                        className={styles.modelStatusDot}
+                        style={{
+                            background: !isInstalled ? '#64748b' : (PROVIDER_COLORS[m.provider] || '#3b82f6')
+                        }}
+                    />
+                    <span className={styles.modelOptionName} style={!isInstalled ? { opacity: 0.5 } : undefined}>
+                        {m.label}
+                    </span>
+                </div>
+
+                <div className={styles.modelOptionRight}>
+                    {m.provider === 'ollama' && isInstalled && (
+                        <span className={styles.statusPillReady}>
+                            <Check size={10} strokeWidth={3} /> {t('chatbot.statusReady') || 'Sẵn sàng'}
+                        </span>
+                    )}
+                    {m.provider === 'ollama' && !isInstalled && !isPulling && (
+                        <span className={styles.statusPillUninstalled}>
+                            {t('chatbot.statusNotInstalled') || 'Chưa tải'}
+                        </span>
+                    )}
+                    {isPulling && (
+                        <span className={styles.statusPillPulling}>
+                            <Loader2 size={10} className={styles.spin} /> {pulling.progress || 0}%
+                        </span>
+                    )}
+                    {m.badge && (
+                        <span className={styles.modelRoleBadge}>
+                            {m.badge}
+                        </span>
+                    )}
+                    {m.provider === 'ollama' && !isInstalled && !isPulling && onPull && (
+                        <button
+                            type="button"
+                            className={styles.pullBtn}
+                            onClick={(e) => { e.stopPropagation(); onPull(m.id); }}
+                            title={`${t('chatbot.downloadModel') || 'Tải'} ${m.label}`}
+                        >
+                            <Download size={11} /> {t('chatbot.downloadModel') || 'Tải'}
+                        </button>
+                    )}
+                    <div className={styles.checkSlot}>
+                        {isSelected && <Check size={14} className={styles.checkIcon} />}
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className={styles.modelPicker}>
             <button
@@ -552,14 +743,14 @@ const ModelDropdown = memo(function ModelDropdown({
                 className={styles.modelBtn}
                 onClick={onToggle}
                 onKeyDown={onKeyDown}
-                style={{ '--provider-color': PROVIDER_COLORS[activeModelInfo?.provider] }}
+                style={{ '--provider-color': PROVIDER_COLORS[activeModelInfo?.provider] || '#3b82f6' }}
                 aria-haspopup="listbox"
                 aria-expanded={modelDropdown}
                 aria-label={`Selected model: ${activeModelInfo?.label}`}
             >
-                <span className={styles.modelDot} style={{ background: PROVIDER_COLORS[activeModelInfo?.provider] }} />
+                <span className={styles.modelDot} style={{ background: PROVIDER_COLORS[activeModelInfo?.provider] || '#3b82f6' }} />
                 <span className={styles.modelBtnLabel}>{activeModelInfo?.label || selectedModel}</span>
-                <ChevronDown size={14} className={`${styles.modelChevron} ${modelDropdown ? styles.modelChevronOpen : ''}`} />
+                <ChevronDown size={13} className={`${styles.modelChevron} ${modelDropdown ? styles.modelChevronOpen : ''}`} />
             </button>
             {modelDropdown && (
                 <div
@@ -570,76 +761,30 @@ const ModelDropdown = memo(function ModelDropdown({
                     aria-activedescendant={focusedModelIdx >= 0 && models[focusedModelIdx] ? `model-opt-${models[focusedModelIdx].id}` : undefined}
                     onKeyDown={onKeyDown}
                 >
-                    <div className={styles.modelDropdownTitle}>Select AI Model</div>
-                    {models.map((m, idx) => {
-                        const prevProvider = idx > 0 ? models[idx - 1].provider : null
-                        const showOllamaDivider = m.provider === 'ollama' && prevProvider !== 'ollama'
-                        const showLocalDivider  = m.provider === 'local'  && prevProvider !== 'local'
-                        const isInstalled = m.provider === 'ollama' ? m.installed !== false : true
-                        const pulling = pullingModels?.[m.id]
-                        const isPulling = !!pulling
-                        return (
-                            <div key={m.id}>
-                                {showOllamaDivider && (
-                                    <div className={styles.modelDropdownDivider} style={{ color: PROVIDER_COLORS.ollama }}>
-                                        <span>🦙 Ollama Models · 100% Local</span>
-                                    </div>
-                                )}
-                                {showLocalDivider && (
-                                    <div className={styles.modelDropdownDivider}>
-                                        <span>🖥️ LocalAI (Llama · SecurityLLM)</span>
-                                    </div>
-                                )}
-                                <div
-                                    id={`model-opt-${m.id}`}
-                                    role="option"
-                                    aria-selected={selectedModel === m.id}
-                                    className={`${styles.modelOption} ${selectedModel === m.id ? styles.modelOptionActive : ''} ${focusedModelIdx === idx ? styles.modelOptionFocused : ''}`}
-                                    style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
-                                >
-                                    <button
-                                        type="button"
-                                        style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'inherit', font: 'inherit', textAlign: 'left' }}
-                                        onClick={() => isInstalled ? onSelect(m.id) : null}
-                                        title={!isInstalled ? 'Not installed — click download to pull' : ''}
-                                    >
-                                        <span className={styles.modelDot} style={{
-                                            background: !isInstalled ? '#6b7280' : PROVIDER_COLORS[m.provider]
-                                        }} />
-                                        <span className={styles.modelOptionName} style={!isInstalled ? { opacity: 0.55 } : undefined}>
-                                            {m.label}
-                                        </span>
-                                        {m.provider === 'ollama' && isInstalled && (
-                                            <span className={styles.modelBadge} style={{ background: '#059669', color: '#fff', fontSize: '0.6rem' }}>✓ Ready</span>
-                                        )}
-                                        {m.provider === 'ollama' && !isInstalled && !isPulling && (
-                                            <span className={styles.modelBadge} style={{ background: '#6b7280', color: '#fff', fontSize: '0.6rem' }}>Not Installed</span>
-                                        )}
-                                        {isPulling && (
-                                            <span className={styles.modelBadge} style={{ background: '#2563eb', color: '#fff', fontSize: '0.6rem' }}>
-                                                <Loader2 size={10} style={{ animation: 'spin 1s linear infinite', marginRight: 3 }} />
-                                                {pulling.progress || 0}%
-                                            </span>
-                                        )}
-                                        {m.badge && <span className={styles.modelBadge} style={{ fontSize: '0.6rem' }}>{m.badge}</span>}
-                                        <span className={styles.modelProviderTag} style={{ color: PROVIDER_COLORS[m.provider] }}>
-                                            {PROVIDER_LABEL[m.provider] || m.provider}
-                                        </span>
-                                    </button>
-                                    {m.provider === 'ollama' && !isInstalled && !isPulling && onPull && (
-                                        <button
-                                            type="button"
-                                            onClick={(e) => { e.stopPropagation(); onPull(m.id) }}
-                                            title={`Download ${m.label}`}
-                                            style={{ background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.3)', borderRadius: 6, padding: '3px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3, color: '#2563eb', fontSize: '0.65rem', whiteSpace: 'nowrap' }}
-                                        >
-                                            <Download size={11} /> Pull
-                                        </button>
-                                    )}
-                                </div>
+                    <div className={styles.modelDropdownHeader}>
+                        <span className={styles.modelDropdownTitle}>{t('chatbot.selectModel') || 'CHỌN MÔ HÌNH AI'}</span>
+                        <span className={styles.modelCountBadge}>{models.length} {t('chatbot.modelsAvailable') || 'khả dụng'}</span>
+                    </div>
+
+                    {localModels.length > 0 && (
+                        <div className={styles.modelGroup}>
+                            <div className={styles.modelGroupHeader}>
+                                <span className={styles.groupDotOllama} />
+                                <span>{t('chatbot.localModelsTitle') || 'Mô hình Cục bộ · 100% Offline (Ollama)'}</span>
                             </div>
-                        )
-                    })}
+                            {localModels.map((m, idx) => renderOption(m, idx))}
+                        </div>
+                    )}
+
+                    {cloudModels.length > 0 && (
+                        <div className={styles.modelGroup}>
+                            <div className={styles.modelGroupHeader}>
+                                <span className={styles.groupDotCloud} />
+                                <span>{t('chatbot.cloudModelsTitle') || 'Mô hình Đám mây (Cloud Fallback)'}</span>
+                            </div>
+                            {cloudModels.map((m, idx) => renderOption(m, localModels.length + idx))}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -879,12 +1024,12 @@ export default function ChatbotPage() {
         const cloud = CLOUD_MODELS.filter(m => m.provider !== 'local' && m.provider !== 'ollama')
         const local = CLOUD_MODELS.filter(m => m.provider === 'local')
         const dynamicOllama = ollamaCatalog
-            .filter(m => m.installed === true)
+            .filter(m => m.installed === true && !m.id.toLowerCase().includes('bge-m3') && !m.id.toLowerCase().includes('embed'))
             .map(m => ({
                 id: m.id,
-                label: `${m.name} ${m.params || ''}`.trim(),
+                label: `${m.name || m.id.split(':')[0]} ${m.params && m.params !== '?' ? m.params : ''}`.trim(),
                 provider: 'ollama',
-                badge: `${m.params || 'Local'} · ${m.size || ''}`.trim(),
+                badge: m.params && m.params !== '?' ? `${m.params} · Local` : 'Ollama · Local',
                 installed: m.installed,
                 pull_status: m.pull_status,
             }))
@@ -1529,7 +1674,7 @@ export default function ChatbotPage() {
                                     aria-label="Toggle web search"
                                 >
                                     <Globe size={13} />
-                                    <span>{webSearchEnabled ? (t('chatbot.webSearchOnBadge') || 'Web Search: BẬT') : (t('chatbot.webSearch') || 'Web Search')}</span>
+                                    <span>{webSearchEnabled ? (t('chatbot.webSearchOnBadge') || 'Web: BẬT') : (t('chatbot.webSearch') === 'chatbot.webSearch' ? 'Tìm kiếm Web' : (t('chatbot.webSearch') || 'Tìm kiếm Web'))}</span>
                                 </button>
                             </div>
                             <div className={styles.inputCardRight}>

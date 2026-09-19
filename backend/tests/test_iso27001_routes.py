@@ -264,4 +264,24 @@ class TestControlAiAssistAndEvidence:
         assert data.get("status") == "success"
         assert "A.5.32" in data.get("response", "")
 
+    def test_get_assessment_extraction_proof(self):
+        from unittest.mock import patch
+        fake_assessment = {
+            "id": "test_proof_123",
+            "system_data": {
+                "organization": {"name": "EVN TPC"},
+                "notes": "Host Name: SRV-01\nOS Name: Windows Server 2008 R2\nHotfix(s): KB2841134",
+                "compliance": {"implemented_controls": ["SV.07"]}
+            }
+        }
+        with patch("api.routes.iso27001.load_assessment", return_value=fake_assessment):
+            resp = client.get("/api/iso27001/assessments/test_proof_123/extraction-proof")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data.get("integrity_status") == "VERIFIED_100_PERCENT"
+            assert data.get("completeness_score") == 100.0
+            assert "technical_facts" in data
+            assert "cross_verification" in data
+
+
 

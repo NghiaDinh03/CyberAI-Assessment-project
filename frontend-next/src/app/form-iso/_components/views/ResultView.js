@@ -8,6 +8,7 @@ import SvgGauge from '../ui/SvgGauge'
 import { useTranslation } from '@/components/LanguageProvider'
 import { calcWeightedScore, calcCategoryBreakdown } from '../../../../data/standards'
 import OfficeEditorModal from '@/components/OfficeEditorModal'
+import EvidenceExtractionProofModal from '@/components/EvidenceExtractionProofModal'
 
 const POLL_INTERVAL = 8000
 
@@ -28,6 +29,7 @@ export default function ResultView({
     const [auditTrace, setAuditTrace] = useState(null)
     const [showTraceModal, setShowTraceModal] = useState(false)
     const [loadingTrace, setLoadingTrace] = useState(false)
+    const [showProofModal, setShowProofModal] = useState(false)
     const [showOfficeModal, setShowOfficeModal] = useState(false)
     const [officeFileType, setOfficeFileType] = useState('docx')
     const [exportingType, setExportingType] = useState(null)
@@ -826,6 +828,15 @@ export default function ResultView({
                             </button>
 
                             <button
+                                className={styles.miniActionBtnHighlight}
+                                onClick={() => setShowProofModal(true)}
+                                style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 78, 59, 0.35))', borderColor: 'rgba(52, 211, 153, 0.4)', color: '#34d399' }}
+                                title="Chứng minh mô hình và script bóc tách chính xác 100% dữ liệu đầu vào (SHA-256, Fact Cards, Hotfixes, Đối soát chéo)"
+                            >
+                                🛡️ {locale === 'vi' ? 'Bằng chứng bóc tách 100%' : '100% Extraction Proof'}
+                            </button>
+
+                            <button
                                 className={styles.miniActionBtn}
                                 onClick={() => {
                                     navigator.clipboard?.writeText(result.report || '').catch(() => { })
@@ -954,6 +965,13 @@ export default function ResultView({
                 jsonData={result.json_data || {}}
                 orgName={form?.org_name || 'Doanh nghiệp'}
                 standardName={getStdLabel(form?.assessment_standard)}
+            />
+
+            {/* 100% Evidence Extraction Proof Modal */}
+            <EvidenceExtractionProofModal
+                isOpen={showProofModal}
+                onClose={() => setShowProofModal(false)}
+                assessmentId={result.id}
             />
         </>
     )

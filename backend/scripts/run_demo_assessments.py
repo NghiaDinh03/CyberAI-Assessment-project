@@ -207,6 +207,7 @@ Chưa ghi nhận đủ minh chứng trong phạm vi dữ liệu đánh giá đ�
     )
 
     assessment_record = {
+        "id": aid,
         "assessment_id": aid,
         "run_id": run_id,
         "code_version": code_version,

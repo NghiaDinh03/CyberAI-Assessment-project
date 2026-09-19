@@ -360,8 +360,15 @@
     color: var(--text-muted);
 }
 
+.batchButtonGroup {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
 .batchBtn {
-    padding: 0.6rem 1.15rem;
+    padding: 0.55rem 1.05rem;
     background: var(--accent-blue);
     color: #fff;
     border: none;
@@ -371,7 +378,10 @@
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .batchBtn:hover:not(:disabled) {
@@ -379,29 +389,131 @@
     transform: translateY(-1px);
 }
 
-.batchBtn:disabled {
-    opacity: 0.6;
+.batchBtnFolder {
+    padding: 0.55rem 1.05rem;
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.batchBtnFolder:hover:not(:disabled) {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: #10b981;
+    transform: translateY(-1px);
+}
+
+.batchBtnReview {
+    padding: 0.55rem 1.05rem;
+    background: rgba(59, 130, 246, 0.12);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.batchBtnReview:hover {
+    background: rgba(59, 130, 246, 0.22);
+    border-color: #60a5fa;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.batchBtn:disabled,
+.batchBtnFolder:disabled,
+.batchBtnReview:disabled {
+    opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
+}
+
+.batchDropActive {
+    border-color: #3b82f6 !important;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.14) 0%, rgba(16, 185, 129, 0.14) 100%) !important;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.25);
+}
+
+.batchDropHint {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+    display: block;
 }
 
 .batchAlert {
     margin-top: 0.85rem;
-    padding: 0.65rem 0.95rem;
-    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    border-radius: 9px;
     font-size: 0.82rem;
-    line-height: 1.4;
+    line-height: 1.45;
+}
+
+.batchAlertContent {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.batchAlertIcon {
+    font-weight: 700;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.batchAlertText {
+    flex: 1;
+    min-width: 200px;
+}
+
+.batchAlertActionBtn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.batchAlertActionBtn:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .batchAlertSuccess {
     background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.32);
+    color: #34d399;
+}
+
+.batchAlertWarning {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.32);
+    color: #fbbf24;
 }
 
 .batchAlertError {
     background: rgba(239, 68, 68, 0.12);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.32);
+    color: #f87171;
 }
 
 .detectedHostsRow {
@@ -425,12 +537,31 @@
 }
 
 .hostBadge {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 6px;
     padding: 0.25rem 0.55rem;
     font-size: 0.75rem;
     color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.hostRemoveBtn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.7rem;
+    cursor: pointer;
+    padding: 0 2px;
+    border-radius: 3px;
+    line-height: 1;
+}
+
+.hostRemoveBtn:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
 }
 
 /* Toolbar & Filters */
@@ -839,3 +970,27 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Light theme overrides */
+[data-theme='light'] .batchBtnReview {
+    background: rgba(37, 99, 235, 0.08);
+    color: #1d4ed8;
+    border-color: rgba(37, 99, 235, 0.25);
+}
+
+[data-theme='light'] .batchBtnReview:hover {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+}
+
+[data-theme='light'] .batchAlertActionBtn {
+    background: rgba(0, 0, 0, 0.06);
+    border-color: rgba(0, 0, 0, 0.12);
+    color: #0f172a;
+}
+
+[data-theme='light'] .batchAlertActionBtn:hover {
+    background: rgba(0, 0, 0, 0.12);
+}
+

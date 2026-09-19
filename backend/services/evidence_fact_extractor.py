@@ -392,6 +392,35 @@ class EvidenceFactExtractor:
         if all_ips:
             meta["ip_addresses"] = list(dict.fromkeys(all_ips))
 
+        # Hotfixes count & list
+        kbs = re.findall(r"\bKB\d{6,8}\b", text, re.IGNORECASE)
+        if kbs:
+            meta["hotfixes"] = list(dict.fromkeys(kbs))
+            meta["hotfix_count"] = len(meta["hotfixes"])
+        elif re.search(r"Hotfix\(s\):\s*N/A", text, re.IGNORECASE):
+            meta["hotfixes"] = []
+            meta["hotfix_count"] = 0
+
+        # Antivirus detection
+        lower_txt = text.lower()
+        if "trend micro" in lower_txt or "apex one" in lower_txt:
+            meta["antivirus"] = "Trend Micro Apex One"
+        elif "windows defender" in lower_txt or "windefend" in lower_txt:
+            meta["antivirus"] = "Windows Defender"
+        elif "crowdstrike" in lower_txt or "falcon" in lower_txt:
+            meta["antivirus"] = "CrowdStrike Falcon"
+        elif "wazuh" in lower_txt:
+            meta["antivirus"] = "Wazuh EDR"
+        elif "sentinelone" in lower_txt:
+            meta["antivirus"] = "SentinelOne"
+
+        # Listening / Open Ports
+        ports = re.findall(r":(\d{2,5})\b", text)
+        well_known = {"21", "22", "23", "25", "80", "110", "135", "139", "443", "445", "1433", "1521", "3306", "3389", "5432", "8080", "8443"}
+        detected_ports = [p for p in set(ports) if p in well_known]
+        if detected_ports:
+            meta["listening_ports"] = sorted(detected_ports, key=int)
+
         return meta
 
     @classmethod
@@ -414,6 +443,9 @@ class EvidenceFactExtractor:
 
         if "https://" in lower_txt or "tls 1.2" in lower_txt or "tls 1.3" in lower_txt:
             strengths.append("Áp dụng giao thức truyền thông an toàn mã hóa SSL/TLS.")
+
+        if host_meta.get("antivirus"):
+            strengths.append(f"Máy chủ đã trang bị giải pháp bảo vệ mã độc: {host_meta['antivirus']}.")
 
         return strengths
 
@@ -469,14 +501,44 @@ class EvidenceFactExtractor:
                 "control_ids": ["A.8.8", "MNG.05"],
             })
 
-        # 5. Insecure protocols
+        # 5. Insecure protocols & Open weak ports
         if re.search(r"\b(?:telnet|ftp|smbv1|http://|ssl\s+2\.0|ssl\s+3\.0)\b", text, re.IGNORECASE):
             deficiencies.append({
                 "type": "insecure_protocol",
                 "name": "Sử dụng giao thức truyền thông không mã hóa hoặc lỗi thời",
                 "risk_level": "high",
                 "evidence_snippet": "Phát hiện giao thức không an toàn trong cấu hình mạng",
-                "control_ids": ["A.8.20", "A.8.24", "APP.02"],
+                "control_ids": ["A.8.20", "A.8.24", "APP.02", "NW.01", "NW.02", "SV.01"],
+            })
+
+        # 6. SWEET32 / CVE-2016-2183 / Weak 3DES ciphers
+        if re.search(r"\b(?:cve-2016-2183|sweet32|3des|triple-des|des-cbc3)\b", text, re.IGNORECASE):
+            deficiencies.append({
+                "type": "weak_cryptography",
+                "name": "Lỗ hổng SWEET32 (CVE-2016-2183) trên thuật toán 3DES 64-bit",
+                "risk_level": "high",
+                "evidence_snippet": "Giao thức SSL/TLS cho phép sử dụng mã hóa 3DES khối 64-bit dễ bị tấn công birthday",
+                "control_ids": ["A.8.24", "APP.02", "SV.08"],
+            })
+
+        # 7. Missing specific critical hotfix KB5070247
+        if re.search(r"\bKB5070247\b", text, re.IGNORECASE) and re.search(r"\b(?:missing|thiếu|chưa cài|failed)\b", text, re.IGNORECASE):
+            deficiencies.append({
+                "type": "missing_security_patches",
+                "name": "Thiếu bản vá bảo mật khẩn cấp Hotfix KB5070247",
+                "risk_level": "critical",
+                "evidence_snippet": "Bản vá KB5070247 chưa được cài đặt trên hệ điều hành máy chủ",
+                "control_ids": ["A.8.8", "SV.07"],
+            })
+
+        # 8. RDP without NLA
+        if re.search(r"\b(?:user authentication.*optional|nla disabled|securitylayer.*0)\b", text, re.IGNORECASE):
+            deficiencies.append({
+                "type": "insecure_remote_access",
+                "name": "Dịch vụ Remote Desktop (RDP) không bắt buộc xác thực cấp độ mạng (NLA)",
+                "risk_level": "high",
+                "evidence_snippet": "RDP cấu hình cho phép kết nối không cần NLA",
+                "control_ids": ["A.8.2", "A.8.5", "SV.01", "SV.06"],
             })
 
         return deficiencies
@@ -499,8 +561,15 @@ class EvidenceFactExtractor:
     @classmethod
     def _extract_governance_facts(cls, text: str, filename: str) -> Dict[str, Any]:
         fname_lower = (filename or "").lower()
+        is_raw_log = any(fname_lower.endswith(ext) for ext in [".txt", ".log", ".csv", ".json", ".xml"])
+        has_policy_filename = any(w in fname_lower for w in ["chinh_sach", "policy_attt", "quy_che", "quy_dinh", "so_tay", "bcp", "drp", "bien_ban", "quyet_dinh"])
+        
+        # Raw log files should not be treated as governance policies unless specifically named as such
+        if is_raw_log and not has_policy_filename:
+            return {}
+
         text_preview = (text or "")[:2000].lower()
-        is_gov_doc = any(w in fname_lower for w in ["policy", "chinh_sach", "quy_che", "quy_dinh", "so_tay", "bcp", "drp", "bien_ban", "quyet_dinh"]) or any(w in text_preview for w in ["quy chế", "quy định", "chính sách an toàn", "người phê duyệt", "ban hành", "phạm vi áp dụng"])
+        is_gov_doc = has_policy_filename or any(w in text_preview for w in ["quy chế", "quy định", "chính sách an toàn", "người phê duyệt", "ban hành"])
         if not is_gov_doc:
             return {}
 
@@ -634,7 +703,94 @@ class EvidenceFactExtractor:
         return sorted(list(controls))
 
     @classmethod
-    def format_for_auditor(cls, fact_cards: List[SecurityFactCard]) -> str:
+    def cross_verify_controls(
+        cls,
+        self_attested_controls: List[str],
+        fact_cards: List[SecurityFactCard],
+        standard: str = "iso27001",
+    ) -> Dict[str, Any]:
+        """Cross-verify self-attested controls against empirical evidence across all files.
+
+        Rule 1 (Contradiction): User marked control as implemented, but evidence demonstrates a critical/high defect.
+        Rule 2 (Unverified Attestation): User marked control as implemented, but NO evidence across all files supports it.
+        Rule 3 (Verified Satisfied): User marked control as implemented, and positive evidence confirms it.
+        """
+        attested_set = set(self_attested_controls or [])
+        verified_satisfied = []
+        contradiction_gaps = []
+        unverified_oversights = []
+
+        evidence_positive_controls = set()
+        evidence_failing_map: Dict[str, List[Tuple[Dict[str, Any], str]]] = {}
+
+        for fc in fact_cards:
+            fname = fc.filename
+            for sat in fc.compliance_readiness.get("satisfied_controls", []):
+                cid = sat.get("control_id") if isinstance(sat, dict) else str(sat)
+                if cid:
+                    evidence_positive_controls.add(cid)
+            if fc.security_strengths:
+                for cid in fc.relevant_controls:
+                    evidence_positive_controls.add(cid)
+
+            for d in fc.security_deficiencies:
+                for cid in d.get("control_ids", []):
+                    if cid not in evidence_failing_map:
+                        evidence_failing_map[cid] = []
+                    evidence_failing_map[cid].append((d, fname))
+
+        for cid in attested_set:
+            if cid in evidence_failing_map:
+                defects = evidence_failing_map[cid]
+                d, fname = defects[0]
+                contradiction_gaps.append({
+                    "control_id": cid,
+                    "defect_name": d.get("name", "Lỗ hổng bảo mật"),
+                    "risk_level": d.get("risk_level", "critical"),
+                    "filename": fname,
+                    "evidence_snippet": d.get("evidence_snippet", ""),
+                    "citation": f"[🏷️ Nguồn: Mâu thuẫn với log {fname}]",
+                    "verdict": "Không Đạt",
+                    "reason": f"Tự khai báo đạt nhưng bằng chứng thực tế ({fname}) ghi nhận: {d.get('name')}",
+                })
+            elif cid in evidence_positive_controls:
+                verified_satisfied.append({
+                    "control_id": cid,
+                    "status": "verified",
+                    "verdict": "Đạt",
+                    "citation": "[🏷️ Nguồn: Bằng chứng kỹ thuật đối soát khớp]",
+                })
+            else:
+                unverified_oversights.append({
+                    "control_id": cid,
+                    "status": "unverified",
+                    "verdict": "Không Đạt",
+                    "citation": "[🏷️ Nguồn: Tự khai báo - Không có log đối chứng]",
+                    "reason": "Người dùng tự tích chọn đạt nhưng không tìm thấy cấu hình hoặc log đối chứng trong hồ sơ bằng chứng.",
+                })
+
+        logger.info(
+            f"[EvidenceAudit] Cross-verification completed: "
+            f"attested={len(attested_set)}, verified={len(verified_satisfied)}, "
+            f"contradictions={len(contradiction_gaps)}, unverified={len(unverified_oversights)}"
+        )
+
+        return {
+            "total_attested": len(attested_set),
+            "verified_count": len(verified_satisfied),
+            "contradiction_count": len(contradiction_gaps),
+            "unverified_count": len(unverified_oversights),
+            "verified_satisfied": verified_satisfied,
+            "contradiction_gaps": contradiction_gaps,
+            "unverified_oversights": unverified_oversights,
+        }
+
+    @classmethod
+    def format_for_auditor(
+        cls,
+        fact_cards: List[SecurityFactCard],
+        self_attested_controls: Optional[List[str]] = None
+    ) -> str:
         """Combine multiple Fact Cards into a consolidated structured context for Agent 2."""
         if not fact_cards:
             return ""
@@ -649,8 +805,31 @@ class EvidenceFactExtractor:
             sections.append(fc.to_compact_summary())
             sections.append("─────────────────────────────────────────────────────────────────")
 
+        if self_attested_controls:
+            verify_res = cls.cross_verify_controls(self_attested_controls, fact_cards)
+            sections.append("\n🔍 KẾT QUẢ ĐỐI SOÁT CHÉO TỰ KHAI BÁO VÀ BẰNG CHỨNG THỰC TẾ (CROSS-VERIFICATION):")
+
+            if verify_res["contradiction_gaps"]:
+                sections.append("  ⚠️ MÂU THUẪN NGHIÊM TRỌNG (Tự khai báo ĐẠT nhưng LOG THỰC TẾ CÓ LỖ HỔNG / THIẾU SÓT):")
+                sections.append("     => BẮT BUỘC AGENT 2 ĐÁNH GIÁ LÀ 'KHÔNG ĐẠT', TUYỆT ĐỐI KHÔNG ĐÁNH GIÁ 'ĐẠT' HOẶC 'ĐẠT MỘT PHẦN'!")
+                for cg in verify_res["contradiction_gaps"]:
+                    sections.append(f"     - [{cg['control_id']}] {cg['defect_name']} ({cg['citation']}) -> {cg['reason']}")
+
+            if verify_res["unverified_oversights"]:
+                sections.append("  🏷️ CHƯA ĐƯỢC XÁC THỰC (Tự khai báo ĐẠT nhưng KHÔNG CÓ LOG/FILE MINH CHỨNG):")
+                sections.append("     => BẮT BUỘC AGENT 2 ĐÁNH GIÁ LÀ 'KHÔNG ĐẠT' DO THIẾU BẰNG CHỨNG XÁC THỰC (GẮN TAG [🏷️ Nguồn: Tự khai báo - Không có log đối chứng]).")
+                for uo in verify_res["unverified_oversights"][:15]:
+                    sections.append(f"     - [{uo['control_id']}] {uo['citation']}")
+
+            if verify_res["verified_satisfied"]:
+                sat_ids = [s["control_id"] for s in verify_res["verified_satisfied"][:20]]
+                sections.append(f"  ✅ ĐÃ XÁC THỰC KHỚP BẰNG CHỨNG ({len(verify_res['verified_satisfied'])} controls): {', '.join(sat_ids)}")
+
+            sections.append("─────────────────────────────────────────────────────────────────")
+
         sections.append("LƯU Ý QUAN TRỌNG CHO AGENT 2 (LEAD AUDITOR):")
         sections.append("1. Hãy căn cứ vào 'Điểm mạnh / Minh chứng đạt' để TÍCH XANH (SATISFIED) nếu bằng chứng đầy đủ.")
         sections.append("2. Hãy căn cứ vào 'Rủi ro / Điểm thiếu sót' để TÍCH ĐỎ/VÀNG (MISSING/PARTIAL) và nêu rõ GAP.")
-        sections.append("3. Luôn đính kèm trích dẫn nguyên văn (Audit Citation) để minh bạch kết quả kiểm toán.")
+        sections.append("3. Đối với các control tự khai báo nhưng mâu thuẫn với log hoặc thiếu log, tuân thủ đúng quy tắc đối soát chéo ở trên.")
+        sections.append("4. Luôn đính kèm trích dẫn nguyên văn (Audit Citation) để minh bạch kết quả kiểm toán.")
         return "\n".join(sections)

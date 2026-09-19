@@ -134,8 +134,12 @@ _FILENAME_RULES: List[tuple] = [
 
 # Content keywords -> control IDs (checked against extracted content)
 _CONTENT_KEYWORDS: Dict[str, List[tuple]] = {
-    "chính sách": [("A.5.1", 0.7)],
-    "policy": [("A.5.1", 0.6)],
+    "chính sách an toàn thông tin": [("A.5.1", 0.85)],
+    "chính sách attt": [("A.5.1", 0.85)],
+    "quy chế an toàn thông tin": [("A.5.1", 0.85)],
+    "information security policy": [("A.5.1", 0.85)],
+    "security policy manual": [("A.5.1", 0.85)],
+    "quy định an toàn thông tin": [("A.5.1", 0.8)],
     "phân quyền": [("A.5.15", 0.7), ("A.5.18", 0.6)],
     "truy cập": [("A.5.15", 0.6)],
     "firewall": [("A.8.20", 0.75), ("NW.02", 0.75)],
@@ -164,6 +168,10 @@ _CONTENT_KEYWORDS: Dict[str, List[tuple]] = {
     "patch": [("SV.07", 0.8), ("A.8.8", 0.75)],
     "hotfix": [("SV.07", 0.85), ("A.8.8", 0.8), ("A.8.9", 0.75)],
     "systeminfo": [("A.8.9", 0.85), ("SV.08", 0.85), ("A.5.9", 0.8)],
+    "group policy": [("A.8.9", 0.85), ("SV.08", 0.85)],
+    "local security policy": [("A.8.9", 0.85), ("SV.08", 0.85)],
+    "audit policy": [("A.8.15", 0.8), ("SV.05", 0.8)],
+    "password policy": [("A.5.17", 0.8), ("SV.01", 0.8)],
     "windows server": [("A.8.9", 0.8), ("SV.08", 0.8), ("A.8.8", 0.75)],
     "sql server": [("A.8.8", 0.8), ("SV.07", 0.75), ("DAT.01", 0.7)],
     "active directory": [("A.5.15", 0.8), ("A.5.16", 0.8), ("SV.04", 0.8)],

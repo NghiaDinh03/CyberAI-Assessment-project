@@ -110,11 +110,11 @@ class CloudLLMService:
         if not api_key or not api_key.strip():
             raise ValueError("GOOGLE_AI_STUDIO_API_KEY is not configured")
 
-        target_model = model or getattr(settings, "GOOGLE_AI_STUDIO_MODEL", "gemini-2.0-flash")
+        target_model = model or getattr(settings, "GOOGLE_AI_STUDIO_MODEL", "gemini-2.5-flash")
         if ":" in target_model:
             target_model = target_model.split(":")[0]
         if not target_model.startswith("gemini-"):
-            target_model = "gemini-2.0-flash"
+            target_model = getattr(settings, "GOOGLE_AI_STUDIO_MODEL", "gemini-2.5-flash")
 
         base_url = getattr(settings, "GOOGLE_AI_STUDIO_URL", "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
         endpoint = f"{base_url}/models/{target_model}:generateContent?key={api_key.strip()}"
@@ -412,7 +412,7 @@ class CloudLLMService:
 
         if is_gemini_requested and cls.is_cloud_available():
             try:
-                target_cloud = cloud_model or local_model or settings.GOOGLE_AI_STUDIO_MODEL or "gemini-2.0-flash"
+                target_cloud = cloud_model or local_model or settings.GOOGLE_AI_STUDIO_MODEL or "gemini-2.5-flash"
                 logger.info(f"[ChatCompletion] Routing to Cloud Gemini fallback: {target_cloud}")
                 return cls._call_google_ai_studio(target_cloud, messages, temperature, max_tokens)
             except Exception as cloud_err:
@@ -433,9 +433,9 @@ class CloudLLMService:
         except Exception as e:
             logger.warning(f"[ChatCompletion] Ollama ({ollama_model}) failed: {e}")
             if cls.is_cloud_available():
-                logger.info("[ChatCompletion] Ollama failed -> Fallback to Google AI Studio (gemini-2.0-flash)...")
+                logger.info("[ChatCompletion] Ollama failed -> Fallback to Google AI Studio (gemini-2.5-flash)...")
                 try:
-                    fallback_cloud = cloud_model or settings.GOOGLE_AI_STUDIO_MODEL or "gemini-2.0-flash"
+                    fallback_cloud = cloud_model or settings.GOOGLE_AI_STUDIO_MODEL or "gemini-2.5-flash"
                     return cls._call_google_ai_studio(fallback_cloud, messages, temperature, max_tokens)
                 except Exception as fb_err:
                     logger.warning(f"[ChatCompletion] Google AI Studio fallback also failed: {fb_err}")
