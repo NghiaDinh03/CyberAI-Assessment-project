@@ -53,6 +53,11 @@ async def lifespan(app: FastAPI):
     logger.info(f"  PREFER_LOCAL: {settings.PREFER_LOCAL}")
     logger.info(f"  DEBUG     : {settings.DEBUG}")
 
+    from services.audit_service import get_code_version, get_git_short_sha
+    c_ver = get_code_version()
+    g_sha = get_git_short_sha()
+    logger.info(f"  Startup Git SHA: {g_sha} | Code Version: {c_ver}")
+
     from services.model_guard import ModelGuard
     ModelGuard.refresh()
 
@@ -371,3 +376,21 @@ def health_check():
 @app.get("/healthz")
 def healthz_check():
     return {"status": "healthy", "version": settings.APP_VERSION}
+
+
+@app.get("/api/version")
+@app.get("/api/v1/version")
+@app.get("/version")
+def get_version():
+    from services.audit_service import get_code_version, get_git_short_sha
+    c_ver = get_code_version()
+    g_sha = get_git_short_sha()
+    return {
+        "status": "ready",
+        "service": settings.APP_NAME,
+        "app_version": settings.APP_VERSION,
+        "code_version": c_ver,
+        "git_short_sha": g_sha,
+        "ai_model": settings.MODEL_NAME,
+        "ai_provider": f"Ollama ({settings.MODEL_NAME}) / Cloud Fallback",
+    }

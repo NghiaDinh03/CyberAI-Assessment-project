@@ -35,10 +35,10 @@ const WEIGHT_LABEL_STD = { critical: 'Critical', high: 'High', medium: 'Medium',
 
 // ── ISO 27001:2022 Annex A domains with control IDs ────────────────────────
 const ANNEX_A_DOMAINS = [
-    { id: 'A.5',  label: 'Org. Controls',     controls: ['A.5.1','A.5.2','A.5.3','A.5.4','A.5.5','A.5.6','A.5.7','A.5.8','A.5.9','A.5.10','A.5.11','A.5.12','A.5.13','A.5.14','A.5.15','A.5.16','A.5.17','A.5.18','A.5.19','A.5.20','A.5.21','A.5.22','A.5.23','A.5.24','A.5.25','A.5.26','A.5.27','A.5.28','A.5.29','A.5.30','A.5.31','A.5.32','A.5.33','A.5.34','A.5.35','A.5.36','A.5.37'] },
-    { id: 'A.6',  label: 'People Controls',   controls: ['A.6.1','A.6.2','A.6.3','A.6.4','A.6.5','A.6.6','A.6.7','A.6.8'] },
-    { id: 'A.7',  label: 'Physical Controls', controls: ['A.7.1','A.7.2','A.7.3','A.7.4','A.7.5','A.7.6','A.7.7','A.7.8','A.7.9','A.7.10','A.7.11','A.7.12','A.7.13','A.7.14'] },
-    { id: 'A.8',  label: 'Tech. Controls',    controls: ['A.8.1','A.8.2','A.8.3','A.8.4','A.8.5','A.8.6','A.8.7','A.8.8','A.8.9','A.8.10','A.8.11','A.8.12','A.8.13','A.8.14','A.8.15','A.8.16','A.8.17','A.8.18','A.8.19','A.8.20','A.8.21','A.8.22','A.8.23','A.8.24','A.8.25','A.8.26','A.8.27','A.8.28','A.8.29','A.8.30','A.8.31','A.8.32','A.8.33','A.8.34'] },
+    { id: 'A.5', label: 'Org. Controls', controls: ['A.5.1', 'A.5.2', 'A.5.3', 'A.5.4', 'A.5.5', 'A.5.6', 'A.5.7', 'A.5.8', 'A.5.9', 'A.5.10', 'A.5.11', 'A.5.12', 'A.5.13', 'A.5.14', 'A.5.15', 'A.5.16', 'A.5.17', 'A.5.18', 'A.5.19', 'A.5.20', 'A.5.21', 'A.5.22', 'A.5.23', 'A.5.24', 'A.5.25', 'A.5.26', 'A.5.27', 'A.5.28', 'A.5.29', 'A.5.30', 'A.5.31', 'A.5.32', 'A.5.33', 'A.5.34', 'A.5.35', 'A.5.36', 'A.5.37'] },
+    { id: 'A.6', label: 'People Controls', controls: ['A.6.1', 'A.6.2', 'A.6.3', 'A.6.4', 'A.6.5', 'A.6.6', 'A.6.7', 'A.6.8'] },
+    { id: 'A.7', label: 'Physical Controls', controls: ['A.7.1', 'A.7.2', 'A.7.3', 'A.7.4', 'A.7.5', 'A.7.6', 'A.7.7', 'A.7.8', 'A.7.9', 'A.7.10', 'A.7.11', 'A.7.12', 'A.7.13', 'A.7.14'] },
+    { id: 'A.8', label: 'Tech. Controls', controls: ['A.8.1', 'A.8.2', 'A.8.3', 'A.8.4', 'A.8.5', 'A.8.6', 'A.8.7', 'A.8.8', 'A.8.9', 'A.8.10', 'A.8.11', 'A.8.12', 'A.8.13', 'A.8.14', 'A.8.15', 'A.8.16', 'A.8.17', 'A.8.18', 'A.8.19', 'A.8.20', 'A.8.21', 'A.8.22', 'A.8.23', 'A.8.24', 'A.8.25', 'A.8.26', 'A.8.27', 'A.8.28', 'A.8.29', 'A.8.30', 'A.8.31', 'A.8.32', 'A.8.33', 'A.8.34'] },
 ]
 
 function ComplianceHeatmap({ assessments, t, locale }) {
@@ -81,16 +81,16 @@ function ComplianceHeatmap({ assessments, t, locale }) {
                     const pct = hasData ? Math.round((done / total) * 100) : null
                     const cellColor = pct == null ? 'var(--bg-muted)' :
                         pct >= 80 ? 'rgba(52,211,153,0.22)' :
-                        pct >= 50 ? 'rgba(251,191,36,0.22)' :
-                                    'rgba(248,113,113,0.22)'
+                            pct >= 50 ? 'rgba(251,191,36,0.22)' :
+                                'rgba(248,113,113,0.22)'
                     const borderColor = pct == null ? 'var(--border)' :
                         pct >= 80 ? 'rgba(52,211,153,0.4)' :
-                        pct >= 50 ? 'rgba(251,191,36,0.4)' :
-                                    'rgba(248,113,113,0.4)'
+                            pct >= 50 ? 'rgba(251,191,36,0.4)' :
+                                'rgba(248,113,113,0.4)'
                     const textColor = pct == null ? 'var(--text-dim)' :
                         pct >= 80 ? '#34d399' :
-                        pct >= 50 ? '#fbbf24' :
-                                    '#f87171'
+                            pct >= 50 ? '#fbbf24' :
+                                '#f87171'
                     return (
                         <div
                             key={domain.id}
@@ -334,9 +334,9 @@ export default function AnalyticsPage() {
 
     const getPctColor = (pct) => pct == null ? '' :
         pct >= 80 ? 'var(--accent-green)' :
-        pct >= 50 ? 'var(--accent-blue)' :
-        pct >= 25 ? 'var(--accent-amber)' :
-        'var(--accent-red)'
+            pct >= 50 ? 'var(--accent-blue)' :
+                pct >= 25 ? 'var(--accent-amber)' :
+                    'var(--accent-red)'
 
     const backendReady = services?.backend?.ready
     const ollamaModels = Array.isArray(aiStatus?.ollama_models) ? aiStatus.ollama_models : []
@@ -366,11 +366,11 @@ export default function AnalyticsPage() {
             )
         }
         if (historyFilter === 'compliant') {
-            list = list.filter(a => (a.compliance_percent ?? 0) >= 80)
+            list = list.filter(a => ((a.weighted_compliance?.percentage ?? a.compliance_percent) ?? 0) >= 80)
         } else if (historyFilter === 'partial') {
-            list = list.filter(a => (a.compliance_percent ?? 0) >= 50 && (a.compliance_percent ?? 0) < 80)
+            list = list.filter(a => ((a.weighted_compliance?.percentage ?? a.compliance_percent) ?? 0) >= 50 && ((a.weighted_compliance?.percentage ?? a.compliance_percent) ?? 0) < 80)
         } else if (historyFilter === 'gap') {
-            list = list.filter(a => (a.compliance_percent ?? 0) < 50)
+            list = list.filter(a => ((a.weighted_compliance?.percentage ?? a.compliance_percent) ?? 0) < 50)
         }
         return list
     }, [assessments, historySearch, historyFilter])
@@ -451,7 +451,7 @@ export default function AnalyticsPage() {
 }`}</pre>
                                 <div className={styles.stdWeightNote}>
                                     <strong>Weights:</strong>
-                                    {[['critical', '#f87171', '4pts'], ['high', '#fbbf24', '3pts'], ['medium', '#4f8ef7', '2pts'], ['low', '#7d8fa3', '1pt']].map(([w, c, p]) => (
+                                    {[['critical', '#f87171', '10pts'], ['high', '#fbbf24', '5pts'], ['medium', '#4f8ef7', '3pts'], ['low', '#7d8fa3', '1pt']].map(([w, c, p]) => (
                                         <span key={w} style={{ borderColor: c, color: c, border: `1px solid ${c}`, borderRadius: '4px', padding: '1px 7px', fontSize: '0.72rem', fontWeight: 700 }}>{w} = {p}</span>
                                     ))}
                                 </div>
@@ -685,7 +685,7 @@ export default function AnalyticsPage() {
                                 </thead>
                                 <tbody>
                                     {filteredAssessments.length > 0 ? filteredAssessments.map(a => {
-                                        const pct = a.compliance_percent ?? null
+                                        const pct = a.weighted_compliance?.percentage ?? a.compliance_percent ?? null
                                         const pctColor = getPctColor(pct)
                                         return (
                                             <tr key={a.id} onClick={() => openDetail(a.id)} className={styles.tableRowRef}>
@@ -867,15 +867,15 @@ export default function AnalyticsPage() {
                                 <div className={styles.modalBody}>
                                     {modalLoading || selectedAssessment.loading ? (
                                         <div className={styles.loading}>
-                                        <div className={styles.loadingSpinner} />
-                                        <span>{t('analytics.loadingReport')}</span>
+                                            <div className={styles.loadingSpinner} />
+                                            <span>{t('analytics.loadingReport')}</span>
                                         </div>
                                     ) : selectedAssessment.error ? (
                                         <div className={styles.statusError}>{selectedAssessment.error}</div>
                                     ) : (
                                         <>
                                             {(() => {
-                                                const pct = selectedAssessment.compliance_percent ?? null
+                                                const pct = selectedAssessment.weighted_compliance?.percentage ?? selectedAssessment.result?.weighted_compliance?.percentage ?? selectedAssessment.compliance_percent ?? null
                                                 const org = selectedAssessment.system_info?.organization
                                                 const infra = selectedAssessment.system_info?.infrastructure
                                                 const comp = selectedAssessment.system_info?.compliance
@@ -884,14 +884,14 @@ export default function AnalyticsPage() {
                                                 const gaugeColor = getPctColor(pct) || 'var(--accent-blue)'
                                                 const badgeClass = pct == null ? styles.modalBadgeNeutral :
                                                     pct >= 80 ? styles.modalBadgeFull :
-                                                    pct >= 50 ? styles.modalBadgeMostly :
-                                                    pct >= 25 ? styles.modalBadgePartial :
-                                                    styles.modalBadgeLow
+                                                        pct >= 50 ? styles.modalBadgeMostly :
+                                                            pct >= 25 ? styles.modalBadgePartial :
+                                                                styles.modalBadgeLow
                                                 const badgeLabel = pct == null ? t('analytics.modalProcessing') :
                                                     pct >= 80 ? t('analytics.modalCompliant') :
-                                                    pct >= 50 ? t('analytics.modalMostlyCompliant') :
-                                                    pct >= 25 ? t('analytics.modalPartiallyCompliant') :
-                                                    t('analytics.modalNonCompliant')
+                                                        pct >= 50 ? t('analytics.modalMostlyCompliant') :
+                                                            pct >= 25 ? t('analytics.modalPartiallyCompliant') :
+                                                                t('analytics.modalNonCompliant')
                                                 return (
                                                     <div className={styles.modalScoreHero}>
                                                         <div className={styles.modalGaugeWrap}>
@@ -927,7 +927,7 @@ export default function AnalyticsPage() {
                                                     navigator.clipboard?.writeText(text).catch(() => { })
                                                 }}>{t('analytics.copyReportBtn')}</button>
                                                 <button className={styles.modalActionBtn} onClick={() => {
-                                                    const pct = selectedAssessment.compliance_percent ?? null
+                                                    const pct = selectedAssessment.weighted_compliance?.percentage ?? selectedAssessment.result?.weighted_compliance?.percentage ?? selectedAssessment.compliance_percent ?? null
                                                     const orgName = selectedAssessment.system_info?.organization?.name || 'Organization'
                                                     const stdId = selectedAssessment.standard
                                                     const stdName = stdId === 'tcvn11930' ? 'TCVN 11930:2017' : 'ISO 27001:2022'
@@ -957,7 +957,7 @@ export default function AnalyticsPage() {
   <div class="pct">${pct != null ? pct + '%' : '—'}</div>
   <div class="meta"><strong>${orgName}</strong><span>${stdName}</span></div>
 </div>
-<pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.7;margin:0">${(selectedAssessment.result?.report || 'No report available.').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+<pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.7;margin:0">${(selectedAssessment.result?.report || 'No report available.').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
 </body></html>`
                                                     const w = window.open('', '_blank')
                                                     if (w) { w.document.write(reportHtml); w.document.close() }
@@ -1047,9 +1047,9 @@ export default function AnalyticsPage() {
                         <div className={styles.benchmarkModeRow}>
                             <label className={styles.benchmarkModeLabel}>{t('analytics.benchmarkRunMode')}</label>
                             {[
-                                { id: 'local', label: 'Local Only', desc: 'SecurityLM 7B' },
-                                { id: 'hybrid', label: 'Hybrid', desc: 'SecurityLM + Cloud' },
-                                { id: 'cloud', label: 'Cloud', desc: 'OpenClaude' },
+                                { id: 'local', label: 'Local Only', desc: 'Gemma 4 (Ollama)' },
+                                { id: 'hybrid', label: 'Hybrid', desc: 'Gemma 4 + Cloud' },
+                                { id: 'cloud', label: 'Cloud', desc: 'Gemini 2.0 Flash' },
                             ].map(m => (
                                 <button
                                     key={m.id}
@@ -1117,11 +1117,10 @@ export default function AnalyticsPage() {
                                 {Object.entries(benchmarkResult.summary?.per_mode_avg_score || {}).map(([mode, score]) => (
                                     <div key={mode} className={styles.benchmarkSummaryCard}>
                                         <span className={styles.benchmarkSummaryMode}>{mode}</span>
-                                        <span className={`${styles.benchmarkSummaryScore} ${
-                                            score >= 85 ? styles.scoreGradeA :
-                                            score >= 70 ? styles.scoreGradeB :
-                                            score >= 55 ? styles.scoreGradeC : styles.scoreGradeD
-                                        }`}>{score}%</span>
+                                        <span className={`${styles.benchmarkSummaryScore} ${score >= 85 ? styles.scoreGradeA :
+                                                score >= 70 ? styles.scoreGradeB :
+                                                    score >= 55 ? styles.scoreGradeC : styles.scoreGradeD
+                                            }`}>{score}%</span>
                                         <span className={styles.benchmarkSummaryGrade}>
                                             {score >= 85 ? 'Grade A' : score >= 70 ? 'Grade B' : score >= 55 ? 'Grade C' : 'Grade D'}
                                         </span>
@@ -1139,11 +1138,10 @@ export default function AnalyticsPage() {
                                                 <span className={styles.benchmarkResultModeLabel}>{mode}</span>
                                                 {data.status === 'ok' ? (
                                                     <>
-                                                        <span className={`${styles.benchmarkResultScore} ${
-                                                            data.quality_score?.percentage >= 85 ? styles.scoreGradeA :
-                                                            data.quality_score?.percentage >= 70 ? styles.scoreGradeB :
-                                                            data.quality_score?.percentage >= 55 ? styles.scoreGradeC : styles.scoreGradeD
-                                                        }`}>{data.quality_score?.percentage}% ({data.quality_score?.grade})</span>
+                                                        <span className={`${styles.benchmarkResultScore} ${data.quality_score?.percentage >= 85 ? styles.scoreGradeA :
+                                                                data.quality_score?.percentage >= 70 ? styles.scoreGradeB :
+                                                                    data.quality_score?.percentage >= 55 ? styles.scoreGradeC : styles.scoreGradeD
+                                                            }`}>{data.quality_score?.percentage}% ({data.quality_score?.grade})</span>
                                                         <span className={styles.benchmarkResultTime}>{data.elapsed_seconds}s</span>
                                                         <span className={styles.benchmarkResultLen}>{data.report_length} chars</span>
                                                     </>
@@ -1300,10 +1298,10 @@ export default function AnalyticsPage() {
                                                 borderRadius: '4px',
                                                 fontSize: '0.75rem',
                                                 fontWeight: 600,
-                                                background: (a.compliance_percent ?? 0) >= 70 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                                                color: (a.compliance_percent ?? 0) >= 70 ? '#34d399' : '#f87171'
+                                                background: ((a.weighted_compliance?.percentage ?? a.compliance_percent) ?? 0) >= 70 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                                color: ((a.weighted_compliance?.percentage ?? a.compliance_percent) ?? 0) >= 70 ? '#34d399' : '#f87171'
                                             }}>
-                                                {a.compliance_percent != null ? `${a.compliance_percent}% Tuân thủ` : a.status}
+                                                {(a.weighted_compliance?.percentage ?? a.compliance_percent) != null ? `${a.weighted_compliance?.percentage ?? a.compliance_percent}% Tuân thủ` : a.status}
                                             </span>
                                             <Link
                                                 href={`/form-iso?assessment_id=${a.id}`}

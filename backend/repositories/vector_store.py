@@ -325,7 +325,13 @@ class VectorStore:
                 if results.get("distances") and results["distances"][0]:
                     score = round(1 - results["distances"][0][i], 4)
                 metadata = results["metadatas"][0][i] if results.get("metadatas") else {}
+                chunk_id = (
+                    results["ids"][0][i]
+                    if results.get("ids") and results["ids"][0] and i < len(results["ids"][0])
+                    else f"{metadata.get('domain', domain)}_{metadata.get('source', 'unknown')}_{metadata.get('chunk_index', i)}"
+                )
                 docs.append({
+                    "id": chunk_id,
                     "text": doc, "score": score, "source": metadata.get("source", "unknown"),
                     "file": metadata.get("file", ""), "doc_title": metadata.get("doc_title", ""),
                     "chunk_index": metadata.get("chunk_index", 0),
@@ -355,3 +361,8 @@ class VectorStore:
 
         all_results.sort(key=lambda x: x["score"], reverse=True)
         return all_results[:top_k]
+
+
+# Singleton instance for evaluation and direct repository access
+vector_store = VectorStore()
+

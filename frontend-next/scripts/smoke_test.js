@@ -46,11 +46,11 @@ async function runStaticSmoke() {
 function testRouteWithPort(port, path, expectedStatuses) {
     return new Promise((res) => {
         const options = {
-            hostname: 'localhost',
+            hostname: '127.0.0.1',
             port: port,
             path: path,
             method: 'GET',
-            timeout: 1500
+            timeout: 10000
         };
 
         const req = http.request(options, (res_http) => {

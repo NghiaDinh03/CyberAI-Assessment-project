@@ -256,6 +256,12 @@
     border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
+.verdictReview {
+    background: rgba(251, 146, 60, 0.15);
+    color: #fb923c;
+    border: 1px solid rgba(251, 146, 60, 0.3);
+}
+
 .rationale {
     font-size: 0.85rem;
     color: #e2e8f0;

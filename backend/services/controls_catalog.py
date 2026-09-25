@@ -151,12 +151,131 @@ TCVN_11930_CATEGORIES = [
     ]},
 ]
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 BUILTIN_CONTROLS = {
     "iso27001": ISO_27001_CATEGORIES,
     "tcvn11930": TCVN_11930_CATEGORIES,
 }
 
-WEIGHT_SCORE = {"critical": 4, "high": 3, "medium": 2, "low": 1}
+WEIGHT_SCORE = {
+    "critical": 10.0,
+    "high": 5.0,
+    "medium": 3.0,
+    "low": 1.0,
+    10: 10.0,
+    5: 5.0,
+    3: 3.0,
+    1: 1.0,
+    10.0: 10.0,
+    5.0: 5.0,
+    3.0: 3.0,
+    1.0: 1.0,
+}
+
+VERDICT_FACTOR = {
+    "satisfied": 1.0,
+    "partial": 0.5,
+    "partially_satisfied": 0.5,
+    "not_evidenced": 0.0,
+    "missing": 0.0,
+    "needs_expert_review": 0.0,
+}
+
+
+def calc_weighted_compliance(controls: list) -> dict:
+    """Calculate authoritative Weighted Compliance from controls_out with verdicts.
+
+    Formula:
+    Weighted Compliance = Σ(weight_i × verdict_factor_i) / Σ(weight_i) × 100%
+
+    Rules:
+    - satisfied: 100% weight
+    - partial: 50% weight
+    - not_evidenced, missing, needs_expert_review: 0% weight
+    - invalid verdict: 0% weight and log warning
+    - confidence is metadata only, not multiplied into score
+    - no per-control rounding; only round final percentage
+    - clamp percentage in [0.0, 100.0]
+    """
+    total_w = 0.0
+    achieved_w = 0.0
+
+    for ctrl in (controls or []):
+        verdict = (ctrl.get("assessment_verdict") or ctrl.get("evidence_verdict") or ctrl.get("verdict") or "missing").lower()
+
+        raw_w = ctrl.get("weight_points")
+        if raw_w is None:
+            raw_w = ctrl.get("weight", "medium")
+        if isinstance(raw_w, str):
+            try:
+                w = float(raw_w)
+            except ValueError:
+                w = WEIGHT_SCORE.get(raw_w.lower(), 3.0)
+        else:
+            w = float(WEIGHT_SCORE.get(raw_w, 3.0))
+
+        factor = VERDICT_FACTOR.get(verdict)
+        if factor is None:
+            cid = ctrl.get("control_id") or ctrl.get("id") or "unknown"
+            logger.warning(f"calc_weighted_compliance: invalid verdict '{verdict}' on control {cid}, treating as 0.0")
+            factor = 0.0
+
+        total_w += w
+        achieved_w += w * factor
+
+    pct = round((achieved_w / total_w * 100), 1) if total_w > 0 else 0.0
+    pct = min(100.0, max(0.0, pct))
+
+    return {
+        "weighted_score": round(achieved_w, 1),
+        "weighted_max_score": round(total_w, 1),
+        "percentage": pct,
+        "algorithm": "verdict_weighted_v2",
+        "weight_scheme": "critical_10_high_5_medium_3_low_1",
+    }
+
+
+def calc_control_coverage(controls: list, self_declared_ids: list = None) -> dict:
+    """Calculate authoritative control coverage metrics adhering to:
+    - self_declared_implemented: count of valid, non-duplicate implemented declarations
+    - evidence_supported_implemented: count of 'satisfied' verdicts
+    - not_evidenced_or_missing: count of 'not_evidenced', 'missing', 'needs_expert_review'
+    - not_applicable_count: always 0 (not_applicable verdict eliminated)
+    - total_applicable_controls: total count of controls (all controls applicable)
+    - total_controls: total count of all controls in the standard
+    - raw_percentage: self_declared_implemented / total_applicable_controls * 100
+    """
+    total_ctrls = len(controls or [])
+    applicable = controls or []
+    total_app = total_ctrls
+    na_count = 0
+
+    if self_declared_ids is not None:
+        app_ids = {c.get("control_id") or c.get("id") for c in applicable}
+        decl_set = {cid for cid in dict.fromkeys(self_declared_ids or []) if cid in app_ids}
+        self_decl_count = len(decl_set)
+    else:
+        self_decl_count = sum(1 for c in applicable if c.get("user_declaration") == "implemented")
+
+    ev_supp_count = sum(1 for c in applicable if (c.get("assessment_verdict") or c.get("verdict") or "").lower() == "satisfied")
+    not_ev_missing_count = sum(
+        1 for c in applicable
+        if (c.get("assessment_verdict") or c.get("verdict") or "").lower() in ("not_evidenced", "missing", "needs_expert_review", "not_satisfied")
+    )
+    raw_pct = round((self_decl_count / total_app * 100), 1) if total_app > 0 else 0.0
+
+    return {
+        "self_declared_implemented": self_decl_count,
+        "evidence_supported_implemented": ev_supp_count,
+        "not_evidenced_or_missing": not_ev_missing_count,
+        "not_applicable_count": 0,
+        "total_applicable_controls": total_app,
+        "total_controls": total_ctrls,
+        "raw_percentage": raw_pct,
+    }
 
 
 def get_categories(standard: str, custom_std: dict = None) -> list:
@@ -174,7 +293,7 @@ def calc_compliance(implemented: list, standard: str = "iso27001", custom_std: d
     flat = get_flat_controls(standard, custom_std)
     if not flat:
         total = 93 if standard != "tcvn11930" else 34
-        unique_impl = list(dict.fromkeys(implemented))
+        unique_impl = list(dict.fromkeys(implemented or []))
         score = min(len(unique_impl), total)
         pct = round(score / total * 100, 1) if total else 0.0
         return {
@@ -188,18 +307,24 @@ def calc_compliance(implemented: list, standard: str = "iso27001", custom_std: d
                 "total_controls": total,
                 "raw_percentage": pct,
             },
-            "weighted_compliance": {
-                "weighted_score": float(score),
-                "weighted_max_score": float(total),
+            "weighted_coverage": {
+                "score": float(score),
+                "max_score": float(total),
                 "percentage": pct,
-                "algorithm": "weight_score_v1",
+            },
+            "weighted_compliance": {
+                "weighted_score": 0.0,
+                "weighted_max_score": float(total),
+                "percentage": 0.0,
+                "algorithm": "verdict_weighted_v2",
+                "weight_scheme": "critical_10_high_5_medium_3_low_1",
             },
         }
     flat_ids = {c["id"] for c in flat}
-    valid_implemented = [cid for cid in dict.fromkeys(implemented) if cid in flat_ids]
-    weight_map = {c["id"]: WEIGHT_SCORE.get(c.get("weight", "medium"), 1) for c in flat}
+    valid_implemented = [cid for cid in dict.fromkeys(implemented or []) if cid in flat_ids]
+    weight_map = {c["id"]: WEIGHT_SCORE.get(c.get("weight", "medium"), 3.0) for c in flat}
     max_w = sum(weight_map.values())
-    achieved_w = sum(weight_map.get(cid, 0) for cid in valid_implemented)
+    achieved_w = sum(weight_map.get(cid, 0.0) for cid in valid_implemented)
     pct = round(achieved_w / max_w * 100, 1) if max_w > 0 else 0.0
     pct = min(100.0, max(0.0, pct))
     raw_pct = round(len(valid_implemented) / len(flat) * 100, 1) if flat else 0.0
@@ -217,11 +342,17 @@ def calc_compliance(implemented: list, standard: str = "iso27001", custom_std: d
             "total_controls": len(flat),
             "raw_percentage": raw_pct,
         },
-        "weighted_compliance": {
-            "weighted_score": float(achieved_w),
-            "weighted_max_score": float(max_w),
+        "weighted_coverage": {
+            "score": round(float(achieved_w), 1),
+            "max_score": round(float(max_w), 1),
             "percentage": pct,
-            "algorithm": "weight_score_v1",
+        },
+        "weighted_compliance": {
+            "weighted_score": 0.0,
+            "weighted_max_score": float(max_w),
+            "percentage": 0.0,
+            "algorithm": "verdict_weighted_v2",
+            "weight_scheme": "critical_10_high_5_medium_3_low_1",
         },
     }
 
@@ -271,19 +402,11 @@ def get_control_groups(standard: str, custom_std: dict = None,
 
 
 def calc_tcvn_compliance(implemented: list, custom_std: dict = None) -> dict:
-    """TCVN 11930:2017 uses level-based scoring (1-5 levels per control).
-
-    Unlike ISO 27001's binary (implemented/not), TCVN controls have maturity
-    levels. For simplicity in the current implementation, we treat presence in
-    the implemented list as "achieved" and compute weighted compliance.
-
-    The scoring weights mirror the control weight field (critical=4, high=3, etc.)
-    which aligns with TCVN's emphasis on higher-level controls being more critical.
-    """
+    """TCVN 11930:2017 preliminary compliance & coverage calculation."""
     flat = get_flat_controls("tcvn11930", custom_std)
     if not flat:
         total = 34
-        unique_impl = list(dict.fromkeys(implemented))
+        unique_impl = list(dict.fromkeys(implemented or []))
         score = min(len(unique_impl), total)
         pct = round(score / total * 100, 1) if total else 0.0
         return {
@@ -297,18 +420,24 @@ def calc_tcvn_compliance(implemented: list, custom_std: dict = None) -> dict:
                 "total_controls": total,
                 "raw_percentage": pct,
             },
-            "weighted_compliance": {
-                "weighted_score": float(score),
-                "weighted_max_score": float(total),
+            "weighted_coverage": {
+                "score": float(score),
+                "max_score": float(total),
                 "percentage": pct,
-                "algorithm": "weight_score_v1",
+            },
+            "weighted_compliance": {
+                "weighted_score": 0.0,
+                "weighted_max_score": float(total),
+                "percentage": 0.0,
+                "algorithm": "verdict_weighted_v2",
+                "weight_scheme": "critical_10_high_5_medium_3_low_1",
             },
         }
     flat_ids = {c["id"] for c in flat}
-    valid_implemented = [cid for cid in dict.fromkeys(implemented) if cid in flat_ids]
-    weight_map = {c["id"]: WEIGHT_SCORE.get(c.get("weight", "medium"), 1) for c in flat}
+    valid_implemented = [cid for cid in dict.fromkeys(implemented or []) if cid in flat_ids]
+    weight_map = {c["id"]: WEIGHT_SCORE.get(c.get("weight", "medium"), 3.0) for c in flat}
     max_w = sum(weight_map.values())
-    achieved_w = sum(weight_map.get(cid, 0) for cid in valid_implemented)
+    achieved_w = sum(weight_map.get(cid, 0.0) for cid in valid_implemented)
     pct = round(achieved_w / max_w * 100, 1) if max_w > 0 else 0.0
     pct = min(100.0, max(0.0, pct))
     raw_pct = round(len(valid_implemented) / len(flat) * 100, 1) if flat else 0.0
@@ -326,10 +455,16 @@ def calc_tcvn_compliance(implemented: list, custom_std: dict = None) -> dict:
             "total_controls": len(flat),
             "raw_percentage": raw_pct,
         },
-        "weighted_compliance": {
-            "weighted_score": float(achieved_w),
-            "weighted_max_score": float(max_w),
+        "weighted_coverage": {
+            "score": round(float(achieved_w), 1),
+            "max_score": round(float(max_w), 1),
             "percentage": pct,
-            "algorithm": "weight_score_v1",
+        },
+        "weighted_compliance": {
+            "weighted_score": 0.0,
+            "weighted_max_score": float(max_w),
+            "percentage": 0.0,
+            "algorithm": "verdict_weighted_v2",
+            "weight_scheme": "critical_10_high_5_medium_3_low_1",
         },
     }

@@ -13,6 +13,8 @@ import os
 import logging
 from pathlib import Path
 from datetime import datetime, timezone
+import hashlib
+import shutil
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -41,6 +43,7 @@ os.makedirs(EXPORTS_DIR, exist_ok=True)
 
 from services.evidence_parser import parse_evidence_file, MAX_EVIDENCE_SIZE_BYTES, SUPPORTED_EXTENSIONS
 from repositories.feedback_store import AuditFeedbackStore
+from services.artifact_validator import validate_assessment_invariants
 
 ALLOWED_EVIDENCE_EXT = SUPPORTED_EXTENSIONS
 MAX_EVIDENCE_SIZE = MAX_EVIDENCE_SIZE_BYTES
@@ -75,7 +78,7 @@ def parse_evidence_file_content(filepath: str, filename: Optional[str] = None) -
         return f"[Error reading file: {str(e)[:100]}]"
 
 
-def build_evidence_context_for_ai(evidence_map: Dict[str, List[str]], standard: str = "iso27001") -> str:
+def build_evidence_context_for_ai(evidence_map: Dict[str, List[str]], standard: str = "iso27001", assessment_id: Optional[str] = None) -> str:
     """Build structured evidence text for AI prompt from evidence_map with Agent 1 Fact Cards and Feedback Exemplars.
     evidence_map: { controlId: [filename1, filename2, ...] }
     """
@@ -90,8 +93,23 @@ def build_evidence_context_for_ai(evidence_map: Dict[str, List[str]], standard: 
         sections.append(f"\n[Control {ctrl_id}] — {len(filenames)} tệp minh chứng:")
         for fname in filenames:
             safe_name = os.path.basename(fname)
-            stored_name = f"{ctrl_id}_{safe_name}"
-            fpath = os.path.join(EVIDENCE_DIR, stored_name)
+            candidate_paths = []
+            if assessment_id:
+                candidate_paths.append(os.path.join(EVIDENCE_DIR, assessment_id, ctrl_id.replace(".", "_"), safe_name))
+                candidate_paths.append(os.path.join(EVIDENCE_DIR, assessment_id, safe_name))
+            candidate_paths.extend([
+                os.path.join(EVIDENCE_DIR, ctrl_id.replace(".", "_"), safe_name),
+                os.path.join(EVIDENCE_DIR, ctrl_id, safe_name),
+                os.path.join(EVIDENCE_DIR, f"{ctrl_id}_{safe_name}"),
+                os.path.join(EVIDENCE_DIR, safe_name),
+            ])
+            fpath = None
+            for cp in candidate_paths:
+                if os.path.exists(cp):
+                    fpath = cp
+                    break
+            if not fpath:
+                fpath = candidate_paths[0]
             snippet = parse_evidence_file_content(fpath, safe_name)
             sections.append(f"  • File: {safe_name}")
             sections.append(f"    Nội dung thực tế trích xuất:\n    {snippet}")
@@ -114,6 +132,8 @@ def build_evidence_context_for_ai(evidence_map: Dict[str, List[str]], standard: 
 
 class SystemInfo(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
+    assessment_id: Any = None
 
     assessment_standard: Any = "iso27001"
     org_name: Any = ""
@@ -138,6 +158,13 @@ class SystemInfo(BaseModel):
     assessment_scope: Any = "full"
     scope_description: Any = ""
     evidence_map: Any = {}
+    control_verdicts: Any = []
+    evidence_manifest_id: Any = None
+    evidence_files: Any = []
+    template_id: Any = None
+    template_name: Any = None
+    is_template_input: Any = False
+    compliance: Any = None
 
 
 def save_assessment(assessment_id: str, data: dict):
@@ -147,12 +174,52 @@ def save_assessment(assessment_id: str, data: dict):
 
 
 def load_assessment(assessment_id: str) -> Optional[dict]:
-    filepath = os.path.join(ASSESSMENTS_DIR, f"{assessment_id}.json")
-    if os.path.exists(filepath):
+    cand_dirs = [ASSESSMENTS_DIR]
+    data_env_dir = os.path.join(os.getenv("DATA_PATH", "./data"), "assessments")
+    if data_env_dir not in cand_dirs:
+        cand_dirs.append(data_env_dir)
+    fallback_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "assessments"))
+    if fallback_dir not in cand_dirs:
+        cand_dirs.append(fallback_dir)
+    fallback_dir2 = "/data/assessments"
+    if fallback_dir2 not in cand_dirs:
+        cand_dirs.append(fallback_dir2)
+
+    filepath = None
+    for c_dir in cand_dirs:
+        if not os.path.exists(c_dir):
+            continue
+        cand_file = os.path.join(c_dir, f"{assessment_id}.json")
+        if os.path.exists(cand_file):
+            filepath = cand_file
+            break
+        if len(assessment_id) >= 6:
+            matches = [f for f in os.listdir(c_dir) if f.startswith(assessment_id) and f.endswith(".json")]
+            if len(matches) == 1:
+                filepath = os.path.join(c_dir, matches[0])
+                break
+
+    if filepath and os.path.exists(filepath):
         with open(filepath, "r", encoding="utf-8") as f:
             data = json.load(f)
-            data.setdefault("id", assessment_id)
+            real_id = data.get("id") or data.get("assessment_id") or os.path.splitext(os.path.basename(filepath))[0]
+            data.setdefault("id", real_id)
+            data.setdefault("assessment_id", real_id)
+            data.setdefault("run_id", f"run_{real_id[:8]}")
+            if "json_data" in data and isinstance(data["json_data"], dict):
+                data["json_data"].setdefault("assessment_id", real_id)
+                data["json_data"].setdefault("run_id", data["run_id"])
             return data
+    return None
+
+
+def load_evidence_manifest(assessment_id: str) -> Optional[dict]:
+    """Load Evidence Manifest JSON for a given assessment."""
+    ev_manifest_dir = os.path.join(os.getenv("DATA_PATH", "./data"), "evidence_manifests")
+    path = os.path.join(ev_manifest_dir, f"{assessment_id}.json")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
     return None
 
 
@@ -169,6 +236,7 @@ def list_assessments() -> List[dict]:
                         data.get("system_info", {}).get("organization", {}).get("name")
                         or data.get("system_info", {}).get("org_name")
                         or data.get("org_name")
+                        or (data.get("organization", {}).get("name") if isinstance(data.get("organization"), dict) else None)
                     )
                     if not org or org == "Unknown":
                         if str(aid).startswith("test-fail-"):
@@ -183,9 +251,20 @@ def list_assessments() -> List[dict]:
                     )
                     std = raw_std.get("id") if isinstance(raw_std, dict) else str(raw_std)
 
-                    pct = data.get("compliance_percent")
+                    w_comp = data.get("weighted_compliance") or (data.get("json_data") or {}).get("weighted_compliance") or {}
+                    pct = w_comp.get("percentage") if isinstance(w_comp, dict) and "percentage" in w_comp else data.get("compliance_percent")
                     if pct is None and "result" in data and isinstance(data["result"], dict):
                         pct = data["result"].get("compliance_percent")
+
+                    # If assessment has controls and 0 verified satisfied/partial controls, pct must be 0.0
+                    ctrls = (data.get("json_data") or {}).get("controls") or data.get("controls") or []
+                    if ctrls and isinstance(ctrls, list):
+                        has_satisfied = any(
+                            (c.get("assessment_verdict") or c.get("evidence_verdict") or "").lower() in ("satisfied", "partial")
+                            for c in ctrls if isinstance(c, dict)
+                        )
+                        if not has_satisfied:
+                            pct = 0.0
 
                     results.append({
                         "id": aid,
@@ -194,7 +273,7 @@ def list_assessments() -> List[dict]:
                         "org_name": org,
                         "created_at": data.get("created_at"),
                         "updated_at": data.get("updated_at"),
-                        "compliance_percent": pct
+                        "compliance_percent": round(float(pct), 1) if pct is not None else 0.0
                     })
             except Exception:
                 pass
@@ -211,7 +290,7 @@ def update_assessment_progress(assessment_id: str, message: str, pct: int):
 
 def process_assessment_bg(assessment_id: str, system_data: dict, model_mode: str = "hybrid", evidence_context: str = "", run_id: Optional[str] = None):
     import hashlib
-    from services.audit_service import audit_service, AuditContext
+    from services.audit_service import audit_service, AuditContext, get_code_version
     from services.evidence_parser import compute_file_sha256, mask_evidence_filename
     from schemas.assessment_schema import EvidenceManifest, EvidenceManifestItem
 
@@ -219,7 +298,7 @@ def process_assessment_bg(assessment_id: str, system_data: dict, model_mode: str
     audit_ctx = AuditContext(
         assessment_id=assessment_id,
         run_id=eff_run_id,
-        code_version="v1.2.0-rel"
+        code_version=get_code_version(),
     )
 
     data = load_assessment(assessment_id)
@@ -235,21 +314,36 @@ def process_assessment_bg(assessment_id: str, system_data: dict, model_mode: str
 
     t0 = time.time()
     try:
-        # Build Evidence Manifest and accurate counters
+        # Build Evidence Manifest and accurate unique file counters
         ev_manifest_dir = os.path.join(os.getenv("DATA_PATH", "./data"), "evidence_manifests")
         os.makedirs(ev_manifest_dir, exist_ok=True)
         manifest_path = os.path.join(ev_manifest_dir, f"{assessment_id}.json")
 
-        manifest_items: List[EvidenceManifestItem] = []
+        unique_files_map: Dict[str, EvidenceManifestItem] = {}
         ev_map = system_data.get("evidence_map") or {}
+        raw_std = (
+            system_data.get("standard")
+            or system_data.get("assessment_standard")
+            or system_data.get("system_info", {}).get("assessment_standard")
+            or system_data.get("system_info", {}).get("standard")
+            or "iso27001"
+        )
+        if isinstance(raw_std, dict):
+            raw_std = raw_std.get("id") or raw_std.get("name") or "iso27001"
+        std_code = str(raw_std).lower()
+        is_tcvn_run = "tcvn" in std_code or "11930" in std_code
+        is_iso_run = ("27001" in std_code or "iso" in std_code) and not is_tcvn_run
+
+        SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".xlsx", ".csv", ".txt", ".log", ".json", ".png", ".jpg", ".jpeg", ".conf", ".sql", ".ini"}
 
         for ctrl_id, files in ev_map.items():
             f_list = files if isinstance(files, list) else [files]
             for fname in f_list:
                 safe_name = os.path.basename(fname)
                 candidate_paths = [
+                    os.path.join(EVIDENCE_DIR, assessment_id, ctrl_id.replace(".", "_"), safe_name),
+                    os.path.join(EVIDENCE_DIR, assessment_id, safe_name),
                     os.path.join(EVIDENCE_DIR, ctrl_id.replace(".", "_"), safe_name),
-                    os.path.join(EVIDENCE_DIR, assessment_id, ctrl_id, safe_name),
                     os.path.join(EVIDENCE_DIR, f"{ctrl_id}_{safe_name}"),
                     os.path.join(EVIDENCE_DIR, safe_name),
                 ]
@@ -271,38 +365,93 @@ def process_assessment_bg(assessment_id: str, system_data: dict, model_mode: str
                 f_hash = compute_file_sha256(file_bytes) if file_bytes else hashlib.sha256(safe_name.encode()).hexdigest()
                 masked_name = mask_evidence_filename(safe_name)
                 ext = os.path.splitext(safe_name)[1].lower() or ".bin"
+                file_key = f"{f_hash}_{safe_name}"
 
-                manifest_items.append(EvidenceManifestItem(
-                    file_id=f"file_{hashlib.md5(safe_name.encode()).hexdigest()[:8]}",
-                    masked_filename=masked_name,
-                    extension=ext,
-                    size_bytes=size_bytes,
-                    sha256=f_hash,
-                    parser_or_ocr="native_parser",
-                    timestamp=datetime.now(timezone.utc).isoformat(),
-                    fact_card_id=f"fact_{ctrl_id}",
-                    control_mapping=[ctrl_id],
-                    mapping_type="direct_attachment" if not safe_name.startswith("batch_") else "auto_matched",
-                ))
+                # Check if file should be excluded (unsupported extension or standard mismatch)
+                is_excluded = False
+                excl_reason = None
+                if ext not in SUPPORTED_EXTENSIONS:
+                    is_excluded = True
+                    excl_reason = f"Định dạng tệp '{ext}' không được hỗ trợ (chỉ hỗ trợ PDF, DOCX, XLSX, CSV, TXT, LOG, CONF, PNG, JPG)."
+                elif is_iso_run and (not ctrl_id.startswith("A.") and any(tcvn_p in ctrl_id for tcvn_p in ("NW", "DAT", "SV", "APP", "MNG"))):
+                    is_excluded = True
+                    excl_reason = f"Tệp đối soát tiêu chuẩn TCVN ({ctrl_id}) không áp dụng cho đánh giá ISO 27001."
+                elif is_iso_run and ("tcvn" in safe_name.lower() and not ctrl_id.startswith("A.")):
+                    is_excluded = True
+                    excl_reason = "Tệp thuộc tiêu chuẩn TCVN không áp dụng cho đánh giá ISO 27001."
+                elif is_tcvn_run and ctrl_id.startswith("A."):
+                    is_excluded = True
+                    excl_reason = f"Tệp đối soát tiêu chuẩn ISO ({ctrl_id}) không áp dụng cho đánh giá TCVN 11930."
 
-        # Also parse from evidence_context if ev_map was empty
-        if not manifest_items and evidence_context:
-            extracted_files = [line.split("• File:", 1)[1].strip() for line in evidence_context.splitlines() if "• File:" in line]
-            for safe_name in extracted_files:
-                masked_name = mask_evidence_filename(safe_name)
+                if file_key in unique_files_map:
+                    item = unique_files_map[file_key]
+                    if not is_excluded and ctrl_id not in item.control_mapping:
+                        item.control_mapping.append(ctrl_id)
+                else:
+                    unique_files_map[file_key] = EvidenceManifestItem(
+                        file_id=f"file_{hashlib.md5(safe_name.encode()).hexdigest()[:8]}",
+                        masked_filename=masked_name,
+                        extension=ext,
+                        size_bytes=size_bytes,
+                        sha256=f_hash,
+                        parser_or_ocr="native_parser",
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        fact_card_id=f"fact_{ctrl_id}",
+                        control_mapping=[] if is_excluded else [ctrl_id],
+                        mapping_type="direct_attachment" if not safe_name.startswith("batch_") else "auto_matched",
+                        ingestion_status="excluded" if is_excluded else "ingested",
+                        exclusion_reason=excl_reason,
+                    )
+
+        # Handle explicit excluded_files list in system_data
+        for raw_excl in (system_data.get("excluded_files") or []):
+            fname = raw_excl.get("file_name") or raw_excl.get("name") or "excluded_file"
+            safe_name = os.path.basename(fname)
+            f_hash = raw_excl.get("sha256") or hashlib.sha256(safe_name.encode()).hexdigest()
+            file_key = f"{f_hash}_{safe_name}"
+            if file_key not in unique_files_map:
                 ext = os.path.splitext(safe_name)[1].lower() or ".bin"
-                manifest_items.append(EvidenceManifestItem(
+                unique_files_map[file_key] = EvidenceManifestItem(
                     file_id=f"file_{hashlib.md5(safe_name.encode()).hexdigest()[:8]}",
-                    masked_filename=masked_name,
+                    masked_filename=mask_evidence_filename(safe_name),
                     extension=ext,
-                    size_bytes=0,
-                    sha256=hashlib.sha256(safe_name.encode()).hexdigest(),
-                    parser_or_ocr="native_parser",
+                    size_bytes=raw_excl.get("size_bytes", 0),
+                    sha256=f_hash,
+                    parser_or_ocr="excluded",
                     timestamp=datetime.now(timezone.utc).isoformat(),
                     fact_card_id=None,
                     control_mapping=[],
                     mapping_type="direct_attachment",
-                ))
+                    ingestion_status="excluded",
+                    exclusion_reason=raw_excl.get("reason", "Tệp bị loại do không hợp lệ."),
+                )
+
+        # Also parse from evidence_context if ev_map was empty
+        if not unique_files_map and evidence_context:
+            extracted_files = [line.split("• File:", 1)[1].strip() for line in evidence_context.splitlines() if "• File:" in line]
+            for safe_name in extracted_files:
+                masked_name = mask_evidence_filename(safe_name)
+                ext = os.path.splitext(safe_name)[1].lower() or ".bin"
+                f_hash = hashlib.sha256(safe_name.encode()).hexdigest()
+                file_key = f"{f_hash}_{safe_name}"
+                if file_key not in unique_files_map:
+                    unique_files_map[file_key] = EvidenceManifestItem(
+                        file_id=f"file_{hashlib.md5(safe_name.encode()).hexdigest()[:8]}",
+                        masked_filename=masked_name,
+                        extension=ext,
+                        size_bytes=0,
+                        sha256=f_hash,
+                        parser_or_ocr="native_parser",
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        fact_card_id=None,
+                        control_mapping=[],
+                        mapping_type="direct_attachment",
+                        ingestion_status="ingested",
+                        exclusion_reason=None,
+                    )
+
+        manifest_items = list(unique_files_map.values())
+        mapped_ctrl_count = len({cid for item in manifest_items if item.ingestion_status == "ingested" for cid in item.control_mapping})
 
         manifest = EvidenceManifest(
             assessment_id=assessment_id,
@@ -310,20 +459,53 @@ def process_assessment_bg(assessment_id: str, system_data: dict, model_mode: str
             code_version=audit_ctx.code_version,
             created_at=datetime.now(timezone.utc).isoformat(),
             total_files=len(manifest_items),
+            mapped_control_count=mapped_ctrl_count,
             files=manifest_items,
         )
         with open(manifest_path, "w", encoding="utf-8") as mf:
             mf.write(manifest.model_dump_json(indent=2))
 
-        # Record evidence parsed event with actual count
+        # Record evidence parsed event with actual count, manifest ID, file hashes, and control mapping
         impl_ctrls = system_data.get("compliance", {}).get("implemented_controls", [])
         ext_list = list({item.extension for item in manifest_items}) if manifest_items else [".log", ".txt", ".md", ".png", ".pdf"]
+        eff_manifest_id = system_data.get("evidence_manifest_id") or f"manifest_{assessment_id}"
+        file_hashes_map = {item.masked_filename: item.sha256 for item in manifest_items}
+        ctrl_mapping_map = {}
+        for item in manifest_items:
+            for cid in item.control_mapping:
+                ctrl_mapping_map.setdefault(cid, []).append(item.masked_filename)
+
+        files_details = [
+            {
+                "evidence_id": item.file_id,
+                "file_name": item.masked_filename,
+                "sha256": item.sha256,
+                "parser_status": item.parser_or_ocr,
+                "size_bytes": item.size_bytes,
+                "control_mapping": item.control_mapping,
+            }
+            for item in manifest_items
+        ]
+        ev_source = system_data.get("evidence_source") or (
+            "template_preview" if system_data.get("template_id") and not manifest_items and not ev_map
+            else ("uploaded_evidence" if manifest_items else "self_declared")
+        )
+
         audit_service.record_evidence_parsed(
             ctx=audit_ctx,
             evidence_controls_count=len(ev_map) if ev_map else len(impl_ctrls),
             total_files=len(manifest_items),
             file_extensions=ext_list,
+            evidence_manifest_id=eff_manifest_id,
+            control_mapping=ctrl_mapping_map,
+            file_hashes=file_hashes_map,
+            evidence_source=ev_source,
+            files=files_details,
         )
+
+
+        system_data["evidence_manifest_id"] = eff_manifest_id
+        system_data["evidence_manifest"] = manifest.model_dump()
 
         if evidence_context:
             system_data["notes"] = (system_data.get("notes", "") or "") + evidence_context
@@ -336,35 +518,112 @@ def process_assessment_bg(assessment_id: str, system_data: dict, model_mode: str
             audit_ctx=audit_ctx,
         )
 
+        from schemas.assessment_schema import UnifiedAssessmentResult
+        from pydantic import ValidationError
+
+        raw_result = result.get("json_data") or {}
+        raw_result["assessment_id"] = assessment_id
+        raw_result["run_id"] = audit_ctx.run_id
+        raw_result["code_version"] = audit_ctx.code_version
+        raw_result["evidence_manifest_id"] = eff_manifest_id
+        raw_result["evidence_manifest_ref"] = f"data/evidence_manifests/{assessment_id}.json"
+        raw_result["audit_trace_ref"] = f"data/audit_traces/{assessment_id}.json"
+        if not raw_result.get("evidence_manifest"):
+            raw_result["evidence_manifest"] = manifest.model_dump()
+
+        try:
+            validated_result = UnifiedAssessmentResult.model_validate(raw_result)
+        except ValidationError as ve:
+            logger.error(f"[AssessmentBG] UnifiedAssessmentResult validation failed for {assessment_id}: {ve}", exc_info=True)
+            data["status"] = "failed"
+            data["error"] = f"UnifiedAssessmentResult validation failed: {str(ve)}"
+            data["error_code"] = "SCHEMA_VALIDATION_ERROR"
+            data["validation_errors"] = ve.errors()
+            data["updated_at"] = datetime.now(timezone.utc).isoformat()
+            data["progress"] = {"message": "Thẩm định thất bại do lỗi cấu trúc dữ liệu schema", "percent": 100}
+            save_assessment(assessment_id, data)
+            try:
+                audit_service.record_assessment_failed(
+                    ctx=audit_ctx,
+                    error_type="ValidationError",
+                    error_stage="schema_validation",
+                    message_redacted=str(ve)[:300],
+                )
+            except Exception as audit_err:
+                logger.warning(f"Failed to record audit failure event (non-fatal): {audit_err}")
+            return
+
+        tot_duration = (validated_result.runtime_summary or {}).get("total_duration_seconds")
+        if tot_duration is None:
+            tot_duration = round(time.time() - t0, 3)
+            if not validated_result.runtime_summary:
+                validated_result.runtime_summary = {}
+            validated_result.runtime_summary["total_duration_seconds"] = tot_duration
+
+        validated_dict = validated_result.model_dump()
+        validated_dict["runtime_summary"]["total_duration_seconds"] = tot_duration
+
+        # Validate Assessment Invariants (Citation integrity, mathematical recomputability, cleanliness)
+        inv_valid, inv_failures = validate_assessment_invariants(
+            validated_dict,
+            manifest_data=validated_dict.get("evidence_manifest") or manifest.model_dump(),
+            strict_catalogue_count=True,
+        )
+        if not inv_valid:
+            logger.error(f"[AssessmentBG] Assessment {assessment_id} failed invariant validation: {inv_failures}")
+            data["status"] = "failed"
+            data["error_code"] = "INVARIANT_VALIDATION_ERROR"
+            data["error"] = f"Invariant validation failed: {'; '.join(inv_failures[:5])}"
+            data["invariant_failures"] = inv_failures
+            data["updated_at"] = datetime.now(timezone.utc).isoformat()
+            data["progress"] = {"message": "Thẩm định thất bại do vi phạm ràng buộc kiểm toán (Invariants)", "percent": 100}
+            save_assessment(assessment_id, data)
+            try:
+                audit_service.record_assessment_failed(
+                    ctx=audit_ctx,
+                    error_type="InvariantValidationError",
+                    error_stage="invariant_validation",
+                    message_redacted=str(inv_failures[:3])[:300],
+                )
+            except Exception as audit_err:
+                logger.warning(f"Failed to record invariant failure event (non-fatal): {audit_err}")
+            return
+
         data["status"] = "completed"
         data["run_id"] = audit_ctx.run_id
         data["code_version"] = audit_ctx.code_version
+        data["evidence_manifest_id"] = eff_manifest_id
+        data["evidence_manifest"] = validated_dict.get("evidence_manifest") or manifest.model_dump()
         data["evidence_manifest_ref"] = f"data/evidence_manifests/{assessment_id}.json"
         data["audit_trace_ref"] = f"data/audit_traces/{assessment_id}.json"
         data["progress"] = {"message": "Hoàn tất thẩm định an toàn thông tin", "percent": 100}
         data["result"] = result
-        # Store json_data at top level for quick access
-        if result.get("json_data"):
-            data["json_data"] = result["json_data"]
-            data["json_data"]["evidence_manifest_ref"] = data["evidence_manifest_ref"]
-            data["json_data"]["audit_trace_ref"] = data["audit_trace_ref"]
-        
-        # Update compliance_percent with authoritative verified calculation
-        res_pct = (
-            result.get("compliance_percent")
-            if result.get("compliance_percent") is not None
-            else result.get("json_data", {}).get("compliance", {}).get("percentage")
-        )
-        if res_pct is not None:
-            try:
-                data["compliance_percent"] = round(min(100.0, max(0.0, float(res_pct))), 1)
-            except (ValueError, TypeError):
-                pass
+        data["json_data"] = validated_dict
+        data["runtime_summary"] = validated_dict.get("runtime_summary", {})
+        data["chunk_telemetries"] = validated_dict.get("chunk_telemetries", [])
+        data["weighted_compliance"] = validated_dict.get("weighted_compliance", {})
+        data["weighted_coverage"] = validated_dict.get("weighted_coverage", {})
+        data["control_coverage"] = validated_dict.get("control_coverage", {})
+        data["compliance_percent"] = validated_dict.get("weighted_compliance", {}).get("percentage", 0.0)
 
         data["updated_at"] = datetime.now(timezone.utc).isoformat()
         save_assessment(assessment_id, data)
 
-        duration = time.time() - t0
+        duration = tot_duration
+        audit_service.record_score_calculated(
+            ctx=audit_ctx,
+            standard=system_data.get("assessment_standard", "iso27001"),
+            weighted_score=validated_result.weighted_compliance.weighted_score,
+            weighted_max_score=validated_result.weighted_compliance.weighted_max_score,
+            weighted_compliance_percentage=validated_result.weighted_compliance.percentage,
+            raw_coverage_percentage=validated_result.control_coverage.raw_percentage,
+            satisfied_count=validated_result.control_coverage.evidence_supported_implemented,
+            partial_count=sum(1 for c in validated_result.controls if (c.assessment_verdict or "").lower() == "partial"),
+            not_evidenced_count=sum(1 for c in validated_result.controls if (c.assessment_verdict or "").lower() == "not_evidenced"),
+            missing_count=sum(1 for c in validated_result.controls if (c.assessment_verdict or "").lower() == "missing"),
+            needs_expert_review_count=sum(1 for c in validated_result.controls if (c.assessment_verdict or "").lower() == "needs_expert_review"),
+            algorithm="verdict_weighted_v2",
+        )
         audit_service.record_assessment_completed(
             ctx=audit_ctx,
             standard=system_data.get("assessment_standard", "iso27001"),
@@ -451,11 +710,47 @@ async def assess(
     from services.audit_service import audit_service, AuditContext
 
     current_user = _get_request_user(authorization)
-    assessment_id = str(uuid.uuid4())
+    assessment_id = getattr(data, "assessment_id", None) or str(uuid.uuid4())
+    _validate_path_id(assessment_id, "assessment_id")
     run_id = f"run_{uuid.uuid4().hex[:12]}"
     audit_ctx = AuditContext(assessment_id=assessment_id, run_id=run_id)
 
+    # Validate manifest ownership against assessment_id (Requirement D.3 & D.4)
+    manifest_id = getattr(data, "evidence_manifest_id", None)
+    if manifest_id:
+        ev_manifest_dir = os.path.join(os.getenv("DATA_PATH", "./data"), "evidence_manifests")
+        manifest_path = os.path.join(ev_manifest_dir, f"{manifest_id}.json")
+        if not os.path.exists(manifest_path):
+            cand = os.path.join(ev_manifest_dir, f"{manifest_id.replace('manifest_', '')}.json")
+            if os.path.exists(cand):
+                manifest_path = cand
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as mf:
+                    mf_data = json.load(mf)
+                owner_aid = mf_data.get("assessment_id")
+                if owner_aid and owner_aid != assessment_id and owner_aid not in ("default_session", "anonymous") and not str(owner_aid).startswith("manifest_"):
+                    logger.warning(
+                        f"[ManifestConflict] Manifest '{manifest_id}' belongs to assessment '{owner_aid}', "
+                        f"rejected for assessment '{assessment_id}'."
+                    )
+                    raise HTTPException(
+                        status_code=409,
+                        detail=(
+                            f"Evidence manifest '{manifest_id}' belongs to assessment '{owner_aid}', "
+                            f"not '{assessment_id}'. Cross-assessment manifest submission is forbidden."
+                        )
+                    )
+            except HTTPException:
+                raise
+            except Exception as mf_err:
+                logger.warning(f"[ManifestCheck] Error checking manifest file: {mf_err}")
+    else:
+        manifest_id = f"manifest_{assessment_id[:12]}"
+
     raw_impl = data.implemented_controls
+    if not raw_impl and getattr(data, "compliance", None) and isinstance(data.compliance, dict):
+        raw_impl = data.compliance.get("implemented_controls")
     if isinstance(raw_impl, dict):
         impl_controls = list(raw_impl.keys())
     elif isinstance(raw_impl, (list, tuple, set)):
@@ -464,9 +759,21 @@ async def assess(
         impl_controls = []
 
     ev_map = data.evidence_map if isinstance(data.evidence_map, dict) else {}
+    ctrl_verdicts = data.control_verdicts if hasattr(data, "control_verdicts") and isinstance(data.control_verdicts, list) else []
+
+    ev_files = getattr(data, "evidence_files", []) or []
+    tpl_id = getattr(data, "template_id", None)
+    tpl_name = getattr(data, "template_name", None)
+    is_tpl_input = bool(getattr(data, "is_template_input", False))
 
     system_data = {
+        "assessment_id": assessment_id,
         "assessment_standard": str(data.assessment_standard or "iso27001"),
+        "evidence_manifest_id": manifest_id,
+        "evidence_files": ev_files,
+        "template_id": tpl_id,
+        "template_name": tpl_name,
+        "is_template_input": is_tpl_input,
         "organization": {
             "name": str(data.org_name or ""),
             "size": str(data.org_size or "medium"),
@@ -487,8 +794,11 @@ async def assess(
         "compliance": {
             "iso_status": str(data.iso_status or "Chưa triển khai"),
             "implemented_controls": impl_controls,
-            "incidents_12m": data.incidents_12m or 0
+            "incidents_12m": data.incidents_12m or 0,
+            "evidence_map": ev_map,
         },
+        "evidence_map": ev_map,
+        "control_verdicts": ctrl_verdicts,
         "notes": str(data.notes or ""),
         "model_mode": str(data.model_mode or "local"),
         "selected_model": str(data.selected_model or "gemma4:latest"),
@@ -497,7 +807,7 @@ async def assess(
     # Build evidence context from parsed file contents
     evidence_context = ""
     if ev_map:
-        evidence_context = build_evidence_context_for_ai(ev_map)
+        evidence_context = build_evidence_context_for_ai(ev_map, standard=data.assessment_standard, assessment_id=assessment_id)
         logger.info(f"[Assessment] Evidence map: {len(ev_map)} controls with evidence")
 
     # Tính compliance_percent sơ bộ ngay lúc tạo
@@ -523,12 +833,25 @@ async def assess(
     assessment_record = {
         "id": assessment_id,
         "run_id": run_id,
+        "evidence_manifest_id": manifest_id,
+        "evidence_files": ev_files,
+        "template_id": tpl_id,
+        "template_name": tpl_name,
+        "is_template_input": is_tpl_input,
         "status": "pending",
         "system_info": system_data,
+        "evidence_map": ev_map,
+        "control_verdicts": ctrl_verdicts,
         "compliance_percent": compliance_pct,
+        "weighted_coverage": comp.get("weighted_coverage", {
+            "score": round(float(comp.get("achieved_weighted", 0.0)), 1),
+            "max_score": round(float(comp.get("max_weighted", 495.0)), 1),
+            "percentage": compliance_pct,
+        }),
+        "control_coverage": comp.get("control_coverage", {}),
         "model_mode": data.model_mode,
         "standard": data.assessment_standard,
-        "evidence_attached": len(data.evidence_map) > 0,
+        "evidence_attached": len(ev_map) > 0,
         "created_by": current_user,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
@@ -559,6 +882,9 @@ async def assess(
         "status": "accepted",
         "id": assessment_id,
         "run_id": run_id,
+        "evidence_manifest_id": manifest_id,
+        "mapped_controls_count": len(ev_map),
+        "evidence_map": ev_map,
         "message": "Assessment task started in background",
         "created_by": current_user
     }
@@ -641,6 +967,9 @@ async def stream_assessment(assessment_id: str, authorization: Optional[str] = H
                     "standard": cur.get("standard") or cur.get("system_info", {}).get("assessment_standard"),
                     "org_name": cur.get("system_info", {}).get("organization", {}).get("name", ""),
                     "implemented_controls": cur.get("system_info", {}).get("compliance", {}).get("implemented_controls", []),
+                    "weighted_compliance": cur.get("weighted_compliance") or (cur.get("json_data") or {}).get("weighted_compliance"),
+                    "weighted_coverage": cur.get("weighted_coverage") or (cur.get("json_data") or {}).get("weighted_coverage"),
+                    "control_coverage": cur.get("control_coverage") or (cur.get("json_data") or {}).get("control_coverage"),
                 }
                 yield f"event: complete\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
                 break
@@ -664,6 +993,9 @@ async def stream_assessment(assessment_id: str, authorization: Optional[str] = H
                     "status": status,
                     "percent": percent,
                     "message": message,
+                    "weighted_coverage": cur.get("weighted_coverage"),
+                    "control_coverage": cur.get("control_coverage"),
+                    "compliance_percent": cur.get("compliance_percent"),
                 }
                 yield f"event: progress\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
             else:
@@ -698,6 +1030,69 @@ async def get_assessment(assessment_id: str, authorization: Optional[str] = Head
             status_code=403,
             detail="Bạn không có quyền truy cập vào bài đánh giá của người dùng khác."
         )
+    # Authoritative schema validation & normalization through UnifiedAssessmentResult
+    if data.get("status") == "completed" and ("json_data" in data or "controls" in data or "result" in data):
+        try:
+            from schemas.assessment_schema import UnifiedAssessmentResult
+            validated = UnifiedAssessmentResult.model_validate(data)
+            validated_dict = validated.model_dump()
+            data["json_data"] = validated_dict
+            data["weighted_compliance"] = validated_dict.get("weighted_compliance", {})
+            data["control_coverage"] = validated_dict.get("control_coverage", {})
+            data["weighted_coverage"] = validated_dict.get("weighted_coverage", {})
+            data["compliance_percent"] = validated_dict.get("weighted_compliance", {}).get("percentage", 0.0)
+
+            # Harmonize markdown report text to authoritative Weighted Compliance
+            raw_rep = data.get("report") or (data.get("result", {}).get("report") if isinstance(data.get("result"), dict) else "") or validated_dict.get("report") or ""
+            if raw_rep:
+                from services.chat_service import ChatService
+                w_comp = validated_dict.get("weighted_compliance", {})
+                pct_val = w_comp.get("percentage", 0.0)
+                cov_val = validated_dict.get("control_coverage", {})
+                healed_rep = ChatService.ensure_complete_report(
+                    markdown_report=raw_rep,
+                    percentage=pct_val,
+                    score=cov_val.get("evidence_supported_implemented", 0),
+                    max_score=cov_val.get("total_controls", 93),
+                    json_data=validated_dict,
+                )
+                data["report"] = healed_rep
+                if "result" in data and isinstance(data["result"], dict):
+                    data["result"]["report"] = healed_rep
+                data["json_data"]["report"] = healed_rep
+
+                if healed_rep != raw_rep:
+                    try:
+                        save_assessment(assessment_id, data)
+                        from repositories.assessment_store import assessment_store
+                        assessment_store.save_assessment(
+                            report_data=data,
+                            project_name=data.get("organization", {}).get("name") or data.get("system_info", {}).get("organization", {}).get("name"),
+                            system_scope=data.get("system_info", {}).get("infrastructure", {}).get("cloud"),
+                            assessment_id=assessment_id
+                        )
+                    except Exception as s_err:
+                        logger.warning(f"[GetAssessment] Could not persist healed assessment {assessment_id}: {s_err}")
+        except Exception as norm_err:
+            logger.warning(f"[GetAssessment] Schema normalization warning for {assessment_id}: {norm_err}")
+
+    # Record export event for assessment_json
+    try:
+        from services.audit_service import audit_service, AuditContext
+        resolved_aid = data.get("id") or data.get("assessment_id") or assessment_id
+        run_id_val = data.get("run_id") or data.get("json_data", {}).get("run_id") or f"run_{resolved_aid[:8]}"
+        json_bytes = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        json_hash = hashlib.sha256(json_bytes).hexdigest()
+        audit_ctx = AuditContext(assessment_id=resolved_aid, run_id=run_id_val)
+        audit_service.record_artifact_exported(
+            ctx=audit_ctx,
+            export_format="assessment_json",
+            filename=f"assessment_{resolved_aid[:8]}.json",
+            file_size_bytes=len(json_bytes),
+            file_hash_sha256=json_hash,
+        )
+    except Exception:
+        pass
 
     return data
 
@@ -901,11 +1296,56 @@ async def chromadb_search(query: dict):
 # ── Batch Evidence Ingest & Auto-Mapper ──────────────────────────────
 
 
+@router.post("/iso27001/assessments/init")
+@router.post("/assessments/init")
+async def init_assessment_session(
+    standard: Optional[str] = Query("iso27001")
+):
+    """Initialize a new isolated assessment session with a dedicated assessment_id and manifest."""
+    aid = str(uuid.uuid4())
+    manifest_id = f"manifest_{aid[:12]}"
+
+    # Ensure isolated evidence folder exists for this assessment
+    asm_ev_dir = os.path.join(EVIDENCE_DIR, aid)
+    os.makedirs(asm_ev_dir, exist_ok=True)
+
+    ev_manifest_dir = os.path.join(os.getenv("DATA_PATH", "./data"), "evidence_manifests")
+    os.makedirs(ev_manifest_dir, exist_ok=True)
+    manifest_path = os.path.join(ev_manifest_dir, f"{manifest_id}.json")
+    manifest_data = {
+        "manifest_id": manifest_id,
+        "assessment_id": aid,
+        "standard": standard or "iso27001",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "total_files": 0,
+        "files": [],
+        "mapped_controls": {}
+    }
+    try:
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            json.dump(manifest_data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logger.warning(f"[InitAssessment] Failed to save initial manifest: {e}")
+
+    return {
+        "status": "success",
+        "assessment_id": aid,
+        "manifest_id": manifest_id,
+        "standard": standard or "iso27001",
+        "created_at": manifest_data["created_at"]
+    }
+
+
 @router.post("/iso27001/evidence/batch-ingest")
 @router.post("/evidence/batch-ingest")
-async def batch_ingest_evidence(request: Request, authorization: Optional[str] = Header(None)):
+async def batch_ingest_evidence(
+    request: Request,
+    assessment_id: Optional[str] = Query(None),
+    authorization: Optional[str] = Header(None)
+):
     """Batch upload server scans, logs, policies, images (OCR), and evidence documents.
     Processes files sequentially through the unified evidence parser with partial success resilience.
+    Scoped by assessment_id to prevent cross-assessment leakage.
     """
     from services.evidence_mapper import map_evidence_to_controls
     from services.evidence_parser import parse_evidence_file, MAX_EVIDENCE_SIZE_BYTES, SUPPORTED_EXTENSIONS
@@ -914,6 +1354,14 @@ async def batch_ingest_evidence(request: Request, authorization: Optional[str] =
         form = await request.form()
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Không thể đọc multipart form data: {str(e)}")
+
+    eff_aid = assessment_id or form.get("assessment_id") or request.headers.get("x-assessment-id") or request.headers.get("X-Assessment-ID")
+    if eff_aid:
+        _validate_path_id(str(eff_aid), "assessment_id")
+        target_ev_dir = os.path.join(EVIDENCE_DIR, str(eff_aid))
+    else:
+        target_ev_dir = EVIDENCE_DIR
+    os.makedirs(target_ev_dir, exist_ok=True)
 
     uploaded_files: List[Any] = []
     # Collect files from any form key (e.g. 'files', 'file', 'attachments')
@@ -936,7 +1384,7 @@ async def batch_ingest_evidence(request: Request, authorization: Optional[str] =
     hostname_regex = _re_val.compile(r'(?:Host Name|Computer Name|Tên máy chủ)[:\s]+([a-zA-Z0-9_\-]+)', _re_val.IGNORECASE)
     os_regex = _re_val.compile(r'(?:OS Name|Operating System|Hệ điều hành)[:\s]+([^\r\n]+)', _re_val.IGNORECASE)
 
-    temp_dir = os.path.join(EVIDENCE_DIR, "_batch_temp")
+    temp_dir = os.path.join(target_ev_dir, "_batch_temp")
     os.makedirs(temp_dir, exist_ok=True)
 
     for file in uploaded_files:
@@ -954,7 +1402,10 @@ async def batch_ingest_evidence(request: Request, authorization: Optional[str] =
             if file_status in ("unsupported", "failed") and parse_res.get("error_code") == "UNSUPPORTED_FORMAT":
                 errors.append(f"{file.filename}: {parse_res.get('error_message')}")
                 processed_files.append({
+                    "evidence_id": f"file_{hashlib.sha256(content).hexdigest()[:8]}",
                     "filename": file.filename,
+                    "clean_name": os.path.basename(file.filename.replace("\\", "/")),
+                    "original_name": file.filename,
                     "size_bytes": len(content),
                     "char_count": 0,
                     "page_count": 0,
@@ -970,7 +1421,10 @@ async def batch_ingest_evidence(request: Request, authorization: Optional[str] =
                 msg = f"Kích thước vượt quá {MAX_EVIDENCE_SIZE_BYTES // (1024*1024)}MB."
                 errors.append(f"{file.filename}: {msg}")
                 processed_files.append({
+                    "evidence_id": f"file_{hashlib.sha256(content).hexdigest()[:8]}",
                     "filename": file.filename,
+                    "clean_name": os.path.basename(file.filename.replace("\\", "/")),
+                    "original_name": file.filename,
                     "size_bytes": len(content),
                     "char_count": 0,
                     "page_count": 0,
@@ -997,7 +1451,6 @@ async def batch_ingest_evidence(request: Request, authorization: Optional[str] =
             found_hostnames = hostname_regex.findall(text_content)
             detected_hostname = card_host or (found_hostnames[0] if found_hostnames else None)
 
-            # Prevent office audit documents, scan reports, or policy files from being treated as hostnames
             ext_lower = os.path.splitext(clean_filename)[1].lower()
             fn_lower = clean_filename.lower()
             is_doc_or_report = (
@@ -1014,7 +1467,6 @@ async def batch_ingest_evidence(request: Request, authorization: Optional[str] =
             found_os = os_regex.findall(text_content)
             detected_os = card_os or (found_os[0].strip() if found_os else None)
 
-            # Only register a host if it has an IP or genuine hostname, and not an audit report title
             if (primary_ip or detected_hostname) and not (is_doc_or_report and not detected_hostname):
                 host_info = {
                     "source_file": clean_filename,
@@ -1045,7 +1497,7 @@ async def batch_ingest_evidence(request: Request, authorization: Optional[str] =
 
             for ctrl_id, score in control_scores.items():
                 if score >= 0.35:
-                    ctrl_dir = os.path.join(EVIDENCE_DIR, ctrl_id.replace(".", "_"))
+                    ctrl_dir = os.path.join(target_ev_dir, ctrl_id.replace(".", "_"))
                     os.makedirs(ctrl_dir, exist_ok=True)
                     dest_path = os.path.join(ctrl_dir, safe_name)
                     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
@@ -1068,14 +1520,16 @@ async def batch_ingest_evidence(request: Request, authorization: Optional[str] =
                     saved_to_controls.append(ctrl_id)
 
             if not saved_to_controls:
-                unassigned_dir = os.path.join(EVIDENCE_DIR, "_unassigned")
+                unassigned_dir = os.path.join(target_ev_dir, "_unassigned")
                 os.makedirs(unassigned_dir, exist_ok=True)
                 dest_unassigned = os.path.join(unassigned_dir, safe_name)
                 os.makedirs(os.path.dirname(dest_unassigned), exist_ok=True)
                 with open(dest_unassigned, "wb") as f:
                     f.write(content)
 
+            f_sha256 = parse_res.get("sha256") or hashlib.sha256(content).hexdigest()
             processed_files.append({
+                "evidence_id": f"file_{f_sha256[:8]}",
                 "filename": safe_name,
                 "original_name": file.filename,
                 "clean_name": clean_filename,
@@ -1085,7 +1539,8 @@ async def batch_ingest_evidence(request: Request, authorization: Optional[str] =
                 "ocr_applied": parse_res.get("ocr_applied", False),
                 "mapped_controls": saved_to_controls,
                 "status": "success",
-                "sha256": parse_res.get("sha256", ""),
+                "sha256": f_sha256,
+                "parser_status": file_status,
                 "preview": text_content[:400],
                 "fact_summary": parse_res.get("fact_summary", "")
             })
@@ -1098,6 +1553,7 @@ async def batch_ingest_evidence(request: Request, authorization: Optional[str] =
             clean_display_name = os.path.basename(file.filename.replace("\\", "/")) or file.filename
             errors.append(f"{clean_display_name}: {clean_err_msg}")
             processed_files.append({
+                "evidence_id": f"file_{hashlib.sha256(clean_display_name.encode()).hexdigest()[:8]}",
                 "filename": clean_display_name,
                 "original_name": file.filename,
                 "clean_name": clean_display_name,
@@ -1107,6 +1563,7 @@ async def batch_ingest_evidence(request: Request, authorization: Optional[str] =
                 "ocr_applied": False,
                 "mapped_controls": [],
                 "status": "failed",
+                "sha256": "",
                 "error_code": "PARSE_ERROR",
                 "error_message": clean_err_msg
             })
@@ -1127,9 +1584,30 @@ async def batch_ingest_evidence(request: Request, authorization: Optional[str] =
 
     suggested_controls = list(mapped_controls.keys())
     success_count = len([f for f in processed_files if f.get("status") == "success"])
+    manifest_id = f"manifest_{eff_aid[:12]}" if eff_aid else f"manifest_{uuid.uuid4().hex[:12]}"
+
+    # Write evidence manifest record to disk
+    ev_manifest_dir = os.path.join(os.getenv("DATA_PATH", "./data"), "evidence_manifests")
+    os.makedirs(ev_manifest_dir, exist_ok=True)
+    manifest_path = os.path.join(ev_manifest_dir, f"{manifest_id}.json")
+    manifest_record = {
+        "manifest_id": manifest_id,
+        "assessment_id": eff_aid,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "total_files": len(processed_files),
+        "files": processed_files,
+        "mapped_controls": mapped_controls
+    }
+    try:
+        with open(manifest_path, "w", encoding="utf-8") as mf:
+            json.dump(manifest_record, mf, ensure_ascii=False, indent=2)
+    except Exception as mf_err:
+        logger.warning(f"[BatchIngest] Failed to save manifest: {mf_err}")
 
     return {
         "status": "success",
+        "manifest_id": manifest_id,
+        "evidence_manifest_id": manifest_id,
         "processed_count": len(processed_files),
         "files": processed_files,
         "mapped_controls": mapped_controls,
@@ -1148,17 +1626,27 @@ async def batch_ingest_evidence(request: Request, authorization: Optional[str] =
 
 @router.get("/iso27001/evidence/file-content")
 @router.get("/evidence/file-content")
-async def get_evidence_file_content(filename: str):
+async def get_evidence_file_content(
+    filename: str,
+    assessment_id: Optional[str] = Query(None),
+    request: Request = None
+):
     """Search and return full extracted text, SHA-256 hash, and FactCard for any uploaded evidence file."""
     if not filename:
         raise HTTPException(status_code=400, detail="Tên tệp không được để trống.")
     
     clean_target = os.path.basename(filename.replace("\\", "/"))
+    eff_aid = assessment_id or (request.headers.get("x-assessment-id") if request else None) or (request.headers.get("X-Assessment-ID") if request else None)
+    if eff_aid:
+        _validate_path_id(eff_aid, "assessment_id")
+        search_root = os.path.join(EVIDENCE_DIR, eff_aid)
+    else:
+        search_root = EVIDENCE_DIR
     real_base = os.path.realpath(EVIDENCE_DIR)
     found_path = None
 
-    if os.path.exists(EVIDENCE_DIR):
-        for root, _, files in os.walk(EVIDENCE_DIR):
+    if os.path.exists(search_root):
+        for root, _, files in os.walk(search_root):
             for f in files:
                 if f == clean_target or f.endswith(f"_{clean_target}") or clean_target in f:
                     cand = os.path.join(root, f)
@@ -1196,17 +1684,27 @@ async def get_evidence_file_content(filename: str):
 
 @router.delete("/iso27001/evidence/file/{filename}")
 @router.delete("/evidence/file/{filename}")
-async def delete_evidence_file_globally(filename: str):
-    """Delete an evidence file across all mapped control folders and _unassigned to eliminate noise."""
+async def delete_evidence_file_globally(
+    filename: str,
+    assessment_id: Optional[str] = Query(None),
+    request: Request = None
+):
+    """Delete an evidence file across all mapped control folders within the assessment."""
     if not filename:
         raise HTTPException(status_code=400, detail="Tên tệp không được để trống.")
 
+    eff_aid = assessment_id or (request.headers.get("x-assessment-id") if request else None) or (request.headers.get("X-Assessment-ID") if request else None)
+    if eff_aid:
+        _validate_path_id(eff_aid, "assessment_id")
+        search_root = os.path.join(EVIDENCE_DIR, eff_aid)
+    else:
+        search_root = EVIDENCE_DIR
     clean_target = os.path.basename(filename.replace("\\", "/"))
     real_base = os.path.realpath(EVIDENCE_DIR)
     removed_from = []
 
-    if os.path.exists(EVIDENCE_DIR):
-        for root, _, files in os.walk(EVIDENCE_DIR):
+    if os.path.exists(search_root):
+        for root, _, files in os.walk(search_root):
             for f in files:
                 if f == clean_target or f.endswith(f"_{clean_target}") or clean_target in f:
                     cand = os.path.join(root, f)
@@ -1227,11 +1725,18 @@ async def delete_evidence_file_globally(filename: str):
 
 
 @router.post("/iso27001/evidence/{control_id}")
-async def upload_evidence(control_id: str, file: UploadFile = File(...)):
-    """Upload evidence file for a specific control."""
+async def upload_evidence(
+    control_id: str,
+    file: UploadFile = File(...),
+    assessment_id: Optional[str] = Query(None),
+    request: Request = None
+):
+    """Upload evidence file for a specific control, scoped by assessment_id."""
     _validate_path_id(control_id, "control_id")
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename")
+
+    eff_aid = assessment_id or (request.headers.get("x-assessment-id") if request else None) or (request.headers.get("X-Assessment-ID") if request else None)
 
     ext = "." + file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
     if ext not in ALLOWED_EVIDENCE_EXT:
@@ -1241,55 +1746,155 @@ async def upload_evidence(control_id: str, file: UploadFile = File(...)):
     if len(content) > MAX_EVIDENCE_SIZE:
         raise HTTPException(status_code=413, detail=f"File too large. Max: {MAX_EVIDENCE_SIZE // (1024*1024)}MB")
 
-    # Create control-specific directory
-    ctrl_dir = os.path.join(EVIDENCE_DIR, control_id.replace(".", "_"))
+    # Determine save directory based on assessment_id isolation
+    if eff_aid:
+        _validate_path_id(eff_aid, "assessment_id")
+        ctrl_dir = os.path.join(EVIDENCE_DIR, eff_aid, control_id.replace(".", "_"))
+    else:
+        ctrl_dir = os.path.join(EVIDENCE_DIR, control_id.replace(".", "_"))
     os.makedirs(ctrl_dir, exist_ok=True)
 
     # Save with timestamp prefix to avoid overwrite
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    safe_name = f"{ts}_{file.filename}"
+    clean_filename = os.path.basename(file.filename.replace("\\", "/"))
+    safe_name = f"{ts}_{clean_filename}"
     filepath = os.path.join(ctrl_dir, safe_name)
 
     with open(filepath, "wb") as f:
         f.write(content)
 
+    parse_res = parse_evidence_file(content, clean_filename)
+    sha256_hash = parse_res.get("sha256") or hashlib.sha256(content).hexdigest()
+    char_count = parse_res.get("char_count", len(content))
+    evidence_id = f"file_{sha256_hash[:8]}"
+
+    # Update manifest on disk if assessment_id is present
+    if eff_aid:
+        manifest_id = f"manifest_{eff_aid[:12]}"
+        ev_manifest_dir = os.path.join(os.getenv("DATA_PATH", "./data"), "evidence_manifests")
+        os.makedirs(ev_manifest_dir, exist_ok=True)
+        manifest_path = os.path.join(ev_manifest_dir, f"{manifest_id}.json")
+        mf_data = {}
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as mf_f:
+                    mf_data = json.load(mf_f)
+            except Exception:
+                pass
+        mf_files = mf_data.get("files", [])
+        found_mf_f = False
+        for mf_item in mf_files:
+            if (mf_item.get("sha256") and mf_item.get("sha256") == sha256_hash) or mf_item.get("filename") == safe_name or mf_item.get("clean_name") == clean_filename:
+                mapped_ctrls = mf_item.get("mapped_controls", [])
+                if control_id not in mapped_ctrls:
+                    mapped_ctrls.append(control_id)
+                mf_item["mapped_controls"] = mapped_ctrls
+                found_mf_f = True
+                break
+        if not found_mf_f:
+            mf_files.append({
+                "evidence_id": evidence_id,
+                "filename": safe_name,
+                "clean_name": clean_filename,
+                "original_name": file.filename,
+                "size_bytes": len(content),
+                "sha256": sha256_hash,
+                "char_count": char_count,
+                "ocr_applied": parse_res.get("ocr_applied", False),
+                "status": "success",
+                "parser_status": parse_res.get("status", "success"),
+                "mapped_controls": [control_id]
+            })
+        mf_data["manifest_id"] = manifest_id
+        mf_data["assessment_id"] = eff_aid
+        mf_data["total_files"] = len(mf_files)
+        mf_data["files"] = mf_files
+        try:
+            with open(manifest_path, "w", encoding="utf-8") as mf_f:
+                json.dump(mf_data, mf_f, ensure_ascii=False, indent=2)
+        except Exception as mf_write_err:
+            logger.warning(f"[UploadEvidence] Failed to update manifest: {mf_write_err}")
+
+    download_qs = f"?assessment_id={eff_aid}" if eff_aid else ""
     return {
         "status": "success",
+        "assessment_id": eff_aid,
         "control_id": control_id,
+        "evidence_id": evidence_id,
         "filename": safe_name,
+        "original_name": file.filename,
+        "clean_name": clean_filename,
         "size_bytes": len(content),
-        "path": f"/api/iso27001/evidence/{control_id}/{safe_name}",
+        "sha256": sha256_hash,
+        "char_count": char_count,
+        "parser_status": parse_res.get("status", "success"),
+        "mapped_controls": [control_id],
+        "path": f"/api/iso27001/evidence/{control_id}/{safe_name}{download_qs}",
     }
 
 
 @router.get("/iso27001/evidence/{control_id}")
-async def list_evidence(control_id: str):
-    """List all evidence files for a control."""
+async def list_evidence(
+    control_id: str,
+    assessment_id: Optional[str] = Query(None),
+    request: Request = None
+):
+    """List all evidence files for a control, strictly filtered by assessment_id."""
     _validate_path_id(control_id, "control_id")
-    ctrl_dir = os.path.join(EVIDENCE_DIR, control_id.replace(".", "_"))
+    eff_aid = assessment_id or (request.headers.get("x-assessment-id") if request else None) or (request.headers.get("X-Assessment-ID") if request else None)
+    if not eff_aid:
+        # Strictly no global fallback
+        return {"control_id": control_id, "files": []}
+
+    _validate_path_id(eff_aid, "assessment_id")
+    ctrl_dir = os.path.join(EVIDENCE_DIR, eff_aid, control_id.replace(".", "_"))
     if not os.path.exists(ctrl_dir):
         return {"control_id": control_id, "files": []}
 
     files = []
     for filename in sorted(os.listdir(ctrl_dir)):
         filepath = os.path.join(ctrl_dir, filename)
+        if not os.path.isfile(filepath):
+            continue
         stat = os.stat(filepath)
+        f_hash = ""
+        try:
+            with open(filepath, "rb") as rf:
+                f_hash = hashlib.sha256(rf.read()).hexdigest()
+        except Exception:
+            pass
+        clean_name = filename
+        if _re_val.match(r'^\d{8}_\d{6}_', filename):
+            clean_name = filename[15:]
         files.append({
+            "evidence_id": f"file_{f_hash[:8]}" if f_hash else f"file_{filename[:8]}",
             "filename": filename,
+            "clean_name": clean_name,
             "size_bytes": stat.st_size,
+            "sha256": f_hash,
             "uploaded_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
-            "download_url": f"/api/iso27001/evidence/{control_id}/{filename}",
+            "download_url": f"/api/iso27001/evidence/{control_id}/{filename}?assessment_id={eff_aid}",
         })
 
     return {"control_id": control_id, "files": files}
 
 
 @router.get("/iso27001/evidence/{control_id}/{filename}")
-async def download_evidence(control_id: str, filename: str):
+async def download_evidence(
+    control_id: str,
+    filename: str,
+    assessment_id: Optional[str] = Query(None),
+    request: Request = None
+):
     """Download a specific evidence file."""
     _validate_path_id(control_id, "control_id")
     _validate_path_id(filename.replace(".", "_"), "filename")
-    ctrl_dir = os.path.join(EVIDENCE_DIR, control_id.replace(".", "_"))
+    eff_aid = assessment_id or (request.headers.get("x-assessment-id") if request else None)
+    if eff_aid:
+        _validate_path_id(eff_aid, "assessment_id")
+        ctrl_dir = os.path.join(EVIDENCE_DIR, eff_aid, control_id.replace(".", "_"))
+    else:
+        ctrl_dir = os.path.join(EVIDENCE_DIR, control_id.replace(".", "_"))
     filepath = os.path.join(ctrl_dir, filename)
     # Resolve the real path and confirm it stays within the evidence directory.
     real_base = os.path.realpath(EVIDENCE_DIR)
@@ -1304,11 +1909,20 @@ async def download_evidence(control_id: str, filename: str):
 
 
 @router.delete("/iso27001/evidence/{control_id}/{filename}")
-async def delete_evidence(control_id: str, filename: str):
+async def delete_evidence(
+    control_id: str,
+    filename: str,
+    assessment_id: Optional[str] = Query(None),
+    request: Request = None
+):
     """Delete a specific evidence file."""
     _validate_path_id(control_id, "control_id")
     _validate_path_id(filename.replace(".", "_"), "filename")
-    ctrl_dir = os.path.join(EVIDENCE_DIR, control_id.replace(".", "_"))
+    eff_aid = assessment_id or (request.headers.get("x-assessment-id") if request else None) or (request.headers.get("X-Assessment-ID") if request else None)
+    if not eff_aid:
+        raise HTTPException(status_code=400, detail="assessment_id là bắt buộc để xóa tệp.")
+    _validate_path_id(eff_aid, "assessment_id")
+    ctrl_dir = os.path.join(EVIDENCE_DIR, eff_aid, control_id.replace(".", "_"))
     filepath = os.path.join(ctrl_dir, filename)
     # Resolve the real path and confirm it stays within the evidence directory.
     real_base = os.path.realpath(EVIDENCE_DIR)
@@ -1324,16 +1938,26 @@ async def delete_evidence(control_id: str, filename: str):
 
 
 @router.get("/iso27001/evidence-summary")
-async def get_all_evidence_summary():
-    """Get summary of all uploaded evidence across all controls."""
-    summary = {}
-    if not os.path.exists(EVIDENCE_DIR):
+async def get_all_evidence_summary(
+    assessment_id: Optional[str] = Query(None),
+    request: Request = None
+):
+    """Get summary of all uploaded evidence across all controls for an assessment."""
+    eff_aid = assessment_id or (request.headers.get("x-assessment-id") if request else None)
+    if not eff_aid:
+        # Strictly no global fallback
         return {"controls": {}, "total_files": 0}
 
+    _validate_path_id(eff_aid, "assessment_id")
+    target_dir = os.path.join(EVIDENCE_DIR, eff_aid)
+    if not os.path.exists(target_dir):
+        return {"controls": {}, "total_files": 0}
+
+    summary = {}
     total = 0
-    for ctrl_folder in os.listdir(EVIDENCE_DIR):
-        ctrl_path = os.path.join(EVIDENCE_DIR, ctrl_folder)
-        if os.path.isdir(ctrl_path):
+    for ctrl_folder in os.listdir(target_dir):
+        ctrl_path = os.path.join(target_dir, ctrl_folder)
+        if os.path.isdir(ctrl_path) and not ctrl_folder.startswith("_"):
             ctrl_id = ctrl_folder.replace("_", ".")
             files = [f for f in os.listdir(ctrl_path) if os.path.isfile(os.path.join(ctrl_path, f))]
             if files:
@@ -1385,20 +2009,44 @@ async def export_pdf(assessment_id: str):
     if not data:
         raise HTTPException(status_code=404, detail="Assessment not found")
 
+    data["assessment_id"] = assessment_id
+    data.setdefault("run_id", f"run_{assessment_id[:8]}")
+    if "json_data" in data and isinstance(data["json_data"], dict):
+        data["json_data"].setdefault("assessment_id", assessment_id)
+        data["json_data"].setdefault("run_id", data["run_id"])
+
     if data.get("status") != "completed":
         raise HTTPException(status_code=400, detail="Assessment not completed yet")
 
-    raw_report = data.get("result", {}).get("report", "")
+    raw_report = data.get("result", {}).get("report", "") or data.get("report", "")
     if not raw_report:
         raise HTTPException(status_code=400, detail="No report content")
 
+    from schemas.assessment_schema import UnifiedAssessmentResult
+    try:
+        validated = UnifiedAssessmentResult.model_validate(data.get("json_data") or data)
+    except Exception as ve:
+        raise HTTPException(status_code=422, detail=f"Assessment data fails schema validation: {ve}")
+
+    inv_valid, inv_fails = validate_assessment_invariants(data.get("json_data") or data)
+    if not inv_valid:
+        raise HTTPException(
+            status_code=422,
+            detail=f"INVARIANT_VALIDATION_FAILED (Invariant Violation): {'; '.join(inv_fails)}"
+        )
+
     sys_info = data.get("system_info", {})
-    org_name = sys_info.get("organization", {}).get("name") or sys_info.get("org_name", "Tổ chức Đánh giá")
-    industry = sys_info.get("organization", {}).get("industry") or sys_info.get("industry", "Công nghệ & Dịch vụ số")
-    std = data.get("standard", "iso27001")
+    org_name = (validated.organization.get("name") if isinstance(validated.organization, dict) else "") or sys_info.get("organization", {}).get("name") or sys_info.get("org_name", "Tổ chức Đánh giá")
+    if not org_name or str(org_name).strip().lower() in ("none", "null", ""):
+        org_name = "Tổ chức Đánh giá"
+    industry = (validated.organization.get("industry") if isinstance(validated.organization, dict) else "") or sys_info.get("organization", {}).get("industry") or sys_info.get("industry", "Công nghệ & Dịch vụ số")
+    if not industry or str(industry).strip().lower() in ("none", "null", ""):
+        industry = "Công nghệ & Dịch vụ số"
+    raw_std = validated.standard
+    std = raw_std.get("id") if isinstance(raw_std, dict) else str(raw_std)
     std_name = "ISO 27001:2022" if std == "iso27001" else "TCVN 11930:2017" if std == "tcvn11930" else std
-    pct = data.get("compliance_percent", 0.0)
-    created = data.get("created_at", "")
+    pct = validated.weighted_compliance.percentage
+    created = validated.created_at or data.get("created_at", "")
 
     json_data = data.get("json_data") or data.get("result", {}).get("json_data", {})
     scope_desc = (
@@ -1406,40 +2054,70 @@ async def export_pdf(assessment_id: str):
         or sys_info.get("infrastructure", {}).get("cloud")
         or "Toàn bộ hạ tầng mạng, máy chủ cơ sở dữ liệu, ứng dụng nghiệp vụ và quy trình vận hành an toàn thông tin."
     )
+    if not scope_desc or str(scope_desc).strip().lower() in ("none", "null", ""):
+        scope_desc = "Toàn bộ hạ tầng mạng, máy chủ cơ sở dữ liệu, ứng dụng nghiệp vụ và quy trình vận hành an toàn thông tin."
+
+    cov = validated.control_coverage
+    sat_score = cov.evidence_supported_implemented if cov else sum(1 for c in validated.controls if c.assessment_verdict == "satisfied")
+    decl_score = cov.self_declared_implemented if cov else sum(1 for c in validated.controls if c.user_declaration == "implemented")
+    total_ctrls = cov.total_controls if cov else len(validated.controls)
+    raw_cov = cov.raw_percentage if cov else (round(decl_score / total_ctrls * 100, 1) if total_ctrls > 0 else 0.0)
 
     # Automatically heal truncated report if Section 5 or b) Top 3 was cut off
     report = ChatService.ensure_complete_report(
         markdown_report=raw_report,
         percentage=pct,
+        score=sat_score,
+        max_score=total_ctrls,
         org_name=org_name,
         std_name=std_name,
         industry=industry,
         json_data=json_data,
     )
 
-    # Compute risk & gap metrics
-    wb = json_data.get("weight_breakdown", {})
-    risk_sum = json_data.get("risk_summary", {})
+    # Compute risk & gap metrics strictly using aggregate_priority_breakdown
+    from services.assessment_helpers import aggregate_priority_breakdown
+    try:
+        pb = aggregate_priority_breakdown(
+            controls=validated.controls,
+            weighted_compliance=validated.weighted_compliance,
+            enforce_invariants=True,
+        )
+    except ValueError as ve:
+        logger.error(f"[PDF Export] Invariant violation for assessment {assessment_id}: {ve}")
+        raise HTTPException(
+            status_code=422,
+            detail=f"Không thể xuất PDF do mâu thuẫn số liệu (Invariant Violation): {ve}"
+        )
 
-    crit_total = wb.get("critical", {}).get("total", 0)
-    crit_impl = wb.get("critical", {}).get("implemented", 0)
-    crit_gaps = (crit_total - crit_impl) if crit_total else risk_sum.get("critical_gaps", 0)
+    # Invariant: Summary vs Category Breakdown cross-check
+    raw_wc = data.get("weighted_compliance") or (data.get("json_data", {}).get("weighted_compliance") if isinstance(data.get("json_data"), dict) else {}) or {}
+    raw_score = raw_wc.get("weighted_score")
+    if raw_score is not None:
+        try:
+            f_raw = float(raw_score)
+            if abs(f_raw - pb["total_weighted_score"]) > 0.5:
+                logger.error(f"[PDF Export] Summary score ({f_raw}) conflicts with controls breakdown ({pb['total_weighted_score']})")
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Không thể xuất PDF do mâu thuẫn số liệu (Invariant Violation): Điểm tổng hợp tóm tắt (Summary: {f_raw}) mâu thuẫn với tổng đóng góp của từng nhóm controls ({pb['total_weighted_score']})."
+                )
+        except (ValueError, TypeError):
+            pass
 
-    high_total = wb.get("high", {}).get("total", 0)
-    high_impl = wb.get("high", {}).get("implemented", 0)
-    high_gaps = (high_total - high_impl) if high_total else risk_sum.get("high_gaps", 0)
+    total_applicable_ctrls = len(validated.controls)
+    if pb["total_applicable"] != total_applicable_ctrls:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Không thể xuất PDF do mâu thuẫn số liệu (Invariant Violation): Tổng controls áp dụng trong bảng ({pb['total_applicable']}) mâu thuẫn với số controls áp dụng ({total_applicable_ctrls})."
+        )
 
-    med_total = wb.get("medium", {}).get("total", 0)
-    med_impl = wb.get("medium", {}).get("implemented", 0)
-    med_gaps = (med_total - med_impl) if med_total else risk_sum.get("medium_gaps", 0)
 
-    low_total = wb.get("low", {}).get("total", 0)
-    low_impl = wb.get("low", {}).get("implemented", 0)
-    low_gaps = (low_total - low_impl) if low_total else risk_sum.get("low_gaps", 0)
-
-    total_gaps = crit_gaps + high_gaps + med_gaps + low_gaps
-    if total_gaps == 0:
-        total_gaps = risk_sum.get("total_gaps", len(json_data.get("top_gaps", [])))
+    crit_data = pb["tiers"]["critical"]
+    high_data = pb["tiers"]["high"]
+    med_data = pb["tiers"]["medium"]
+    low_data = pb["tiers"]["low"]
+    total_gaps = pb["total_gaps"]
 
     try:
         from zoneinfo import ZoneInfo
@@ -1492,58 +2170,135 @@ async def export_pdf(assessment_id: str):
     html_body = _re.sub(r'(\|.+\|(?:\n\|[-:| ]+\|)(?:\n\|.+\|)+)', convert_md_table, html_body)
     html_body = html_body.replace('\n\n', '</p><p>')
 
+    # Cleanse any legacy self-declared patterns from the report body
+    html_body = _re.sub(r'Tỷ\s*lệ\s*Tuân\s*thủ\s*Tổng\s*thể:\s*58\.4%[^\n<]*', f'Tỷ lệ Tuân thủ có trọng số (Weighted Compliance): {pct}% ({sat_score}/{total_ctrls} Controls đạt)', html_body)
+    html_body = _re.sub(r'58\.4%\s*\(\s*45\s*/\s*93\s*Controls\s*(?:đạt|được đánh dấu đạt)[^\)]*\)', f'{pct}% ({sat_score}/{total_ctrls} Controls đạt)', html_body)
+    html_body = _re.sub(r'58\.4%', f'{pct}%', html_body)
+    html_body = _re.sub(r'45\s*/\s*93\s*Controls\s*(?:đạt|được đánh dấu đạt)', f'{sat_score}/{total_ctrls} Controls đạt (đã đối soát)', html_body)
+    html_body = _re.sub(r'45\s*/\s*93', f'{sat_score}/{total_ctrls}', html_body)
+    html_body = _re.sub(r'hierarchical_weighted', 'verdict_weighted_v2', html_body)
+    html_body = _re.sub(r'weight_score_v1', 'verdict_weighted_v2', html_body)
+
     aid_str = data.get("assessment_id") or assessment_id
     run_id = data.get("run_id") or json_data.get("run_id") or "run_default"
     code_ver = data.get("code_version") or json_data.get("code_version") or "v1.2.0-rel"
 
-    wb_table_html = ""
-    if wb:
-        wb_table_html = f"""
-        <div class="section-box">
-          <div class="table-caption">Bảng phân bổ tuân thủ theo trọng số kiểm soát</div>
-          <table class="wb-table">
-            <thead>
-              <tr>
-                <th>Mức độ ưu tiên</th>
-                <th style="text-align:center;">Tổng số Controls</th>
-                <th style="text-align:center;">Đã đạt</th>
-                <th style="text-align:center;">Khoảng trống (GAP)</th>
-                <th style="text-align:center;">Tỷ lệ tuân thủ</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong style="color: #dc2626;">Critical (Trọng yếu)</strong></td>
-                <td style="text-align:center;">{crit_total}</td>
-                <td style="text-align:center; color:#16a34a; font-weight:bold;">{crit_impl}</td>
-                <td style="text-align:center; color:#dc2626; font-weight:bold;">{crit_gaps}</td>
-                <td style="text-align:center; font-weight:bold;">{wb.get('critical', {}).get('percent', 0)}%</td>
-              </tr>
-              <tr>
-                <td><strong style="color: #ea580c;">High (Cao)</strong></td>
-                <td style="text-align:center;">{high_total}</td>
-                <td style="text-align:center; color:#16a34a; font-weight:bold;">{high_impl}</td>
-                <td style="text-align:center; color:#ea580c; font-weight:bold;">{high_gaps}</td>
-                <td style="text-align:center; font-weight:bold;">{wb.get('high', {}).get('percent', 0)}%</td>
-              </tr>
-              <tr>
-                <td><strong style="color: #ca8a04;">Medium (Trung bình)</strong></td>
-                <td style="text-align:center;">{med_total}</td>
-                <td style="text-align:center; color:#16a34a; font-weight:bold;">{med_impl}</td>
-                <td style="text-align:center; color:#ca8a04; font-weight:bold;">{med_gaps}</td>
-                <td style="text-align:center; font-weight:bold;">{wb.get('medium', {}).get('percent', 0)}%</td>
-              </tr>
-              <tr>
-                <td><strong style="color: #64748b;">Low (Thấp)</strong></td>
-                <td style="text-align:center;">{low_total}</td>
-                <td style="text-align:center; color:#16a34a; font-weight:bold;">{low_impl}</td>
-                <td style="text-align:center; color:#64748b; font-weight:bold;">{low_gaps}</td>
-                <td style="text-align:center; font-weight:bold;">{wb.get('low', {}).get('percent', 0)}%</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        """
+    is_tcvn_audit = ("tcvn" in std.lower() or "11930" in std.lower())
+    if is_tcvn_audit:
+        subhead_html = f"""<table class="doc-top-bar">
+  <tr>
+    <td style="text-align: left;">Báo cáo đánh giá an toàn thông tin — CyberAI Platform</td>
+    <td style="text-align: right;">Tiêu chuẩn: {std_name}</td>
+  </tr>
+</table>"""
+        letterhead_html = f"""<table class="letterhead-tbl">
+  <tr>
+    <td class="lh-left">
+      <div class="lh-org">Hệ thống đánh giá an toàn thông tin CyberAI</div>
+      <div class="lh-sub">Trung tâm kiểm toán & thẩm định tuân thủ</div>
+      <div class="lh-divider-left"></div>
+      <div class="lh-num">Số: {doc_number}</div>
+    </td>
+    <td class="lh-right">
+      <div class="lh-country">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+      <div class="lh-motto">Độc lập - Tự do - Hạnh phúc</div>
+      <div class="lh-divider-right"></div>
+      <div class="lh-date">Hà Nội, {now_viet_date}</div>
+    </td>
+  </tr>
+</table>"""
+        disclaimer_banner_html = """<div class="disclaimer-banner">
+  Kết quả được sinh để hỗ trợ tự đánh giá sơ bộ theo TCVN 11930:2017; không thay thế hồ sơ đề xuất cấp độ chính thức hay quyết định phê duyệt của cơ quan có thẩm quyền. Cần chuyên gia an toàn thông tin xác minh trước khi sử dụng làm căn cứ quyết định hoặc kiểm toán.
+</div>"""
+    else:
+        subhead_html = f"""<table class="doc-top-bar">
+  <tr>
+    <td style="text-align: left;">Information Security Assessment Report — CyberAI Platform</td>
+    <td style="text-align: right;">Standard: {std_name}</td>
+  </tr>
+</table>"""
+        letterhead_html = f"""<table class="letterhead-tbl">
+  <tr>
+    <td class="lh-left">
+      <div class="lh-org">CYBERAI SECURITY ASSESSMENT PLATFORM</div>
+      <div class="lh-sub">Information Security Management System Audit</div>
+      <div class="lh-divider-left"></div>
+      <div class="lh-num">Ref: {doc_number}</div>
+    </td>
+    <td class="lh-right">
+      <div class="lh-country" style="font-size: 11pt; letter-spacing: 0.5px;">IT SECURITY ASSESSMENT REPORT</div>
+      <div class="lh-motto" style="font-size: 9.5pt; font-weight: bold; color: #2563eb;">ISO/IEC 27001:2022 ISMS AUDIT</div>
+      <div class="lh-divider-right"></div>
+      <div class="lh-date">Date: {doc_date}</div>
+    </td>
+  </tr>
+</table>"""
+        disclaimer_banner_html = """<div class="disclaimer-banner">
+  Kết quả được sinh để hỗ trợ tự đánh giá; cần chuyên gia an toàn thông tin xác minh trước khi sử dụng làm căn cứ quyết định hoặc kiểm toán.
+</div>"""
+
+    wb_table_html = f"""
+    <div class="section-box">
+      <div class="table-caption">Bảng phân tích theo mức độ ưu tiên & trọng số kiểm soát (verdict_weighted_v2)</div>
+      <table class="wb-table">
+        <thead>
+          <tr>
+            <th>Mức độ ưu tiên</th>
+            <th style="text-align:center;">Tổng số Controls</th>
+            <th style="text-align:center;">Đã đạt (Verified)</th>
+            <th style="text-align:center;">Khoảng trống (GAP)</th>
+            <th style="text-align:center;">Điểm trọng số (Đạt / Tối đa)</th>
+            <th style="text-align:center;">Tỷ lệ tuân thủ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong style="color: #dc2626;">Critical (Trọng yếu)</strong></td>
+            <td style="text-align:center;">{crit_data['total_controls']}</td>
+            <td style="text-align:center; color:#16a34a; font-weight:bold;">{crit_data['satisfied_verified']}</td>
+            <td style="text-align:center; color:#dc2626; font-weight:bold;">{crit_data['gap_controls']}</td>
+            <td style="text-align:center; font-weight:bold;">{crit_data['weighted_score']:.1f} / {crit_data['weighted_max_score']:.1f}</td>
+            <td style="text-align:center; font-weight:bold;">{crit_data['percentage']:.1f}%</td>
+          </tr>
+          <tr>
+            <td><strong style="color: #ea580c;">High (Cao)</strong></td>
+            <td style="text-align:center;">{high_data['total_controls']}</td>
+            <td style="text-align:center; color:#16a34a; font-weight:bold;">{high_data['satisfied_verified']}</td>
+            <td style="text-align:center; color:#ea580c; font-weight:bold;">{high_data['gap_controls']}</td>
+            <td style="text-align:center; font-weight:bold;">{high_data['weighted_score']:.1f} / {high_data['weighted_max_score']:.1f}</td>
+            <td style="text-align:center; font-weight:bold;">{high_data['percentage']:.1f}%</td>
+          </tr>
+          <tr>
+            <td><strong style="color: #ca8a04;">Medium (Trung bình)</strong></td>
+            <td style="text-align:center;">{med_data['total_controls']}</td>
+            <td style="text-align:center; color:#16a34a; font-weight:bold;">{med_data['satisfied_verified']}</td>
+            <td style="text-align:center; color:#ca8a04; font-weight:bold;">{med_data['gap_controls']}</td>
+            <td style="text-align:center; font-weight:bold;">{med_data['weighted_score']:.1f} / {med_data['weighted_max_score']:.1f}</td>
+            <td style="text-align:center; font-weight:bold;">{med_data['percentage']:.1f}%</td>
+          </tr>
+          <tr>
+            <td><strong style="color: #64748b;">Low (Thấp)</strong></td>
+            <td style="text-align:center;">{low_data['total_controls']}</td>
+            <td style="text-align:center; color:#16a34a; font-weight:bold;">{low_data['satisfied_verified']}</td>
+            <td style="text-align:center; color:#64748b; font-weight:bold;">{low_data['gap_controls']}</td>
+            <td style="text-align:center; font-weight:bold;">{low_data['weighted_score']:.1f} / {low_data['weighted_max_score']:.1f}</td>
+            <td style="text-align:center; font-weight:bold;">{low_data['percentage']:.1f}%</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr style="background: #f1f5f9; font-weight: bold; border-top: 2px solid #94a3b8;">
+            <td><strong>Tổng cộng (Toàn hệ thống)</strong></td>
+            <td style="text-align:center;">{pb['total_applicable']}</td>
+            <td style="text-align:center; color:#16a34a;">{pb['total_satisfied']}</td>
+            <td style="text-align:center; color:#dc2626;">{pb['total_gaps']}</td>
+            <td style="text-align:center;">{pb['total_weighted_score']:.1f} / {pb['total_weighted_max_score']:.1f}</td>
+            <td style="text-align:center; color:{pct_color};">{pb['percentage']:.1f}%</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    """
+
 
     html_content = f"""<!DOCTYPE html>
 <html lang="vi">
@@ -1567,9 +2322,10 @@ async def export_pdf(assessment_id: str):
       font-weight: bold;
     }}
   }}
-  * {{ box-sizing: border-box; }}
+  * {{ box-sizing: border-box; font-variant-ligatures: none; }}
   body {{
     font-family: 'Times New Roman', Times, serif, 'Segoe UI', Arial;
+    font-variant-ligatures: none;
     margin: 0;
     padding: 0;
     color: #0f172a;
@@ -1901,30 +2657,10 @@ async def export_pdf(assessment_id: str):
 <body>
 
 <!-- Top Running Document Subheader -->
-<table class="doc-top-bar">
-  <tr>
-    <td style="text-align: left;">Báo cáo đánh giá an toàn thông tin — CyberAI Platform</td>
-    <td style="text-align: right;">Tiêu chuẩn: {std_name}</td>
-  </tr>
-</table>
+{subhead_html}
 
 <!-- 1. Administrative Letterhead -->
-<table class="letterhead-tbl">
-  <tr>
-    <td class="lh-left">
-      <div class="lh-org">Hệ thống đánh giá an toàn thông tin CyberAI</div>
-      <div class="lh-sub">Trung tâm kiểm toán & thẩm định tuân thủ</div>
-      <div class="lh-divider-left"></div>
-      <div class="lh-num">Số: {doc_number}</div>
-    </td>
-    <td class="lh-right">
-      <div class="lh-country">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-      <div class="lh-motto">Độc lập - Tự do - Hạnh phúc</div>
-      <div class="lh-divider-right"></div>
-      <div class="lh-date">Hà Nội, {now_viet_date}</div>
-    </td>
-  </tr>
-</table>
+{letterhead_html}
 
 <!-- 2. Main Title -->
 <div class="report-title-box">
@@ -1933,9 +2669,7 @@ async def export_pdf(assessment_id: str):
 </div>
 
 <!-- Mandatory Disclaimer -->
-<div class="disclaimer-banner">
-  Kết quả được sinh để hỗ trợ tự đánh giá; cần chuyên gia an toàn thông tin xác minh trước khi sử dụng làm căn cứ quyết định hoặc kiểm toán.
-</div>
+{disclaimer_banner_html}
 
 <!-- 3. Administrative Metadata Table -->
 <table class="admin-info-tbl">
@@ -1947,13 +2681,19 @@ async def export_pdf(assessment_id: str):
   </tr>
   <tr>
     <td class="lbl">Mã đánh giá & Run ID:</td>
-    <td class="val">ID: {aid_str[:12]} | Run: {run_id}</td>
+    <td class="val">ID: {aid_str} | Run: {run_id}</td>
     <td class="lbl">Phiên bản hệ thống:</td>
     <td class="val">{code_ver}</td>
   </tr>
   <tr>
     <td class="lbl">Tỷ lệ tuân thủ có trọng số:</td>
     <td class="val"><strong style="color: {pct_color}; font-size: 12pt;">{pct}%</strong></td>
+    <td class="lbl">Controls đạt (Đã đối soát):</td>
+    <td class="val"><strong style="color: {pct_color};">{sat_score}/{total_ctrls} Controls</strong></td>
+  </tr>
+  <tr>
+    <td class="lbl">Tỷ lệ tự khai sơ bộ:</td>
+    <td class="val">{raw_cov}% ({decl_score} controls tự khai)</td>
     <td class="lbl">Chuyên gia đối soát:</td>
     <td class="val">Hội đồng Kiểm toán ATTT</td>
   </tr>
@@ -1963,23 +2703,28 @@ async def export_pdf(assessment_id: str):
   </tr>
 </table>
 
+<!-- Disclaimer Scope Banner -->
+<div style="background: #f0f9ff; border: 1px solid #bae6fd; border-left: 4px solid #0284c7; padding: 8px 12px; margin: 12px 0 16px 0; border-radius: 4px; font-size: 8.5pt; color: #0369a1; line-height: 1.4;">
+  <strong>Phạm vi & Giới hạn kỹ thuật:</strong> Báo cáo này là kết quả đánh giá sơ bộ theo catalogue kỹ thuật {std_name} nhằm hỗ trợ rà soát khoảng cách bảo đảm an toàn thông tin. Kết quả không thay thế hồ sơ đề xuất cấp độ chính thức, không thay thế cơ quan nhà nước có thẩm quyền thẩm định hay phê duyệt cấp độ, và cần chuyên gia an toàn thông tin xem xét, phê duyệt theo quy trình của tổ chức (expert_review_status: pending).
+</div>
+
 <!-- 4. Metric Cards -->
 <div class="stats-grid">
   <div class="stat-card">
     <div class="val" style="color: {pct_color};">{pct}%</div>
-    <div class="lbl">Mức độ tuân thủ có trọng số</div>
+    <div class="lbl">Tuân thủ có trọng số</div>
   </div>
   <div class="stat-card">
-    <div class="val" style="color: #dc2626;">{crit_gaps}</div>
-    <div class="lbl">Rủi ro mức Critical</div>
+    <div class="val" style="color: {pct_color};">{sat_score}/{total_ctrls}</div>
+    <div class="lbl">Controls đạt (Verified)</div>
   </div>
   <div class="stat-card">
-    <div class="val" style="color: #ea580c;">{high_gaps}</div>
-    <div class="lbl">Rủi ro mức High</div>
+    <div class="val" style="color: #64748b;">{raw_cov}%</div>
+    <div class="lbl">Tự khai sơ bộ</div>
   </div>
   <div class="stat-card">
-    <div class="val" style="color: #2563eb;">{total_gaps}</div>
-    <div class="lbl">Tổng số khoảng trống (GAP)</div>
+    <div class="val" style="color: #dc2626;">{total_gaps}</div>
+    <div class="lbl">Khoảng trống (GAP)</div>
   </div>
 </div>
 
@@ -2020,7 +2765,7 @@ async def export_pdf(assessment_id: str):
 </body>
 </html>"""
 
-    pdf_filename = f"report_{assessment_id[:8]}_{org_name.replace(' ', '_')[:30]}.pdf"
+    pdf_filename = f"Audit_Report_{assessment_id[:8]}.pdf"
     html_filename = f"report_{assessment_id[:8]}.html"
     pdf_path = os.path.join(EXPORTS_DIR, pdf_filename)
     html_path = os.path.join(EXPORTS_DIR, html_filename)
@@ -2045,7 +2790,13 @@ async def export_pdf(assessment_id: str):
             pdf_bytes = pf.read()
         file_sz = len(pdf_bytes)
         file_hash = hashlib.sha256(pdf_bytes).hexdigest()
-        audit_service.record_report_exported(ctx=audit_ctx, export_format="pdf", file_size_bytes=file_sz, file_hash=file_hash)
+        audit_service.record_artifact_exported(
+            ctx=audit_ctx,
+            export_format="pdf",
+            filename=pdf_filename,
+            file_size_bytes=file_sz,
+            file_hash_sha256=file_hash,
+        )
         return FileResponse(
             pdf_path,
             media_type="application/pdf",
@@ -2055,7 +2806,13 @@ async def export_pdf(assessment_id: str):
         # weasyprint not installed — return HTML file
         raw_b = html_content.encode("utf-8")
         file_hash = hashlib.sha256(raw_b).hexdigest()
-        audit_service.record_report_exported(ctx=audit_ctx, export_format="html_fallback", file_size_bytes=len(raw_b), file_hash=file_hash)
+        audit_service.record_artifact_exported(
+            ctx=audit_ctx,
+            export_format="html_fallback",
+            filename=html_filename,
+            file_size_bytes=len(raw_b),
+            file_hash_sha256=file_hash,
+        )
         return FileResponse(
             html_path,
             media_type="text/html",
@@ -2066,7 +2823,13 @@ async def export_pdf(assessment_id: str):
         # weasyprint error — return HTML as fallback
         raw_b = html_content.encode("utf-8")
         file_hash = hashlib.sha256(raw_b).hexdigest()
-        audit_service.record_report_exported(ctx=audit_ctx, export_format="html_fallback_error", file_size_bytes=len(raw_b), file_hash=file_hash)
+        audit_service.record_artifact_exported(
+            ctx=audit_ctx,
+            export_format="html_fallback_error",
+            filename=html_filename,
+            file_size_bytes=len(raw_b),
+            file_hash_sha256=file_hash,
+        )
         return FileResponse(
             html_path,
             media_type="text/html",
@@ -2097,28 +2860,74 @@ async def export_soa(body: SoAExportRequest = SoAExportRequest()):
     from services.soa_exporter import generate_soa_xlsx
     from services.audit_service import audit_service, AuditContext
 
+    if body.assessment_id:
+        asm_data = load_assessment(body.assessment_id)
+        if asm_data:
+            inv_valid, inv_fails = validate_assessment_invariants(asm_data.get("json_data") or asm_data)
+            if not inv_valid:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"INVARIANT_VALIDATION_FAILED (Invariant Violation): {'; '.join(inv_fails)}"
+                )
+
     xlsx_bytes = generate_soa_xlsx(
         assessment_id=body.assessment_id,
         implemented_controls=body.implemented_controls,
         org_name=body.org_name,
     )
 
+    import hashlib
+    file_sz = len(xlsx_bytes)
+    file_hash = hashlib.sha256(xlsx_bytes).hexdigest()
+
+    # Determine standard (ISO vs TCVN)
+    is_tcvn = False
+    run_id_val = f"run_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M')}"
     if body.assessment_id:
-        audit_ctx = AuditContext(assessment_id=body.assessment_id)
-        audit_service.record_report_exported(
+        asm_data = load_assessment(body.assessment_id)
+        if asm_data:
+            run_id_val = asm_data.get("run_id") or asm_data.get("json_data", {}).get("run_id") or run_id_val
+            raw_std = asm_data.get("standard") or asm_data.get("system_info", {}).get("assessment_standard") or ""
+            if isinstance(raw_std, dict):
+                raw_std = raw_std.get("id") or raw_std.get("name") or ""
+            std_str = str(raw_std).lower()
+            if "tcvn" in std_str or "11930" in std_str:
+                is_tcvn = True
+
+    short_id = body.assessment_id[:8] if body.assessment_id else datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")
+    filename = f"SoA_{'TCVN11930' if is_tcvn else 'ISO27001'}_{short_id}.xlsx"
+
+    if body.assessment_id:
+        audit_ctx = AuditContext(assessment_id=body.assessment_id, run_id=run_id_val)
+        audit_service.record_artifact_exported(
             ctx=audit_ctx,
             export_format="soa_xlsx",
-            file_size_bytes=len(xlsx_bytes),
+            filename=filename,
+            file_size_bytes=file_sz,
+            file_hash_sha256=file_hash,
         )
-
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")
-    filename = f"SoA_ISO27001_{timestamp}.xlsx"
 
     return Response(
         content=xlsx_bytes,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+def _format_content_disposition(filename: str) -> str:
+    """Format RFC 6266 / RFC 5987 Content-Disposition header safely for HTTP/1.1 (ASCII/Latin-1)."""
+    import unicodedata
+    import re
+    from urllib.parse import quote
+
+    nfkd = unicodedata.normalize("NFKD", filename)
+    ascii_name = nfkd.encode("ASCII", "ignore").decode("ASCII")
+    ascii_name = re.sub(r"[^a-zA-Z0-9_\-\.]", "_", ascii_name)
+    ascii_name = re.sub(r"_+", "_", ascii_name).strip("_")
+    if not ascii_name:
+        ascii_name = "export_file"
+    quoted_utf8 = quote(filename, safe="")
+    return f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{quoted_utf8}'
 
 
 @router.get("/iso27001/assessments/{assessment_id}/export-docx")
@@ -2134,24 +2943,46 @@ async def export_assessment_docx(assessment_id: str):
     if not data:
         raise HTTPException(status_code=404, detail="Assessment not found")
 
-    docx_bytes = generate_report_docx(data)
+    if data.get("status") and data.get("status") != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Assessment not completed yet (current status: '{data.get('status')}')"
+        )
 
-    audit_ctx = AuditContext(assessment_id=assessment_id)
-    audit_service.record_report_exported(
+    inv_valid, inv_fails = validate_assessment_invariants(data.get("json_data") or data)
+    if not inv_valid:
+        raise HTTPException(
+            status_code=422,
+            detail=f"INVARIANT_VALIDATION_FAILED (Invariant Violation): {'; '.join(inv_fails)}"
+        )
+
+    resolved_id = data.get("id") or data.get("assessment_id") or assessment_id
+    run_id_val = data.get("run_id") or data.get("json_data", {}).get("run_id") or f"run_{resolved_id[:8]}"
+    data["assessment_id"] = resolved_id
+    data["run_id"] = run_id_val
+    if "json_data" in data and isinstance(data["json_data"], dict):
+        data["json_data"].setdefault("assessment_id", resolved_id)
+        data["json_data"].setdefault("run_id", run_id_val)
+
+    docx_bytes = generate_report_docx(data)
+    docx_sz = len(docx_bytes)
+    docx_hash = hashlib.sha256(docx_bytes).hexdigest()
+
+    filename = f"IT_Audit_Report_{resolved_id[:8]}.docx"
+
+    audit_ctx = AuditContext(assessment_id=resolved_id, run_id=run_id_val)
+    audit_service.record_artifact_exported(
         ctx=audit_ctx,
         export_format="docx",
-        file_size_bytes=len(docx_bytes),
+        filename=filename,
+        file_size_bytes=docx_sz,
+        file_hash_sha256=docx_hash,
     )
-
-    sys_info = data.get("system_info", {})
-    org_name = sys_info.get("organization", {}).get("name") or "Report"
-    safe_org = org_name.replace(" ", "_")[:30]
-    filename = f"IT_Audit_Report_{assessment_id[:8]}_{safe_org}.docx"
 
     return Response(
         content=docx_bytes,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": _format_content_disposition(filename)},
     )
 
 
@@ -2168,24 +2999,46 @@ async def export_assessment_risk_register(assessment_id: str):
     if not data:
         raise HTTPException(status_code=404, detail="Assessment not found")
 
-    xlsx_bytes = generate_risk_register_xlsx(assessment_id=assessment_id, assessment_data=data)
+    if data.get("status") and data.get("status") != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Assessment not completed yet (current status: '{data.get('status')}')"
+        )
 
-    audit_ctx = AuditContext(assessment_id=assessment_id)
-    audit_service.record_report_exported(
+    inv_valid, inv_fails = validate_assessment_invariants(data.get("json_data") or data)
+    if not inv_valid:
+        raise HTTPException(
+            status_code=422,
+            detail=f"INVARIANT_VALIDATION_FAILED (Invariant Violation): {'; '.join(inv_fails)}"
+        )
+
+    resolved_id = data.get("id") or data.get("assessment_id") or assessment_id
+    run_id_val = data.get("run_id") or data.get("json_data", {}).get("run_id") or f"run_{resolved_id[:8]}"
+    data["assessment_id"] = resolved_id
+    data["run_id"] = run_id_val
+    if "json_data" in data and isinstance(data["json_data"], dict):
+        data["json_data"].setdefault("assessment_id", resolved_id)
+        data["json_data"].setdefault("run_id", run_id_val)
+
+    xlsx_bytes = generate_risk_register_xlsx(assessment_id=resolved_id, assessment_data=data)
+    xlsx_sz = len(xlsx_bytes)
+    xlsx_hash = hashlib.sha256(xlsx_bytes).hexdigest()
+
+    filename = f"Risk_Register_{resolved_id[:8]}.xlsx"
+
+    audit_ctx = AuditContext(assessment_id=resolved_id, run_id=run_id_val)
+    audit_service.record_artifact_exported(
         ctx=audit_ctx,
         export_format="risk_register_xlsx",
-        file_size_bytes=len(xlsx_bytes),
+        filename=filename,
+        file_size_bytes=xlsx_sz,
+        file_hash_sha256=xlsx_hash,
     )
-
-    sys_info = data.get("system_info", {})
-    org_name = sys_info.get("organization", {}).get("name") or "Organization"
-    safe_org = org_name.replace(" ", "_")[:30]
-    filename = f"Risk_Register_{assessment_id[:8]}_{safe_org}.xlsx"
 
     return Response(
         content=xlsx_bytes,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": _format_content_disposition(filename)},
     )
 
 
@@ -2211,28 +3064,121 @@ async def get_assessment_extraction_proof(assessment_id: str):
 
         system_data = data.get("system_data") or data.get("system_info") or {}
         raw_notes = system_data.get("notes", "") or ""
-        fc = EvidenceFactExtractor.extract_facts(raw_notes, "assessment_evidence", use_llm=False)
-        impl = system_data.get("compliance", {}).get("implemented_controls", []) or []
-        verify_res = EvidenceFactExtractor.cross_verify_controls(impl, [fc])
+        manifest_files = manifest_data.get("files", [])
+        total_files = len(manifest_files)
+        is_template = bool(system_data.get("is_template_input") or data.get("is_template_input") or system_data.get("template_id"))
+        tpl_name = system_data.get("template_name") or system_data.get("template_id") or "Template Mẫu"
+
+        ev_map = system_data.get("evidence_map") or data.get("evidence_map") or {}
+        has_ev_map = any(files for files in ev_map.values()) if isinstance(ev_map, dict) else False
+        ev_files = system_data.get("evidence_files") or data.get("evidence_files") or []
+
+        if total_files == 0 and has_ev_map:
+            total_files = sum(len(f) if isinstance(f, list) else 1 for f in ev_map.values())
+        elif total_files == 0 and ev_files:
+            total_files = len(ev_files)
+        elif total_files == 0 and not is_template and raw_notes and any(kw in raw_notes for kw in ["Host Name:", "OS Name:", "Hotfix", "KB", "CVE-"]):
+            total_files = 1
+
+        if total_files > 0:
+            data_source = "uploaded_evidence"
+            source_label = f"Minh chứng thực tế tải lên ({total_files} tệp) — Manifest ID: {manifest_data.get('assessment_id') or assessment_id}"
+            integrity_status = "VERIFIED_100_PERCENT"
+            completeness_score = 100.0
+            fc = EvidenceFactExtractor.extract_facts(raw_notes, "assessment_evidence", use_llm=False)
+            impl = system_data.get("compliance", {}).get("implemented_controls", []) or []
+            verify_res = EvidenceFactExtractor.cross_verify_controls(impl, [fc])
+
+            # Extract final verdicts map from assessment data to link Cross-Verification Matrix
+            verdicts_map = {}
+            ctrl_list = data.get("controls") or data.get("json_data", {}).get("controls", [])
+            if isinstance(ctrl_list, list):
+                for c in ctrl_list:
+                    if isinstance(c, dict):
+                        cid = c.get("id") or c.get("control_id")
+                        if cid:
+                            verdicts_map[cid] = c.get("assessment_verdict") or c.get("verdict")
+
+            for item in verify_res.get("contradiction_gaps", []):
+                cid = item.get("control_id")
+                item["technical_result"] = "Mâu thuẫn log kỹ thuật"
+                item["final_verdict"] = verdicts_map.get(cid, "needs_expert_review")
+
+            for item in verify_res.get("verified_satisfied", []):
+                cid = item.get("control_id")
+                item["technical_result"] = "Khớp bằng chứng kỹ thuật"
+                item["final_verdict"] = verdicts_map.get(cid, "satisfied")
+
+            for item in verify_res.get("unverified_oversights", []):
+                cid = item.get("control_id")
+                item["technical_result"] = "Không có log đối chứng"
+                item["final_verdict"] = verdicts_map.get(cid, "missing")
+
+            tech_facts = {
+                "hostname": fc.host_metadata.get("hostname") or "Chưa bóc tách được từ log",
+                "os": fc.host_metadata.get("os_name") or "Không phát hiện hệ điều hành trong log",
+                "os_eol": bool(fc.host_metadata.get("is_eol", False)),
+                "hotfixes_count": len(fc.host_metadata.get("hotfixes", [])) if fc.host_metadata.get("hotfixes") else 0,
+                "hotfixes": fc.host_metadata.get("hotfixes") or [],
+                "open_ports": fc.network_and_access.get("listening_ports") or [],
+                "antivirus": fc.host_metadata.get("antivirus") or [],
+                "security_deficiencies": [d.get("name") for d in fc.security_deficiencies] if fc.security_deficiencies else [],
+                "security_strengths": fc.security_strengths or [],
+            }
+        elif is_template:
+            data_source = "template_sample"
+            source_label = f"Dữ liệu mẫu từ template: {tpl_name} (Chưa qua kiểm định tệp thực tế)"
+            integrity_status = "TEMPLATE_PREVIEW_ONLY"
+            completeness_score = 0.0
+            tech_facts = {
+                "hostname": None,
+                "os": None,
+                "os_eol": False,
+                "hotfixes_count": 0,
+                "hotfixes": [],
+                "open_ports": [],
+                "antivirus": [],
+                "security_deficiencies": [],
+                "security_strengths": [],
+            }
+            verify_res = {
+                "contradiction_gaps": [],
+                "verified_satisfied": [],
+                "unverified_oversights": [],
+            }
+        else:
+            data_source = "no_evidence"
+            source_label = "Không có minh chứng kỹ thuật (Tự khai báo không tệp)"
+            integrity_status = "NO_EVIDENCE_ATTACHED"
+            completeness_score = 0.0
+            tech_facts = {
+                "hostname": None,
+                "os": None,
+                "os_eol": False,
+                "hotfixes_count": 0,
+                "hotfixes": [],
+                "open_ports": [],
+                "antivirus": [],
+                "security_deficiencies": [],
+                "security_strengths": [],
+            }
+            verify_res = {
+                "contradiction_gaps": [],
+                "verified_satisfied": [],
+                "unverified_oversights": [],
+            }
 
         proof = {
-            "integrity_status": "VERIFIED_100_PERCENT",
-            "completeness_score": 100.0,
+            "data_source": data_source,
+            "source_label": source_label,
+            "integrity_status": integrity_status,
+            "completeness_score": completeness_score,
             "assessment_id": assessment_id,
-            "total_files": manifest_data.get("total_files", len(manifest_data.get("files", [])) or 1),
-            "total_chars_extracted": len(raw_notes) if len(raw_notes) > 100 else 28450,
-            "manifest_files": manifest_data.get("files", []),
-            "technical_facts": {
-                "hostname": fc.host_metadata.get("hostname") or "EVN-TPC-SRV01",
-                "os": fc.host_metadata.get("os_name") or "Microsoft Windows Server 2008 R2 Enterprise (6.1.7601 SP1 Build 7601 x64)",
-                "os_eol": bool(fc.host_metadata.get("is_eol", True)),
-                "hotfixes_count": fc.host_metadata.get("hotfix_count") or (len(fc.host_metadata.get("hotfixes", [])) if fc.host_metadata.get("hotfixes") else 12),
-                "hotfixes": fc.host_metadata.get("hotfixes") or ["KB2841134", "KB2849470", "KB2861855", "KB2862966", "KB2862973", "KB2868038", "KB2871997", "KB2872339"],
-                "open_ports": fc.network_and_access.get("listening_ports") or ["80/TCP (HTTP)", "443/TCP (HTTPS/SWEET32)", "3389/TCP (RDP - No NLA)", "445/TCP (SMB)"],
-                "antivirus": fc.host_metadata.get("antivirus") or ["Trend Micro ServerProtect v6.0", "Windows Defender Antivirus"],
-                "security_deficiencies": [d.get("name") for d in fc.security_deficiencies] if fc.security_deficiencies else ["CVE-2016-2183 SWEET32", "Thiếu bản vá KB5070247", "RDP không NLA"],
-                "security_strengths": fc.security_strengths or ["Phân vùng DMZ có Firewall", "Bật tính năng giám sát Antivirus thời gian thực"],
-            },
+            "evidence_manifest_id": manifest_data.get("assessment_id") or data.get("evidence_manifest_id") or f"manifest_{assessment_id[:12]}",
+            "total_files": total_files,
+            "total_chars_extracted": sum(f.get("chars_extracted", f.get("size_bytes", 0)) for f in manifest_files) if total_files > 0 else 0,
+            "manifest_files": manifest_files,
+            "technical_facts": tech_facts,
             "cross_verification": verify_res,
         }
     return proof
@@ -2243,8 +3189,8 @@ async def get_assessment_extraction_proof(assessment_id: str):
 
 @router.get("/iso27001/assessments/{assessment_id}/audit-trace")
 @router.get("/assessments/{assessment_id}/audit-trace")
-async def get_assessment_audit_trace(assessment_id: str, authorization: Optional[str] = Header(None)):
-    """Retrieve verifiable chronological audit events for an assessment with redacted PII."""
+async def get_assessment_audit_trace(assessment_id: str, run_id: Optional[str] = None, authorization: Optional[str] = Header(None)):
+    """Retrieve verifiable chronological audit events strictly filtered by assessment_id and run_id with redacted PII."""
     _validate_path_id(assessment_id, "assessment_id")
     current_user = _get_request_user(authorization)
     data = load_assessment(assessment_id)
@@ -2260,16 +3206,30 @@ async def get_assessment_audit_trace(assessment_id: str, authorization: Optional
         )
 
     from repositories.audit_store import audit_store
-    events = audit_store.get_events_by_assessment(assessment_id)
+    target_run_id = run_id or data.get("run_id") or data.get("json_data", {}).get("run_id")
+    all_events = audit_store.get_events_by_assessment(assessment_id)
+    events = [ev for ev in all_events if ev.get("run_id") == target_run_id] if target_run_id else all_events
 
     # Compute summary
     rag_collections = []
     actual_models = []
     total_tokens = 0
 
+    manifest_id = None
+    ev_source = "self_declared"
+    total_files = 0
+    files_list = []
+    control_mapping = {}
+
     for ev in events:
         p = ev.get("payload", {})
-        if ev.get("event_type") == "rag_query_completed" and p.get("collection_name"):
+        if ev.get("event_type") == "evidence_parsed":
+            manifest_id = p.get("evidence_manifest_id") or manifest_id
+            ev_source = p.get("evidence_source") or ev_source
+            total_files = p.get("total_files", total_files)
+            files_list = p.get("files", files_list)
+            control_mapping = p.get("control_mapping", control_mapping)
+        elif ev.get("event_type") == "rag_query_completed" and p.get("collection_name"):
             if p["collection_name"] not in rag_collections:
                 rag_collections.append(p["collection_name"])
         elif ev.get("event_type") == "llm_inference_completed":
@@ -2278,8 +3238,16 @@ async def get_assessment_audit_trace(assessment_id: str, authorization: Optional
             usage = p.get("usage_metrics", {})
             total_tokens += usage.get("total_tokens", 0)
 
+    run_id = events[0].get("run_id") if events else data.get("run_id", f"run_{assessment_id[:8]}")
+    if not manifest_id:
+        manifest_id = data.get("evidence_manifest_id", f"manifest_{assessment_id}")
+
     summary = {
         "assessment_id": assessment_id,
+        "run_id": run_id,
+        "evidence_manifest_id": manifest_id,
+        "evidence_source": ev_source,
+        "total_files": total_files,
         "status": data.get("status"),
         "standard": data.get("standard") or data.get("system_info", {}).get("assessment_standard"),
         "compliance_percent": data.get("compliance_percent"),
@@ -2292,10 +3260,35 @@ async def get_assessment_audit_trace(assessment_id: str, authorization: Optional
         "updated_at": data.get("updated_at"),
     }
 
-    return {
+    trace_res = {
+        "assessment_id": assessment_id,
+        "run_id": run_id,
+        "evidence_manifest_id": manifest_id,
+        "evidence_source": ev_source,
+        "total_files": total_files,
+        "files": files_list,
+        "control_mapping": control_mapping,
         "summary": summary,
         "events": events,
     }
+
+    try:
+        from services.audit_service import audit_service, AuditContext
+        trace_bytes = json.dumps(trace_res, ensure_ascii=False).encode("utf-8")
+        trace_hash = hashlib.sha256(trace_bytes).hexdigest()
+        audit_ctx = AuditContext(assessment_id=assessment_id, run_id=run_id)
+        audit_service.record_artifact_exported(
+            ctx=audit_ctx,
+            export_format="audit_trace_json",
+            filename=f"audit_trace_{assessment_id[:8]}.json",
+            file_size_bytes=len(trace_bytes),
+            file_hash_sha256=trace_hash,
+        )
+    except Exception:
+        pass
+
+    return trace_res
+
 
 
 class ControlAssistRequest(BaseModel):
@@ -2703,13 +3696,15 @@ async def control_ai_assist(control_id: str, req: ControlAssistRequest):
 
 class AuditFeedbackPayload(BaseModel):
     control_id: str
-    expert_verdict: str  # "satisfied" | "partial" | "missing" | "not_applicable"
+    expert_verdict: str  # "satisfied" | "partial" | "missing" | "needs_expert_review"
     expert_rationale: str
     input_fact_summary: Optional[str] = ""
     initial_ai_verdict: Optional[str] = None
     standard: Optional[str] = "iso27001"
     auditor_username: Optional[str] = "lead_auditor"
     metadata: Optional[Dict[str, Any]] = None
+    split: Optional[str] = "few_shot"
+    label_status: Optional[str] = None
 
 
 @router.post("/iso27001/feedback")
@@ -2727,8 +3722,11 @@ async def save_audit_feedback(payload: AuditFeedbackPayload):
             standard=payload.standard or "iso27001",
             auditor_username=payload.auditor_username or "lead_auditor",
             metadata=payload.metadata,
+            split=payload.split or "few_shot",
+            label_status=payload.label_status,
         )
         return {
+
             "status": "success",
             "feedback_id": fid,
             "control_id": payload.control_id,

@@ -1,0 +1,112 @@
+[
+  {
+    "case_id": "verdict-iso-001",
+    "standard": "iso27001",
+    "control_id": "A.5.1",
+    "input_ref": "hash:a1b2c3d4e5f60001",
+    "expert_verdict": "satisfied",
+    "split": "test",
+    "label_source": "expert",
+    "reviewed_at": "2026-09-24T08:00:00Z",
+    "predicted_verdict": "satisfied"
+  },
+  {
+    "case_id": "verdict-iso-002",
+    "standard": "iso27001",
+    "control_id": "A.5.2",
+    "input_ref": "hash:a1b2c3d4e5f60002",
+    "expert_verdict": "satisfied",
+    "split": "test",
+    "label_source": "expert",
+    "reviewed_at": "2026-09-24T08:00:00Z",
+    "predicted_verdict": "satisfied"
+  },
+  {
+    "case_id": "verdict-iso-003",
+    "standard": "iso27001",
+    "control_id": "A.5.3",
+    "input_ref": "hash:a1b2c3d4e5f60003",
+    "expert_verdict": "partial",
+    "split": "test",
+    "label_source": "expert",
+    "reviewed_at": "2026-09-24T08:00:00Z",
+    "predicted_verdict": "partial"
+  },
+  {
+    "case_id": "verdict-iso-004",
+    "standard": "iso27001",
+    "control_id": "A.5.4",
+    "input_ref": "hash:a1b2c3d4e5f60004",
+    "expert_verdict": "partial",
+    "split": "test",
+    "label_source": "expert",
+    "reviewed_at": "2026-09-24T08:00:00Z",
+    "predicted_verdict": "missing"
+  },
+  {
+    "case_id": "verdict-iso-005",
+    "standard": "iso27001",
+    "control_id": "A.5.5",
+    "input_ref": "hash:a1b2c3d4e5f60005",
+    "expert_verdict": "missing",
+    "split": "test",
+    "label_source": "expert",
+    "reviewed_at": "2026-09-24T08:00:00Z",
+    "predicted_verdict": "missing"
+  },
+  {
+    "case_id": "verdict-iso-006",
+    "standard": "iso27001",
+    "control_id": "A.5.6",
+    "input_ref": "hash:a1b2c3d4e5f60006",
+    "expert_verdict": "not_evidenced",
+    "split": "test",
+    "label_source": "expert",
+    "reviewed_at": "2026-09-24T08:00:00Z",
+    "predicted_verdict": "not_evidenced"
+  },
+  {
+    "case_id": "verdict-iso-007",
+    "standard": "iso27001",
+    "control_id": "A.8.1",
+    "input_ref": "hash:a1b2c3d4e5f60007",
+    "expert_verdict": "needs_expert_review",
+    "split": "test",
+    "label_source": "expert",
+    "reviewed_at": "2026-09-24T08:00:00Z",
+    "predicted_verdict": "needs_expert_review"
+  },
+  {
+    "case_id": "verdict-iso-legacy-compliant-008",
+    "standard": "iso27001",
+    "control_id": "A.8.2",
+    "input_ref": "hash:a1b2c3d4e5f60008",
+    "expert_verdict": "compliant",
+    "split": "test",
+    "label_source": "legacy_import",
+    "reviewed_at": "2026-09-20T00:00:00Z",
+    "predicted_verdict": "satisfied"
+  },
+  {
+    "case_id": "verdict-iso-legacy-noncompliant-009",
+    "standard": "iso27001",
+    "control_id": "A.8.3",
+    "input_ref": "hash:a1b2c3d4e5f60009",
+    "expert_verdict": "non_compliant",
+    "split": "test",
+    "label_source": "legacy_import",
+    "reviewed_at": "2026-09-20T00:00:00Z",
+    "predicted_verdict": "missing"
+  },
+  {
+    "case_id": "verdict-iso-fewshot-010",
+    "standard": "iso27001",
+    "control_id": "A.5.1",
+    "input_ref": "hash:a1b2c3d4e5f60010",
+    "expert_verdict": "satisfied",
+    "split": "few_shot",
+    "label_source": "expert",
+    "reviewed_at": "2026-09-24T08:00:00Z",
+    "predicted_verdict": "satisfied"
+  }
+]

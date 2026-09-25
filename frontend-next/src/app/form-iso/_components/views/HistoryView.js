@@ -11,6 +11,7 @@ export default function HistoryView({
     deletingId,
     setActiveTab,
     setStep,
+    onStartNewAssessment,
 }) {
     const { t } = useTranslation()
 
@@ -18,9 +19,20 @@ export default function HistoryView({
         <div className={styles.historyWrap}>
             <div className={styles.historyHeader}>
                 <h2 className={styles.sectionTitle}>{t('assessment.historyTitle')}</h2>
-                <button className={styles.refreshBtn} onClick={fetchHistory}>
-                    {t('assessment.historyRefresh')}
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className={styles.refreshBtn} onClick={fetchHistory}>
+                        {t('assessment.historyRefresh')}
+                    </button>
+                    {onStartNewAssessment && (
+                        <button
+                            className={styles.refreshBtn}
+                            style={{ background: 'rgba(16, 185, 129, 0.15)', borderColor: 'rgba(16, 185, 129, 0.4)', color: '#34d399' }}
+                            onClick={onStartNewAssessment}
+                        >
+                            ✨ {t('assessment.tabForm')}
+                        </button>
+                    )}
+                </div>
             </div>
             <p className={styles.helperText} dangerouslySetInnerHTML={{ __html: t('assessment.historyNote', { count: assessmentHistory.length }) }} />
 
@@ -31,8 +43,8 @@ export default function HistoryView({
                 </div>
             ) : (
                 <div className={styles.historyList}>
-                    {assessmentHistory.map((hist) => (
-                        <div key={hist.id || hist.date} className={styles.historyItem}>
+                    {assessmentHistory.map((hist, index) => (
+                        <div key={hist.id ? `${hist.id}-${index}` : index} className={styles.historyItem}>
                             <div className={styles.histInfo}>
                                 <div className={styles.histTitle}>
                                     {hist.org}
@@ -49,18 +61,21 @@ export default function HistoryView({
                             </div>
 
                             <div className={styles.histPercent}>
-                                {hist.compliance_percent != null ? (
-                                    <>
-                                        <span className={`${styles.histPercentNum} ${hist.compliance_percent >= 80 ? styles.scoreNumFull :
-                                                hist.compliance_percent >= 50 ? styles.scoreNumMostly :
-                                                    hist.compliance_percent >= 25 ? styles.scoreNumPartial :
-                                                        styles.scoreNumLow
-                                            }`}>{hist.compliance_percent}%</span>
-                                        <span className={styles.histPercentLabel}>{t('assessment.historyCompliance')}</span>
-                                    </>
-                                ) : (
-                                    <span className={styles.histPercentLabel} style={{ fontSize: '0.7rem', opacity: 0.4 }}>—</span>
-                                )}
+                                {(() => {
+                                    const pct = hist.weighted_compliance?.percentage ?? (hist.compliance_percent != null ? parseFloat(hist.compliance_percent) : null)
+                                    return pct != null ? (
+                                        <>
+                                            <span className={`${styles.histPercentNum} ${pct >= 80 ? styles.scoreNumFull :
+                                                    pct >= 50 ? styles.scoreNumMostly :
+                                                        pct >= 25 ? styles.scoreNumPartial :
+                                                            styles.scoreNumLow
+                                                }`}>{pct}%</span>
+                                            <span className={styles.histPercentLabel}>{t('assessment.historyCompliance')}</span>
+                                        </>
+                                    ) : (
+                                        <span className={styles.histPercentLabel} style={{ fontSize: '0.7rem', opacity: 0.4 }}>—</span>
+                                    )
+                                })()}
                             </div>
 
                             <div className={styles.histAction}>

@@ -163,10 +163,11 @@ Below is an authentic sample of exported audit trace data retrieved from `GET /a
           "raw_percentage": 50.54
         },
         "weighted_compliance": {
-          "weighted_score": 237.5,
-          "weighted_max_score": 430.0,
-          "percentage": 55.23,
-          "algorithm": "iso27001_domain_weighted_v1"
+          "weighted_score": 245.0,
+          "weighted_max_score": 495.0,
+          "percentage": 49.49,
+          "algorithm": "verdict_weighted_v2",
+          "weight_scheme": "critical_10_high_5_medium_3_low_1"
         }
       }
     },
@@ -181,7 +182,7 @@ Below is an authentic sample of exported audit trace data retrieved from `GET /a
       "created_at": "2026-09-07T09:20:16.120Z",
       "payload": {
         "standard": "iso27001",
-        "weighted_compliance_percentage": 55.23,
+        "weighted_compliance_percentage": 49.49,
         "raw_coverage_percentage": 50.54,
         "total_duration_seconds": 6.016
       }

@@ -7,6 +7,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "node scripts/test_weighted_compliance_frontend.mjs",
+    "test:weighted": "node scripts/test_weighted_compliance_frontend.mjs",
+    "test:evidence": "node scripts/test_evidence_isolation_frontend.mjs",
+    "test:export": "node scripts/test_export_frontend.mjs",
     "test:smoke": "node scripts/smoke_test.js"
   },
   "dependencies": {

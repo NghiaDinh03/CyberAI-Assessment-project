@@ -1,4 +1,4 @@
-// Mức độ quan trọng: critical=4, high=3, medium=2, low=1
+// Mức độ quan trọng: critical=10, high=5, medium=3, low=1
 // Điểm tối đa = tổng tất cả weight; điểm đạt = tổng weight của controls đã tick
 
 export const ISO_27001_CONTROLS_VI = [
@@ -361,24 +361,279 @@ export const TCVN_11930_CONTROLS_EN = [
 export const ISO_27001_CONTROLS = ISO_27001_CONTROLS_VI;
 export const TCVN_11930_CONTROLS = TCVN_11930_CONTROLS_VI;
 
-// Bảng điểm trọng số: critical=4, high=3, medium=2, low=1
-export const WEIGHT_SCORE = { critical: 4, high: 3, medium: 2, low: 1 };
+// Bảng điểm trọng số chuẩn: critical=10, high=5, medium=3, low=1
+export const WEIGHT_SCORE = { critical: 10, high: 5, medium: 3, low: 1 };
 
-// Tính điểm có trọng số từ danh sách controls đã tick
-export function calcWeightedScore(implementedIds, allControls) {
-    const allFlat = allControls.flatMap(cat => cat.controls)
+export const isValidNumber = value =>
+    value !== null &&
+    value !== undefined &&
+    Number.isFinite(Number(value));
+
+// Tính độ phủ có trọng số sơ bộ từ danh sách controls người dùng tự khai báo
+export function calcWeightedCoverage(implementedIds, allControls) {
+    const allFlat = (allControls || []).flatMap(cat => cat?.controls || [])
     const validIds = new Set(allFlat.map(c => c.id))
     const uniqueImplemented = Array.from(new Set(implementedIds || [])).filter(id => validIds.has(id))
     const weightMap = {}
-    allFlat.forEach(c => { weightMap[c.id] = WEIGHT_SCORE[c.weight] || 1 })
-    const maxScore = allFlat.reduce((s, c) => s + (WEIGHT_SCORE[c.weight] || 1), 0)
+    allFlat.forEach(c => { weightMap[c.id] = WEIGHT_SCORE[c.weight] || 3 })
+    const maxScore = allFlat.reduce((s, c) => s + (WEIGHT_SCORE[c.weight] || 3), 0)
     const achieved  = uniqueImplemented.reduce((s, id) => s + (weightMap[id] || 0), 0)
     const rawPercent = maxScore > 0 ? parseFloat(((achieved / maxScore) * 100).toFixed(1)) : 0
+    const finalPct = Math.min(100.0, Math.max(0.0, rawPercent))
     return {
         achieved: Math.min(achieved, maxScore),
+        achievedScore: Math.min(achieved, maxScore),
+        score: Math.min(achieved, maxScore),
         maxScore,
-        percent: Math.min(100.0, Math.max(0.0, rawPercent))
+        percent: finalPct,
+        percentage: finalPct
     }
+}
+// Alias để tương thích ngược
+export const calcWeightedScore = calcWeightedCoverage;
+
+/**
+ * Adapter chuẩn hóa duy nhất đọc metrics từ backend payload (kể cả cũ và mới).
+ * Tách biệt hoàn toàn:
+ * - Raw Coverage: Tự khai báo (implemented / total)
+ * - Preliminary Weighted Coverage: Điểm trọng số sơ bộ theo tự khai báo (achieved / maxScore)
+ * - Weighted Compliance: Điểm tuân thủ chính thức theo verdict_weighted_v2
+ * - Satisfied (Verified): Số control có verdict satisfied
+ */
+export function normalizeAssessmentMetrics(result, categories = null) {
+    if (!result) {
+        return {
+            rawCoverage: { implemented: 0, total: 0, percentage: 0.0 },
+            weightedCoverage: { score: 0.0, maxScore: 0.0, percentage: 0.0 },
+            weightedCompliance: { score: 0.0, maxScore: 0.0, percentage: 0.0 },
+            satisfiedCount: 0,
+            partialCount: 0,
+            notEvidencedCount: 0,
+            missingCount: 0,
+            needsReviewCount: 0,
+            totalApplicable: 0,
+            compliancePending: true,
+            isLegacy: false,
+            legacyWarning: null,
+            statusBadge: '',
+            statusBadgeType: 'low'
+        };
+    }
+
+    const status = result.status || 'pending';
+    const isCompleted = status === 'completed';
+
+    // 1. Raw Coverage
+    const covObj = result.control_coverage
+        || result.json_data?.control_coverage
+        || result.result?.json_data?.control_coverage
+        || result.json_data?.compliance?.raw_coverage;
+
+    const implList = result.implemented_controls
+        || result.system_info?.compliance?.implemented_controls
+        || result.json_data?.compliance?.implemented_controls
+        || [];
+
+    const defaultTotal = (result.standard === 'tcvn11930' || result.system_info?.assessment_standard === 'tcvn11930') ? 34 : 93;
+    const catTotal = categories?.reduce((sum, cat) => sum + (cat?.controls?.length || 0), 0);
+    const totalCtrls = covObj?.total_applicable_controls ?? covObj?.total_controls ?? (catTotal > 0 ? catTotal : defaultTotal);
+    const implCount = covObj?.self_declared_implemented ?? implList.length;
+    const rawPct = isValidNumber(covObj?.raw_percentage)
+        ? Number(covObj.raw_percentage)
+        : (totalCtrls > 0 ? Number(((implCount / totalCtrls) * 100).toFixed(1)) : 0.0);
+
+    const rawCoverage = {
+        implemented: implCount,
+        total: totalCtrls,
+        percentage: Number(Math.min(100.0, Math.max(0.0, rawPct)).toFixed(1))
+    };
+
+    // 2. Preliminary Weighted Coverage (Self-declaration preliminary weighted scope)
+    const wCovObj = result.weighted_coverage
+        || result.json_data?.weighted_coverage
+        || result.result?.json_data?.weighted_coverage
+        || result.json_data?.compliance?.weighted_coverage;
+
+    let weightedCoverage;
+    if (wCovObj && isValidNumber(wCovObj.score ?? wCovObj.weighted_score) && isValidNumber(wCovObj.max_score ?? wCovObj.maxScore ?? wCovObj.weighted_max_score)) {
+        const score = Number(wCovObj.score ?? wCovObj.weighted_score);
+        const maxScore = Number(wCovObj.max_score ?? wCovObj.maxScore ?? wCovObj.weighted_max_score);
+        const pct = isValidNumber(wCovObj.percentage ?? wCovObj.percent)
+            ? Number(wCovObj.percentage ?? wCovObj.percent)
+            : (maxScore > 0 ? Number(((score / maxScore) * 100).toFixed(1)) : 0.0);
+        weightedCoverage = {
+            score: Number(score.toFixed(1)),
+            maxScore: Number(maxScore.toFixed(1)),
+            percentage: Number(Math.min(100.0, Math.max(0.0, pct)).toFixed(1))
+        };
+    } else if (categories && categories.length > 0) {
+        const localCalc = calcWeightedCoverage(implList, categories);
+        weightedCoverage = {
+            score: Number(localCalc.score.toFixed(1)),
+            maxScore: Number(localCalc.maxScore.toFixed(1)),
+            percentage: Number(localCalc.percentage.toFixed(1))
+        };
+    } else {
+        weightedCoverage = {
+            score: 0.0,
+            maxScore: defaultTotal === 34 ? 271.0 : 495.0,
+            percentage: 0.0
+        };
+    }
+
+    // Controls extraction & verdict counts
+    const controls = result.controls || result.json_data?.controls || result.result?.json_data?.controls || [];
+    let satisfiedCount = 0;
+    let partialCount = 0;
+    let notEvidencedCount = 0;
+    let missingCount = 0;
+    let needsReviewCount = 0;
+    let hasVerdicts = false;
+    let hasContributions = false;
+
+    if (Array.isArray(controls) && controls.length > 0) {
+        for (const c of controls) {
+            const v = String(c.assessment_verdict || c.evidence_verdict || c.verdict || '').toLowerCase();
+            if (v) hasVerdicts = true;
+            if (v === 'satisfied') satisfiedCount++;
+            else if (v === 'partial' || v === 'partially_satisfied') partialCount++;
+            else if (v === 'not_evidenced') notEvidencedCount++;
+            else if (v === 'missing') missingCount++;
+            else if (v === 'needs_expert_review') needsReviewCount++;
+
+            if (c.weighted_score_contribution !== undefined && c.weighted_score_contribution !== null) {
+                hasContributions = true;
+            }
+        }
+    } else if (isValidNumber(covObj?.evidence_supported_implemented)) {
+        satisfiedCount = Number(covObj.evidence_supported_implemented);
+        if (isValidNumber(covObj?.not_evidenced_or_missing)) {
+            missingCount = Number(covObj.not_evidenced_or_missing);
+        }
+    }
+
+    // 3. Weighted Compliance (Audited score based strictly on verdicts)
+    const wCompObj = result.json_data?.weighted_compliance
+        || result.result?.json_data?.weighted_compliance
+        || result.weighted_compliance
+        || result.result?.weighted_compliance
+        || result.json_data?.compliance?.weighted_compliance;
+
+    const rawAlgo = wCompObj?.algorithm || result.json_data?.scoring_algorithm || result.scoring_algorithm;
+    // Check if legacy: if algorithm is not verdict_weighted_v2 or if it's missing contributions
+    const isLegacy = Boolean(
+        isCompleted && (
+            (rawAlgo && rawAlgo !== 'verdict_weighted_v2') ||
+            (rawAlgo === 'verdict_weighted_v2' && Array.isArray(controls) && controls.length > 0 && !hasContributions)
+        )
+    );
+
+    const hasEvidenceInfo = hasVerdicts || (covObj && isValidNumber(covObj.evidence_supported_implemented));
+    const isZeroVerified = hasEvidenceInfo && (satisfiedCount === 0 && partialCount === 0);
+
+    let weightedCompliance = null;
+    let compliancePending = !isCompleted;
+
+    if (isCompleted && isZeroVerified) {
+        // Enforce 0.0% when controls were audited and 0 satisfied and 0 partial
+        weightedCompliance = {
+            score: 0.0,
+            maxScore: weightedCoverage.maxScore,
+            percentage: 0.0
+        };
+        compliancePending = false;
+    } else if (wCompObj && isValidNumber(wCompObj.percentage)) {
+        const pct = isZeroVerified ? 0.0 : Number(wCompObj.percentage);
+        const score = isZeroVerified ? 0.0 : (
+            isValidNumber(wCompObj.weighted_score ?? wCompObj.score)
+                ? Number(wCompObj.weighted_score ?? wCompObj.score)
+                : (isValidNumber(weightedCoverage.maxScore) ? Number(((pct / 100) * weightedCoverage.maxScore).toFixed(1)) : 0.0)
+        );
+        const maxScore = isValidNumber(wCompObj.weighted_max_score ?? wCompObj.maxScore)
+            ? Number(wCompObj.weighted_max_score ?? wCompObj.maxScore)
+            : weightedCoverage.maxScore;
+        weightedCompliance = {
+            score: Number(score.toFixed(1)),
+            maxScore: Number(maxScore.toFixed(1)),
+            percentage: Number(Math.min(100.0, Math.max(0.0, pct)).toFixed(1))
+        };
+        compliancePending = false;
+    } else if (isCompleted) {
+        if (isZeroVerified) {
+            weightedCompliance = {
+                score: 0.0,
+                maxScore: weightedCoverage.maxScore,
+                percentage: 0.0
+            };
+            compliancePending = false;
+        } else {
+            const fallbackPct = isValidNumber(result.compliance_percent)
+                ? Number(result.compliance_percent)
+                : null;
+            if (fallbackPct !== null) {
+                const score = isValidNumber(weightedCoverage.maxScore)
+                    ? Number(((fallbackPct / 100) * weightedCoverage.maxScore).toFixed(1))
+                    : 0.0;
+                weightedCompliance = {
+                    score,
+                    maxScore: weightedCoverage.maxScore,
+                    percentage: Number(Math.min(100.0, Math.max(0.0, fallbackPct)).toFixed(1))
+                };
+                compliancePending = false;
+            }
+        }
+    }
+
+    if (!weightedCompliance) {
+        weightedCompliance = {
+            score: null,
+            maxScore: weightedCoverage.maxScore,
+            percentage: null
+        };
+        compliancePending = true;
+    }
+
+    // Status Badge Logic
+    let statusBadge = '';
+    let statusBadgeType = 'low';
+    const compPct = weightedCompliance.percentage;
+
+    if (compliancePending || compPct === null) {
+        statusBadge = 'Đang thẩm định...';
+        statusBadgeType = 'pending';
+    } else if (satisfiedCount === 0 && partialCount === 0) {
+        statusBadge = 'Pending Verification / Needs Expert Review';
+        statusBadgeType = 'pending';
+    } else if (compPct >= 80) {
+        statusBadge = 'Tuân thủ cao (High Compliance)';
+        statusBadgeType = 'full';
+    } else if (compPct >= 50) {
+        statusBadge = 'Tuân thủ phần lớn (Mostly Compliant)';
+        statusBadgeType = 'mostly';
+    } else if (compPct >= 25) {
+        statusBadge = 'Tuân thủ một phần (Partial Compliance)';
+        statusBadgeType = 'partial';
+    } else {
+        statusBadge = 'Chưa tuân thủ (Non-Compliant)';
+        statusBadgeType = 'low';
+    }
+
+    return {
+        rawCoverage,
+        weightedCoverage,
+        weightedCompliance,
+        satisfiedCount,
+        partialCount,
+        notEvidencedCount,
+        missingCount,
+        needsReviewCount,
+        totalApplicable: totalCtrls,
+        compliancePending,
+        isLegacy,
+        legacyWarning: isLegacy ? 'Kết quả legacy – chưa đối soát theo verdict_weighted_v2' : null,
+        statusBadge,
+        statusBadgeType
+    };
 }
 
 export function getBuiltinStandards(locale = 'vi') {
@@ -454,10 +709,10 @@ export function calcCategoryBreakdown(implementedIds, allControls) {
         const catControls = cat.controls
         const total = catControls.length
         const implemented = catControls.filter(c => validSet.has(c.id)).length
-        const maxWeightScore = catControls.reduce((s, c) => s + (WEIGHT_SCORE[c.weight] || 1), 0)
+        const maxWeightScore = catControls.reduce((s, c) => s + (WEIGHT_SCORE[c.weight] || 3), 0)
         const weightScore = catControls
             .filter(c => validSet.has(c.id))
-            .reduce((s, c) => s + (WEIGHT_SCORE[c.weight] || 1), 0)
+            .reduce((s, c) => s + (WEIGHT_SCORE[c.weight] || 3), 0)
         const rawPct = total > 0 ? parseFloat(((implemented / total) * 100).toFixed(1)) : 0
         const rawWeightPct = maxWeightScore > 0 ? parseFloat(((weightScore / maxWeightScore) * 100).toFixed(1)) : 0
         return {
@@ -468,6 +723,54 @@ export function calcCategoryBreakdown(implementedIds, allControls) {
             weightScore,
             maxWeightScore,
             weightPercent: Math.min(100.0, Math.max(0.0, rawWeightPct)),
+        }
+    })
+}
+
+/**
+ * Calculate per-category compliance breakdown strictly based on AI verdicts from controls list.
+ */
+export function calcCategoryComplianceBreakdown(controls, allCategories) {
+    if (!Array.isArray(controls) || !Array.isArray(allCategories)) return []
+    const ctrlMap = new Map()
+    for (const c of controls) {
+        const id = c.control_id || c.id
+        if (id) ctrlMap.set(id, c)
+    }
+
+    const VERDICT_FACTOR = {
+        satisfied: 1.0,
+        partial: 0.5,
+        missing: 0.0,
+        not_evidenced: 0.0,
+        needs_expert_review: 0.0,
+    }
+
+    return allCategories.map(cat => {
+        const catControls = cat.controls || []
+        let catMax = 0
+        let catAchieved = 0
+        let catSatisfied = 0
+
+        for (const c of catControls) {
+            const w = WEIGHT_SCORE[c.weight] || 3
+            const ctrlData = ctrlMap.get(c.id)
+            const verdict = (ctrlData?.assessment_verdict || ctrlData?.evidence_verdict || 'missing').toLowerCase()
+            catMax += w
+            const isConflict = Boolean(ctrlData?.conflict_detected || verdict === 'needs_expert_review')
+            const factor = isConflict ? 0.0 : (VERDICT_FACTOR[verdict] ?? 0.0)
+            catAchieved += w * factor
+            if (verdict === 'satisfied' && !isConflict) catSatisfied++
+        }
+
+        const pct = catMax > 0 ? parseFloat(((catAchieved / catMax) * 100).toFixed(1)) : 0.0
+        return {
+            category: cat.category,
+            total: catControls.length,
+            satisfied: catSatisfied,
+            achieved: parseFloat(catAchieved.toFixed(1)),
+            maxScore: parseFloat(catMax.toFixed(1)),
+            percent: Math.min(100.0, Math.max(0.0, pct)),
         }
     })
 }

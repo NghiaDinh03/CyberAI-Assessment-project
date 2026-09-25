@@ -42,18 +42,20 @@ _THIN_BORDER = Border(
 # Verdict color badges
 _VERDICT_FILLS = {
     "satisfied": PatternFill(start_color="DCFCE7", end_color="DCFCE7", fill_type="solid"),
+    "partial": PatternFill(start_color="DBEAFE", end_color="DBEAFE", fill_type="solid"),
     "not_evidenced": PatternFill(start_color="FEF9C3", end_color="FEF9C3", fill_type="solid"),
     "missing": PatternFill(start_color="FEE2E2", end_color="FEE2E2", fill_type="solid"),
     "needs_expert_review": PatternFill(start_color="FFEDD5", end_color="FFEDD5", fill_type="solid"),
 }
 _VERDICT_FONTS = {
     "satisfied": Font(name="Calibri", size=10, bold=True, color="166534"),
+    "partial": Font(name="Calibri", size=10, bold=True, color="1E40AF"),
     "not_evidenced": Font(name="Calibri", size=10, bold=True, color="854D0E"),
     "missing": Font(name="Calibri", size=10, bold=True, color="991B1B"),
     "needs_expert_review": Font(name="Calibri", size=10, bold=True, color="9A3412"),
 }
 
-# Column layout for ISO 27001 (English)
+# Column layout for ISO 27001
 _COLUMNS_ISO = [
     ("Control ID", 14),
     ("Control Name", 38),
@@ -61,11 +63,11 @@ _COLUMNS_ISO = [
     ("Weight", 12),
     ("Applicable", 12),
     ("Justification for Inclusion/Exclusion", 36),
-    ("Implementation Status", 22),
-    ("Score (0-5)", 12),
+    ("Trạng thái tự khai", 22),
+    ("Score Contribution (Weight × Factor)", 20),
     ("Evidence (Masked)", 32),
     ("Notes / Recommendation", 36),
-    ("Verdict", 18),
+    ("Verdict đánh giá", 22),
     ("Expert Review", 16),
 ]
 
@@ -77,11 +79,11 @@ _COLUMNS_TCVN = [
     ("Trọng số", 12),
     ("Áp dụng", 12),
     ("Lý do Áp dụng / Căn cứ", 36),
-    ("Trạng thái Triển khai", 22),
-    ("Điểm số (0-5)", 12),
+    ("Trạng thái tự khai", 22),
+    ("Điểm Đóng góp (Trọng số × Hệ số)", 20),
     ("Minh chứng (Đã che)", 32),
     ("Ghi chú / Khuyến nghị", 36),
-    ("Kết luận Đánh giá", 18),
+    ("Verdict đánh giá", 22),
     ("Trạng thái Chuyên gia", 16),
 ]
 
@@ -110,7 +112,11 @@ def _load_assessment(assessment_id: str) -> Optional[dict]:
     if not path.is_file():
         return None
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            data.setdefault("assessment_id", assessment_id)
+            data.setdefault("run_id", f"run_{assessment_id[:8]}")
+        return data
     except (json.JSONDecodeError, OSError):
         return None
 
@@ -139,16 +145,16 @@ def _extract_control_scores(assessment: dict) -> Dict[str, dict]:
         verdict = ctrl.get("assessment_verdict") or ctrl.get("evidence_verdict")
         decl = ctrl.get("user_declaration")
         if not verdict:
-            verdict = "satisfied" if decl == "implemented" and masked_ev else "not_evidenced" if decl == "implemented" else "missing"
+            verdict = "needs_expert_review" if decl == "implemented" and masked_ev else "not_evidenced" if decl == "implemented" else "missing"
 
         v_basis = ctrl.get("verdict_basis", [])
         basis_str = ", ".join(v_basis) if isinstance(v_basis, list) else str(v_basis)
         score_val = ctrl.get("score")
         if score_val is None:
-            score_val = 4 if verdict == "satisfied" else 3 if (decl == "implemented" or verdict == "not_evidenced") else 0
+            score_val = 0
 
         scores[cid] = {
-            "user_declaration": decl or ("implemented" if verdict in ("satisfied", "not_evidenced") else "not_implemented"),
+            "user_declaration": decl or ("implemented" if verdict in ("satisfied", "not_evidenced", "needs_expert_review") else "not_implemented"),
             "assessment_verdict": verdict,
             "verdict_basis": basis_str or "user_declaration",
             "score": score_val,
@@ -167,7 +173,7 @@ def _extract_control_scores(assessment: dict) -> Dict[str, dict]:
                 "user_declaration": "implemented",
                 "assessment_verdict": "not_evidenced",
                 "verdict_basis": "user_declaration",
-                "score": 3,
+                "score": 0,
                 "evidence": [],
                 "expert_review_status": "pending",
                 "notes": "",
@@ -179,14 +185,12 @@ def _extract_control_scores(assessment: dict) -> Dict[str, dict]:
         flist = files if isinstance(files, list) else [files]
         masked = [mask_evidence_filename(os.path.basename(f)) for f in flist if f]
         if cid in scores:
-            scores[cid]["evidence"] = masked
-            if scores[cid]["user_declaration"] == "implemented":
-                scores[cid]["assessment_verdict"] = "satisfied"
-                scores[cid]["verdict_basis"] = "user_declaration, direct_evidence"
+            if not scores[cid].get("evidence"):
+                scores[cid]["evidence"] = masked
         else:
             scores[cid] = {
                 "user_declaration": "not_implemented",
-                "assessment_verdict": "not_evidenced",
+                "assessment_verdict": "needs_expert_review" if masked else "not_evidenced",
                 "verdict_basis": "direct_evidence",
                 "evidence": masked,
                 "expert_review_status": "pending",
@@ -216,24 +220,58 @@ def generate_soa_xlsx(
     standard = "iso27001"
     control_scores: Dict[str, dict] = {}
     run_id = "N/A"
-    code_version = "v1.2.0-rel"
+    code_version = "v1.2.0-verdict"
     created_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+    from schemas.assessment_schema import UnifiedAssessmentResult
 
     assessment = assessment_data
     if not assessment and assessment_id:
         assessment = _load_assessment(assessment_id)
 
     if assessment:
-        raw_std = assessment.get("standard") or assessment.get("system_info", {}).get("assessment_standard") or "iso27001"
+        if isinstance(assessment, dict):
+            if assessment_id:
+                assessment.setdefault("assessment_id", assessment_id)
+            assessment.setdefault("assessment_id", "asm_legacy")
+            aid = str(assessment.get("assessment_id"))
+            assessment.setdefault("run_id", f"run_{aid[:8]}")
+        if isinstance(assessment, UnifiedAssessmentResult):
+            validated = assessment
+        else:
+            validated = UnifiedAssessmentResult.model_validate(assessment)
+
+        raw_std = validated.standard
         standard = raw_std.get("id") if isinstance(raw_std, dict) else str(raw_std)
-        run_id = assessment.get("run_id") or "run_default"
-        code_version = assessment.get("code_version") or "v1.2.0-rel"
-        created_time = assessment.get("created_at") or created_time
-        control_scores = _extract_control_scores(assessment)
+        run_id = validated.run_id
+        code_version = validated.code_version
+        created_time = validated.created_at or created_time
+        
+        control_scores = {}
+        for c in validated.controls:
+            raw_ev = c.evidence_file_ids or []
+            masked_ev = [mask_evidence_filename(os.path.basename(f)) for f in raw_ev if f]
+            v_basis = c.verdict_basis
+            basis_str = ", ".join(v_basis) if isinstance(v_basis, list) else str(v_basis)
+            control_scores[c.control_id] = {
+                "user_declaration": c.user_declaration,
+                "assessment_verdict": c.assessment_verdict,
+                "verdict_basis": basis_str or "user_declaration",
+                "score": c.score if c.score is not None else 0,
+                "weight": c.weight,
+                "weight_points": getattr(c, "weight_points", None),
+                "verdict_factor": getattr(c, "verdict_factor", None),
+                "weighted_score_contribution": getattr(c, "weighted_score_contribution", None),
+                "evidence": masked_ev,
+                "expert_review_status": c.expert_review_status,
+                "notes": c.recommendation or c.gap or "",
+                "conflict_detected": c.conflict_detected,
+                "conflict_reason": c.conflict_reason,
+            }
+
         if not org_name:
-            sys_info = assessment.get("system_info") or {}
-            org_info = sys_info.get("organization") or {}
-            org_name = org_info.get("name") or sys_info.get("org_name", "")
+            org_info = validated.organization or {}
+            org_name = org_info.get("name") or "Doanh nghiệp"
 
     elif implemented_controls:
         if any(c.split(".")[0] in ("NW", "SV", "APP", "DAT", "MNG") for c in implemented_controls):
@@ -269,11 +307,14 @@ def generate_soa_xlsx(
 
     ws.merge_cells(f"A2:{get_column_letter(len(columns))}2")
     meta_cell = ws["A2"]
-    aid_str = assessment_id or (assessment.get("assessment_id") if assessment else "N/A")
+    aid_str = assessment_id or (getattr(validated, "assessment_id", None) if 'validated' in locals() else (assessment.get("assessment_id") if isinstance(assessment, dict) else "N/A"))
     org_label = "Tổ chức" if is_tcvn else "Organization"
+    weighted_comp_str = ""
+    if 'validated' in locals() and hasattr(validated, "weighted_compliance") and validated.weighted_compliance:
+        weighted_comp_str = f"   |   Weighted Compliance: {validated.weighted_compliance.percentage:.1f}%"
     meta_text = (
         f"{org_label}: {org_name or '—'}   |   Assessment ID: {aid_str}   |   Run ID: {run_id}   |   Code Version: {code_version}   |   "
-        f"Standard: {'TCVN 11930:2017' if is_tcvn else 'ISO/IEC 27001:2022'}   |   Exported: {created_time[:19]}"
+        f"Standard: {'TCVN 11930:2017' if is_tcvn else 'ISO/IEC 27001:2022'}{weighted_comp_str}   |   Exported: {created_time[:19]}"
     )
     meta_cell.value = meta_text
     meta_cell.font = Font(name="Calibri", size=10, italic=True, color="334155")
@@ -299,6 +340,7 @@ def generate_soa_xlsx(
 
     satisfied_count = 0
     self_decl_count = 0
+    total_contrib_sum = 0.0
 
     for ctrl in controls:
         if ctrl["category"] != last_category:
@@ -328,24 +370,59 @@ def generate_soa_xlsx(
         if u_decl == "implemented":
             self_decl_count += 1
 
-        weight = ctrl["weight"]
+        # Harmonize weight with score_data (from UnifiedAssessmentResult)
+        from schemas.assessment_schema import WEIGHT_POINTS_TO_NAME, WEIGHT_NAME_TO_POINTS
+        raw_sd_w = score_data.get("weight_level") or score_data.get("weight")
+        if isinstance(raw_sd_w, str) and raw_sd_w.lower() in WEIGHT_NAME_TO_POINTS:
+            weight = raw_sd_w.lower()
+        elif isinstance(raw_sd_w, (int, float)) and raw_sd_w in WEIGHT_POINTS_TO_NAME:
+            weight = WEIGHT_POINTS_TO_NAME[raw_sd_w]
+        elif score_data.get("weight_points") in WEIGHT_POINTS_TO_NAME:
+            weight = WEIGHT_POINTS_TO_NAME[score_data["weight_points"]]
+        else:
+            weight = ctrl.get("weight", "medium")
         if is_tcvn:
             w_lbl = "Chủ chốt" if weight == "critical" else "Cao" if weight == "high" else "Trung bình" if weight == "medium" else "Thấp"
             decl_lbl = "Đã triển khai" if u_decl == "implemented" else "Chưa triển khai"
-            v_lbl = "Đạt (Có minh chứng)" if verdict == "satisfied" else "Tự khai báo (Chưa đủ minh chứng)" if verdict == "not_evidenced" else "Khoảng trống (Missing)"
+            v_lbl = (
+                "Đạt (Satisfied)" if verdict == "satisfied"
+                else "Đạt một phần (Partial)" if verdict == "partial"
+                else "Chưa có minh chứng (Not Evidenced)" if verdict == "not_evidenced"
+                else "Cần chuyên gia đánh giá (Needs Review)" if verdict == "needs_expert_review"
+                else "Chưa triển khai (Missing)"
+            )
             app_lbl = "Có"
             rev_lbl = "Chờ duyệt" if exp_rev == "pending" else "Đã duyệt"
         else:
             w_lbl = weight.capitalize()
             decl_lbl = "Implemented" if u_decl == "implemented" else "Not Implemented"
-            v_lbl = "Satisfied" if verdict == "satisfied" else "Not Evidenced" if verdict == "not_evidenced" else "Missing"
+            v_lbl = (
+                "Satisfied" if verdict == "satisfied"
+                else "Partial" if verdict == "partial"
+                else "Not Evidenced" if verdict == "not_evidenced"
+                else "Needs Expert Review" if verdict == "needs_expert_review"
+                else "Missing"
+            )
             app_lbl = "Yes"
             rev_lbl = exp_rev.capitalize()
 
-        score_num = score_data.get("score")
-        if score_num is None:
-            score_num = 4 if verdict == "satisfied" else 3 if u_decl == "implemented" else 0
+        score_contrib = score_data.get("weighted_score_contribution")
+        if score_contrib is None or verdict in ("not_evidenced", "missing", "needs_expert_review") or score_data.get("conflict_detected"):
+            if verdict in ("not_evidenced", "missing", "needs_expert_review") or score_data.get("conflict_detected"):
+                score_contrib = 0.0
+            else:
+                from services.controls_catalog import WEIGHT_SCORE, VERDICT_FACTOR
+                raw_w = score_data.get("weight_points")
+                if raw_w is None:
+                    raw_w = WEIGHT_SCORE.get(str(weight).lower(), 3.0)
+                v_fac = score_data.get("verdict_factor")
+                if v_fac is None:
+                    v_fac = VERDICT_FACTOR.get(verdict, 0.0)
+                score_contrib = round(float(raw_w) * float(v_fac), 1)
+        else:
+            score_contrib = round(float(score_contrib), 1)
 
+        total_contrib_sum += float(score_contrib)
         just_lbl = "Bắt buộc theo TCVN" if is_tcvn else "Required per Annex A"
 
         row_vals = [
@@ -356,7 +433,7 @@ def generate_soa_xlsx(
             (app_lbl, _CENTER, _BODY_FONT, None),
             (just_lbl, _WRAP, _BODY_FONT, None),
             (decl_lbl, _CENTER, _BODY_FONT, None),
-            (score_num, _CENTER, _BODY_FONT, None),
+            (score_contrib, _CENTER, _BODY_FONT, None),
             (", ".join(ev_list) if ev_list else ("Không có" if is_tcvn else "None"), _WRAP, _BODY_FONT, None),
             (notes, _WRAP, _BODY_FONT, None),
             (v_lbl, _CENTER, _VERDICT_FONTS.get(verdict, _BODY_FONT), _VERDICT_FILLS.get(verdict)),
@@ -392,9 +469,12 @@ def generate_soa_xlsx(
     cov_pct = round((self_decl_count / total * 100), 1) if total > 0 else 0
 
     ws.cell(row=current_row, column=4, value=t_label).font = Font(name="Calibri", size=10, bold=True)
-    ws.cell(row=current_row, column=6, value=decl_label).font = Font(name="Calibri", size=10, bold=True)
+    ws.cell(row=current_row, column=6, value=f"{decl_label} ({cov_pct}% Raw Coverage)").font = Font(name="Calibri", size=10, bold=True)
     ws.cell(row=current_row, column=7, value=ev_label).font = Font(name="Calibri", size=10, bold=True)
-    ws.cell(row=current_row, column=8, value=f"{cov_pct}% (Raw Coverage)").font = Font(name="Calibri", size=10, bold=True)
+    ws.cell(row=current_row, column=8, value=f"{total_contrib_sum:.1f} pts (Điểm đóng góp)" if is_tcvn else f"{total_contrib_sum:.1f} pts (Contribution)").font = Font(name="Calibri", size=10, bold=True)
+    if 'validated' in locals() and hasattr(validated, "weighted_compliance") and validated.weighted_compliance:
+        comp_label = f"{validated.weighted_compliance.percentage:.1f}% (Weighted Compliance)"
+        ws.cell(row=current_row, column=11, value=comp_label).font = Font(name="Calibri", size=10, bold=True)
 
     ws.freeze_panes = f"A{header_row + 1}"
     ws.auto_filter.ref = f"A{header_row}:{get_column_letter(len(columns))}{current_row - 2}"

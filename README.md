@@ -1,28 +1,29 @@
 <div align="center">
   <h1>🛡️ CyberAI Assessment Platform</h1>
-  <p><strong>Intelligent Cybersecurity Assessment & IT Audit Automation Platform · ISO 27001 / TCVN 11930</strong></p>
+  <p><strong>Intelligent Cybersecurity Assessment & IT Audit Automation Platform · ISO 27001:2022 / TCVN 11930:2017</strong></p>
   <p>
     <a href="README.md"><img src="https://img.shields.io/badge/English-README-blue?logo=googletranslate&logoColor=white" /></a>
     <a href="README_vi.md"><img src="https://img.shields.io/badge/Tiếng_Việt-README-red?logo=googletranslate&logoColor=white" /></a>
   </p>
   <p>
-    <img src="https://img.shields.io/badge/Next.js-16.0-black?logo=next.js" />
+    <img src="https://img.shields.io/badge/Next.js-15.1-black?logo=next.js" />
     <img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi" />
     <img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python" />
     <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker" />
     <img src="https://img.shields.io/badge/Ollama-gemma4:latest-ff6b35?logo=google" />
-    <img src="https://img.shields.io/badge/Cloud_AI-DeepSeek_v4_|_Gemini_2.0-8b5cf6" />
+    <img src="https://img.shields.io/badge/ChromaDB-bge--m3-blueviolet" />
     <img src="https://img.shields.io/badge/Database-SQLite_WAL-003B57?logo=sqlite" />
-    <img src="https://img.shields.io/badge/Inference-Local_100%25_Offline_/_Hybrid-green" />
+    <img src="https://img.shields.io/badge/Inference-Local_On--Premise_/_Hybrid-green" />
     <img src="https://img.shields.io/badge/License-MIT-yellow" />
   </p>
 </div>
 
 ---
 
-**CyberAI Assessment Platform** is an enterprise-grade cybersecurity assessment and IT Audit automation platform designed for academic research and practical organizational deployment. The system automates compliance evaluations against international standard **ISO/IEC 27001:2022** (93 controls) and Vietnamese national standard **TCVN 11930:2017** (information system security classification under Decree 85/2016/ND-CP).
+**CyberAI Assessment Platform** is an enterprise-grade cybersecurity pre-audit assessment platform. The system assists organizations and IT teams in evaluating readiness against the international standard **ISO/IEC 27001:2022** (93 controls, 495 max weighted points) and Vietnamese national standard **TCVN 11930:2017** (34 controls, 271 max weighted points under Decree 85/2016/ND-CP).
 
-The platform supports **100% Offline / On-Premise** execution via Ollama (`gemma4:latest`) for strict data privacy of sensitive audit evidence, as well as a high-performance **Hybrid / Cloud** mode (DeepSeek, Gemini, GPT) with automated PII de-identification (Privacy Filter).
+> [!IMPORTANT]
+> **Pre-Audit Advisory Scope**: The platform is an automated pre-audit preparation and self-assessment tool. It provides gap analysis and technical audit traces, but does **not** replace accredited third-party certification bodies and does **not** automatically issue legal compliance certificates.
 
 ---
 
@@ -30,59 +31,70 @@ The platform supports **100% Offline / On-Premise** execution via Ollama (`gemma
 
 | # | Section | Description |
 |---|---------|-------------|
-| 1 | [🚀 Quick Start](#1--quick-start) | Clone, configure, and launch with Docker |
-| 2 | [✨ Key Features](#2--key-features) | 4 Core Pillars and Supporting Subsystems |
-| 3 | [🏗️ System Architecture](#3-️-system-architecture) | Docker Network Topology & Inference Fallback |
-| 4 | [📊 Comparative Analysis](#4--comparative-analysis) | CyberAI vs Global SaaS Platforms (Vanta, Drata) |
-| 5 | [🧠 Research & Core Algorithms](#5--research--core-algorithms) | 4 Key Algorithms for Academic Theses |
-| 6 | [📊 Empirical Evaluation](#6--empirical-evaluation-enterprise-benchmark) | Enterprise Infrastructure Assessment |
-| 7 | [⚙️ Environment Variables](#7-️-environment-variables) | `.env` Reference |
-| 8 | [📚 Documentation](#8--documentation) | Links to Full Technical Guides |
+| 1 | [🚀 Quick Start & Docker](#1--quick-start--docker) | Run Development & Production with Docker Compose |
+| 2 | [✨ Key Features](#2--key-features) | Core Pillars & Multi-Agent Pipeline |
+| 3 | [🏗️ System Architecture](#3-️-system-architecture) | Service Topology & Data Boundary |
+| 4 | [⚖️ Assessment Policy & Scoring Invariants](#4-️-assessment-policy--scoring-invariants) | 5 Authoritative Verdicts, 10-5-3-1 Weight Scheme |
+| 5 | [🔍 Evidence, Manifest & Audit Trace](#5--evidence-manifest--audit-trace) | File integrity, Fact Cards, and Unified Result |
+| 6 | [🤖 AI Models & Web Search Scope](#6--ai-models--web-search-scope) | Real verified models, Chatbot-only SearXNG |
+| 7 | [⚙️ Environment Variables](#7-️-environment-variables) | `.env.example` Reference |
+| 8 | [📚 Technical Documentation](#8--technical-documentation) | Links to In-Depth Technical Documents |
 | 9 | [📄 License](#-license) | MIT License |
 
 ---
 
-## 1. 🚀 Quick Start
+## 1. 🚀 Quick Start & Docker
 
-**Launch with Docker Compose**:
+The repository provides clearly separated configurations for Development and Production:
 
+### Development Mode (with Source Code Bind Mount & Hot-Reload)
 ```bash
+# 1. Clone repository
 git clone https://github.com/NghiaDinh03/CyberAI-Assessment-project.git
 cd CyberAI-Assessment-project
+
+# 2. Setup environment
+cp .env.example .env
+
+# 3. Launch Development stack
+docker compose -f docker-compose.dev.yml up -d
+
+# 4. View logs
+docker compose -f docker-compose.dev.yml logs -f
 ```
 
+### Production Mode (Pre-built Image, No Source Mount, Nginx Reverse Proxy)
 ```bash
-# Build and start all services
-docker compose up -d --build
+# Launch Production stack
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-### 🌐 Service Table
+### 🌐 Service Ports & Routing
 
-| Service | URL | Description |
-|---|---|---|
-| 🌐 **Nginx Reverse Proxy** | `http://localhost:80` | Pure HTTP Reverse Proxy, SSE unbuffered, no certs required |
-| 🖥️ **Frontend UI** | `http://localhost:3081` | Next.js 16 Interface (Dark Cyber Theme, i18n EN/VI) |
-| ⚡ **Backend API** | `http://localhost:8000` | FastAPI server, OCR Pipeline, Evidence Mapper |
-| 📖 **Swagger Docs** | `http://localhost:8000/docs` | Interactive OpenAPI Documentation |
-| 🦙 **Ollama Engine** | `http://localhost:11434` | `gemma4:latest`, `qwen2.5-coder:7b`, `bge-m3` (Local Offline) |
-| 🔍 **SearXNG Search** | `http://localhost:8888` | Private Meta-Search / Threat Intelligence Engine |
+| Service | Port (Host) | Container Port | Mode | Description |
+|---|---|---|---|---|
+| 🌐 **Nginx Reverse Proxy** | `:80` | `80` | Prod only | Reverse proxy HTTP port 80, SSE streaming |
+| 🖥️ **Frontend UI** | `:3081` | `3000` | Dev & Prod | Next.js 15 interface (i18n EN/VI) |
+| ⚡ **Backend API** | `:8000` | `8000` | Dev & Prod | FastAPI REST server, Multi-Agent pipeline |
+| 🔍 **SearXNG Search** | `:8888` | `8080` | Dev & Prod | Local meta-search engine (**Chatbot only**) |
+| 🦙 **Ollama Runtime** | `:11434` / `:11435` | `11434` | Host / Container | `gemma4:latest`, `qwen2.5-coder:7b`, `bge-m3` |
 
 ```bash
-# Verify health
-docker compose ps
-curl http://localhost:8000/health
+# Check service health
+curl -f http://localhost:8000/health
 ```
 
 ---
 
 ## 2. ✨ Key Features
 
-| Feature Pillar | Technical Description |
-|----------------|-----------------------|
-| **💬 1. AI Security Chatbot** | • Interactive Q&A for ISO 27001 / TCVN 11930 standards<br>• Security log analysis and incident investigation<br>• Real-time web threat intelligence via SearXNG<br>• Persistent user-keyed session storage in SQLite |
-| **📋 2. Information Security Assessment** | • 4-step assessment wizard (Organization, Infrastructure, Controls Checklist, Summary)<br>• Covers ISO/IEC 27001:2022 (93 controls) and TCVN 11930:2017 (45 controls)<br>• Control evidence drawer with Tesseract OCR (PDF/Images/Text logs)<br>• Automated hierarchical weighted scoring (Critical/High/Medium/Low) & GAP analysis |
-| **📄 3. IT Audit Report Generation** | • Multi-format export: Markdown, JSON, DOCX (A4 Formal), PDF, XLSX (Dynamic SoA Matrix)<br>• Actionable remediation plans prioritized into P0/P1/P2 |
-| **🔐 4. Authentication & RBAC** | • Secure SQLite user store (`users.db`) using PBKDF2/SHA-256 + Salt<br>• Role-based access: `System Administrator` and `Auditor`<br>• Global AuthGuard protecting all frontend routes |
+| Feature Pillar | Technical Implementation |
+|----------------|--------------------------|
+| **📋 1. Standardized Assessment Pipeline** | • 4-step wizard: Scope & Org -> Infrastructure -> Controls Checklist -> Review & AI Mode<br>• Authoritative catalogs: ISO 27001:2022 (93 controls) & TCVN 11930:2017 (34 controls)<br>• Tesseract OCR & native parser for technical evidence (PDF, PNG/JPG, TXT, LOG, CONF)<br>• Multi-Agent reasoning: RAG Standard Retrieval -> Fact Extraction -> Compliance Audit -> Report Synthesis |
+| **⚖️ 2. Strict Weighted Compliance Scoring** | • Unified 5 Authoritative Verdicts: `satisfied`, `partial`, `not_evidenced`, `missing`, `needs_expert_review`<br>• Exact 10-5-3-1 weight scheme; denominator includes all catalogue controls (no N/A exclusion)<br>• Complete separation between **Raw Coverage** (self-declared) and **Weighted Compliance** (evidence-verified) |
+| **🛡️ 3. Evidence Manifest & Audit Trace** | • Distinguishes Template Preview vs Uploaded Evidence vs Assessment Manifest<br>• Every manifest record stores `file_id`, `sha256`, `parser_or_ocr`, mapped controls, and ingestion status<br>• Single source of truth: `UnifiedAssessmentResult` drives JSON, Audit Trace, SoA XLSX, Risk Register XLSX, DOCX, and PDF |
+| **💬 4. AI Security Chatbot & RAG** | • Interactive Q&A referencing ISO 27001 / TCVN 11930 standard texts from ChromaDB vector store<br>• Optional Web Search via local SearXNG instance (clearly toggled by user, **Chatbot only**)<br>• Web Search is strictly isolated and never introduced into assessment scoring |
+| **🔐 5. Security & Persistence** | • User authentication with Salted PBKDF2/SHA-256 password hashing<br>• Persistent volumes for SQLite databases (`users.db`, `sessions.db`, `assessments.db`), ChromaDB vector store, and exports |
 
 ---
 
@@ -90,133 +102,135 @@ curl http://localhost:8000/health
 
 ```mermaid
 flowchart TB
-    User(["👨‍💻 Security Analyst / IT Auditor"])
+    User(["👨‍💻 Security Analyst / Auditor"])
 
-    subgraph Docker["🐳 CyberAI Docker Network (cyberai-network)"]
-        NGINX["🌐 cyberai-nginx<br/>HTTP Reverse Proxy · :80"]
-        FE["🎨 cyberai-frontend<br/>Next.js 16 · :3081"]
-        BE["⚙️ cyberai-backend<br/>FastAPI · :8000"]
-        OL["🦙 cyberai-ollama<br/>Gemma 4 · Qwen2.5 · BGE-M3 · :11434"]
-        SEARX["🔍 cyberai-searxng<br/>Private Search · :8888"]
-        DB[(📁 SQLite DBs<br/>users.db / sessions.db / assessments.db)]
+    subgraph DockerNet["🐳 CyberAI Docker Network (cyberai-network)"]
+        NGINX["🌐 cyberai-nginx (:80)<br/>Production Reverse Proxy"]
+        FE["🎨 cyberai-frontend (:3081)<br/>Next.js 15 · App Router"]
+        BE["⚙️ cyberai-backend (:8000)<br/>FastAPI · Pipeline Engine"]
+        SEARX["🔍 cyberai-searxng (:8888)<br/>Private Search (Chatbot Only)"]
+        CHROMA[("🗄️ ChromaDB<br/>Standards / Catalogs Vector DB")]
+        SQLITE[("📁 SQLite Stores<br/>assessments / sessions / users")]
     end
 
-    subgraph CloudGateway["☁️ Cloud AI Gateway (Optional Fallback)"]
-        CloudLLM["☁️ Google Gemini / Claude / DeepSeek<br/>API Key Fallback Channel"]
+    subgraph LocalLLM["🦙 Ollama Local Runtime (:11434)"]
+        M1["Agent 2: qwen2.5-coder:7b (Fact Extractor)"]
+        M2["Agent 3: gemma4:latest (Auditor)"]
+        M3["Agent 1: bge-m3 (Embeddings)"]
     end
 
-    User -->|"HTTP :80"| NGINX
-    NGINX -->|"Proxy /"| FE
-    NGINX -->|"Proxy /api/*"| BE
-    BE -->|"Local Inference (100% Offline)"| OL
-    BE -->|"Threat Intelligence Search"| SEARX
-    BE -->|"Persistent Storage"| DB
-    BE -.->|"Optional Cloud Fallback"| CloudGateway
+    subgraph CloudOpt["☁️ Cloud Fallback (Optional)"]
+        CloudAPI["Gemini 2.0 / 2.5 Flash · OpenClaude<br/>(Secondary fallback if Ollama unavailable)"]
+    end
 
-    style Docker fill:#0b1329,stroke:#1e293b,color:#60a5fa
-    style NGINX fill:#0f766e,stroke:#14b8a6,color:#fff
-    style FE fill:#1e3a8a,stroke:#3b82f6,color:#fff
-    style BE fill:#065f46,stroke:#10b981,color:#fff
-    style OL fill:#c2410c,stroke:#f97316,color:#fff
-    style SEARX fill:#6b21a8,stroke:#a855f7,color:#fff
-    style DB fill:#1e293b,stroke:#475569,color:#fff
-    style CloudGateway fill:#1e1e38,stroke:#6366f1,color:#fff
-```
+    User -->|"HTTP :80 / :3081"| NGINX
+    NGINX --> FE
+    NGINX --> BE
+    FE -->|"API Calls"| BE
 
-### Self-Healing & Hybrid Fallback
-
-```mermaid
-graph LR
-    A["🦙 Ollama (Local Edge AI)<br/>gemma4:latest (Primary)"] -->|"Format Syntax Error"| B["🔧 json_repair<br/>Auto-heal JSON AST"]
-    A -->|"Timeout / Busy / Cloud Mode"| C["☁️ Cloud Gateway<br/>DeepSeek / Gemini Flash"]
-    C -->|"Standardized Output"| D["📄 IT Audit Reports<br/>Markdown / DOCX / XLSX / PDF"]
-    B -->|"Standardized Output"| D
-
-    style A fill:#ea580c,stroke:#f97316,color:#fff
-    style B fill:#15803d,stroke:#22c55e,color:#fff
-    style C fill:#4338ca,stroke:#6366f1,color:#fff
-    style D fill:#0369a1,stroke:#0ea5e9,color:#fff
+    BE -->|"RAG Query (Standards text)"| CHROMA
+    BE -->|"Embeddings"| M3
+    BE -->|"Fact Extraction"| M1
+    BE -->|"Compliance Reasoning"| M2
+    BE -->|"Chat Web Search (Optional)"| SEARX
+    BE -->|"State & Artifacts"| SQLITE
+    BE -.->|"Optional Fallback"| CloudOpt
 ```
 
 ---
 
-## 4. 📊 Comparative Analysis
+## 4. ⚖️ Assessment Policy & Scoring Invariants
 
-The table below contrasts **CyberAI** with prominent AI-driven GRC (Governance, Risk, and Compliance) automation platforms in the global market, such as **Vanta**, **Drata**, and **Scytale**:
+### 4.1. Five Authoritative Verdicts
+The platform evaluates evidence strictly against 5 standardized verdicts:
 
-| Criterion | Global SaaS Platforms (Vanta, Drata, Scytale) | CyberAI Assessment Platform |
-|:---|:---|:---|
-| **Deployment Model** | **SaaS / Cloud-Native**: System audit logs and evidence must be uploaded to the vendor's cloud. | **On-Premise / 100% Offline**: Runs entirely within local networks, performing local inference via local LLMs. |
-| **Data Privacy** | **Risk of exposure**: System topology, security logs, and configuration details are transmitted externally. | **Air-Gapped Security**: Compliance evidence never leaves the organization's internal host server. |
-| **Local Frameworks** | ❌ **No support**: Exclusively supports international frameworks (SOC 2, ISO 27001, HIPAA, GDPR, etc.). | 🇻🇳 **Comprehensive support**: Deeply integrates the Vietnamese national standard **TCVN 11930:2017** and security level determination under **Decree 85/2016/ND-CP**. |
-| **Language Support** | Primarily optimized for English compliance documentation. | Fully bilingual (Vietnamese & English) Q&A and translation of technical security terminology. |
-| **Evidence Collection** | Automated integration via APIs to public cloud providers (AWS, GCP, GitHub, Okta). | Uses an offline **Evidence Mapper** matching engine (Regex & localized keywords) to map and score uploaded evidence documents. |
-| **PII Protection** | Relies on public LLM API data policies (OpenAI, Anthropic). | Features a local **Privacy Filter** to automatically redact personally identifiable information (PII) before LLM ingestion. |
+| Verdict | Factor | Meaning | Contribution to Weighted Compliance |
+|:---|:---:|:---|:---:|
+| `satisfied` | **1.0** | Full technical evidence satisfies all control requirements | Full weight points ($w \times 1.0$) |
+| `partial` | **0.5** | Evidence demonstrates partial implementation | 50% weight points ($w \times 0.5$) |
+| `not_evidenced` | **0.0** | Control self-declared implemented but lacks verified evidence | 0 points |
+| `missing` | **0.0** | Control not implemented or no evidence provided | 0 points |
+| `needs_expert_review` | **0.0** | Conflict detected between self-declaration and evidence, or unparseable | 0 points (requires manual expert review) |
 
-### Practical Contributions & Novelty:
-1. **Bridging the Sovereignty Gap:** CyberAI resolves the primary hurdle for AI compliance adoption in Vietnam — strict state and enterprise regulations against uploading sensitive IT infrastructure data and system logs to foreign cloud services.
-2. **First-of-its-kind Localization:** It is the first unified platform that evaluates both international security frameworks (ISO 27001) and specific Vietnamese regulations (TCVN 11930) in a single workflow.
+> [!WARNING]
+> **No Controls Excluded**: The `not_applicable` (N/A) verdict is completely eliminated from the scoring pipeline. All controls in the catalogue participate in the denominator. Any legacy records containing N/A are normalized to `needs_expert_review` (factor 0.0), maintaining the invariant total catalogue denominator.
 
----
+### 4.2. Weighted Compliance Formula
+$$\text{Weighted Compliance} = \frac{\sum (w_i \times \text{verdict\_factor}_i)}{\sum w_{\text{catalogue}}} \times 100\%$$
 
-## 5. 🧠 Research & Core Algorithms
+- **Weight Points**: Critical = 10, High = 5, Medium = 3, Low = 1.
+- **Fixed Denominator Invariants**:
+  - **ISO/IEC 27001:2022**: Exactly **93 controls**, $\sum w_{\text{catalogue}} = \mathbf{495.0}$ max points.
+  - **TCVN 11930:2017**: Exactly **34 controls**, $\sum w_{\text{catalogue}} = \mathbf{271.0}$ max points.
+- AI confidence is metadata only and is never multiplied into the compliance score.
 
-CyberAI is engineered with 4 core mathematical and algorithmic mechanisms suitable for graduation and research theses:
-
-1. **Multi-Label Evidence-to-Control Mapping:**
-   - Combines rule-based regex extraction over raw server configuration dumps (`systeminfo`, `Get-Hotfix`, `netsh advfirewall`) with Semantic Cosine Similarity to map unstructured technical evidence to ISO 27001 & TCVN 11930 controls.
-2. **Hierarchical Weighted Compliance Scoring:**
-   - Calculates compliance through weighted aggregation $S = \frac{\sum w_i \cdot v_i \cdot c_i}{\sum w_i} \times 100\%$ where $w \in \{4, 3, 2, 1\}$ (Critical, High, Medium, Low) and $c_i \in [0.5, 1.0]$ represents the evidence confidence index.
-3. **Control-Aware Chunking & Token Budget Optimizer:**
-   - Clusters 93 controls into semantic groups of 5–8 controls per inference cycle to fit within local LLM context limits, applying differential privacy filters before report synthesis.
-4. **Self-Healing JSON & Hybrid Orchestrator:**
-   - Corrects corrupted JSON AST outputs from local quantized models on CPU without re-running inference, achieving 99.8% pipeline completion reliability.
+### 4.3. Raw Coverage vs. Weighted Compliance
+- **Raw Coverage**: $\frac{\text{self\_declared\_implemented}}{\text{total\_controls}} \times 100\%$. Represents self-declared intention, **not** an evidence-verified compliance achievement.
+- Merely uploading evidence does not grant points; only an authoritative `satisfied` or `partial` verdict from technical analysis contributes to Weighted Compliance.
 
 ---
 
-## 6. 📊 Empirical Evaluation (Enterprise Benchmark)
+## 5. 🔍 Evidence, Manifest & Audit Trace
 
-The platform is evaluated using enterprise-grade infrastructure audit benchmarks:
-- **Empirical Configuration Data:** Host configuration scan logs from Primary Domain Controllers and application servers containing Windows Server environment metrics, cumulative Hotfix patch states, internal firewall rule bases, and endpoint defense (EDR/Antivirus) configurations.
-- **Standardized Formal Output:** Automatically synthesizes unstructured technical dumps into formal compliance gap deliverables, categorizing risks and prioritizing actionable P0/P1/P2 remediation steps.
+### 5.1. Three Evidence Concepts
+1. **Template / Demo Preview**: Sample system profiles for demonstration. Clearly marked with a banner and never treated as real technical evidence.
+2. **Uploaded Evidence**: Raw files uploaded by the user (PDF, image, configuration files, logs).
+3. **Assessment Evidence Manifest**: Authoritative, cryptographically verified record of files ingested in a specific assessment run (`assessment_id`, `run_id`, `file_id`, SHA-256, OCR status, mapped controls). SHA-256 proves file integrity, not semantic correctness.
+
+### 5.2. Single Source of Truth
+All output formats (Audit Trace JSON, Statement of Applicability XLSX, Risk Register XLSX, Executive Summary DOCX, and PDF) are generated from the identical validated `UnifiedAssessmentResult` model, ensuring 100% mathematical consistency across all deliverables.
+
+---
+
+## 6. 🤖 AI Models & Web Search Scope
+
+### 6.1. Verified Runtime Models
+- **Agent 1 (Embeddings & Standards RAG)**: `bge-m3` (1024-dimensional multilingual dense & sparse retrieval).
+- **Agent 2 (Evidence Fact Extractor)**: `qwen2.5-coder:7b` (Extracts technical facts, parameters, and creates Fact Cards).
+- **Agent 3 (Compliance Auditor)**: `gemma4:latest` (Performs GAP analysis, risk scoring, and assigns verdicts).
+- **Agent 4 (Report Exporter)**: Internal deterministic template generator (`report_docx_generator.py`, `soa_exporter.py`, `risk_register_exporter.py`).
+
+### 6.2. Web Search Isolation
+- Web Search is powered by a local **SearXNG** container (`http://searxng:8080`).
+- **Web Search is exclusively available in the AI Chatbot** when explicitly toggled on by the user.
+- Web Search is **never** invoked or used as an evidence source during Assessment execution.
 
 ---
 
 ## 7. ⚙️ Environment Variables
 
-Key variables from [`.env.example`](.env.example):
+Key settings from [`.env.example`](.env.example):
 
 | Variable | Default | Description |
-|----------|---------|-------------|
-| `OLLAMA_URL` | `http://ollama:11434` | Internal Ollama endpoint |
-| `MODEL_NAME` | `gemma4:latest` | Primary Auditor model (9.6GB) |
-| `MODEL_1_EXTRACTOR` | `qwen2.5-coder:7b` | Technical Extractor model (4.7GB) |
-| `MODEL_3_EMBEDDING` | `bge-m3` | Multilingual Embedding model (1.2GB) |
-| `PREFER_LOCAL` | `true` | Enforce 100% offline local inference for audit acceptance |
-| `GOOGLE_AI_STUDIO_API_KEY` | — | Google AI Studio Free API Key for Gemini 2.0 Flash response review |
-| `JWT_SECRET` | — | Secret key for JWT signing (≥32 chars) |
-| `CORS_ORIGINS` | `http://localhost:3000,http://localhost:3081` | Allowed browser origins |
+|:---|:---|:---|
+| `OLLAMA_URL` | `http://host.docker.internal:11434` | Ollama API endpoint on host |
+| `MODEL_1_EXTRACTOR` | `qwen2.5-coder:7b` | Technical evidence fact extraction model |
+| `MODEL_2_AUDITOR` | `gemma4:latest` | Primary compliance auditor model |
+| `MODEL_3_EMBEDDING` | `bge-m3` | Standards embedding model |
+| `SEARXNG_URL` | `http://searxng:8080` | Local SearXNG endpoint (**Chatbot only**) |
+| `PREFER_LOCAL` | `true` | Enforces 100% offline local inference |
+| `INFERENCE_TIMEOUT` | `1800` | Model inference timeout in seconds |
+| `JWT_SECRET` | — | Secret key for session tokens (≥32 chars required in prod) |
+| `CORS_ORIGINS` | `http://localhost,http://localhost:80,http://localhost:3000,http://localhost:3081` | Allowed client origins |
 
 ---
 
-## 8. 📚 Documentation
+## 8. 📚 Technical Documentation
 
-| Document | Description |
-|----------|-------------|
-| [Architecture (EN)](docs/en/architecture.md) / [Architecture (VI)](docs/vi/architecture.md) | System design, service interaction, data flow |
-| [API Reference (EN)](docs/en/api.md) / [API Reference (VI)](docs/vi/api.md) | Full endpoint documentation |
-| [Deployment Guide (EN)](docs/en/deployment.md) / [Deployment Guide (VI)](docs/vi/deployment.md) | Production Docker deployment |
-| [Chatbot & RAG (EN)](docs/en/chatbot_rag.md) / [Chatbot & RAG (VI)](docs/vi/chatbot_rag.md) | Chat pipeline, SearXNG search, prompt engineering |
-| [ISO Assessment Form (EN)](docs/en/iso_assessment_form.md) / [ISO Assessment Form (VI)](docs/vi/iso_assessment_form.md) | 4-step assessment wizard and scoring logic |
-| [Algorithms (EN)](docs/en/algorithms.md) / [Algorithms (VI)](docs/vi/algorithms.md) | Detailed algorithmic and mathematical formulation |
-| [Benchmark (EN)](docs/en/benchmark.md) / [Benchmark (VI)](docs/vi/benchmark.md) | Performance metrics and model evaluation |
-| [Case Studies (EN)](docs/en/case_studies.md) / [Case Studies (VI)](docs/vi/case_studies.md) | Enterprise infrastructure assessment case study |
+For complete technical details, consult the authoritative documentation suite:
+
+| Document | Focus & Scope |
+|:---|:---|
+| [**Architecture Overview**](docs/ARCHITECTURE.md) | Multi-tier service topology, data isolation, and network architecture |
+| [**Assessment Workflow**](docs/ASSESSMENT_WORKFLOW.md) | Step-by-step pipeline from upload to fact extraction, RAG, and audit |
+| [**Scoring & Verdicts Specification**](docs/SCORING_AND_VERDICTS.md) | 5 verdicts, 10-5-3-1 weight rules, 495/271 invariants, mathematical proofs |
+| [**Evidence & Audit Trace**](docs/EVIDENCE_AND_AUDIT_TRACE.md) | Evidence Manifest, Fact Cards, SHA-256 verification, and audit records |
+| [**Chatbot & Web Search**](docs/CHATBOT_AND_WEB_SEARCH.md) | Chatbot RAG, SearXNG private search integration, and boundary isolation |
+| [**Deployment Guide**](docs/DEPLOYMENT.md) | Docker Dev & Prod setups, Nginx reverse proxy, and hardware sizing |
+| [**Testing & Reproduction Guide**](docs/TESTING_AND_REPRODUCTION.md) | Deterministic test commands, test suites, and reproduction environments |
 
 ---
 
 ## 📄 License
 
-MIT — see [LICENSE](LICENSE) for details.
-
-
-
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.

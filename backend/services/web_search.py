@@ -93,6 +93,11 @@ class WebSearch:
     @classmethod
     def _search_wikipedia_fallback(cls, query: str, max_results: int = 3) -> List[Dict[str, str]]:
         """Fallback to direct Vietnamese Wikipedia API if meta-search and ddgs fail."""
+        # Wikipedia is an encyclopedia, NOT a live news service. Skip Wikipedia fallback for news/current event queries.
+        if re.search(r'\b(tin tức|hôm nay|mới nhất|thời sự|vừa qua|tuần này|sự kiện|năm nay|tháng này)\b', query, re.IGNORECASE):
+            logger.info("[WebSearch] News/event query detected -> skipping Wikipedia fallback to avoid irrelevant matches.")
+            return []
+
         try:
             url = "https://vi.wikipedia.org/w/api.php"
             params = {
@@ -100,7 +105,7 @@ class WebSearch:
                 "list": "search",
                 "srsearch": query,
                 "format": "json",
-                "srlimit": max_results,
+                "srlimit": max_results * 2,
             }
             headers = {"User-Agent": USER_AGENT}
             with httpx.Client(timeout=3.0) as client:
@@ -109,16 +114,37 @@ class WebSearch:
                     data = res.json()
                     search_items = data.get("query", {}).get("search", [])
                     results = []
+                    security_keywords = (
+                        "an ninh", "bảo mật", "an toàn", "mạng", "luật", "tấn công", "mã độc",
+                        "iso", "tcvn", "it", "cntt", "cyber", "security", "hacker", "lỗ hổng",
+                        "dữ liệu", "quy định", "chính sách", "phần mềm", "hệ thống", "thông tin"
+                    )
+                    is_security_query = any(k in query.lower() for k in security_keywords)
+
                     for item in search_items:
                         title = item.get("title", "")
                         page_id = item.get("pageid", "")
                         snippet = re.sub(r"<[^>]+>", "", item.get("snippet", ""))
-                        if title and page_id:
-                            results.append({
-                                "title": f"Wikipedia: {title}",
-                                "url": f"https://vi.wikipedia.org/?curid={page_id}",
-                                "snippet": snippet
-                            })
+                        if not (title and page_id):
+                            continue
+
+                        if is_security_query:
+                            t_lower = title.lower()
+                            s_lower = snippet.lower()
+                            # Exclude known false-positive biographical / geographical matches that just share "ninh" or "an ninh"
+                            if any(t_lower.startswith(p) for p in ("nguyễn an ninh", "quảng ninh", "tây ninh", "bắc ninh", "ninh bình", "ninh thuận")):
+                                continue
+                            if not any(k in t_lower or k in s_lower for k in security_keywords):
+                                continue
+
+                        results.append({
+                            "title": f"Wikipedia: {title}",
+                            "url": f"https://vi.wikipedia.org/?curid={page_id}",
+                            "snippet": snippet
+                        })
+                        if len(results) >= max_results:
+                            break
+
                     if results:
                         logger.info(f"[WebSearch] Wikipedia fallback returned {len(results)} results.")
                         return results
@@ -146,9 +172,12 @@ class WebSearch:
             return []
 
         # 3. Ưu tiên 1: Gọi SearXNG (On-Premise Private Meta-Search)
-        searx_results = cls._search_searxng(cleaned_query, max_results=max_results)
-        if searx_results:
-            return searx_results
+        try:
+            searx_results = cls._search_searxng(cleaned_query, max_results=max_results)
+            if searx_results:
+                return searx_results
+        except Exception as e:
+            logger.warning(f"[WebSearch] SearXNG search error: {e}")
 
         logger.info("[WebSearch] SearXNG không khả dụng hoặc chưa có kết quả -> Fallback sang thư viện ddgs...")
 
@@ -187,9 +216,12 @@ class WebSearch:
                         time.sleep(1)
 
         # 5. Fallback 3: Wikipedia direct query
-        wiki_results = cls._search_wikipedia_fallback(cleaned_query, max_results=3)
-        if wiki_results:
-            return wiki_results
+        try:
+            wiki_results = cls._search_wikipedia_fallback(cleaned_query, max_results=3)
+            if wiki_results:
+                return wiki_results
+        except Exception as e:
+            logger.warning(f"[WebSearch] Wikipedia fallback error: {e}")
 
         logger.info("[WebSearch] Không có kết quả tìm kiếm web từ cả SearXNG và fallbacks.")
         return []

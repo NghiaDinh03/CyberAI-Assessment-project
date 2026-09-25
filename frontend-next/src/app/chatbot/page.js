@@ -280,7 +280,7 @@ const MessageBubble = memo(function MessageBubble({
     const isStreaming = !!m._streaming
     const isCopied = copiedMsgId === msgKey
     const content = typeof m.content === 'string' ? m.content : (m.content ? JSON.stringify(m.content) : '')
-    const hasWebSources = m.webSources && m.webSources.length > 0
+    const hasWebSources = !!m.searchUsed && Array.isArray(m.webSources) && m.webSources.length > 0
     const displayContent = useMemo(() => {
         if (!isBot) return content
         let cleaned = cleanAndFormatMarkdown(content)
@@ -552,7 +552,7 @@ const MessageBubble = memo(function MessageBubble({
                             </div>
                         )}
 
-                        {!isStreaming && m.webSources?.length > 0 && (
+                        {!isStreaming && hasWebSources && (
                             <div className={styles.webSourcesContainer}>
                                 <div className={styles.webSourcesHeader}>
                                     <Globe size={13} className={styles.webSourcesHeaderIcon} />
@@ -1298,7 +1298,7 @@ export default function ChatbotPage() {
                 locale,
                 token,
                 userId: user?.id,
-                useSearch: webSearchEnabled ? true : undefined,
+                useSearch: Boolean(webSearchEnabled),
                 onFinalize: (finalMessages) => {
                     if (!mountedRef.current) return
                     setLocalMsgs(finalMessages)
@@ -1349,7 +1349,7 @@ export default function ChatbotPage() {
                 locale,
                 token,
                 userId: user?.id,
-                useSearch: webSearchEnabled ? true : undefined,
+                useSearch: Boolean(webSearchEnabled),
                 onFinalize: (finalMessages) => {
                     if (!mountedRef.current) return
                     setLocalMsgs(finalMessages)
@@ -1399,7 +1399,7 @@ export default function ChatbotPage() {
                 locale,
                 token,
                 userId: user?.id,
-                useSearch: webSearchEnabled ? true : undefined,
+                useSearch: Boolean(webSearchEnabled),
                 onFinalize: (finalMessages) => {
                     if (!mountedRef.current) return
                     setLocalMsgs(finalMessages)
@@ -1446,7 +1446,7 @@ export default function ChatbotPage() {
                 locale,
                 token,
                 userId: user?.id,
-                useSearch: webSearchEnabled ? true : undefined,
+                useSearch: Boolean(webSearchEnabled),
                 onFinalize: (finalMessages) => {
                     if (!mountedRef.current) return
                     // Persist the finalized conversation into the component's
@@ -1466,6 +1466,7 @@ export default function ChatbotPage() {
 
     const newChat = useCallback(() => {
         setActiveId(null); setLocalMsgs([]); setSidebar(false)
+        setWebSearchEnabled(false)
         setTimeout(() => inputRef.current?.focus(), 100)
     }, [])
 
@@ -1473,6 +1474,7 @@ export default function ChatbotPage() {
         const sId = s.id || s.session_id
         setActiveId(sId)
         setSidebar(false)
+        setWebSearchEnabled(false)
         if (s.messages && s.messages.length > 0) {
             setLocalMsgs(s.messages)
         } else {
@@ -1670,7 +1672,7 @@ export default function ChatbotPage() {
                                     type="button"
                                     className={`${styles.webSearchToggle} ${webSearchEnabled ? styles.webSearchActive : ''}`}
                                     onClick={() => setWebSearchEnabled(prev => !prev)}
-                                    title={webSearchEnabled ? (t('chatbot.webSearchOn') || "Tìm kiếm Web (SearXNG): ĐANG BẬT") : (t('chatbot.webSearchAuto') || "Tìm kiếm Web (SearXNG): Tự động nhận diện")}
+                                    title={webSearchEnabled ? (t('chatbot.webSearchOn') || "Tìm kiếm Web (SearXNG): ĐANG BẬT") : (t('chatbot.webSearchOff') || "Tìm kiếm Web (SearXNG): ĐANG TẮT")}
                                     aria-label="Toggle web search"
                                 >
                                     <Globe size={13} />

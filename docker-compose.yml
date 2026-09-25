@@ -39,7 +39,8 @@ services:
       - MODEL_1_EXTRACTOR=${MODEL_1_EXTRACTOR:-qwen2.5-coder:7b}
       - MODEL_2_AUDITOR=${MODEL_2_AUDITOR:-gemma4:latest}
       - MODEL_3_EMBEDDING=${MODEL_3_EMBEDDING:-bge-m3}
-      - REQUIRED_MODEL_IDS=${REQUIRED_MODEL_IDS:-gemma4:latest,qwen2.5-coder:7b,bge-m3:latest}
+      - CODE_VERSION=v1.2.0-verdict
+      - GIT_COMMIT_SHA=c79037e
       - SEARXNG_URL=${SEARXNG_URL:-http://searxng:8080}
     networks:
       - cyberai-network

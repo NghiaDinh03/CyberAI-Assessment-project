@@ -278,12 +278,19 @@ class TestStructuredJson:
             today="06/05/2026",
             effective_mode="hybrid",
             control_verdicts=[
-                {"control_id": "A.5.1", "evidence_verdict": "satisfied", "confidence": 0.9, "missing_items": []},
+                {
+                    "control_id": "A.5.1",
+                    "evidence_verdict": "satisfied",
+                    "confidence": 0.9,
+                    "missing_items": [],
+                    "citations": [{"file_name": "policy.pdf"}],
+                },
             ],
             all_controls_flat=[
                 {"id": "A.5.1", "label": "Policy", "weight": "critical"},
                 {"id": "A.5.2", "label": "Roles", "weight": "critical"},
             ],
+            evidence_map={"A.5.1": ["policy.pdf"]},
         )
 
         assert "controls" in result

@@ -435,7 +435,8 @@ class EvidenceFactExtractor:
         if "mfa" in lower_txt or "xác thực đa yếu tố" in lower_txt or "2fa" in lower_txt:
             strengths.append("Có bằng chứng áp dụng cơ chế xác thực đa yếu tố (MFA) cho tài khoản truy cập.")
 
-        if "sao lưu" in lower_txt or "backup" in lower_txt:
+        has_backup_fail = bool(re.search(r"\b(?:\[FATAL\]|FATAL|disk full|corrupted|crc error|job aborted|backup failed|dump failed|could not write output)\b", lower_txt))
+        if ("sao lưu" in lower_txt or "backup" in lower_txt) and not has_backup_fail:
             strengths.append("Có quy định hoặc lịch trình thực hiện sao lưu dữ liệu hệ thống định kỳ.")
 
         if "người phê duyệt" in lower_txt or "approved by" in lower_txt or "ban hành" in lower_txt:
@@ -444,14 +445,25 @@ class EvidenceFactExtractor:
         if "https://" in lower_txt or "tls 1.2" in lower_txt or "tls 1.3" in lower_txt:
             strengths.append("Áp dụng giao thức truyền thông an toàn mã hóa SSL/TLS.")
 
-        if host_meta.get("antivirus"):
-            strengths.append(f"Máy chủ đã trang bị giải pháp bảo vệ mã độc: {host_meta['antivirus']}.")
+        if host_meta.get("antivirus") or re.search(r"\b(?:antivirus|endpoint protection|chống mã độc|managed/protected|pattern virus|bảo vệ mã độc)\b", lower_txt):
+            av_name = host_meta.get('antivirus') or "Antivirus / Endpoint Protection"
+            strengths.append(f"Hệ thống máy chủ đã trang bị giải pháp bảo vệ mã độc: {av_name}.")
 
         return strengths
 
     @classmethod
     def _extract_deficiencies(cls, text: str, host_meta: Dict[str, Any]) -> List[Dict[str, Any]]:
         deficiencies: List[Dict[str, Any]] = []
+
+        # 0. Backup failure & corruption
+        if re.search(r"\b(?:\[FATAL\]|FATAL|disk full|corrupted|crc error|job aborted|backup failed|dump failed|could not write output)\b", text, re.IGNORECASE) and re.search(r"\b(?:backup|sao\s*lưu|pg_dump|mysqldump|archive)\b", text, re.IGNORECASE):
+            deficiencies.append({
+                "type": "backup_failure",
+                "name": "Lỗi sao lưu nghiêm trọng (Hỏng tệp sao lưu / Tràn đĩa / Tiến trình bị hủy)",
+                "risk_level": "critical",
+                "evidence_snippet": "Ghi nhận lỗi nghiêm trọng trong nhật ký sao lưu (FATAL / Disk full / Corrupted / Aborted)",
+                "control_ids": ["A.8.13", "DAT.01"],
+            })
 
         # 1. OS EOL
         if host_meta.get("is_eol"):
@@ -502,14 +514,21 @@ class EvidenceFactExtractor:
             })
 
         # 5. Insecure protocols & Open weak ports
-        if re.search(r"\b(?:telnet|ftp|smbv1|http://|ssl\s+2\.0|ssl\s+3\.0)\b", text, re.IGNORECASE):
-            deficiencies.append({
-                "type": "insecure_protocol",
-                "name": "Sử dụng giao thức truyền thông không mã hóa hoặc lỗi thời",
-                "risk_level": "high",
-                "evidence_snippet": "Phát hiện giao thức không an toàn trong cấu hình mạng",
-                "control_ids": ["A.8.20", "A.8.24", "APP.02", "NW.01", "NW.02", "SV.01"],
-            })
+        insecure_m = re.search(r"\b(?:telnet|ftp|smbv1|http://|ssl\s+2\.0|ssl\s+3\.0)\b", text, re.IGNORECASE)
+        if insecure_m:
+            lines_with_m = [l.lower() for l in text.splitlines() if insecure_m.group(0).lower() in l.lower()]
+            is_disabled = any(
+                any(k in l for k in ("disable", "stop", "deny", "drop", "block", "remove", "cấm", "vô hiệu hóa", "tắt"))
+                for l in lines_with_m
+            )
+            if not is_disabled:
+                deficiencies.append({
+                    "type": "insecure_protocol",
+                    "name": "Sử dụng giao thức truyền thông không mã hóa hoặc lỗi thời",
+                    "risk_level": "high",
+                    "evidence_snippet": "Phát hiện giao thức không an toàn trong cấu hình mạng",
+                    "control_ids": ["A.8.20", "A.8.24", "APP.02", "NW.01", "NW.02", "SV.01"],
+                })
 
         # 6. SWEET32 / CVE-2016-2183 / Weak 3DES ciphers
         if re.search(r"\b(?:cve-2016-2183|sweet32|3des|triple-des|des-cbc3)\b", text, re.IGNORECASE):
@@ -645,10 +664,15 @@ class EvidenceFactExtractor:
         for s in strengths:
             if "tường lửa" in s.lower():
                 satisfied.append({"control_id": "A.8.20", "reason": "Host Firewall kích hoạt.", "confidence": "high"})
+                satisfied.append({"control_id": "NW.02", "reason": "Tường lửa bảo vệ vùng biên kích hoạt.", "confidence": "high"})
             if "mfa" in s.lower():
                 satisfied.append({"control_id": "A.8.5", "reason": "Áp dụng xác thực đa yếu tố.", "confidence": "high"})
             if "sao lưu" in s.lower():
                 satisfied.append({"control_id": "A.8.13", "reason": "Có chính sách sao lưu định kỳ.", "confidence": "high"})
+                satisfied.append({"control_id": "DAT.01", "reason": "Có chính sách sao lưu định kỳ.", "confidence": "high"})
+            if "mã độc" in s.lower() or "antivirus" in s.lower():
+                satisfied.append({"control_id": "A.8.7", "reason": "Áp dụng giải pháp chống mã độc.", "confidence": "high"})
+                satisfied.append({"control_id": "SV.02", "reason": "Áp dụng giải pháp chống mã độc.", "confidence": "high"})
 
         for d in deficiencies:
             for cid in d.get("control_ids", []):
@@ -690,10 +714,15 @@ class EvidenceFactExtractor:
         for s in strengths:
             if "tường lửa" in s.lower():
                 controls.add("A.8.20")
+                controls.add("NW.02")
             if "mfa" in s.lower():
                 controls.add("A.8.5")
             if "sao lưu" in s.lower():
                 controls.add("A.8.13")
+                controls.add("DAT.01")
+            if "mã độc" in s.lower() or "antivirus" in s.lower():
+                controls.add("A.8.7")
+                controls.add("SV.02")
 
         from services.evidence_mapper import map_evidence_to_controls
         mapped = map_evidence_to_controls(filename, text[:32000])

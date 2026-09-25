@@ -41,8 +41,8 @@ os.makedirs(STANDARDS_DIR, exist_ok=True)
 # Allowed weight values
 VALID_WEIGHTS = {"critical", "high", "medium", "low"}
 
-# Weight scoring map (must match frontend WEIGHT_SCORE)
-WEIGHT_SCORE = {"critical": 4, "high": 3, "medium": 2, "low": 1}
+# Authoritative weight scoring map imported from controls_catalog
+from services.controls_catalog import WEIGHT_SCORE
 
 
 class StandardValidationError(Exception):

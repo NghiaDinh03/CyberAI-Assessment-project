@@ -247,10 +247,10 @@ function finalize({ aborted = false, err = null } = {}) {
                 model: isError ? selectedModel : finalData.model,
                 requestedModel: selectedModel,
                 provider: finalData.provider,
-                searchUsed: finalData.search_used,
-                ragUsed: finalData.rag_used,
-                webSources: finalData.web_sources,
-                sources: finalData.sources,
+                searchUsed: !!finalData.search_used,
+                ragUsed: !!finalData.rag_used,
+                webSources: finalData.search_used ? (finalData.web_sources || []) : [],
+                sources: finalData.sources || [],
                 isError: isFailure,
             }
             finalMessages = state.messages.map(m => m._id === pendingMsgId ? botMsg : m)
@@ -264,6 +264,10 @@ function finalize({ aborted = false, err = null } = {}) {
                 thinkingElapsed,
                 time: now(),
                 elapsedSec,
+                searchUsed: false,
+                ragUsed: false,
+                webSources: [],
+                sources: [],
                 model: selectedModel,
                 requestedModel: selectedModel,
                 provider: 'unknown',
@@ -356,9 +360,7 @@ export async function startStream({
             prefer_cloud: !isLocal,
             user_id: userId,
         }
-        if (typeof useSearch === 'boolean') {
-            requestPayload.use_search = useSearch
-        }
+        requestPayload.use_search = Boolean(useSearch)
 
         const res = await fetch('/api/chat/stream', {
             method: 'POST',
@@ -403,10 +405,10 @@ export async function startStream({
                 model: isError ? selectedModel : data.model,
                 requestedModel: selectedModel,
                 provider: data.provider,
-                searchUsed: data.search_used,
-                ragUsed: data.rag_used,
-                webSources: data.web_sources,
-                sources: data.sources,
+                searchUsed: !!data.search_used,
+                ragUsed: !!data.rag_used,
+                webSources: data.search_used ? (data.web_sources || []) : [],
+                sources: data.sources || [],
                 isError,
             }
             const finalMessages = state.messages.map(m => m._id === pendingMsgId ? botMsg : m)

@@ -36,8 +36,8 @@ Thay vì bắt một Model làm tất cả dẫn đến chất lượng giảm s
 |---|---|---|
 | ISO 27001 — 93 controls / 4 category (A.5/6/7/8) | ✅ Implemented | [`backend/services/controls_catalog.py`](../../backend/services/controls_catalog.py) `ISO_27001_CATEGORIES` |
 | TCVN 11930 — 34 controls / 5 category | ✅ Implemented | [`backend/services/controls_catalog.py`](../../backend/services/controls_catalog.py) `TCVN_11930_CATEGORIES` |
-| Multi-LLM Pipeline (Phase-1 SecurityLLM → Phase-2 Llama) | ✅ Implemented | `ChatService.assess_system` [`backend/services/chat_service.py:527-841`](../../backend/services/chat_service.py) |
+| Multi-LLM Pipeline (Model 1 Qwen2.5-Coder → Model 2 Gemma 4) | ✅ Implemented | `ChatService.assess_system` [`backend/services/chat_service.py:527-841`](../../backend/services/chat_service.py) |
 | BackgroundTask / Job ID async | ✅ Implemented | `POST /iso27001/assess` trả `assessment_id` + `background_tasks.add_task(process_assessment_bg, …)` — [`backend/api/routes/iso27001.py:243-316`](../../backend/api/routes/iso27001.py) |
 | Templates Monitor | ✅ Implemented | `frontend-next/src/data/templates.js`, trang `/templates` |
 | Custom Standard (upload JSON/YAML) | ✅ Implemented | [`backend/services/standard_service.py`](../../backend/services/standard_service.py) + `data/standards/` |
-| Weighted scoring (critical=4, high=3, medium=2, low=1) | ✅ Implemented | `WEIGHT_SCORE` trong `controls_catalog.py` |
+| Weighted scoring (critical=10, high=5, medium=3, low=1) | ✅ Implemented | `WEIGHT_SCORE` trong `controls_catalog.py` |

@@ -1,0 +1,139 @@
+# docker-compose.dev.yml — Development deployment with hot reload & bind mounts
+# Chạy môi trường Dev: docker compose -f docker-compose.dev.yml up -d
+# Dừng môi trường Dev: docker compose -f docker-compose.dev.yml down
+# Xem logs: docker compose -f docker-compose.dev.yml logs -f [service]
+# Kiểm tra: docker compose -f docker-compose.dev.yml config
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: cyberai-backend:latest
+    container_name: cyberai-backend
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
+      - MODEL_NAME=${MODEL_NAME:-gemma4:latest}
+      - SECURITY_MODEL_NAME=${SECURITY_MODEL_NAME:-gemma4:latest}
+      - EMBEDDING_MODEL_NAME=${EMBEDDING_MODEL_NAME:-bge-m3}
+      - MODEL_1_EXTRACTOR=${MODEL_1_EXTRACTOR:-qwen2.5-coder:7b}
+      - MODEL_2_AUDITOR=${MODEL_2_AUDITOR:-gemma4:latest}
+      - MODEL_3_EMBEDDING=${MODEL_3_EMBEDDING:-bge-m3}
+      - MAX_TOKENS=-1
+      - PREFER_LOCAL=${PREFER_LOCAL:-true}
+      - CLOUD_LLM_API_URL=${CLOUD_LLM_API_URL:-https://open-claude.com/v1}
+      - CLOUD_MODEL_NAME=${CLOUD_MODEL_NAME:-gemini-2.0-flash}
+      - CLOUD_API_KEYS=${CLOUD_API_KEYS:-}
+      - GOOGLE_AI_STUDIO_API_KEY=${GOOGLE_AI_STUDIO_API_KEY:-}
+      - GOOGLE_AI_STUDIO_MODEL=${GOOGLE_AI_STUDIO_MODEL:-gemini-2.5-flash}
+      - GOOGLE_AI_STUDIO_URL=${GOOGLE_AI_STUDIO_URL:-https://generativelanguage.googleapis.com/v1beta}
+      - ISO_DOCS_PATH=/data/iso_documents
+      - VECTOR_STORE_PATH=/data/vector_store
+      - DATA_PATH=/data
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DEBUG=${DEBUG:-true}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost,http://localhost:80,http://localhost:3000,http://localhost:3081,http://127.0.0.1,http://127.0.0.1:80,http://127.0.0.1:3000,http://127.0.0.1:3081}
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - RATE_LIMIT_CHAT=${RATE_LIMIT_CHAT:-15/minute}
+      - RATE_LIMIT_ASSESS=${RATE_LIMIT_ASSESS:-3/minute}
+      - RATE_LIMIT_BENCHMARK=${RATE_LIMIT_BENCHMARK:-5/minute}
+      - INFERENCE_TIMEOUT=${INFERENCE_TIMEOUT:-1800}
+      - CLOUD_TIMEOUT=${CLOUD_TIMEOUT:-600}
+      - MODELS_PATH=/app/models
+      - SEARXNG_URL=${SEARXNG_URL:-http://searxng:8080}
+      - CODE_VERSION=${CODE_VERSION:-v1.2.0-verdict}
+      - GIT_COMMIT_SHA=${GIT_COMMIT_SHA:-c79037e}
+    networks:
+      - cyberai-network
+    volumes:
+      - ./backend:/app
+      - ./models/llm:/app/models
+      - ./data/iso_documents:/data/iso_documents
+      - ./data/vector_store:/data/vector_store
+      - ./data/assessments:/data/assessments
+      - ./data/evidence:/data/evidence
+      - ./data/exports:/data/exports
+      - ./data/sessions:/data/sessions
+      - ./data/standards:/data/standards
+      - ./data/knowledge_base:/data/knowledge_base
+      - ./data/uploads:/data/uploads
+    depends_on:
+      searxng:
+        condition: service_started
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 4G
+        reservations:
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend-next
+      dockerfile: Dockerfile
+    image: cyberai-frontend:latest
+    container_name: cyberai-frontend
+    user: root
+    ports:
+      - "3081:3000"
+    command: ["sh", "-c", "npm install --legacy-peer-deps && npm run dev"]
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - API_URL=http://backend:8000
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    volumes:
+      - ./frontend-next:/app
+      - ./docs:/app/docs:ro
+    networks:
+      - cyberai-network
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+        reservations:
+          memory: 256M
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: cyberai-searxng
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8080
+    ports:
+      - "8888:8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    networks:
+      - cyberai-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+        reservations:
+          memory: 128M
+
+networks:
+  cyberai-network:
+    driver: bridge

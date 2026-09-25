@@ -6,7 +6,7 @@ Endpoints (mounted under ``/api`` and ``/api/v1`` in :mod:`main`):
     GET    /risks/{risk_id}    — get a single risk
     PATCH  /risks/{risk_id}    — partial update
     DELETE /risks/{risk_id}    — delete a risk
-    GET    /risks/heatmap      — 5×5 likelihood×impact summary
+    GET    /risks/heatmap      — 4×4 likelihood×impact summary
 """
 
 from __future__ import annotations
@@ -26,19 +26,20 @@ router = APIRouter()
 
 @router.get("/risks/heatmap")
 async def risk_heatmap() -> dict:
-    """Return a 5×5 matrix counting risks per (likelihood, impact) cell.
+    """Return a 4×4 matrix counting risks per (likelihood, impact) cell.
 
     Response shape::
 
         {
-          "matrix": [[0,0,0,0,0], ...],   # matrix[likelihood-1][impact-1]
+          "matrix": [[0,0,0,0], ...],   # matrix[likelihood-1][impact-1]
           "total": 12
         }
     """
     risks = svc.list_all()
-    matrix = [[0] * 5 for _ in range(5)]
+    matrix = [[0] * 4 for _ in range(4)]
     for r in risks:
-        matrix[r.likelihood - 1][r.impact - 1] += 1
+        if 1 <= r.likelihood <= 4 and 1 <= r.impact <= 4:
+            matrix[r.likelihood - 1][r.impact - 1] += 1
     return {"matrix": matrix, "total": len(risks)}
 
 

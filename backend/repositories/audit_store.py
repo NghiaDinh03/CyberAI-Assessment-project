@@ -288,5 +288,23 @@ class AuditStore:
         finally:
             conn.close()
 
+    def export_trace_dict(self, assessment_id: str, run_id: Optional[str] = None) -> Dict[str, Any]:
+        """Export audit events strictly filtered by assessment_id AND run_id; never mix runs."""
+        all_events = self.get_events_by_assessment(assessment_id)
+        if not run_id and all_events:
+            # By default isolate to the most recent run_id
+            run_id = all_events[-1].get("run_id")
+        events = [e for e in all_events if e.get("run_id") == run_id] if run_id else all_events
+        code_ver = events[0].get("code_version") if events else None
+        effective_run_id = run_id or (events[0].get("run_id") if events else "run_default")
+        return {
+            "assessment_id": assessment_id,
+            "run_id": effective_run_id,
+            "code_version": code_ver,
+            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "total_events": len(events),
+            "events": events,
+        }
+
 
 audit_store = AuditStore.get_instance()

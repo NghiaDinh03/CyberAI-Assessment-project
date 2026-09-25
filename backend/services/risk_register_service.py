@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from api.schemas.risk import Risk, RiskCreate, RiskUpdate
+from services.risk_scoring import calculate_risk_score
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ def create(payload: RiskCreate) -> Risk:
         vulnerability=payload.vulnerability,
         likelihood=payload.likelihood,
         impact=payload.impact,
-        inherent_score=payload.likelihood * payload.impact,
+        inherent_score=calculate_risk_score(payload.likelihood, payload.impact),
         treatment=payload.treatment,
         residual_score=payload.residual_score,
         owner=payload.owner,
@@ -111,7 +112,7 @@ def update(risk_id: str, patch: RiskUpdate) -> Optional[Risk]:
         data.update(updates)
 
         # Recalculate inherent_score whenever likelihood or impact changes.
-        data["inherent_score"] = data["likelihood"] * data["impact"]
+        data["inherent_score"] = calculate_risk_score(data["likelihood"], data["impact"])
         data["updated_at"] = datetime.now(timezone.utc)
 
         risk = Risk.model_validate(data)

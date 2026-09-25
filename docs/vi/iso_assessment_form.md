@@ -161,11 +161,12 @@ flowchart TB
 - **Mô hình chính:** `gemma4:latest` (Ollama cục bộ) hoặc `deepseek-v4-flash` / `gemini-2.0-flash` (Cloud).
 - **Phân nhóm Controls:** Thay vì gửi toàn bộ 93 controls một lần (vượt quá context window), hệ thống phân tách thành các nhóm nhỏ 5–8 controls qua `get_control_groups()`.
 - **Nạp bằng chứng qua OCR:** File tài liệu hoặc scan log gắn kèm từng control được trích xuất text qua `Tesseract OCR` (hỗ trợ cả tiếng Việt và tiếng Anh) và đưa vào prompt ngữ cảnh.
-- **Xác định kết luận (Verdict per Control):**
-  - `satisfied` (Đạt yêu cầu): Có bằng chứng minh chứng đầy đủ.
-  - `partially_satisfied` (Đạt một phần): Có triển khai nhưng thiếu tài liệu/chính sách.
-  - `not_satisfied` (Chưa đạt): Chưa có giải pháp hoặc thiếu bản vá quan trọng.
-  - `not_applicable` (Không áp dụng): Ngoài phạm vi đánh giá.
+- **Xác định kết luận (5 Verdict chuẩn duy nhất):**
+  - `satisfied` (Đạt yêu cầu): Có bằng chứng minh chứng đầy đủ (hệ số 1.0).
+  - `partial` (Đạt một phần): Có triển khai nhưng thiếu tài liệu/chính sách (hệ số 0.5).
+  - `not_evidenced` (Chưa chứng minh): Tự khai báo áp dụng nhưng chưa nạp minh chứng (hệ số 0.0).
+  - `missing` (Còn thiếu): Chưa triển khai biện pháp kiểm soát (hệ số 0.0).
+  - `needs_expert_review` (Cần chuyên gia rà soát): Có xung đột minh chứng hoặc cần đánh giá thủ công (hệ số 0.0).
 
 ### 📊 Phase 2 — Formal Audit Report Synthesis (Tổng Hợp Báo Cáo Kiểm Toán)
 
@@ -242,10 +243,11 @@ Toàn bộ API, giao diện và các bộ xuất báo cáo (DOCX, PDF, SoA XLSX,
     "raw_percentage": 50.54
   },
   "weighted_compliance": {
-    "weighted_score": 237.5,
-    "weighted_max_score": 430.0,
-    "percentage": 55.23,
-    "algorithm": "iso27001_domain_weighted_v1"
+    "weighted_score": 245.0,
+    "weighted_max_score": 495.0,
+    "percentage": 49.49,
+    "algorithm": "verdict_weighted_v2",
+    "weight_scheme": "critical_10_high_5_medium_3_low_1"
   },
   "controls": [
     {
@@ -307,7 +309,7 @@ Tất cả các định dạng xuất đều sử dụng chung nguồn dữ li�
 | Định Dạng | Tiêu Chuẩn Áp Dụng | Đặc Điểm Kỹ Thuật |
 |-----------|--------------------|-------------------|
 | **SoA XLSX** | ISO 27001 (93 dòng) / TCVN 11930 (34 dòng) | Header metadata (Assessment ID, Run ID, Code Version, Org Name), cột điểm `Score (0-5)` tại index 7, hiển thị Verdict, Verdict Basis và file minh chứng đã che. |
-| **Risk Register XLSX** | ISO 27001 / TCVN 11930 | Ma trận Likelihood (1-5) x Impact (1-5) = Risk Score (1-25), cột `risk_assessment_basis` minh bạch, banner metadata đồng bộ. |
+| **Risk Register XLSX** | ISO 27001 / TCVN 11930 | Ma trận Likelihood (1-4) x Impact (1-4) = Risk Score (1-16), cột `risk_assessment_basis` minh bạch, banner metadata đồng bộ. |
 | **DOCX** | A4 Professional Layout | Bảng có `<w:tblHeader/>` lặp ở trang mới, `<w:cantSplit/>` chống cắt dòng, loại bỏ Markdown thô (`#`, `*`, backtick) và emoji lỗi font, có disclaimer kiểm định chuyên gia bắt buộc. |
 | **PDF** | WeasyPrint / CSS Paged Media | Header lặp, layout chống trang trắng mồ côi, bảng grid metadata chuẩn hóa, tự động ghi nhận event `report_exported` với SHA-256. |
 

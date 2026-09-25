@@ -37,6 +37,7 @@ export default function Step3Controls({
     fetchEvidenceForControl,
     evidenceMap,
     onOpenFeedbackDrawer,
+    assessmentId,
 }) {
     const { t, locale } = useTranslation()
     const batchFolderInputRef = useRef(null)
@@ -129,6 +130,43 @@ export default function Step3Controls({
 
     return (
         <div className={styles.stepContent}>
+            {form?.template_id && (
+                <div style={{
+                    background: 'rgba(234, 179, 8, 0.09)',
+                    border: '1px solid rgba(234, 179, 8, 0.35)',
+                    borderRadius: '10px',
+                    padding: '0.85rem 1.25rem',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '1rem'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <span style={{ fontSize: '1.4rem' }}>📋</span>
+                        <div>
+                            <div style={{ fontWeight: 600, color: '#fef08a', fontSize: '0.88rem' }}>
+                                Dữ liệu mẫu từ template: {form.template_name || form.template_id} ({form.template_id})
+                            </div>
+                            <div style={{ color: '#cbd5e1', fontSize: '0.78rem', marginTop: '2px' }}>
+                                Đang sử dụng danh mục kiểm soát gợi ý từ template. Dữ liệu mẫu không được tính là minh chứng kỹ thuật mặc định. Vui lòng tải lên tệp log/chính sách thực tế để đối soát.
+                            </div>
+                        </div>
+                    </div>
+                    <span style={{
+                        background: 'rgba(234, 179, 8, 0.2)',
+                        color: '#fef08a',
+                        fontSize: '0.72rem',
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap'
+                    }}>
+                        Dữ liệu mẫu
+                    </span>
+                </div>
+            )}
+
             <div className={styles.controlHeader}>
                 <div>
                     <h2 className={styles.sectionTitle}>{t('assessment.controlsTitle')}</h2>
@@ -432,6 +470,28 @@ export default function Step3Controls({
 
             <p className={styles.helperText} dangerouslySetInnerHTML={{ __html: t('assessment.controlsHelp') }} />
 
+            {Boolean(form?.template_id || form?.is_template_input) && (
+                <div style={{
+                    background: 'rgba(234, 179, 8, 0.12)',
+                    border: '1px solid rgba(234, 179, 8, 0.35)',
+                    borderRadius: '8px',
+                    padding: '0.65rem 1rem',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    color: '#fef08a',
+                    fontSize: '0.85rem'
+                }}>
+                    <span style={{ fontSize: '1.1rem' }}>ℹ️</span>
+                    <span>
+                        {locale === 'vi'
+                            ? 'Dữ liệu mẫu từ template — chưa có minh chứng thuộc assessment này'
+                            : 'Sample data from template — no evidence belongs to this assessment yet'}
+                    </span>
+                </div>
+            )}
+
             <div className={styles.accordionContainer}>
                 {currentStandard.controls.map((category, catIdx) => {
                     const catControlIds = category.controls.map(c => c.id)
@@ -534,6 +594,7 @@ export default function Step3Controls({
                 files={uploadedFilesList}
                 onDeleteFile={onDeleteUploadedFile}
                 locale={locale}
+                assessmentId={assessmentId}
             />
         </div>
     )

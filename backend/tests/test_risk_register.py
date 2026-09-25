@@ -42,7 +42,7 @@ def _sample_payload(**overrides) -> dict:
         "threat": "Ransomware attack",
         "vulnerability": "Unpatched OS",
         "likelihood": 4,
-        "impact": 5,
+        "impact": 4,
         "treatment": "mitigate",
         "residual_score": 8,
         "owner": "CISO",
@@ -65,7 +65,7 @@ class TestRiskRegisterService:
         risk = svc.create(payload)
 
         assert risk.id
-        assert risk.inherent_score == 4 * 5  # likelihood × impact
+        assert risk.inherent_score == 4 * 4  # likelihood × impact
         assert risk.asset_ref == "ERP Server"
         assert risk.linked_controls == ["A.5.1", "A.8.3"]
 
@@ -92,11 +92,11 @@ class TestRiskRegisterService:
         risk = svc.create(RiskCreate(**_sample_payload(likelihood=3, impact=3)))
         assert risk.inherent_score == 9
 
-        updated = svc.update(risk.id, RiskUpdate(likelihood=5))
+        updated = svc.update(risk.id, RiskUpdate(likelihood=4))
         assert updated is not None
-        assert updated.likelihood == 5
+        assert updated.likelihood == 4
         assert updated.impact == 3  # unchanged
-        assert updated.inherent_score == 15  # 5 × 3
+        assert updated.inherent_score == 12  # 4 × 3
 
     def test_update_nonexistent_returns_none(self, data_path):
         from api.schemas.risk import RiskUpdate
@@ -132,7 +132,7 @@ class TestRiskRoutes:
         resp = client.post("/api/risks", json=_sample_payload())
         assert resp.status_code == 201
         body = resp.json()
-        assert body["inherent_score"] == 20
+        assert body["inherent_score"] == 16
         assert body["id"]
 
     def test_list_risks(self, client):
@@ -176,20 +176,38 @@ class TestRiskRoutes:
         assert resp.status_code == 404
 
     def test_heatmap(self, client):
-        client.post("/api/risks", json=_sample_payload(likelihood=4, impact=5))
+        client.post("/api/risks", json=_sample_payload(likelihood=4, impact=4))
         client.post("/api/risks", json=_sample_payload(likelihood=2, impact=3))
 
         resp = client.get("/api/risks/heatmap")
         assert resp.status_code == 200
         body = resp.json()
         assert body["total"] == 2
-        assert body["matrix"][3][4] == 1  # likelihood=4, impact=5
+        assert len(body["matrix"]) == 4
+        assert len(body["matrix"][0]) == 4
+        assert body["matrix"][3][3] == 1  # likelihood=4, impact=4
         assert body["matrix"][1][2] == 1  # likelihood=2, impact=3
 
     def test_create_risk_validation(self, client):
-        # likelihood out of range
-        resp = client.post("/api/risks", json=_sample_payload(likelihood=6))
+        # likelihood=5 out of range (must be 1-4)
+        resp = client.post("/api/risks", json=_sample_payload(likelihood=5))
         assert resp.status_code == 422
+
+        # likelihood=0 out of range
+        resp0 = client.post("/api/risks", json=_sample_payload(likelihood=0))
+        assert resp0.status_code == 422
+
+        # impact=5 out of range
+        respi5 = client.post("/api/risks", json=_sample_payload(impact=5))
+        assert respi5.status_code == 422
+
+        # impact=0 out of range
+        respi0 = client.post("/api/risks", json=_sample_payload(impact=0))
+        assert respi0.status_code == 422
+
+        # residual_score > 16 out of range
+        respr = client.post("/api/risks", json=_sample_payload(residual_score=20))
+        assert respr.status_code == 422
 
         # missing required field
         payload = _sample_payload()

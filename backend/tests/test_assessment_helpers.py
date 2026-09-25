@@ -11,6 +11,7 @@ All external model calls are mocked; no network, no Ollama / Cloud dependency.
 
 import os
 import sys
+import json
 import logging
 import pytest
 
@@ -45,6 +46,7 @@ class TestNormalizeVerdict:
         # Stable keys match the TypedDict contract.
         assert set(out.keys()) == {
             "control_id", "evidence_verdict", "missing_items", "confidence",
+            "ai_verdict_raw", "normalized_ai_verdict", "verdict_rationale", "evidence_citations",
         }
 
     def test_unknown_verdict_coerced_to_missing(self):
@@ -186,6 +188,35 @@ class TestValidateChunkOutput:
 
     def test_no_json_returns_none(self):
         assert validate_chunk_output("no json here", "Cat") is None
+
+    def test_control_verdicts_schema_parsed_and_normalized(self):
+        content = json.dumps({
+            "control_verdicts": [
+                {
+                    "control_id": "A.5.1",
+                    "verdict": "satisfied",
+                    "rationale": "Chính sách ban hành đầy đủ",
+                    "citations": [{"evidence_id": "ev1", "file_name": "policy.pdf", "excerpt": "Sec 1.0"}],
+                    "severity": "critical",
+                    "likelihood": 1,
+                    "impact": 1,
+                    "risk": 1,
+                    "gap": "",
+                    "recommendation": "Duy trì định kỳ"
+                }
+            ]
+        })
+        out = validate_chunk_output(content, "A.5 Tổ chức")
+        assert out is not None and len(out) == 1
+        item = out[0]
+        assert item["control_id"] == "A.5.1"
+        assert item["id"] == "A.5.1"
+        assert item["evidence_verdict"] == "satisfied"
+        assert item["verdict"] == "satisfied"
+        assert item["normalized_ai_verdict"] == "satisfied"
+        assert item["citations"][0]["file_name"] == "policy.pdf"
+        assert item["severity"] == "critical"
+        assert item["risk"] == 1
 
 
 # ---------------------------------------------------------------------------

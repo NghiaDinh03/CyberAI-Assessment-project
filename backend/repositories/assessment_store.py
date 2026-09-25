@@ -70,12 +70,34 @@ class AssessmentStore:
         
         # Extract summary metrics from report_data
         summary = report_data.get("summary", {})
-        overall_score = float(summary.get("overall_score", report_data.get("compliance_score", 0.0)))
+        w_comp = report_data.get("weighted_compliance", {}) or report_data.get("json_data", {}).get("weighted_compliance", {})
+        c_cov = report_data.get("control_coverage", {}) or report_data.get("json_data", {}).get("control_coverage", {})
+        overall_score = float(
+            summary.get("overall_score")
+            or report_data.get("compliance_percent")
+            or w_comp.get("percentage")
+            or report_data.get("compliance_score")
+            or 0.0
+        )
         risk_level = str(summary.get("overall_risk", report_data.get("risk_level", "Medium")))
         compliance_status = str(summary.get("status", "Completed"))
-        total_controls = int(summary.get("total_controls", len(report_data.get("controls", []))))
-        passed_controls = int(summary.get("passed", 0))
-        failed_controls = int(summary.get("failed", 0))
+        total_controls = int(
+            summary.get("total_controls")
+            or c_cov.get("total_applicable_controls")
+            or c_cov.get("total_controls")
+            or len(report_data.get("controls", []))
+            or 0
+        )
+        passed_controls = int(
+            summary.get("passed")
+            or c_cov.get("evidence_supported_implemented")
+            or 0
+        )
+        failed_controls = int(
+            summary.get("failed")
+            or c_cov.get("not_evidenced_or_missing")
+            or (total_controls - passed_controls if total_controls >= passed_controls else 0)
+        )
         pname = project_name or report_data.get("project_name") or f"Assessment-{aid}"
         scope = system_scope or report_data.get("system_scope") or "General Infrastructure"
 

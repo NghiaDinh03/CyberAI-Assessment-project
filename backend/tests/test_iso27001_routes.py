@@ -186,9 +186,10 @@ class TestControlAiAssistAndEvidence:
 
     def test_upload_and_list_control_evidence(self):
         import io
+        test_aid = "test_aid_legacy_route"
         file_content = b"Windows Firewall is active and blocking unauthorized ports."
         files = {"file": ("firewall_check.txt", io.BytesIO(file_content), "text/plain")}
-        upload_resp = client.post("/api/iso27001/evidence/A.8.20", files=files)
+        upload_resp = client.post(f"/api/iso27001/evidence/A.8.20?assessment_id={test_aid}", files=files)
         assert upload_resp.status_code == 200
         up_data = upload_resp.json()
         assert up_data.get("status") == "success"
@@ -196,7 +197,7 @@ class TestControlAiAssistAndEvidence:
         assert "firewall_check.txt" in up_data.get("filename")
 
         # List evidence
-        list_resp = client.get("/api/iso27001/evidence/A.8.20")
+        list_resp = client.get(f"/api/iso27001/evidence/A.8.20?assessment_id={test_aid}")
         assert list_resp.status_code == 200
         list_data = list_resp.json()
         assert list_data.get("control_id") == "A.8.20"

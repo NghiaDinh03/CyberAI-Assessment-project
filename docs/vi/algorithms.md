@@ -290,65 +290,74 @@ Nguồn: [`controls_catalog.py`](backend/services/controls_catalog.py), [`assess
 ### 3.1 Cơ chế hoạt động
 
 > ⚖️ **Hiểu đơn giản:** Không phải mọi biện pháp bảo mật đều quan trọng như nhau. Ví dụ:
-> - **Mã hóa dữ liệu** (critical, trọng số 4) — nếu thiếu, hacker có thể đọc toàn bộ dữ liệu
-> - **Đồng bộ thời gian NTP** (low, trọng số 1) — nếu thiếu, chỉ ảnh hưởng nhỏ đến log
+> - **Mã hóa dữ liệu / Quản lý định danh** (critical, trọng số 10) — nếu thiếu, hacker có thể đọc hoặc chiếm đoạt toàn bộ hệ thống
+> - **Đồng bộ thời gian NTP** (low, trọng số 1) — nếu thiếu, chỉ ảnh hưởng nhỏ đến phân tích thứ tự log
 >
-> Vì vậy, khi tính "tuân thủ bao nhiêu %", ta không đếm đơn giản "đã làm mấy cái", mà tính có trọng số — thiếu biện pháp critical ảnh hưởng nhiều hơn thiếu biện pháp low.
+> Vì vậy, khi tính "tuân thủ bao nhiêu %", ta không đếm đơn giản "đã làm mấy cái", mà tính theo trọng số và kết quả thẩm định bằng chứng (AI/expert verdict) — tự khai báo nhưng không có bằng chứng đạt thì không được tính điểm.
 
-Các biện pháp kiểm soát được gán trọng số theo mức độ nghiêm trọng. Tỷ lệ tuân thủ được tính bằng tỷ số giữa **Weighted Scoring (điểm trọng số) đạt được** và **điểm trọng số tối đa**, không phải đơn thuần đếm số lượng.
+Các biện pháp kiểm soát được gán trọng số theo mức độ nghiêm trọng. Tỷ lệ tuân thủ được tính bằng công thức chuẩn hóa theo kết quả thẩm định bằng chứng:
+
+$$\text{Weighted Compliance} = \frac{\sum (w_i \times \text{verdict\_factor}_i)}{\sum w_i} \times 100\%$$
+
+Trong đó:
+- `satisfied`: 1.0 (nhận 100% trọng số)
+- `partial`: 0.5 (nhận 50% trọng số nếu được chuẩn hỗ trợ)
+- `not_evidenced`, `missing`, `needs_expert_review`: 0.0 điểm
+- Hệ thống áp dụng nghiêm ngặt 5 verdict chuẩn duy nhất (không còn verdict `not_applicable`); toàn bộ các biện pháp kiểm soát trong chuẩn đều được đánh giá trong mẫu số tuân thủ.
 
 ### 3.2 Bảng ánh xạ trọng số (Weight Score Mapping)
 
-Được định nghĩa trong [`WEIGHT_SCORE`](backend/services/controls_catalog.py):
+Được định nghĩa thống nhất trong [`WEIGHT_SCORE`](backend/services/controls_catalog.py):
 
 | Mức độ nghiêm trọng (Severity) | Trọng số (Weight) | Mô tả |
 |---------------------------------|-------------------|-------|
-| `critical` | **4** | Biện pháp bắt buộc (ví dụ: kiểm soát truy cập, mã hóa, ứng phó sự cố) |
-| `high` | **3** | Biện pháp quan trọng (ví dụ: kiểm tra lý lịch, SDLC) |
-| `medium` | **2** | Biện pháp tiêu chuẩn (ví dụ: liên hệ cơ quan chức năng, lọc web) |
-| `low` | **1** | Biện pháp bổ sung (ví dụ: đồng bộ NTP, chính sách bàn làm việc) |
+| `critical` | **10** | Biện pháp tối quan trọng (ví dụ: kiểm soát truy cập, MFA, ứng phó sự cố) |
+| `high` | **5** | Biện pháp quan trọng (ví dụ: kiểm kê tài sản, phân tách mạng, BCP/DR) |
+| `medium` | **3** | Biện pháp tiêu chuẩn (ví dụ: Threat Intelligence, quản lý tài liệu) |
+| `low` | **1** | Biện pháp bổ sung (ví dụ: đồng bộ NTP, liên hệ nhóm chuyên gia) |
+
+Tổng điểm tối đa tính từ danh mục controls thực tế:
+- **ISO 27001 (93 controls):** `weighted_max_score = 495.0`
+- **TCVN 11930 (34 controls):** `weighted_max_score = 271.0`
 
 ### 3.3 Tách Biệt Raw Control Coverage và Weighted Compliance
 
 Hệ thống phân định rành mạch hai đại lượng đo lường khác nhau theo chuẩn `assessment_schema.py`:
 
 ```
-1. Control Coverage (Độ phủ số lượng control thô):
-   - self_declared_implemented: Số control người dùng khai báo đã triển khai
-   - evidence_supported_implemented: Số control có tài liệu/log minh chứng đi kèm
-   - not_evidenced_or_missing: Số control chưa có minh chứng hoặc chưa làm
+1. Control Coverage (Độ phủ số lượng control thô - Raw Coverage):
+   - self_declared_implemented: Số control người dùng tự khai báo đã triển khai
+   - evidence_supported_implemented: Số control có verdict cuối cùng "satisfied"
+   - not_evidenced_or_missing: Số control chưa có minh chứng đạt hoặc chưa triển khai
    - total_controls: Tổng số control theo chuẩn (93 với ISO 27001, 34 với TCVN 11930)
    - raw_percentage = round((self_declared_implemented / total_controls) * 100, 2)
 
-2. Weighted Compliance (Mức tuân thủ có trọng số):
-   - weighted_score: Điểm đạt được theo trọng số severity và verdict
-   - weighted_max_score: Điểm tối đa có thể đạt được của toàn bộ chuẩn
+2. Weighted Compliance (Mức tuân thủ có trọng số thẩm định):
+   - weighted_score: Điểm đạt được theo trọng số severity và verdict factor
+   - weighted_max_score: Điểm tối đa có thể đạt được của toàn bộ chuẩn (495 ISO, 271 TCVN)
    - percentage = round((weighted_score / weighted_max_score) * 100, 2)
-   - algorithm: "iso27001_domain_weighted_v1" hoặc "tcvn11930_level_weighted_v1"
+   - algorithm: "verdict_weighted_v2"
+   - weight_scheme: "critical_10_high_5_medium_3_low_1"
 ```
 
 > ⚠️ **Quy tắc hiển thị UI:** Không gộp chung hai con số. Giao diện luôn thể hiện trực quan dạng:
-> **"47/93 controls được đánh dấu đạt (50.5%)"** và **"Mức tuân thủ có trọng số: 55.2%"**.
+> **"Raw Coverage: 47/93 controls tự khai báo (50.5%)"** và **"Weighted Compliance: 55.2% (dựa trên thẩm định bằng chứng)"**.
+> Tự khai báo không có bằng chứng sẽ có Raw Coverage nhưng Weighted Compliance = 0.
 
 <details>
-<summary>📝 Code: <code>calc_compliance()</code> trong <code>controls_catalog.py</code></summary>
+<summary>📝 Code: <code>calc_weighted_compliance()</code> trong <code>controls_catalog.py</code></summary>
 
 ```python
-# Tách bạch rõ rệt hai metrics
-control_coverage = {
-    "self_declared_implemented": len(valid_implemented),
-    "evidence_supported_implemented": len(evidenced_controls),
-    "not_evidenced_or_missing": max(0, total_controls - len(valid_implemented)),
-    "total_controls": total_controls,
-    "raw_percentage": round(len(valid_implemented) / total_controls * 100, 2) if total_controls > 0 else 0.0
-}
-
-weighted_compliance = {
-    "weighted_score": round(achieved_weighted, 2),
-    "weighted_max_score": round(max_weighted, 2),
-    "percentage": round(achieved_weighted / max_weighted * 100, 2) if max_weighted > 0 else 0.0,
-    "algorithm": "iso27001_domain_weighted_v1" if standard == "iso27001" else "tcvn11930_level_weighted_v1"
-}
+# Tính điểm dựa trên verdict thẩm định
+weighted_compliance = calc_weighted_compliance(controls_out)
+# Output:
+# {
+#     "weighted_score": 245.0,
+#     "weighted_max_score": 495.0,
+#     "percentage": 49.49,
+#     "algorithm": "verdict_weighted_v2",
+#     "weight_scheme": "critical_10_high_5_medium_3_low_1"
+# }
 ```
 
 </details>
@@ -400,9 +409,9 @@ Các trường bắt buộc trong Risk Register:
 - `control_weight`: Trọng số của control (`Critical`, `High`, `Medium`, `Low`)
 - `assessment_verdict`: Kết luận đánh giá (`satisfied`, `not_evidenced`, `missing`, `needs_expert_review`)
 - `risk_severity`: Mức nghiêm trọng rủi ro (`Critical`, `High`, `Medium`, `Low`)
-- `likelihood`: Khả năng xảy ra (1–5)
-- `impact`: Mức độ tác động nếu bị xâm phạm (1–5)
-- `risk_score`: Tích số `Likelihood × Impact` (1–25)
+- `likelihood`: Khả năng xảy ra (1–4)
+- `impact`: Mức độ tác động nếu bị xâm phạm (1–4)
+- `risk_score`: Tích số `Likelihood × Impact` (1–16)
 - `risk_assessment_basis`: Cơ sở đánh giá rủi ro:
   - `evidence_based`: Dựa trên bằng chứng/log cụ thể phát hiện lỗ hổng
   - `rule_based`: Tính toán tất định từ catalog ma trận rủi ro chuẩn
@@ -413,10 +422,10 @@ Các trường bắt buộc trong Risk Register:
 
 | Control Weight | Likelihood (Mặc định rule-based) | Impact (Mặc định rule-based) | Risk Score ($L \times I$) | Risk Severity |
 |----------------|----------------------------------|------------------------------|---------------------------|---------------|
-| **Critical**   | 4                                | 5                            | 20                        | **Critical**  |
-| **High**       | 3                                | 4                            | 12                        | **High**      |
-| **Medium**     | 2                                | 3                            | 6                         | **Medium**    |
-| **Low**        | 1                                | 2                            | 2                         | **Low**       |
+| **Critical**   | 4                                | 4                            | 16                        | **Critical**  |
+| **High**       | 3                                | 3                            | 9                         | **High**      |
+| **Medium**     | 2                                | 2                            | 4                         | **Medium**    |
+| **Low**        | 1                                | 1                            | 1                         | **Low**       |
 
 > 💡 **Khách quan hóa kết luận AI:** Khi thiếu minh chứng, hệ thống ghi rõ lý do: *"Chưa ghi nhận đủ minh chứng trong phạm vi dữ liệu đánh giá; cần chuyên gia xác minh"*, không quy chụp rằng doanh nghiệp chưa ban hành hay hoàn toàn không triển khai biện pháp.
 
@@ -430,8 +439,8 @@ Mô hình SecurityLM xuất JSON cho mỗi danh mục biện pháp:
     "id": "A.5.1",
     "severity": "critical",
     "likelihood": 4,
-    "impact": 5,
-    "risk": 20,
+    "impact": 4,
+    "risk": 16,
     "gap": "Chính sách ATTT chưa được ban hành",
     "recommendation": "Ban hành chính sách ATTT ngay trong 30 ngày"
   }
@@ -439,9 +448,9 @@ Mô hình SecurityLM xuất JSON cho mỗi danh mục biện pháp:
 ```
 
 Kiểm tra hợp lệ trong [`validate_chunk_output()`](backend/services/assessment_helpers.py:67):
-- Likelihood được giới hạn trong `[1, 5]`
-- Impact được giới hạn trong `[1, 5]`
-- Risk được giới hạn trong `[1, 25]`
+- Likelihood được giới hạn trong `[1, 4]`
+- Impact được giới hạn trong `[1, 4]`
+- Risk được giới hạn trong `[1, 16]`
 - Văn bản Gap bị cắt ngắn tối đa **200** ký tự
 - Recommendation bị cắt ngắn tối đa **200** ký tự
 - **Chống ảo giác (Anti-hallucination)**: các mã biện pháp không thuộc tập hợp lệ sẽ bị từ chối

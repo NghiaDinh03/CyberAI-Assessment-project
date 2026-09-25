@@ -63,11 +63,17 @@
       "emoji": "❌",
       "description": "Control is not implemented or no evidence provided."
     },
-    "not_applicable": {
-      "label_vi": "Không áp dụng",
-      "label_en": "Not Applicable",
-      "emoji": "➖",
-      "description": "Control is not applicable to the organization's context."
+    "not_evidenced": {
+      "label_vi": "Chưa có minh chứng",
+      "label_en": "Not Evidenced",
+      "emoji": "○",
+      "description": "Control is declared implemented but lacks technical evidence."
+    },
+    "needs_expert_review": {
+      "label_vi": "Cần chuyên gia đánh giá",
+      "label_en": "Needs Expert Review",
+      "emoji": "⚠️",
+      "description": "Control has conflicting evidence or requires manual auditor evaluation."
     }
   },
   "evidence_mapping_patterns": {

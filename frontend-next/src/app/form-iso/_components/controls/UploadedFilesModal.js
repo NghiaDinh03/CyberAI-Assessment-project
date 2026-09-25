@@ -8,7 +8,8 @@ export default function UploadedFilesModal({
     onClose,
     files = [],
     onDeleteFile,
-    locale = 'vi'
+    locale = 'vi',
+    assessmentId = null
 }) {
     const [searchTerm, setSearchTerm] = useState('')
     const [previewFile, setPreviewFile] = useState(null)
@@ -49,7 +50,9 @@ export default function UploadedFilesModal({
 
         try {
             const targetName = encodeURIComponent(file.filename || file.clean_name || '')
-            const res = await fetch(`/api/iso27001/evidence/file-content?filename=${targetName}`)
+            const qs = assessmentId ? `&assessment_id=${encodeURIComponent(assessmentId)}` : ''
+            const headers = assessmentId ? { 'X-Assessment-ID': assessmentId } : {}
+            const res = await fetch(`/api/iso27001/evidence/file-content?filename=${targetName}${qs}`, { headers })
             if (res.ok) {
                 const data = await res.json()
                 setPreviewData(data)
@@ -58,7 +61,7 @@ export default function UploadedFilesModal({
                 setPreviewData({
                     filename: file.clean_name || file.filename,
                     full_text: file.preview || file.fact_summary || (locale === 'vi' ? '(Không có bản xem trước văn bản)' : '(No text preview available)'),
-                    sha256: file.sha256 || 'N/A',
+                    sha256: file.sha256 || '',
                     char_count: file.char_count || 0,
                     size_bytes: file.size_bytes || 0
                 })
@@ -68,7 +71,7 @@ export default function UploadedFilesModal({
             setPreviewData({
                 filename: file.clean_name || file.filename,
                 full_text: file.preview || (locale === 'vi' ? 'Lỗi kết nối tải nội dung xem trước' : 'Error fetching preview'),
-                sha256: file.sha256 || 'N/A',
+                sha256: file.sha256 || '',
                 char_count: file.char_count || 0,
                 size_bytes: file.size_bytes || 0
             })
@@ -215,17 +218,32 @@ export default function UploadedFilesModal({
                                             </div>
 
                                             <div className={styles.fileMetaRow}>
+                                                <span className={styles.metaItem} style={{ fontFamily: 'monospace', color: '#93c5fd' }}>
+                                                    🆔 {file.evidence_id || (file.sha256 ? `file_${file.sha256.slice(0, 8)}` : 'file_gen')}
+                                                </span>
                                                 <span className={styles.metaItem}>
                                                     📦 {formatSize(file.size_bytes)}
                                                 </span>
                                                 <span className={styles.metaItem}>
                                                     🔤 {file.char_count?.toLocaleString() || 0} {locale === 'vi' ? 'ký tự' : 'chars'}
                                                 </span>
-                                                {file.sha256 && (
-                                                    <span className={styles.metaItem} title={`SHA-256: ${file.sha256}`}>
-                                                        🔒 {file.sha256.slice(0, 10)}...
+                                                {file.sha256 ? (
+                                                    <span
+                                                        className={styles.metaItem}
+                                                        title={`Click để sao chép toàn bộ mã băm SHA-256: ${file.sha256}`}
+                                                        onClick={() => handleCopy(file.sha256)}
+                                                        style={{ cursor: 'pointer' }}
+                                                    >
+                                                        🔒 {file.sha256.slice(0, 12)}...
+                                                    </span>
+                                                ) : (
+                                                    <span className={styles.metaItem} style={{ color: '#94a3b8' }}>
+                                                        🔒 Chưa có hash
                                                     </span>
                                                 )}
+                                                <span className={styles.metaItem} style={{ color: '#38bdf8' }}>
+                                                    ⚙️ {file.ocr_applied ? 'OCR' : 'Native'} ({file.status || '100% bóc tách'})
+                                                </span>
                                             </div>
 
                                             <div className={styles.mappedControlsRow}>

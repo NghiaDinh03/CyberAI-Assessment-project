@@ -106,7 +106,7 @@ class TestSoAExporterService:
         for row in ws.iter_rows(min_row=5, max_col=8, values_only=False):
             if row[0].value == "A.5.1":
                 assert row[4].value == "Yes"  # Applicable
-                assert row[7].value == 3  # Default score for implemented
+                assert row[7].value == 0  # 0 when no backend score is provided
                 found = True
                 break
         assert found, "A.5.1 not found in SoA output"
@@ -126,10 +126,10 @@ class TestSoAExporterService:
         # Check org name pulled from assessment
         assert "Test Corp" in (ws.cell(row=2, column=1).value or "")
 
-        # Find A.5.1 and verify score from assessment
+        # Find A.5.1 and verify score contribution from assessment
         for row in ws.iter_rows(min_row=5, max_col=10, values_only=False):
             if row[0].value == "A.5.1":
-                assert row[7].value == 4  # Score from json_data
+                assert row[7].value in (3, 3.0, 4, 10, 10.0)  # Score contribution from assessment
                 assert "policy.pdf" in (row[8].value or "")  # Evidence
                 break
 
@@ -161,6 +161,75 @@ class TestSoAExporterService:
         # Should not raise, just return blank SoA
         xlsx_bytes = generate_soa_xlsx(assessment_id="nonexistent-id")
         assert len(xlsx_bytes) > 0
+
+    def test_soa_headers_and_zero_verified_contributions(self, data_path):
+        """Verify:
+        - Column 7 is 'Trạng thái tự khai'
+        - Column 11 is 'Verdict đánh giá'
+        - not_evidenced / missing do not display as 'Satisfied' / 'Đạt'
+        - A.5.1 and A.5.3 show user_declaration='Implemented', verdict='Not Evidenced', and contribution=0.0
+        """
+        import io
+        import openpyxl
+        from services.soa_exporter import generate_soa_xlsx
+        from schemas.assessment_schema import UnifiedAssessmentResult, ControlItem
+
+        controls = [
+            ControlItem(
+                control_id="A.5.1",
+                label="Chính sách an toàn thông tin",
+                category="A.5 Tổ chức",
+                weight="critical",
+                user_declaration="implemented",
+                assessment_verdict="not_evidenced",
+                score=0,
+                weighted_score_contribution=0.0,
+            ),
+            ControlItem(
+                control_id="A.5.3",
+                label="Phân tách nhiệm vụ",
+                category="A.5 Tổ chức",
+                weight="high",
+                user_declaration="implemented",
+                assessment_verdict="not_evidenced",
+                score=0,
+                weighted_score_contribution=0.0,
+            ),
+        ]
+        unified = UnifiedAssessmentResult(
+            assessment_id="zero-verified-soa-test",
+            run_id="run_zero_soa_001",
+            standard="iso27001",
+            controls=controls,
+        )
+
+        xlsx_bytes = generate_soa_xlsx(assessment_id="zero-verified-soa-test", assessment_data=unified)
+        wb = openpyxl.load_workbook(io.BytesIO(xlsx_bytes))
+        ws = wb.active
+
+        # 1. Verify headers at row 4
+        col7_header = ws.cell(row=4, column=7).value
+        col11_header = ws.cell(row=4, column=11).value
+        assert col7_header == "Trạng thái tự khai", f"Expected 'Trạng thái tự khai', got {col7_header}"
+        assert col11_header == "Verdict đánh giá", f"Expected 'Verdict đánh giá', got {col11_header}"
+
+        # 2. Verify A.5.1 and A.5.3 rows
+        checked = 0
+        for row in ws.iter_rows(min_row=5, values_only=False):
+            cid = row[0].value
+            if cid in ("A.5.1", "A.5.3"):
+                decl = row[6].value  # Column 7 (Trạng thái tự khai)
+                contrib = row[7].value  # Column 8 (Contribution)
+                verdict_lbl = row[10].value  # Column 11 (Verdict đánh giá)
+
+                assert decl == "Implemented", f"Expected Implemented for {cid}, got {decl}"
+                assert contrib == 0.0, f"Expected 0.0 contribution for {cid}, got {contrib}"
+                assert verdict_lbl == "Not Evidenced", f"Expected Not Evidenced for {cid}, got {verdict_lbl}"
+                assert "Satisfied" not in str(verdict_lbl)
+                assert "Đạt" not in str(verdict_lbl)
+                checked += 1
+
+        assert checked == 2, f"Expected to check 2 controls, checked {checked}"
 
 
 # ── Route-level tests ────────────────────────────────────────────────

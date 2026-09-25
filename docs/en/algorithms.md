@@ -287,16 +287,32 @@ Sources: [`controls_catalog.py`](backend/services/controls_catalog.py), [`assess
 
 Controls are weighted by severity. Compliance percentage is computed as ratio of **achieved weighted score** to **maximum weighted score**, not simple count-based.
 
+### 3.1 Overview
+
+Controls are assigned severity-based weights. Compliance is calculated using an evidence-verdict-weighted model:
+
+$$\text{Weighted Compliance} = \frac{\sum (w_i \times \text{verdict\_factor}_i)}{\sum w_i} \times 100\%$$
+
+Verdict factors:
+- `satisfied`: 1.0 (100% of weight)
+- `partial`: 0.5 (50% of weight where supported)
+- `not_evidenced`, `missing`, `needs_expert_review`: 0.0 points
+- The platform strictly enforces 5 authoritative verdicts (the `not_applicable` verdict is completely eliminated); all controls defined in the standard are evaluated in the compliance denominator.
+
 ### 3.2 Weight Score Mapping
 
-Defined in [`WEIGHT_SCORE`](backend/services/controls_catalog.py:159):
+Authoritative definition in [`WEIGHT_SCORE`](backend/services/controls_catalog.py):
 
 | Severity | Weight | Description |
 |----------|--------|-------------|
-| `critical` | **4** | Must-have controls (e.g., access control, encryption, incident response) |
-| `high` | **3** | Important controls (e.g., background checks, SDLC) |
-| `medium` | **2** | Standard controls (e.g., contact with authorities, web filtering) |
-| `low` | **1** | Nice-to-have controls (e.g., NTP sync, desk policy) |
+| `critical` | **10** | Must-have controls (e.g., access control, encryption, incident response) |
+| `high` | **5** | Important controls (e.g., asset inventory, network segmentation, BCP/DR) |
+| `medium` | **3** | Standard controls (e.g., threat intelligence, doc management) |
+| `low` | **1** | Nice-to-have controls (e.g., NTP sync, expert group liaison) |
+
+Dynamically derived maximum potential scores:
+- **ISO 27001 (93 controls):** `weighted_max_score = 495.0`
+- **TCVN 11930 (34 controls):** `weighted_max_score = 271.0`
 
 ### 3.3 Separation of Raw Control Coverage & Weighted Compliance
 
@@ -304,40 +320,38 @@ The platform strictly separates raw control counts from weighted compliance unde
 
 ```
 1. Control Coverage (Raw Metric):
-   - self_declared_implemented: Number of controls declared implemented
-   - evidence_supported_implemented: Controls supported by uploaded files/logs
-   - not_evidenced_or_missing: Controls lacking evidence or not implemented
-   - total_controls: Total controls in standard (93 for ISO 27001, 34 for TCVN 11930)
+   - self_declared_implemented: Number of controls self-declared implemented by user
+   - evidence_supported_implemented: Controls with final "satisfied" verdict
+   - not_evidenced_or_missing: Controls lacking evidence or missing implementation
+   - total_controls: Total applicable controls (93 for ISO 27001, 34 for TCVN 11930)
    - raw_percentage = round((self_declared_implemented / total_controls) * 100, 2)
 
-2. Weighted Compliance (Weighted Metric):
-   - weighted_score: Achieved score based on severity weights and verdicts
-   - weighted_max_score: Maximum potential score across all standard controls
+2. Weighted Compliance (Audited Metric):
+   - weighted_score: Achieved score based on severity weights and verdict factors
+   - weighted_max_score: Maximum potential score across all standard controls (495 ISO, 271 TCVN)
    - percentage = round((weighted_score / weighted_max_score) * 100, 2)
-   - algorithm: "iso27001_domain_weighted_v1" or "tcvn11930_level_weighted_v1"
+   - algorithm: "verdict_weighted_v2"
+   - weight_scheme: "critical_10_high_5_medium_3_low_1"
 ```
 
 > ⚠️ **UI Display Requirement:** Never conflate both scores into a single metric. The UI renders:
-> **"47/93 controls marked achieved (50.5%)"** alongside **"Weighted Compliance: 55.2%"**.
+> **"Raw Coverage: 47/93 controls declared (50.5%)"** alongside **"Weighted Compliance: 55.2% (evidence-verified)"**.
+> Self-declaration without verified evidence results in 0% Weighted Compliance.
 
 <details>
-<summary>📝 Implementation: <code>calc_compliance()</code> in <code>controls_catalog.py</code></summary>
+<summary>📝 Implementation: <code>calc_weighted_compliance()</code> in <code>controls_catalog.py</code></summary>
 
 ```python
-control_coverage = {
-    "self_declared_implemented": len(valid_implemented),
-    "evidence_supported_implemented": len(evidenced_controls),
-    "not_evidenced_or_missing": max(0, total_controls - len(valid_implemented)),
-    "total_controls": total_controls,
-    "raw_percentage": round(len(valid_implemented) / total_controls * 100, 2) if total_controls > 0 else 0.0
-}
-
-weighted_compliance = {
-    "weighted_score": round(achieved_weighted, 2),
-    "weighted_max_score": round(max_weighted, 2),
-    "percentage": round(achieved_weighted / max_weighted * 100, 2) if max_weighted > 0 else 0.0,
-    "algorithm": "iso27001_domain_weighted_v1" if standard == "iso27001" else "tcvn11930_level_weighted_v1"
-}
+# Authoritative verdict-based weighted scoring
+weighted_compliance = calc_weighted_compliance(controls_out)
+# Output:
+# {
+#     "weighted_score": 245.0,
+#     "weighted_max_score": 495.0,
+#     "percentage": 49.49,
+#     "algorithm": "verdict_weighted_v2",
+#     "weight_scheme": "critical_10_high_5_medium_3_low_1"
+# }
 ```
 
 </details>

@@ -589,7 +589,7 @@ EDR: CrowdStrike Falcon trên 100% endpoint.`}
                                         <span className={styles.aiModeBadge}>{t('guide.sec7LocalBadge')}</span>
                                     </div>
                                     <div className={styles.aiModeFlow}>
-                                        <span>📋 Form</span> → <span className={styles.flowLocal}>🖥️ SecurityLM</span> → <span className={styles.flowLocal}>🖥️ SecurityLM</span> → <span>📄 Report</span>
+                                        <span>📋 Form</span> → <span className={styles.flowLocal}>🖥️ Gemma 4 (Ollama)</span> → <span className={styles.flowLocal}>🖥️ Gemma 4 (Ollama)</span> → <span>📄 Report</span>
                                     </div>
                                     <ul className={styles.aiModeDetails}>
                                         <li><strong>{t('guide.sec7LocalData')}</strong> {t('guide.sec7LocalDataDesc')}</li>
@@ -607,7 +607,7 @@ EDR: CrowdStrike Falcon trên 100% endpoint.`}
                                         <span className={`${styles.aiModeBadge} ${styles.aiModeBadgeRecommend}`}>{t('guide.sec7HybridBadge')}</span>
                                     </div>
                                     <div className={styles.aiModeFlow}>
-                                        <span>📋 Form</span> → <span className={styles.flowLocal}>🖥️ SecurityLM</span> → <span>📊 GAP</span> → <span className={styles.flowCloud}>☁️ OpenClaude</span> → <span>📄 Report</span>
+                                        <span>📋 Form</span> → <span className={styles.flowLocal}>🖥️ Gemma 4 (Ollama)</span> → <span>📊 GAP</span> → <span className={styles.flowCloud}>☁️ Cloud (Gemini)</span> → <span>📄 Report</span>
                                     </div>
                                     <ul className={styles.aiModeDetails}>
                                         <li><strong>{t('guide.sec7HybridData')}</strong> {t('guide.sec7HybridDataDesc')}</li>
@@ -625,7 +625,7 @@ EDR: CrowdStrike Falcon trên 100% endpoint.`}
                                         <span className={styles.aiModeBadge}>{t('guide.sec7CloudBadge')}</span>
                                     </div>
                                     <div className={styles.aiModeFlow}>
-                                        <span>📋 Form</span> → <span className={styles.flowCloud}>☁️ OpenClaude P1</span> → <span className={styles.flowCloud}>☁️ OpenClaude P2</span> → <span>📄 Report</span>
+                                        <span>📋 Form</span> → <span className={styles.flowCloud}>☁️ Cloud (Gemini) P1</span> → <span className={styles.flowCloud}>☁️ Cloud (Gemini) P2</span> → <span>📄 Report</span>
                                     </div>
                                     <ul className={styles.aiModeDetails}>
                                         <li><strong>{t('guide.sec7CloudData')}</strong> {t('guide.sec7CloudDataDesc')}</li>
@@ -970,39 +970,39 @@ EDR: CrowdStrike Falcon trên 100% endpoint.`}
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td><span className={styles.weightCritical}>critical</span></td>
+                                                <td><span className={styles.weightCritical}>critical (10)</span></td>
                                                 <td>22</td>
                                                 <td>18</td>
-                                                <td>18 × 4 = <strong>72</strong></td>
-                                                <td>22 × 4 = 88</td>
+                                                <td>18 × 10 = <strong>180</strong></td>
+                                                <td>22 × 10 = 220</td>
                                             </tr>
                                             <tr>
-                                                <td><span className={styles.weightHigh}>high</span></td>
+                                                <td><span className={styles.weightHigh}>high (5)</span></td>
+                                                <td>36</td>
+                                                <td>24</td>
+                                                <td>24 × 5 = <strong>120</strong></td>
+                                                <td>36 × 5 = 180</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span className={styles.weightMedium}>medium (3)</span></td>
                                                 <td>30</td>
-                                                <td>22</td>
-                                                <td>22 × 3 = <strong>66</strong></td>
+                                                <td>16</td>
+                                                <td>16 × 3 = <strong>48</strong></td>
                                                 <td>30 × 3 = 90</td>
                                             </tr>
                                             <tr>
-                                                <td><span className={styles.weightMedium}>medium</span></td>
-                                                <td>25</td>
-                                                <td>16</td>
-                                                <td>16 × 2 = <strong>32</strong></td>
-                                                <td>25 × 2 = 50</td>
-                                            </tr>
-                                            <tr>
-                                                <td><span className={styles.weightLow}>low</span></td>
-                                                <td>16</td>
-                                                <td>6</td>
-                                                <td>6 × 1 = <strong>6</strong></td>
-                                                <td>16 × 1 = 16</td>
+                                                <td><span className={styles.weightLow}>low (1)</span></td>
+                                                <td>5</td>
+                                                <td>4</td>
+                                                <td>4 × 1 = <strong>4</strong></td>
+                                                <td>5 × 1 = 5</td>
                                             </tr>
                                             <tr className={styles.totalRow}>
                                                 <td><strong>{t('guide.sec12Total')}</strong></td>
                                                 <td><strong>93</strong></td>
                                                 <td><strong>62</strong></td>
-                                                <td><strong>176</strong></td>
-                                                <td><strong>244</strong></td>
+                                                <td><strong>352</strong></td>
+                                                <td><strong>495</strong></td>
                                             </tr>
                                         </tbody>
                                     </table>

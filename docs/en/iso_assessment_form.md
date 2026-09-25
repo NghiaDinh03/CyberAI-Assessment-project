@@ -207,10 +207,11 @@ All APIs, UI views, and exporters share a single standardized data contract [`Un
     "raw_percentage": 50.54
   },
   "weighted_compliance": {
-    "weighted_score": 237.5,
-    "weighted_max_score": 430.0,
-    "percentage": 55.23,
-    "algorithm": "iso27001_domain_weighted_v1"
+    "weighted_score": 245.0,
+    "weighted_max_score": 495.0,
+    "percentage": 49.49,
+    "algorithm": "verdict_weighted_v2",
+    "weight_scheme": "critical_10_high_5_medium_3_low_1"
   },
   "controls": [
     {

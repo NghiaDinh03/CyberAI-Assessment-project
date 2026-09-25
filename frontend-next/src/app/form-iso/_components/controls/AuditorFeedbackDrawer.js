@@ -19,7 +19,8 @@ export default function AuditorFeedbackDrawer({
 
     // Form states for adding a new Golden Case
     const [controlId, setControlId] = useState(initialControlId || '')
-    const [expertVerdict, setExpertVerdict] = useState('compliant')
+    const [expertVerdict, setExpertVerdict] = useState('satisfied')
+    const [split, setSplit] = useState('few_shot')
     const [expertRationale, setExpertRationale] = useState('')
     const [inputFactSummary, setInputFactSummary] = useState('')
     const [errorMsg, setErrorMsg] = useState('')
@@ -73,6 +74,7 @@ export default function AuditorFeedbackDrawer({
             const payload = {
                 control_id: controlId.trim().toUpperCase(),
                 expert_verdict: expertVerdict,
+                split: split,
                 expert_rationale: expertRationale.trim(),
                 input_fact_summary: inputFactSummary.trim(),
                 standard: activeStandard,
@@ -181,9 +183,23 @@ export default function AuditorFeedbackDrawer({
                                     value={expertVerdict}
                                     onChange={(e) => setExpertVerdict(e.target.value)}
                                 >
-                                    <option value="compliant">🟢 COMPLIANT — Đạt yêu cầu (Tích xanh)</option>
-                                    <option value="non_compliant">🔴 NON_COMPLIANT — Chưa đạt / Rủi ro (Tích đỏ)</option>
-                                    <option value="partial">🟡 PARTIAL — Đạt một phần / Cần khắc phục (Vàng)</option>
+                                    <option value="satisfied">🟢 SATISFIED — Đạt yêu cầu (Có minh chứng)</option>
+                                    <option value="partial">🟡 PARTIAL — Đạt một phần</option>
+                                    <option value="not_evidenced">⚪ NOT_EVIDENCED — Chưa có minh chứng</option>
+                                    <option value="missing">🔴 MISSING — Thiếu kiểm soát</option>
+                                    <option value="needs_expert_review">🟠 NEEDS_EXPERT_REVIEW — Chờ chuyên gia rà soát</option>
+                                </select>
+                            </div>
+
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>{locale === 'vi' ? 'Mục Đích Sử Dụng (Dataset Split):' : 'Dataset Split / Purpose:'}</label>
+                                <select
+                                    className={styles.select}
+                                    value={split}
+                                    onChange={(e) => setSplit(e.target.value)}
+                                >
+                                    <option value="few_shot">🧠 Few-shot Exemplar (Mẫu học ngữ cảnh cho AI Auditor)</option>
+                                    <option value="test">🎯 Test Evaluation Set (Bộ kiểm thử đánh giá định lượng)</option>
                                 </select>
                             </div>
 
@@ -243,11 +259,13 @@ export default function AuditorFeedbackDrawer({
                                 <div className={styles.cardList}>
                                     {feedbackList.map((item) => {
                                         const verdict = (item.expert_verdict || '').toLowerCase()
-                                        const verdictClass = verdict === 'compliant'
+                                        const verdictClass = (verdict === 'satisfied' || verdict === 'compliant')
                                             ? styles.verdictPass
-                                            : verdict === 'non_compliant'
-                                                ? styles.verdictFail
-                                                : styles.verdictPartial
+                                            : (verdict === 'partial')
+                                                ? styles.verdictPartial
+                                                : (verdict === 'needs_expert_review')
+                                                    ? styles.verdictReview
+                                                    : styles.verdictFail
 
                                         return (
                                             <div key={item.id} className={styles.caseCard}>
@@ -256,6 +274,14 @@ export default function AuditorFeedbackDrawer({
                                                     <span className={`${styles.verdictBadge} ${verdictClass}`}>
                                                         {item.expert_verdict}
                                                     </span>
+                                                    <span style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: item.split === 'test' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)', color: item.split === 'test' ? '#c084fc' : '#60a5fa', border: '1px solid currentColor' }}>
+                                                        {item.split === 'test' ? '🎯 Test Set' : '🧠 Few-Shot'}
+                                                    </span>
+                                                    {item.label_status === 'needs_label_review' && (
+                                                        <span style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', border: '1px solid #ef4444' }}>
+                                                            ⚠️ Cần rà soát nhãn
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <p className={styles.rationale}>{item.expert_rationale}</p>
                                                 {item.input_fact_summary && (

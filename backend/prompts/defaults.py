@@ -101,60 +101,67 @@ ASSESSMENT_CHUNK_TEMPLATE = (
     "## INPUT (structured fields)\n"
     "- **Tiêu chuẩn**: {std_name}\n"
     "- **Nhóm control**: {cat_name}\n"
-    "- **Mức tuân thủ hiện tại**: {pct}% ({sc}/{mx} controls đạt)\n"
+    "- **Mức tuân thủ sơ bộ (tự khai)**: {pct}% ({sc}/{mx} controls tự khai)\n"
     "- **Mô tả hệ thống**: {sys_summary}\n"
     "{rag_section}"
-    "- **Controls ĐÃ ĐẠT**: {present_str}\n"
-    "- **Controls CHƯA ĐẠT**:\n{missing_str}\n\n"
-    "## NGUYÊN TẮC THẨM ĐỊNH NHỊ PHÂN (ĐẠT / KHÔNG ĐẠT)\n"
-    "Mỗi tiêu chí kiểm soát CHỈ ĐƯỢC ĐÁNH GIÁ theo 2 trạng thái rõ ràng: 'ĐẠT' hoặc 'KHÔNG ĐẠT'. TUYỆT ĐỐI KHÔNG CÓ 'ĐẠT MỘT PHẦN'.\n"
-    "1. Nếu người dùng tự khai báo đạt, nhưng trong log/bằng chứng kỹ thuật ghi nhận lỗ hổng, dịch vụ không an toàn (ví dụ: Windows Server 2008 R2 EOL, thiếu bản vá KB, mở port 3389 RDP không NLA, lỗi SWEET32 CVE-2016-2183) => BẮT BUỘC ĐÁNH GIÁ LÀ 'KHÔNG ĐẠT' và đưa vào danh sách GAP.\n"
-    "2. Nếu người dùng tự khai báo đạt nhưng hồ sơ không có bất kỳ log hoặc bằng chứng đối chứng nào => BẮT BUỘC ĐÁNH GIÁ LÀ 'KHÔNG ĐẠT' và đưa vào danh sách GAP kèm lưu ý thiếu bằng chứng đối soát.\n"
-    "3. Chỉ công nhận 'ĐẠT' khi có bằng chứng thực tế xác thực đáp ứng.\n\n"
-    "## OUTPUT (strict JSON — KHÔNG text thêm)\n"
-    "Trả về **CHỈ** JSON array. Mỗi phần tử là 1 control KHÔNG ĐẠT:\n"
+    "- **Controls ĐÃ TỰ KHAI BÁO HOẶC CÓ MINH CHỨNG**: {present_str}\n"
+    "- **Controls CHƯA TỰ KHAI BÁO**:\n{missing_str}\n\n"
+    "## NGUYÊN TẮC THẨM ĐỊNH MINH CHỨNG & VERDICT\n"
+    "Thẩm định từng kiểm soát dựa trên hồ sơ, bằng chứng (logs, policies, configs) được cung cấp:\n"
+    "1. 'satisfied': Bằng chứng kỹ thuật hoặc tài liệu chứng minh biện pháp kiểm soát đã được triển khai đầy đủ và hiệu quả.\n"
+    "2. 'partial': Biện pháp kiểm soát đã triển khai nhưng bằng chứng chỉ đáp ứng một phần, còn thiếu sót thành phần quan trọng.\n"
+    "3. 'needs_expert_review': Khi thông tin tự khai báo mâu thuẫn với log/bằng chứng kỹ thuật, hoặc bằng chứng chưa đủ rõ để tự kết luận, cần kiểm toán viên đối soát trực tiếp.\n"
+    "4. 'not_evidenced': Có tự khai báo triển khai nhưng chưa có tài liệu/log minh chứng trong hồ sơ đính kèm.\n"
+    "5. 'missing': Không có bằng chứng và kiểm soát chưa được triển khai.\n\n"
+    "## OUTPUT (strict JSON Object — BẮT BUỘC có trường 'control_verdicts')\n"
+    "BẮT BUỘC trả về đúng một JSON object với cấu trúc sau (không trả về raw array, không thêm text ngoài JSON):\n"
     "```json\n"
-    "[\n"
-    "  {{\n"
-    '    "id": "A.x.x",\n'
-    '    "severity": "critical|high|medium|low",\n'
-    '    "likelihood": 1-5,\n'
-    '    "impact": 1-5,\n'
-    '    "risk": likelihood * impact,\n'
-    '    "gap": "Mô tả lỗ hổng cụ thể (tiếng Việt)",\n'
-    '    "recommendation": "Khuyến nghị khắc phục cụ thể, có thời hạn (tiếng Việt)"\n'
-    "  }}\n"
-    "]\n"
+    "{{\n"
+    '  "control_verdicts": [\n'
+    "    {{\n"
+    '      "control_id": "A.x.x",\n'
+    '      "verdict": "satisfied|partial|missing|not_evidenced|needs_expert_review",\n'
+    '      "rationale": "Lý do và phân tích thẩm định cụ thể dựa trên minh chứng (tiếng Việt)",\n'
+    '      "citations": [{{"evidence_id": "file_id", "file_name": "ten_tep.pdf", "excerpt": "đoạn trích minh chứng"}}],\n'
+    '      "severity": "critical|high|medium|low",\n'
+    '      "likelihood": 1-4,\n'
+    '      "impact": 1-4,\n'
+    '      "risk": 1-16,\n'
+    '      "gap": "Mô tả lỗ hổng cụ thể (để trống nếu satisfied)",\n'
+    '      "recommendation": "Khuyến nghị khắc phục cụ thể, có thời hạn (tiếng Việt)"\n'
+    "    }}\n"
+    "  ]\n"
+    "}}\n"
     "```\n\n"
-    "## QUY TẮC\n"
-    "1. Trả về `[]` nếu tất cả controls đã đạt.\n"
-    "2. **CHỈ JSON** — không markdown, không giải thích, không ```json wrapper.\n"
-    "3. `severity` dựa trên risk score: ≥15 critical, ≥9 high, ≥4 medium, <4 low.\n"
-    "4. `gap` và `recommendation` phải CỤ THỂ cho hệ thống đang đánh giá, "
-    "KHÔNG chung chung.\n"
-    "5. Mỗi `recommendation` phải có **thời hạn đề xuất** (30/60/90 ngày).\n\n"
+    "## QUY TẮC BẮT BUỘC\n"
+    "1. **CHỈ JSON OBJECT** — Bắt đầu bằng {{ và kết thúc bằng }}. KHÔNG markdown preambles, KHÔNG giải thích ngoài JSON.\n"
+    "2. Đối với MỖI candidate control có minh chứng hoặc cần đánh giá, PHẢI có đúng một object trong mảng `control_verdicts`.\n"
+    "3. Likelihood (1-4) × Impact (1-4) = Risk Score (1-16). Nếu satisfied: likelihood=1, impact=1, risk=1, severity='low', gap=''.\n"
+    "4. `rationale` và `citations` PHẢI trích dẫn đúng tên tệp thực tế có trong danh sách minh chứng đính kèm của nhóm kiểm soát này. TUYỆT ĐỐI KHÔNG tự tạo tên tệp không có trong danh sách minh chứng.\n"
+    "5. Mỗi `recommendation` đối với GAP phải có **thời hạn đề xuất** (30/60/90 ngày).\n\n"
     "{few_shot}"
 )
 
 ASSESSMENT_CHUNK_FEWSHOT = (
-    "VÍ DỤ OUTPUT (chỉ trả về JSON, không text thêm):\n"
-    '[{"id":"A.5.1","severity":"critical","likelihood":4,"impact":5,"risk":20,'
-    '"gap":"Chính sách ATTT chưa được ban hành chính thức, nhân viên không có tài liệu tham chiếu",'
-    '"recommendation":"Ban hành chính sách ATTT cấp tổ chức trong 30 ngày, phê duyệt bởi Ban Giám đốc"},\n'
-    ' {"id":"A.5.9","severity":"high","likelihood":3,"impact":3,"risk":9,'
-    '"gap":"Chưa có danh mục tài sản thông tin (hardware, software, data)",'
-    '"recommendation":"Lập asset inventory đầy đủ trong 60 ngày, bao gồm phân loại theo mức độ nhạy cảm"}]\n\n'
+    "VÍ DỤ OUTPUT (chỉ minh họa định dạng JSON object, không sao chép nguyên văn):\n"
+    "{\n"
+    '  "control_verdicts": [\n'
+    '    {"control_id":"CTRL.EXAMPLE.01","verdict":"satisfied","rationale":"Biện pháp kiểm soát đã được chứng minh qua tài liệu đính kèm","citations":[{"evidence_id":"file_demo_01","file_name":"[ten_tep_thuc_te_trong_manifest]","excerpt":"Nội dung trích xuất từ tài liệu"}],"severity":"low","likelihood":1,"impact":1,"risk":1,"gap":"","recommendation":"Duy trì rà soát định kỳ 12 tháng"},\n'
+    '    {"control_id":"CTRL.EXAMPLE.02","verdict":"needs_expert_review","rationale":"Có mâu thuẫn giữa tự khai và bằng chứng kỹ thuật, cần rà soát lại","citations":[{"evidence_id":"file_demo_02","file_name":"[ten_tep_thuc_te_trong_manifest]","excerpt":"Phát hiện lỗi kỹ thuật hoặc log bất thường"}],"severity":"high","likelihood":3,"impact":3,"risk":9,"gap":"Phát hiện điểm không phù hợp kỹ thuật","recommendation":"Khắc phục cấu hình và cập nhật bản vá trong 30 ngày"}\n'
+    '  ]\n'
+    "}\n\n"
 )
 
 ASSESSMENT_REPORT_SYSTEM = (
     "Bạn là chuyên gia IT Auditor cấp cao về {std_name}.\n\n"
     "## INPUT (structured fields)\n"
     "- **Tiêu chuẩn**: {std_name}\n"
-    "- **Mức tuân thủ tổng thể**: {pct}% ({sc}/{mx} Controls đạt)\n"
+    "- **Mức tuân thủ có trọng số**: {pct}%\n"
+    "- **Controls tự khai sơ bộ**: {sc}/{mx} controls\n"
     "- **Dữ liệu Phase 1**: danh sách GAP items (JSON) từ từng nhóm control.\n\n"
     "## NGUYÊN TẮC ĐÁNH GIÁ\n"
-    "- Đánh giá nhị phân nghiêm ngặt: ĐẠT hoặc KHÔNG ĐẠT (Không sử dụng 'Đạt một phần').\n"
-    "- Mọi phát hiện mâu thuẫn giữa tự khai báo và log thực tế hoặc thiếu minh chứng phải được ghi nhận là KHÔNG ĐẠT.\n\n"
+    "- Đánh giá dựa trên minh chứng thực tế: ĐẠT (satisfied), ĐẠT MỘT PHẦN (partial), THIẾU MINH CHỨNG (missing/not_evidenced), hoặc CẦN CHUYÊN GIA RÀ SOÁT (needs_expert_review).\n"
+    "- Mọi phát hiện mâu thuẫn giữa tự khai báo và log thực tế hoặc thiếu minh chứng phải được ghi nhận rõ ràng kèm căn cứ tệp thực tế.\n\n"
     "## OUTPUT (Executive Markdown Report)\n"
     "Viết báo cáo đánh giá **bằng tiếng Việt**, cấu trúc CỐ ĐỊNH:\n\n"
     "### 1. 📊 TÓM TẮT ĐIỀU HÀNH\n"
@@ -162,7 +169,7 @@ ASSESSMENT_REPORT_SYSTEM = (
     "- 3-5 phát hiện quan trọng nhất gắn liền với hiện trạng hạ tầng.\n\n"
     "### 2. 🔍 ĐỐI SOÁT BẰNG CHỨNG TỪ DỮ LIỆU ĐẦU VÀO\n"
     "- Tổng hợp các minh chứng đã ghi nhận từ hạ tầng máy chủ, firewall, sao lưu, phần mềm diệt virus và tệp log đính kèm.\n"
-    "- Đối chiếu rõ ràng: Control nào ĐẠT (đã có bằng chứng xác thực hợp lệ) và Control nào KHÔNG ĐẠT (thiếu bằng chứng hoặc mâu thuẫn với log).\n\n"
+    "- Đối chiếu rõ ràng: Control nào ĐẠT (đã có bằng chứng xác thực hợp lệ) và Control nào KHÔNG ĐẠT / CẦN RÀ SOÁT (thiếu bằng chứng hoặc mâu thuẫn với log).\n\n"
     "### 3. 📋 DANH SÁCH PHÁT HIỆN & LỖ HỔNG (GAP ANALYSIS)\n"
     "Liệt kê tất cả GAP, nhóm theo severity (mỗi mục nêu rõ dẫn chứng và căn cứ tiêu chuẩn):\n"
     "- 🔴 **Critical** — [danh sách chi tiết kèm dẫn chứng]\n"
@@ -193,9 +200,9 @@ ASSESSMENT_REPORT_SYSTEM = (
 ASSESSMENT_EVIDENCE_INSTRUCTION = (
     "\n\n## BẰNG CHỨNG ĐÍNH KÈM\n"
     "Người dùng đã tải lên bằng chứng sau. Sử dụng để:\n"
-    "1. **Xác nhận ĐẠT**: nếu bằng chứng kỹ thuật chứng minh biện pháp kiểm soát đã triển khai đầy đủ và an toàn.\n"
-    "2. **Xác nhận KHÔNG ĐẠT**: nếu bằng chứng thể hiện có lỗ hổng bảo mật, phiên bản lỗi thời hoặc cấu hình thiếu sót (TUYỆT ĐỐI KHÔNG ĐÁNH GIÁ 'ĐẠT MỘT PHẦN').\n"
-    "3. **Xác nhận KHÔNG ĐẠT**: nếu bằng chứng không liên quan hoặc không có log đối chứng.\n\n"
+    "1. **Xác nhận ĐẠT (satisfied)**: nếu bằng chứng kỹ thuật chứng minh biện pháp kiểm soát đã triển khai đầy đủ và an toàn.\n"
+    "2. **Xác nhận ĐẠT MỘT PHẦN (partial) hoặc CẦN CHUYÊN GIA RÀ SOÁT (needs_expert_review)**: nếu bằng chứng thể hiện có lỗ hổng bảo mật, phiên bản lỗi thời hoặc cấu hình thiếu sót hoặc có mâu thuẫn.\n"
+    "3. **Xác nhận THIẾU BẰNG CHỨNG (missing/not_evidenced)**: nếu bằng chứng không liên quan hoặc không có log đối chứng.\n\n"
     "QUY TẮC: Chỉ trích dẫn phần liên quan, KHÔNG lặp nguyên văn toàn bộ.\n\n"
     "{evidence}\n"
 )

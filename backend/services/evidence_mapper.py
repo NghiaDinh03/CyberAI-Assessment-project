@@ -93,6 +93,11 @@ _FILENAME_RULES: List[tuple] = [
 
     # Endpoint / Antivirus
     ("antivirus", [("A.8.7", 0.9), ("SV.02", 0.9)]),
+    ("chong_ma_doc", [("A.8.7", 0.9), ("SV.02", 0.9)]),
+    ("chống_mã_độc", [("A.8.7", 0.9), ("SV.02", 0.9)]),
+    ("ma_doc", [("A.8.7", 0.8), ("SV.02", 0.8)]),
+    ("mã_độc", [("A.8.7", 0.8), ("SV.02", 0.8)]),
+    ("endpoint_protection", [("A.8.7", 0.9), ("SV.02", 0.9)]),
     ("edr", [("A.8.7", 0.9), ("SV.03", 0.9)]),
     ("endpoint", [("A.8.1", 0.8)]),
 
@@ -203,23 +208,44 @@ def map_evidence_to_controls(
         Sorted by confidence descending, limited to *max_controls* entries.
     """
     scores: Dict[str, float] = {}
-    fname_lower = os.path.basename(filename or "").lower().replace(" ", "_")
+    raw_basename = os.path.basename(filename or "")
+    fname_lower = raw_basename.lower().replace(" ", "_")
 
-    # Phase 1: Filename pattern matching
-    for pattern, control_list in _FILENAME_RULES:
-        if pattern in fname_lower:
-            for ctrl_id, conf in control_list:
-                scores[ctrl_id] = max(scores.get(ctrl_id, 0.0), conf)
+    # Phase 0: Direct Control ID in filename (e.g. A.5.1, A.5.3, SV.07, NW.02 or A_5_1)
+    import re
+    ctrl_id_matches = re.findall(r'(?i)\b(A\.\d+\.\d+|[A-Z]{2,4}\.\d{1,2})(?:_|\b|\.|$)', raw_basename)
+    for match in ctrl_id_matches:
+        parts = match.split(".")
+        if len(parts) == 3 and parts[0].upper() == "A":
+            norm_cid = f"A.{parts[1]}.{parts[2]}"
+        elif len(parts) == 2:
+            norm_cid = f"{parts[0].upper()}.{parts[1]}"
+        else:
+            norm_cid = match.upper()
+        scores[norm_cid] = 1.0
 
-    # Phase 2: Content keyword matching (scans up to 32,000 characters)
-    if content_preview:
-        preview_lower = content_preview[:32000].lower()
-        for keyword, control_list in _CONTENT_KEYWORDS.items():
-            if keyword in preview_lower:
+    ctrl_id_under = re.findall(r'(?i)\b(A_\d+_\d+|[A-Z]{2,4}_\d{1,2})(?:_|\b|\.|$)', raw_basename)
+    for match in ctrl_id_under:
+        norm_cid = match.replace("_", ".").upper()
+        scores[norm_cid] = 1.0
+
+    explicit_matched = bool(ctrl_id_matches or ctrl_id_under)
+
+    # Phase 1 & 2: Only run generic keyword matching if no explicit control ID was in the filename
+    if not explicit_matched:
+        for pattern, control_list in _FILENAME_RULES:
+            if pattern in fname_lower:
                 for ctrl_id, conf in control_list:
-                    # Content match gets slightly lower confidence than filename match
-                    adjusted_conf = conf * 0.9
-                    scores[ctrl_id] = max(scores.get(ctrl_id, 0.0), adjusted_conf)
+                    scores[ctrl_id] = max(scores.get(ctrl_id, 0.0), conf)
+
+        if content_preview:
+            preview_lower = content_preview[:32000].lower()
+            for keyword, control_list in _CONTENT_KEYWORDS.items():
+                if keyword in preview_lower:
+                    for ctrl_id, conf in control_list:
+                        # Content match gets slightly lower confidence than filename match
+                        adjusted_conf = conf * 0.9
+                        scores[ctrl_id] = max(scores.get(ctrl_id, 0.0), adjusted_conf)
 
     # Filter by min_confidence and sort
     filtered = {k: v for k, v in scores.items() if v >= min_confidence}

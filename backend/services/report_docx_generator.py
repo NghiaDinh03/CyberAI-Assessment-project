@@ -121,12 +121,23 @@ def _generate_tcvn11930_capdo3_docx(
     compliance_pct: float,
     json_data: Dict[str, Any],
 ) -> None:
-    """Generate professional Vietnamese Government Decree 85/2016/NĐ-CP & TCVN 11930:2017 Cấp độ 3 report."""
+    """Generate professional preliminary technical gap report for TCVN 11930:2017."""
     implemented_raw = sys_info.get("implemented_controls") or assessment_data.get("implemented_controls") or []
     if isinstance(implemented_raw, list):
         implemented_set = set(implemented_raw)
     else:
         implemented_set = set()
+
+    # Authoritative: derive satisfied controls from controls list
+    ctrls_source = json_data.get("controls") or assessment_data.get("controls") or []
+    if isinstance(ctrls_source, list) and ctrls_source:
+        satisfied_cids = {
+            (c.get("control_id") or c.get("id") or "")
+            for c in ctrls_source
+            if isinstance(c, dict) and (c.get("assessment_verdict") or c.get("verdict") or "").lower() == "satisfied"
+        }
+        implemented_set = satisfied_cids
+
 
     # 1. State Clerical Header Table (Quốc hiệu tiêu ngữ & Tên cơ quan)
     header_tbl = doc.add_table(rows=1, cols=2)
@@ -153,7 +164,7 @@ def _generate_tcvn11930_capdo3_docx(
 
     p_l3 = c_left.add_paragraph()
     p_l3.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_l3 = p_l3.add_run(f"Số: {eval_date[:4]}/ĐX-ATTT-CĐ3")
+    r_l3 = p_l3.add_run(f"Số: {eval_date[:4]}/BC-TCVN11930-SB")
     _format_run(r_l3, size_pt=9, italic=True, color=MUTED_GRAY)
 
     # Right: National Motto
@@ -181,38 +192,37 @@ def _generate_tcvn11930_capdo3_docx(
     p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_title.paragraph_format.space_before = Pt(10)
     p_title.paragraph_format.space_after = Pt(4)
-    r_title = p_title.add_run("HỒ SƠ ĐỀ XUẤT CẤP ĐỘ AN TOÀN HỆ THỐNG THÔNG TIN")
-    _format_run(r_title, size_pt=16, bold=True, color=NAVY_PRIMARY)
+    r_title = p_title.add_run("BÁO CÁO ĐÁNH GIÁ SƠ BỘ THEO CATALOGUE TCVN 11930:2017")
+    _format_run(r_title, size_pt=15, bold=True, color=NAVY_PRIMARY)
 
     p_sub = doc.add_paragraph()
     p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_sub.paragraph_format.space_after = Pt(6)
-    r_sub = p_sub.add_run("CẤP ĐỘ 3 — THEO TIÊU CHUẨN QUỐC GIA TCVN 11930:2017")
-    _format_run(r_sub, size_pt=12, bold=True, color=MEDIUM_BLUE)
+    r_sub = p_sub.add_run("RÀ SOÁT KHOẢNG CÁCH KỸ THUẬT BẢO ĐẢM AN TOÀN THÔNG TIN")
+    _format_run(r_sub, size_pt=11.5, bold=True, color=MEDIUM_BLUE)
 
     p_desc = doc.add_paragraph()
     p_desc.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_desc.paragraph_format.space_after = Pt(12)
     r_desc = p_desc.add_run(
-        "(Áp dụng theo Nghị định số 85/2016/NĐ-CP ngày 01/07/2016 của Chính phủ & "
-        "Thông tư số 12/2022/TT-BTTTT ngày 11/08/2022 của Bộ Thông tin và Truyền thông)"
+        "Kết quả hỗ trợ rà soát khoảng cách kỹ thuật và cần chuyên gia xem xét, phê duyệt theo quy trình của tổ chức."
     )
     _format_run(r_desc, size_pt=10, italic=True, color=MUTED_GRAY)
 
-    # 3. Legal Basis Box
+    # 3. Technical Scope & Disclaimer Box
     p_legal_lbl = doc.add_paragraph()
     p_legal_lbl.paragraph_format.space_before = Pt(6)
     p_legal_lbl.paragraph_format.space_after = Pt(2)
-    r_ll = p_legal_lbl.add_run("CĂN CỨ PHÁP LÝ THỰC HIỆN:")
+    r_ll = p_legal_lbl.add_run("PHẠM VI KỸ THUẬT & TUYÊN BỐ GIỚI HẠN:")
     _format_run(r_ll, size_pt=10.5, bold=True, color=NAVY_PRIMARY)
 
-    legal_items = [
-        "Luật An toàn thông tin mạng số 86/2015/QH13 ngày 19 tháng 11 năm 2015;",
-        "Nghị định số 85/2016/NĐ-CP ngày 01 tháng 07 năm 2016 của Chính phủ về bảo đảm an toàn hệ thống thông tin theo cấp độ;",
-        "Thông tư số 12/2022/TT-BTTTT ngày 11 tháng 08 năm 2022 của Bộ Thông tin và Truyền thông quy định chi tiết và hướng dẫn một số điều của Nghị định 85/2016/NĐ-CP;",
-        "Tiêu chuẩn quốc gia TCVN 11930:2017 Công nghệ thông tin - Các kỹ thuật an toàn - Yêu cầu cơ bản về an toàn hệ thống thông tin theo cấp độ."
+    scope_items = [
+        "Tiêu chuẩn tham chiếu: TCVN 11930:2017 (Công nghệ thông tin - Yêu cầu cơ bản về an toàn hệ thống thông tin theo cấp độ);",
+        "Hệ thống CyberAI hỗ trợ rà soát khoảng cách kỹ thuật và tổng hợp bằng chứng đối soát tự động;",
+        "Báo cáo này là đánh giá sơ bộ, không thay thế hồ sơ đề xuất cấp độ chính thức hay quyết định phê duyệt của cơ quan có thẩm quyền;",
+        "Kết quả cần chuyên gia thẩm định và phê duyệt theo quy trình của đơn vị (trạng thái: expert_review_status=pending)."
     ]
-    for li in legal_items:
+    for li in scope_items:
         p_li = doc.add_paragraph()
         p_li.paragraph_format.left_indent = Inches(0.2)
         p_li.paragraph_format.space_after = Pt(2)
@@ -231,10 +241,10 @@ def _generate_tcvn11930_capdo3_docx(
     meta_data = [
         ("Tên đơn vị chủ quản hệ thống:", org_name),
         ("Đơn vị trực tiếp vận hành hệ thống:", "Phòng Kỹ thuật & Công nghệ Thông tin"),
-        ("Tên hệ thống thông tin đề xuất:", f"Hệ thống Thông tin Điều hành Sản xuất & Quản trị Doanh nghiệp ({org_name})"),
-        ("Cấp độ an toàn thông tin đề xuất:", "CẤP ĐỘ 3 (Theo Điều 9 Nghị định 85/2016/NĐ-CP)"),
+        ("Tên hệ thống thông tin đánh giá:", f"Hệ thống Thông tin Điều hành Sản xuất & Quản trị Doanh nghiệp ({org_name})"),
+        ("Phạm vi catalogue áp dụng:", "TCVN 11930:2017 (34 Tiêu chí kỹ thuật)"),
         ("Quy mô hạ tầng & Máy chủ kiểm soát:", f"{sys_info.get('servers', 9)} Máy chủ điều hành (10.140.0.0/24), {sys_info.get('firewalls', 2)} Tường lửa NGFW FortiGate HA"),
-        ("Mã hồ sơ & Kết quả thẩm định CyberAI:", f"ID: {aid_str} | Tuân thủ: {compliance_pct:.1f}% ({len(implemented_set)}/34 tiêu chí TCVN đạt)"),
+        ("Mã hồ sơ & Kết quả thẩm định CyberAI:", f"ID: {aid_str} | Run: {run_id} | Tuân thủ: {compliance_pct:.1f}% ({len(implemented_set)}/34 tiêu chí TCVN đạt)"),
     ]
     for i, (label, val) in enumerate(meta_data):
         row = meta_table.rows[i]
@@ -257,12 +267,12 @@ def _generate_tcvn11930_capdo3_docx(
 
     # 5. Section II: TCVN 11930 Technical Evaluation (34 Controls Table)
     h_tech = doc.add_heading(level=1)
-    r_ht = h_tech.add_run("II. KẾT QUẢ THẨM ĐỊNH HIỆN TRẠNG 34 PHƯƠNG ÁN KỸ THUẬT (TCVN 11930:2017)")
+    r_ht = h_tech.add_run("II. KẾT QUẢ THẨM ĐỊNH HIỆN TRẠNG 34 TIÊU CHÍ KỸ THUẬT (TCVN 11930:2017)")
     _format_run(r_ht, size_pt=12.5, bold=True, color=NAVY_PRIMARY)
 
     p_tech_desc = doc.add_paragraph()
     r_td = p_tech_desc.add_run(
-        "Bảng đối chiếu hiện trạng hệ thống thông tin theo 5 Miền an toàn của TCVN 11930:2017 Cấp độ 3. "
+        "Bảng đối chiếu hiện trạng hệ thống thông tin theo 5 Miền an toàn của TCVN 11930:2017. "
         "Mỗi tiêu chí được xác minh dựa trên bằng chứng kỹ thuật (log cấu hình, chính sách, kết quả rà quét lỗ hổng)."
     )
     _format_run(r_td, size_pt=9.5, italic=True, color=MUTED_GRAY)
@@ -323,7 +333,7 @@ def _generate_tcvn11930_capdo3_docx(
                 status_text = "CHƯA ĐẠT"
                 status_bg = "FEE2E2"
                 status_fg = CRITICAL_RED
-                evidence_text = "Chưa đáp ứng đầy đủ yêu cầu Cấp độ 3; ghi nhận khoảng trống bảo mật cần khắc phục."
+                evidence_text = "Chưa đáp ứng đầy đủ yêu cầu kỹ thuật TCVN 11930:2017; ghi nhận khoảng trống bảo mật cần khắc phục."
 
             cells[4].paragraphs[0].add_run(evidence_text)
             r_st = cells[5].paragraphs[0].add_run(status_text)
@@ -347,31 +357,59 @@ def _generate_tcvn11930_capdo3_docx(
     r_hr = h_risk.add_run("III. SỔ ĐĂNG KÝ RỦI RO & TỔNG HỢP LỖ HỔNG AN NINH THỰC TẾ")
     _format_run(r_hr, size_pt=12.5, bold=True, color=NAVY_PRIMARY)
 
-    p_rk_desc = doc.add_paragraph()
-    r_rkd = p_rk_desc.add_run(
-        "Tổng hợp các phát hiện rủi ro từ hồ sơ rà quét an toàn thông tin Đợt 4/2026. "
-        "Ghi nhận 53 lỗ hổng bảo mật (18 Nghiêm trọng, 14 Cao, 12 Trung bình, 9 Thấp) "
-        "cần ưu tiên xử lý để đáp ứng điều kiện vận hành an toàn hệ thống thông tin Cấp độ 3:"
-    )
-    _format_run(r_rkd, size_pt=9.5, italic=True, color=MUTED_GRAY)
+    valid_risk_v = {"partial", "partially_satisfied", "missing", "not_evidenced", "needs_expert_review", "not_satisfied"}
 
-    risk_list = json_data.get("risk_register", [])
-    if not risk_list and "top_gaps" in json_data:
-        risk_list = [
+    raw_r = json_data.get("risk_register", [])
+    if not raw_r and "controls" in json_data:
+        raw_r = [
+            {
+                "control_id": c.get("control_id") or c.get("id"),
+                "gap": c.get("gap") or c.get("label"),
+                "severity": c.get("severity") or c.get("risk_severity") or "medium",
+                "likelihood": c.get("likelihood", 3),
+                "impact": c.get("impact", 3),
+                "risk_score": c.get("risk_score") or (int(c.get("likelihood", 3)) * int(c.get("impact", 3))),
+                "recommendation": c.get("recommendation", "Cần ban hành quy trình và thực thi biện pháp kỹ thuật bổ sung."),
+                "assessment_verdict": c.get("assessment_verdict") or c.get("verdict"),
+                "user_declaration": c.get("user_declaration"),
+            }
+            for c in json_data.get("controls", [])
+            if str(c.get("assessment_verdict") or c.get("verdict") or "").lower() in valid_risk_v
+        ]
+    elif not raw_r and "top_gaps" in json_data:
+        raw_r = [
             {
                 "control_id": g.get("id"),
                 "gap": g.get("gap") or g.get("label"),
                 "severity": g.get("severity", "high"),
-                "likelihood": 4 if g.get("severity") in ("critical", "high") else 3,
-                "impact": 5 if g.get("severity") == "critical" else 3,
-                "risk_score": 20 if g.get("severity") == "critical" else 12,
+                "likelihood": 4 if g.get("severity") == "critical" else 3 if g.get("severity") == "high" else 2,
+                "impact": 4 if g.get("severity") == "critical" else 3 if g.get("severity") == "high" else 2,
+                "risk_score": 16 if g.get("severity") == "critical" else 9 if g.get("severity") == "high" else 4,
                 "recommendation": g.get("recommendation", "Cần ban hành chính sách và triển khai giải pháp kỹ thuật bổ sung.")
             }
             for g in json_data.get("top_gaps", [])
         ]
+
+    # Filter out satisfied
+    risk_list = []
+    for r in raw_r:
+        v = str(r.get("assessment_verdict") or r.get("verdict") or "").lower()
+        if v == "satisfied":
+            continue
+        if v and v not in valid_risk_v:
+            continue
+        risk_list.append(r)
+
     risk_list = sorted(risk_list, key=lambda x: int(x.get("risk_score", 0)), reverse=True)
 
     if risk_list:
+        p_rk_desc = doc.add_paragraph()
+        r_rkd = p_rk_desc.add_run(
+            f"Tổng hợp các phát hiện rủi ro từ kết quả thẩm định ATTT (Ghi nhận {len(risk_list)} phát hiện rủi ro) "
+            "cần ưu tiên xử lý để đáp ứng điều kiện bảo đảm an toàn thông tin theo catalogue TCVN 11930:2017:"
+        )
+        _format_run(r_rkd, size_pt=9.5, italic=True, color=MUTED_GRAY)
+
         rt = doc.add_table(rows=1, cols=6)
         rt.alignment = WD_TABLE_ALIGNMENT.CENTER
         r_headers = ["STT", "Mã", "Lỗ hổng / Khoảng trống kỹ thuật", "Mức độ", "L × I", "Biện pháp xử lý đề xuất"]
@@ -394,16 +432,16 @@ def _generate_tcvn11930_capdo3_docx(
             _make_row_cant_split(row)
             cells = row.cells
             sev = (item.get("severity") or "medium").lower()
-            l_val = item.get("likelihood", 3)
-            i_val = item.get("impact", 3)
+            l_val = item.get("likelihood") or 3
+            i_val = item.get("impact") or 3
             r_score = item.get("risk_score") or (int(l_val) * int(i_val))
 
             cells[0].paragraphs[0].add_run(str(idx))
             cells[1].paragraphs[0].add_run(str(item.get("control_id", "N/A")))
-            cells[2].paragraphs[0].add_run(_clean_markdown(item.get("gap", ""))[:130])
+            cells[2].paragraphs[0].add_run(_clean_markdown(item.get("gap", "") or "")[:130])
             cells[3].paragraphs[0].add_run(sev.upper())
             cells[4].paragraphs[0].add_run(f"{l_val}×{i_val}={r_score}")
-            cells[5].paragraphs[0].add_run(_clean_markdown(item.get("recommendation", ""))[:140])
+            cells[5].paragraphs[0].add_run(_clean_markdown(item.get("recommendation", "") or "")[:140])
 
             sev_bg = "FEE2E2" if sev == "critical" else "FFEDD5" if sev == "high" else "FEF9C3" if sev == "medium" else "FFFFFF"
             _set_cell_background(cells[3], sev_bg)
@@ -414,12 +452,16 @@ def _generate_tcvn11930_capdo3_docx(
                 if c_idx in (0, 1, 3, 4):
                     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 _format_run(p.runs[0], size_pt=8.5, color=TEXT_DARK)
+    else:
+        p_empty = doc.add_paragraph()
+        r_emp = p_empty.add_run("Không có mục rủi ro được tạo từ kết quả hiện tại")
+        _format_run(r_emp, size_pt=10, italic=True, color=MUTED_GRAY)
 
     doc.add_paragraph().paragraph_format.space_after = Pt(10)
 
     # 7. Section IV: Implementation Plan (Roadmap 30-90-180 days)
     h_act = doc.add_heading(level=1)
-    r_ha = h_act.add_run("IV. LỘ TRÌNH KHẮC PHỤC & KẾ HOẠCH BẢO ĐẢM ATTT THEO CẤP ĐỘ 3")
+    r_ha = h_act.add_run("IV. LỘ TRÌNH KHẮC PHỤC & KẾ HOẠCH BẢO ĐẢM AN TOÀN THÔNG TIN (GỢI Ý)")
     _format_run(r_ha, size_pt=12.5, bold=True, color=NAVY_PRIMARY)
 
     plans = [
@@ -450,8 +492,15 @@ def _generate_tcvn11930_capdo3_docx(
 
     # 8. Section V: Sign-off block
     h_sign = doc.add_heading(level=1)
-    r_hs = h_sign.add_run("V. XÁC NHẬN VÀ KÝ DUYỆT HỒ SƠ ĐỀ XUẤT CẤP ĐỘ")
+    r_hs = h_sign.add_run("V. XÁC NHẬN KẾT QUẢ RÀ SOÁT KỸ THUẬT SƠ BỘ")
     _format_run(r_hs, size_pt=12.5, bold=True, color=NAVY_PRIMARY)
+
+    p_sign_note = doc.add_paragraph()
+    r_sn = p_sign_note.add_run(
+        "Ghi chú: Kết quả đánh giá mang tính chất sơ bộ hỗ trợ rà soát kỹ thuật nội bộ, không thay thế cơ quan nhà nước "
+        "thẩm định và phê duyệt cấp độ. Trạng thái chuyên gia xem xét: Chờ thẩm định (expert_review_status: pending)."
+    )
+    _format_run(r_sn, size_pt=9.5, italic=True, color=MUTED_GRAY)
 
     sign_table = doc.add_table(rows=2, cols=2)
     sign_table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -462,7 +511,7 @@ def _generate_tcvn11930_capdo3_docx(
     s00.alignment = WD_ALIGN_PARAGRAPH.CENTER
     s01.alignment = WD_ALIGN_PARAGRAPH.CENTER
     _format_run(s00.add_run("ĐẠI DIỆN ĐƠN VỊ VẬN HÀNH HỆ THỐNG\n(Ký và ghi rõ họ tên)"), size_pt=10, bold=True, color=NAVY_PRIMARY)
-    _format_run(s01.add_run("ĐẠI DIỆN ĐƠN VỊ CHỦ QUẢN HỆ THỐNG\n(Ký, đóng dấu và ghi rõ họ tên)"), size_pt=10, bold=True, color=NAVY_PRIMARY)
+    _format_run(s01.add_run("CHUYÊN GIA / ĐƠN VỊ ĐÁNH GIÁ SƠ BỘ\n(Ký và ghi rõ họ tên)"), size_pt=10, bold=True, color=NAVY_PRIMARY)
 
     s10 = sign_table.rows[1].cells[0].paragraphs[0]
     s11 = sign_table.rows[1].cells[1].paragraphs[0]
@@ -500,19 +549,30 @@ def generate_report_docx(assessment_data: Dict[str, Any], output_path: Optional[
     frun = fp.add_run("Tài liệu hỗ trợ tự đánh giá an toàn thông tin — Cần chuyên gia xác minh")
     _format_run(frun, size_pt=8.5, color=MUTED_GRAY)
 
-    sys_info = assessment_data.get("system_info", {})
-    org_name = sys_info.get("organization", {}).get("name") or sys_info.get("org_name") or "Tổ chức / Doanh nghiệp"
-    industry = sys_info.get("organization", {}).get("industry") or sys_info.get("industry") or "Công nghệ & Dịch vụ"
-    raw_std = assessment_data.get("standard") or sys_info.get("assessment_standard") or "iso27001"
+    from schemas.assessment_schema import UnifiedAssessmentResult
+    if isinstance(assessment_data, UnifiedAssessmentResult):
+        validated = assessment_data
+    else:
+        validated = UnifiedAssessmentResult.model_validate(assessment_data)
+
+    sys_info = assessment_data.get("system_info", {}) if isinstance(assessment_data, dict) else {}
+    org_info = validated.organization if isinstance(validated.organization, dict) else {}
+    org_name = org_info.get("name") or sys_info.get("organization", {}).get("name") or sys_info.get("org_name") or "Tổ chức / Doanh nghiệp"
+    if not org_name or str(org_name).strip().lower() in ("none", "null", ""):
+        org_name = "Tổ chức / Doanh nghiệp"
+    industry = org_info.get("industry") or sys_info.get("organization", {}).get("industry") or sys_info.get("industry") or "Công nghệ & Dịch vụ"
+    if not industry or str(industry).strip().lower() in ("none", "null", ""):
+        industry = "Công nghệ & Dịch vụ"
+    raw_std = validated.standard
     std_code = raw_std.get("id") if isinstance(raw_std, dict) else str(raw_std)
     std_name = "ISO/IEC 27001:2022" if "27001" in std_code else "TCVN 11930:2017" if "11930" in std_code else std_code.upper()
-    compliance_pct = assessment_data.get("compliance_percent") or assessment_data.get("result", {}).get("json_data", {}).get("compliance", {}).get("percentage", 0.0)
-    eval_date = assessment_data.get("created_at", "")[:10] or datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    json_data = assessment_data.get("json_data") or assessment_data.get("result", {}).get("json_data") or {}
+    compliance_pct = validated.weighted_compliance.percentage
+    eval_date = validated.created_at[:10] if validated.created_at else datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    aid_str = assessment_data.get("assessment_id") or json_data.get("assessment_id") or "N/A"
-    run_id = assessment_data.get("run_id") or json_data.get("run_id") or "run_default"
-    code_version = assessment_data.get("code_version") or json_data.get("code_version") or "v1.2.0-rel"
+    aid_str = validated.assessment_id
+    run_id = validated.run_id
+    code_version = validated.code_version
+    json_data = validated.model_dump()
 
     is_tcvn = "11930" in std_code.lower() or "tcvn" in std_code.lower()
     if is_tcvn:
@@ -594,58 +654,100 @@ def generate_report_docx(assessment_data: Dict[str, Any], output_path: Optional[
         p_summary.paragraph_format.space_before = Pt(4)
         p_summary.paragraph_format.space_after = Pt(8)
         p_summary.paragraph_format.line_spacing = 1.15
-        tier_label = "Tuân thủ một phần" if 25 <= compliance_pct < 80 else "Tuân thủ mức cao" if compliance_pct >= 80 else "Không tuân thủ"
+        raw_cov = validated.control_coverage
+        raw_impl = raw_cov.self_declared_implemented if raw_cov else 0
+        raw_total = raw_cov.total_applicable_controls if raw_cov else 93
+        raw_pct = raw_cov.raw_percentage if raw_cov else 0.0
+
+        sat_count = sum(1 for c in validated.controls if (c.assessment_verdict or "").lower() == "satisfied")
+
+        if sat_count == 0 and compliance_pct == 0.0:
+            tier_label = "Chờ đối soát / Cần chuyên gia thẩm định (Pending Verification)"
+        elif compliance_pct >= 80:
+            tier_label = "Tuân thủ mức cao (High Compliance)"
+        elif compliance_pct >= 50:
+            tier_label = "Tuân thủ một phần (Mức trung bình)"
+        elif compliance_pct >= 25:
+            tier_label = "Tuân thủ một phần (Partial Compliance)"
+        else:
+            tier_label = "Chưa tuân thủ (Non-Compliant)"
+
         r_sum = p_summary.add_run(
-            f"Qua quá trình thu thập tài liệu quy trình, bằng chứng thực tế từ máy chủ/hạ tầng mạng và đối soát qua pipeline "
-            f"Multi-Agent (Agent 1 Fact Extraction & Agent 2 Compliance Auditor), hệ thống xác định mức độ tuân thủ có trọng số của "
-            f"{org_name} đạt: {compliance_pct:.1f}% ({tier_label})."
+            f"Nhận định sơ bộ có căn cứ theo chuẩn verdict_weighted_v2: "
+            f"Độ tuân thủ có trọng số (Weighted Compliance): {compliance_pct:.1f}% ({tier_label}). "
+            f"Số kiểm soát đạt kiểm toán (Đạt đối soát minh chứng (Satisfied)): {sat_count}/{raw_total}. "
+            f"Phạm vi tự khai ban đầu (Raw Coverage): {raw_impl}/{raw_total} ({raw_pct:.1f}%)."
         )
         _format_run(r_sum, size_pt=10.5, color=TEXT_DARK)
 
-        # Weight Breakdown Table
-        wb = json_data.get("weight_breakdown", {})
-        if wb:
-            wb_p = doc.add_paragraph()
-            r_wb = wb_p.add_run("Bảng phân bổ mức độ đạt theo trọng số an ninh:")
-            _format_run(r_wb, size_pt=10.5, bold=True, color=NAVY_PRIMARY)
+        # Weight Breakdown Table strictly based on verified verdicts via aggregate_priority_breakdown
+        from services.assessment_helpers import aggregate_priority_breakdown
+        pb = aggregate_priority_breakdown(
+            validated.controls,
+            getattr(validated, "weighted_compliance", None),
+            enforce_invariants=False,
+        )
 
-            wb_table = doc.add_table(rows=1, cols=4)
-            wb_table.alignment = WD_TABLE_ALIGNMENT.CENTER
-            headers = ["Mức độ trọng số", "Số controls đạt", "Tổng số controls", "Tỷ lệ tuân thủ (%)"]
-            hdr_row = wb_table.rows[0]
-            _make_row_header(hdr_row)
-            _make_row_cant_split(hdr_row)
-            for col_idx, text in enumerate(headers):
-                cell = hdr_row.cells[col_idx]
-                _set_cell_background(cell, "0A2540")
-                _set_cell_margins(cell, 100, 100, 120, 120)
-                p = cell.paragraphs[0]
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                r = p.add_run(text)
-                _format_run(r, size_pt=9.5, bold=True, color=RGBColor(255, 255, 255))
+        wb_p = doc.add_paragraph()
+        r_wb = wb_p.add_run("Bảng phân tích theo mức độ ưu tiên & trọng số kiểm soát (verdict_weighted_v2):")
+        _format_run(r_wb, size_pt=10.5, bold=True, color=NAVY_PRIMARY)
 
-            for w_key, w_name, w_col in [
-                ("critical", "Nghiêm trọng (Critical)", "FEE2E2"),
-                ("high", "Cao (High)", "FFEDD5"),
-                ("medium", "Trung bình (Medium)", "FEF9C3"),
-                ("low", "Thấp (Low)", "F1F5F9"),
-            ]:
-                data_w = wb.get(w_key, {})
-                if not data_w:
-                    continue
-                row = wb_table.add_row()
-                _make_row_cant_split(row)
-                cells = row.cells
-                cells[0].paragraphs[0].add_run(w_name)
-                cells[1].paragraphs[0].add_run(str(data_w.get("implemented", 0)))
-                cells[2].paragraphs[0].add_run(str(data_w.get("total", 0)))
-                cells[3].paragraphs[0].add_run(f"{data_w.get('percent', 0.0):.1f}%")
+        wb_table = doc.add_table(rows=1, cols=6)
+        wb_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        headers = ["Mức độ ưu tiên", "Tổng số controls", "Đã đạt (Verified)", "Khoảng trống (GAP)", "Điểm trọng số (Đạt / Tối đa)", "Tỷ lệ tuân thủ (%)"]
+        hdr_row = wb_table.rows[0]
+        _make_row_header(hdr_row)
+        _make_row_cant_split(hdr_row)
+        for col_idx, text in enumerate(headers):
+            cell = hdr_row.cells[col_idx]
+            _set_cell_background(cell, "0A2540")
+            _set_cell_margins(cell, 100, 100, 120, 120)
+            p = cell.paragraphs[0]
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r = p.add_run(text)
+            _format_run(r, size_pt=9.5, bold=True, color=RGBColor(255, 255, 255))
 
-                _set_cell_background(cells[0], w_col)
-                for c_idx in range(4):
-                    _set_cell_margins(cells[c_idx], 70, 70, 100, 100)
-                    cells[c_idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER if c_idx > 0 else WD_ALIGN_PARAGRAPH.LEFT
-                    _format_run(cells[c_idx].paragraphs[0].runs[0], size_pt=9.5, color=TEXT_DARK)
+        tier_style_map = [
+            ("critical", "Nghiêm trọng (Critical - 10đ)", "FEE2E2"),
+            ("high", "Cao (High - 5đ)", "FFEDD5"),
+            ("medium", "Trung bình (Medium - 3đ)", "FEF9C3"),
+            ("low", "Thấp (Low - 1đ)", "F1F5F9"),
+        ]
+
+        for w_key, w_name, w_col in tier_style_map:
+            t_data = pb["tiers"][w_key]
+            row = wb_table.add_row()
+            _make_row_cant_split(row)
+            cells = row.cells
+            cells[0].paragraphs[0].add_run(w_name)
+            cells[1].paragraphs[0].add_run(str(t_data["total_controls"]))
+            cells[2].paragraphs[0].add_run(str(t_data["satisfied_verified"]))
+            cells[3].paragraphs[0].add_run(str(t_data["gap_controls"]))
+            cells[4].paragraphs[0].add_run(f"{t_data['weighted_score']:.1f} / {t_data['weighted_max_score']:.1f}")
+            cells[5].paragraphs[0].add_run(f"{t_data['percentage']:.1f}%")
+
+            _set_cell_background(cells[0], w_col)
+            for c_idx in range(6):
+                _set_cell_margins(cells[c_idx], 70, 70, 100, 100)
+                cells[c_idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER if c_idx > 0 else WD_ALIGN_PARAGRAPH.LEFT
+                _format_run(cells[c_idx].paragraphs[0].runs[0], size_pt=9.5, color=TEXT_DARK)
+
+        # Summary footer row
+        ft_row = wb_table.add_row()
+        _make_row_cant_split(ft_row)
+        ft_cells = ft_row.cells
+        ft_cells[0].paragraphs[0].add_run("Tổng cộng (Toàn hệ thống)")
+        ft_cells[1].paragraphs[0].add_run(str(pb["total_applicable"]))
+        ft_cells[2].paragraphs[0].add_run(str(pb["total_satisfied"]))
+        ft_cells[3].paragraphs[0].add_run(str(pb["total_gaps"]))
+        ft_cells[4].paragraphs[0].add_run(f"{pb['total_weighted_score']:.1f} / {pb['total_weighted_max_score']:.1f}")
+        ft_cells[5].paragraphs[0].add_run(f"{pb['percentage']:.1f}%")
+        for c_idx in range(6):
+            _set_cell_background(ft_cells[c_idx], "E2E8F0")
+            _set_cell_margins(ft_cells[c_idx], 80, 80, 100, 100)
+            ft_cells[c_idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER if c_idx > 0 else WD_ALIGN_PARAGRAPH.LEFT
+            _format_run(ft_cells[c_idx].paragraphs[0].runs[0], size_pt=9.5, bold=True, color=TEXT_DARK)
+
 
         doc.add_paragraph().paragraph_format.space_after = Pt(10)
 
@@ -657,24 +759,55 @@ def generate_report_docx(assessment_data: Dict[str, Any], output_path: Optional[
         p_risk_desc = doc.add_paragraph()
         r_rd = p_risk_desc.add_run(
             "Danh mục các khoảng trống an ninh (GAP) được định lượng theo công thức rủi ro: "
-            "Điểm rủi ro (Risk Score) = Khả năng xảy ra (Likelihood: 1-5) × Mức độ tác động (Impact: 1-5)."
+            "Điểm rủi ro (Risk Score) = Khả năng xảy ra (Likelihood: 1-4) × Mức độ tác động (Impact: 1-4) (tối đa 16)."
         )
         _format_run(r_rd, size_pt=10, italic=True, color=MUTED_GRAY)
 
-        risk_list = json_data.get("risk_register", [])
-        if not risk_list and "top_gaps" in json_data:
-            risk_list = [
+        valid_risk_v = {"partial", "partially_satisfied", "missing", "not_evidenced", "needs_expert_review", "not_satisfied"}
+
+        raw_r = json_data.get("risk_register", [])
+        if not raw_r and hasattr(validated, "controls") and validated.controls:
+            raw_r = [
+                {
+                    "control_id": c.control_id,
+                    "gap": c.gap or f"Khoảng trống an ninh đối với {c.control_id} - {c.label}",
+                    "severity": c.risk_severity or ("high" if c.weight_level in ("critical", "high") else "medium"),
+                    "likelihood": c.likelihood,
+                    "impact": c.impact,
+                    "risk_score": c.risk_score or (c.likelihood * c.impact),
+                    "recommendation": c.recommendation or "Cần ban hành chính sách và triển khai giải pháp kỹ thuật bổ sung.",
+                    "assessment_verdict": c.assessment_verdict,
+                    "user_declaration": c.user_declaration,
+                }
+                for c in validated.controls
+                if str(c.assessment_verdict).lower() in valid_risk_v
+            ]
+        elif not raw_r and "top_gaps" in json_data:
+            raw_r = [
                 {
                     "control_id": g.get("id"),
                     "gap": g.get("gap") or g.get("label"),
                     "severity": g.get("severity", "high"),
-                    "likelihood": 4 if g.get("severity") in ("critical", "high") else 3,
-                    "impact": 5 if g.get("severity") == "critical" else 3,
-                    "risk_score": 20 if g.get("severity") == "critical" else 12,
+                    "likelihood": 4 if g.get("severity") == "critical" else 3 if g.get("severity") == "high" else 2,
+                    "impact": 4 if g.get("severity") == "critical" else 3 if g.get("severity") == "high" else 2,
+                    "risk_score": 16 if g.get("severity") == "critical" else 9 if g.get("severity") == "high" else 4,
                     "recommendation": g.get("recommendation", "Cần ban hành chính sách và triển khai giải pháp kỹ thuật bổ sung.")
                 }
                 for g in json_data.get("top_gaps", [])
             ]
+
+        # Filter out satisfied
+        ctrl_map = {c.control_id: c for c in validated.controls} if hasattr(validated, "controls") and validated.controls else {}
+        risk_list = []
+        for r in raw_r:
+            cid = str(r.get("control_id") or r.get("id") or "")
+            c_obj = ctrl_map.get(cid)
+            v = str(r.get("assessment_verdict") or r.get("verdict") or (c_obj.assessment_verdict if c_obj else "")).lower()
+            if v == "satisfied":
+                continue
+            if v and v not in valid_risk_v:
+                continue
+            risk_list.append(r)
 
         risk_list = sorted(risk_list, key=lambda x: int(x.get("risk_score", 0)), reverse=True)
 
@@ -701,16 +834,16 @@ def generate_report_docx(assessment_data: Dict[str, Any], output_path: Optional[
                 _make_row_cant_split(row)
                 cells = row.cells
                 sev = (item.get("severity") or "medium").lower()
-                l_val = item.get("likelihood", 3)
-                i_val = item.get("impact", 3)
+                l_val = item.get("likelihood") or 3
+                i_val = item.get("impact") or 3
                 r_score = item.get("risk_score") or (int(l_val) * int(i_val))
 
                 cells[0].paragraphs[0].add_run(str(idx))
                 cells[1].paragraphs[0].add_run(str(item.get("control_id", "N/A")))
-                cells[2].paragraphs[0].add_run(_clean_markdown(item.get("gap", ""))[:120])
+                cells[2].paragraphs[0].add_run(_clean_markdown(item.get("gap", "") or "")[:120])
                 cells[3].paragraphs[0].add_run(sev.upper())
                 cells[4].paragraphs[0].add_run(f"{l_val}×{i_val}={r_score}")
-                cells[5].paragraphs[0].add_run(_clean_markdown(item.get("recommendation", ""))[:150])
+                cells[5].paragraphs[0].add_run(_clean_markdown(item.get("recommendation", "") or "")[:150])
 
                 sev_bg = "FEE2E2" if sev == "critical" else "FFEDD5" if sev == "high" else "FEF9C3" if sev == "medium" else "FFFFFF"
                 _set_cell_background(cells[3], sev_bg)
@@ -721,6 +854,10 @@ def generate_report_docx(assessment_data: Dict[str, Any], output_path: Optional[
                     if c_idx in (0, 1, 3, 4):
                         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                     _format_run(p.runs[0], size_pt=9, color=TEXT_DARK)
+        else:
+            p_empty = doc.add_paragraph()
+            r_emp = p_empty.add_run("Không có mục rủi ro được tạo từ kết quả hiện tại (Không có rủi ro cần đưa vào báo cáo)")
+            _format_run(r_emp, size_pt=10, italic=True, color=MUTED_GRAY)
 
         doc.add_paragraph().paragraph_format.space_after = Pt(14)
 

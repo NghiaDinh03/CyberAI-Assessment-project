@@ -21,7 +21,7 @@ import EvidencePreviewModal from './_components/controls/EvidencePreviewModal'
 import AuditorFeedbackDrawer from './_components/controls/AuditorFeedbackDrawer'
 
 const POLL_INTERVAL = 8000
-const FORM_DRAFT_KEY = 'form-iso-draft'
+const getDraftKey = (aid) => aid ? `assessment_draft:${aid}` : 'assessment_draft:unknown'
 
 const STANDARD_LABEL_MAP = {
     iso27001: 'ISO 27001:2022',
@@ -33,7 +33,11 @@ const STANDARD_LABEL_MAP = {
     gdpr: 'GDPR',
     soc2: 'SOC 2',
 }
-const getStdLabel = (stdId) => STANDARD_LABEL_MAP[stdId] || stdId || 'ISO 27001:2022'
+const getStdLabel = (stdId) => {
+    if (!stdId) return 'ISO 27001:2022'
+    if (typeof stdId === 'object') return stdId.name || STANDARD_LABEL_MAP[stdId.id] || stdId.id || 'ISO 27001:2022'
+    return STANDARD_LABEL_MAP[stdId] || stdId || 'ISO 27001:2022'
+}
 
 const EMPTY_FORM = {
     org_name: '',
@@ -100,7 +104,47 @@ export default function FormISOPage() {
     const [batchResultMsg, setBatchResultMsg] = useState(null)
     const [detectedHosts, setDetectedHosts] = useState([])
     const [uploadedFilesList, setUploadedFilesList] = useState([])
+    const [evidenceManifestId, setEvidenceManifestId] = useState(null)
     const batchFileInputRef = useRef(null)
+
+    const [assessmentId, setAssessmentId] = useState(null)
+    const currentAssessmentIdRef = useRef(null)
+    const abortControllerRef = useRef(null)
+
+    useEffect(() => {
+        currentAssessmentIdRef.current = assessmentId
+    }, [assessmentId])
+
+    const initAssessmentSession = useCallback(async (explicitId = null) => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort()
+            abortControllerRef.current = null
+        }
+        let targetId = explicitId
+        let targetManifestId = null
+        if (!targetId) {
+            try {
+                const res = await fetch('/api/iso27001/assessments/init', { method: 'POST' })
+                if (res.ok) {
+                    const data = await res.json()
+                    targetId = data.assessment_id
+                    targetManifestId = data.manifest_id
+                }
+            } catch (e) {
+                console.warn('Failed to init session via API, generating client UUID:', e)
+            }
+        }
+        if (!targetId) {
+            targetId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `aid_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+        }
+        if (!targetManifestId) {
+            targetManifestId = `manifest_${targetId.slice(0, 12)}`
+        }
+        setAssessmentId(targetId)
+        currentAssessmentIdRef.current = targetId
+        setEvidenceManifestId(targetManifestId)
+        return targetId
+    }, [])
 
     const pollingRef = useRef(null)
     const pollingIdRef = useRef(null)
@@ -158,10 +202,12 @@ export default function FormISOPage() {
         const std = tpl.standard || d.assessment_standard || 'iso27001'
         const orgInfo = d.organization || {}
         const infraInfo = d.infrastructure || {}
-        const complianceInfo = d.compliance || {}
 
         setForm({
             assessment_standard: std,
+            template_id: tpl.id || tpl.template_id || '',
+            template_name: tpl.name || '',
+            is_template_input: true,
             org_name: d.org_name || orgInfo.name || tpl.name || '',
             org_size: d.org_size || orgInfo.size || 'medium',
             industry: d.industry || orgInfo.industry || tpl.industry || '',
@@ -181,12 +227,8 @@ export default function FormISOPage() {
             assessment_scope: d.assessment_scope || 'full',
             scope_description: d.scope_description || '',
             model_mode: 'local',
-            implemented_controls: d.implemented_controls || complianceInfo.implemented_controls || []
+            implemented_controls: []
         })
-
-        if (d.evidence_map && typeof d.evidence_map === 'object') {
-            setEvidenceMap(d.evidence_map)
-        }
 
         setActiveTab('form')
         setStep(1)
@@ -198,8 +240,16 @@ export default function FormISOPage() {
         const fileList = Array.from(files)
         if (fileList.length === 0) return
         setEvidenceUploading(controlId)
+
+        let aid = currentAssessmentIdRef.current || assessmentId
+        if (!aid) {
+            aid = await initAssessmentSession()
+        }
+
         const savedToken = typeof window !== 'undefined' ? localStorage.getItem('cyberai_auth_token') : null
-        const headers = {}
+        const headers = {
+            'X-Assessment-ID': aid
+        }
         if (savedToken) headers['Authorization'] = `Bearer ${savedToken}`
 
         for (const file of fileList) {
@@ -209,22 +259,67 @@ export default function FormISOPage() {
             }
             const formData = new FormData()
             formData.append('file', file)
+            formData.append('assessment_id', aid)
             try {
-                const res = await fetch(`/api/iso27001/evidence/${controlId}`, {
+                const res = await fetch(`/api/iso27001/evidence/${controlId}?assessment_id=${encodeURIComponent(aid)}`, {
                     method: 'POST',
                     headers,
                     body: formData
                 })
                 if (res.ok) {
                     const data = await res.json()
+                    // 1. Update evidenceMap for this control
                     setEvidenceMap(prev => {
                         const current = prev[controlId] || []
                         const filtered = current.filter(f => f.filename !== data.filename)
                         return {
                             ...prev,
-                            [controlId]: [...filtered, { filename: data.filename, size_bytes: data.size_bytes }]
+                            [controlId]: [...filtered, {
+                                evidence_id: data.evidence_id,
+                                filename: data.filename,
+                                clean_name: data.clean_name || data.filename,
+                                size_bytes: data.size_bytes,
+                                sha256: data.sha256,
+                                char_count: data.char_count,
+                                ocr_applied: data.ocr_applied,
+                                mapped_controls: data.mapped_controls || [controlId]
+                            }]
                         }
                     })
+                    // 2. Synchronize uploadedFilesList for overview popup catalog modal
+                    setUploadedFilesList(prev => {
+                        const targetFilename = data.filename
+                        const existingIdx = prev.findIndex(f => (f.filename === targetFilename || f.clean_name === targetFilename))
+                        const newMapped = data.mapped_controls && data.mapped_controls.length > 0 ? data.mapped_controls : [controlId]
+                        if (existingIdx >= 0) {
+                            const updated = [...prev]
+                            const oldFile = updated[existingIdx]
+                            const mergedControls = Array.from(new Set([...(oldFile.mapped_controls || []), ...newMapped]))
+                            updated[existingIdx] = {
+                                ...oldFile,
+                                evidence_id: data.evidence_id || oldFile.evidence_id,
+                                mapped_controls: mergedControls,
+                                char_count: data.char_count ?? oldFile.char_count,
+                                sha256: data.sha256 || oldFile.sha256,
+                                size_bytes: data.size_bytes || oldFile.size_bytes
+                            }
+                            return updated
+                        } else {
+                            return [...prev, {
+                                evidence_id: data.evidence_id,
+                                filename: data.filename,
+                                clean_name: data.clean_name || data.filename,
+                                size_bytes: data.size_bytes,
+                                sha256: data.sha256,
+                                char_count: data.char_count,
+                                ocr_applied: data.ocr_applied,
+                                mapped_controls: newMapped
+                            }]
+                        }
+                    })
+                    if (data.evidence_manifest_id) {
+                        setEvidenceManifestId(data.evidence_manifest_id)
+                    }
                     // Auto-mark control as implemented when user uploads evidence if not already checked
                     setForm(prev => {
                         if (!prev.implemented_controls.includes(controlId)) {
@@ -262,10 +357,15 @@ export default function FormISOPage() {
 
     const fetchEvidenceForControl = async (controlId) => {
         if (!controlId) return
+        const aid = currentAssessmentIdRef.current || assessmentId
+        if (!aid) return
         try {
-            const res = await fetch(`/api/iso27001/evidence/${controlId}`)
+            const res = await fetch(`/api/iso27001/evidence/${controlId}?assessment_id=${encodeURIComponent(aid)}`, {
+                headers: { 'X-Assessment-ID': aid }
+            })
             if (res.ok) {
                 const data = await res.json()
+                if (currentAssessmentIdRef.current !== aid) return
                 if (data.files) {
                     setEvidenceMap(prev => ({ ...prev, [controlId]: data.files }))
                 }
@@ -285,25 +385,37 @@ export default function FormISOPage() {
         const fileList = Array.from(files)
         setBatchUploading(true)
         setBatchResultMsg(null)
+
+        let aid = currentAssessmentIdRef.current || assessmentId
+        if (!aid) {
+            aid = await initAssessmentSession()
+        }
+
         const formData = new FormData()
+        formData.append('assessment_id', aid)
         fileList.forEach(f => formData.append('files', f))
 
         try {
             const savedToken = typeof window !== 'undefined' ? localStorage.getItem('cyberai_auth_token') : null
-            const headers = {}
+            const headers = {
+                'X-Assessment-ID': aid
+            }
             if (savedToken) {
                 headers['Authorization'] = `Bearer ${savedToken}`
             }
 
-            const res = await fetch('/api/iso27001/evidence/batch-ingest', {
+            const res = await fetch(`/api/iso27001/evidence/batch-ingest?assessment_id=${encodeURIComponent(aid)}`, {
                 method: 'POST',
                 headers,
                 body: formData
             })
 
             const data = await res.json().catch(() => ({}))
+            if (currentAssessmentIdRef.current !== aid) return
 
             if (res.ok && data.status === 'success') {
+                const manifestId = data.manifest_id || data.evidence_manifest_id || `manifest_${aid.slice(0, 12)}`
+                setEvidenceManifestId(manifestId)
                 const mapped = data.mapped_controls || {}
                 const suggestedControls = data.suggested_implemented_controls || []
                 const hosts = data.detected_hosts || []
@@ -321,16 +433,19 @@ export default function FormISOPage() {
 
                 setEvidenceMap(prev => {
                     const next = { ...prev }
-                    Object.entries(mapped).forEach(([ctrlId, fileList]) => {
+                    Object.entries(mapped).forEach(([ctrlId, fList]) => {
                         const existing = next[ctrlId] || []
                         const existingNames = new Set(existing.map(f => f.filename))
-                        const newFiles = fileList
+                        const newFiles = fList
                             .filter(f => !existingNames.has(f.filename))
                             .map(f => ({
+                                evidence_id: f.evidence_id || `file_${(f.sha256 || '').slice(0, 8)}`,
                                 filename: f.filename,
                                 clean_name: f.clean_name || f.filename,
                                 original_name: f.original_name || f.filename,
                                 size_bytes: f.size_bytes,
+                                sha256: f.sha256,
+                                char_count: f.char_count,
                                 confidence: f.confidence
                             }))
                         next[ctrlId] = [...existing, ...newFiles]
@@ -423,10 +538,14 @@ export default function FormISOPage() {
     const handleDeleteUploadedFile = async (file) => {
         const targetName = file.filename || file.clean_name
         if (!targetName) return
+        const aid = currentAssessmentIdRef.current || assessmentId
 
         try {
-            await fetch(`/api/iso27001/evidence/file/${encodeURIComponent(targetName)}`, {
-                method: 'DELETE'
+            const qs = aid ? `?assessment_id=${encodeURIComponent(aid)}` : ''
+            const headers = aid ? { 'X-Assessment-ID': aid } : {}
+            await fetch(`/api/iso27001/evidence/file/${encodeURIComponent(targetName)}${qs}`, {
+                method: 'DELETE',
+                headers
             })
         } catch (e) {
             console.warn('Backend delete file failed, pruning local state anyway:', e)
@@ -449,35 +568,54 @@ export default function FormISOPage() {
     }
 
     const deleteEvidence = async (controlId, filename) => {
+        const aid = currentAssessmentIdRef.current || assessmentId
         try {
-            await fetch(`/api/iso27001/evidence/${controlId}/${filename}`, { method: 'DELETE' })
+            const qs = aid ? `?assessment_id=${encodeURIComponent(aid)}` : ''
+            const headers = aid ? { 'X-Assessment-ID': aid } : {}
+            await fetch(`/api/iso27001/evidence/${controlId}/${filename}${qs}`, {
+                method: 'DELETE',
+                headers
+            })
             setEvidenceMap(prev => ({
                 ...prev,
-                [controlId]: (prev[controlId] || []).filter(f => f.filename !== filename)
+                [controlId]: (prev[controlId] || []).filter(f => f.filename !== filename && f.clean_name !== filename)
             }))
+            setUploadedFilesList(prev => {
+                return prev.map(f => {
+                    if (f.filename === filename || f.clean_name === filename) {
+                        const newMapped = (f.mapped_controls || []).filter(c => c !== controlId)
+                        return { ...f, mapped_controls: newMapped }
+                    }
+                    return f
+                })
+            })
         } catch (e) {
             console.error('Evidence delete failed:', e)
         }
     }
 
-    // Auto-save form draft debounced
+    // Auto-save form draft debounced per assessment_id
     useEffect(() => {
+        const aid = currentAssessmentIdRef.current || assessmentId
+        if (!aid) return
         if (activeTab === 'form' && (form.org_name || form.implemented_controls.length > 0)) {
             const timer = setTimeout(() => {
                 try {
-                    localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify({
+                    localStorage.setItem(getDraftKey(aid), JSON.stringify({
+                        assessment_id: aid,
                         form,
                         step,
                         evidenceMap,
                         detectedHosts,
                         uploadedFilesList,
+                        evidenceManifestId,
                         savedAt: Date.now()
                     }))
                 } catch (_) { }
             }, 800)
             return () => clearTimeout(timer)
         }
-    }, [form, step, evidenceMap, detectedHosts, uploadedFilesList, activeTab])
+    }, [form, step, evidenceMap, detectedHosts, uploadedFilesList, evidenceManifestId, activeTab, assessmentId])
 
     const restoreDraft = () => {
         if (draftData) {
@@ -486,12 +624,16 @@ export default function FormISOPage() {
             if (draftData.evidenceMap) setEvidenceMap(draftData.evidenceMap)
             if (draftData.detectedHosts && Array.isArray(draftData.detectedHosts)) setDetectedHosts(draftData.detectedHosts)
             if (draftData.uploadedFilesList && Array.isArray(draftData.uploadedFilesList)) setUploadedFilesList(draftData.uploadedFilesList)
+            if (draftData.evidenceManifestId) setEvidenceManifestId(draftData.evidenceManifestId)
         }
         setDraftAvailable(false)
     }
 
     const discardDraft = () => {
-        try { localStorage.removeItem(FORM_DRAFT_KEY) } catch (_) { }
+        const aid = currentAssessmentIdRef.current || assessmentId
+        if (aid) {
+            try { localStorage.removeItem(getDraftKey(aid)) } catch (_) { }
+        }
         setDraftAvailable(false)
         setDraftData(null)
         setUploadedFilesList([])
@@ -599,42 +741,11 @@ export default function FormISOPage() {
             notes: parsed.notes || '',
             assessment_scope: parsed.assessment_scope || 'full',
             scope_description: parsed.scope_description || '',
+            template_id: parsed.template_id || parsed.id || null,
+            template_name: parsed.template_name || parsed.name || null,
             model_mode: 'local'
         }
     }
-
-    useEffect(() => {
-        const reuseData = localStorage.getItem('reuse_iso_form')
-        if (reuseData) {
-            try {
-                const parsed = JSON.parse(reuseData)
-                setForm(applyTemplateData(parsed))
-                localStorage.removeItem('reuse_iso_form')
-                fetchHistory()
-                return
-            } catch (e) {
-                console.error('Failed to parse reuse data:', e)
-                localStorage.removeItem('reuse_iso_form')
-            }
-        }
-
-        const draft = localStorage.getItem(FORM_DRAFT_KEY)
-        if (draft) {
-            try {
-                const parsed = JSON.parse(draft)
-                const formData = parsed.form || parsed
-                if (formData && (formData.org_name || (formData.implemented_controls && formData.implemented_controls.length > 0))) {
-                    setDraftData(parsed.form ? parsed : { form: parsed, step: 1, evidenceMap: {} })
-                    setDraftAvailable(true)
-                    if (parsed.savedAt) {
-                        setDraftTimestamp(new Date(parsed.savedAt).toLocaleTimeString())
-                    }
-                }
-            } catch (_) { }
-        }
-
-        fetchHistory()
-    }, [])
 
     const fetchHistory = useCallback(async () => {
         try {
@@ -651,7 +762,9 @@ export default function FormISOPage() {
                 org: h.org_name || 'Không rõ',
                 standard: getStdLabel(h.standard),
                 status: h.status || 'unknown',
-                compliance_percent: h.compliance_percent ?? null,
+                compliance_percent: h.weighted_compliance?.percentage ?? h.compliance_percent ?? null,
+                weighted_compliance: h.weighted_compliance ?? null,
+                control_coverage: h.control_coverage ?? null,
             }))
             setAssessmentHistory(mapped)
         } catch (_) {
@@ -661,6 +774,50 @@ export default function FormISOPage() {
             } catch (__) { }
         }
     }, [])
+
+    useEffect(() => {
+        const reuseData = localStorage.getItem('reuse_iso_form')
+        if (reuseData) {
+            try {
+                const parsed = JSON.parse(reuseData)
+                setForm(applyTemplateData(parsed))
+                localStorage.removeItem('reuse_iso_form')
+                initAssessmentSession()
+                fetchHistory()
+                return
+            } catch (e) {
+                console.error('Failed to parse reuse data:', e)
+                localStorage.removeItem('reuse_iso_form')
+            }
+        }
+
+        let savedActiveId = null
+        try {
+            savedActiveId = sessionStorage.getItem('active_assessment_id')
+        } catch (_) { }
+
+        if (savedActiveId) {
+            initAssessmentSession(savedActiveId)
+            const draft = localStorage.getItem(getDraftKey(savedActiveId))
+            if (draft) {
+                try {
+                    const parsed = JSON.parse(draft)
+                    const formData = parsed.form || parsed
+                    if (formData && (formData.org_name || (formData.implemented_controls && formData.implemented_controls.length > 0))) {
+                        setDraftData(parsed.form ? parsed : { form: parsed, step: 1, evidenceMap: {} })
+                        setDraftAvailable(true)
+                        if (parsed.savedAt) {
+                            setDraftTimestamp(new Date(parsed.savedAt).toLocaleTimeString())
+                        }
+                    }
+                } catch (_) { }
+            }
+        } else {
+            initAssessmentSession()
+        }
+
+        fetchHistory()
+    }, [fetchHistory, initAssessmentSession])
 
     const stopPolling = useCallback(() => {
         if (eventSourceRef.current) {
@@ -673,6 +830,35 @@ export default function FormISOPage() {
         }
         pollingIdRef.current = null
     }, [])
+
+    const handleStartNewAssessment = useCallback(async () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort()
+            abortControllerRef.current = null
+        }
+        stopPolling()
+        setDrawerControlId(null)
+        setPreviewFile(null)
+        setShowFeedbackDrawer(false)
+        setLoading(false)
+        setForm(EMPTY_FORM)
+        setResult(null)
+        setEvidenceMap({})
+        setEvidencePreviews({})
+        setUploadedFilesList([])
+        setDetectedHosts([])
+        setBatchResultMsg(null)
+        setControlNotes({})
+        setStep(1)
+        setActiveTab('form')
+        setDraftAvailable(false)
+        setDraftData(null)
+        try {
+            sessionStorage.removeItem('active_assessment_id')
+        } catch (_) { }
+        await initAssessmentSession()
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }, [stopPolling, initAssessmentSession])
 
     const startPolling = useCallback((id) => {
         stopPolling()
@@ -707,7 +893,10 @@ export default function FormISOPage() {
                             report: data.result?.report || 'Hoàn thành.',
                             model_used: data.result?.model_used,
                             json_data: data.json_data || data.result?.json_data,
-                            compliance_percent: data.compliance_percent ?? null,
+                            weighted_compliance: data.weighted_compliance || data.result?.weighted_compliance || data.json_data?.weighted_compliance || data.result?.json_data?.weighted_compliance || null,
+                            weighted_coverage: data.weighted_coverage || data.result?.weighted_coverage || data.json_data?.weighted_coverage || data.result?.json_data?.weighted_coverage || null,
+                            control_coverage: data.control_coverage || data.result?.control_coverage || data.json_data?.control_coverage || data.result?.json_data?.control_coverage || null,
+                            compliance_percent: data.weighted_compliance?.percentage ?? data.compliance_percent ?? null,
                             standard: data.standard,
                             org_name: data.org_name,
                             implemented_controls: data.implemented_controls || [],
@@ -716,7 +905,7 @@ export default function FormISOPage() {
                         setActiveTab('result')
                         fetchHistory()
                         try {
-                            localStorage.removeItem(FORM_DRAFT_KEY)
+                            clearDraft()
                             sessionStorage.removeItem('active_assessment_id')
                         } catch (_) { }
                     } catch (_) { }
@@ -754,7 +943,10 @@ export default function FormISOPage() {
                         report: data.result?.report || data.error_summary || data.error || (data.status === 'failed' ? 'Quá trình đánh giá thất bại.' : 'Hoàn thành.'),
                         model_used: data.result?.model_used,
                         json_data: data.result?.json_data || null,
-                        compliance_percent: data.compliance_percent ?? null,
+                        weighted_compliance: data.weighted_compliance || data.result?.weighted_compliance || data.result?.json_data?.weighted_compliance || null,
+                        weighted_coverage: data.weighted_coverage || data.result?.weighted_coverage || data.result?.json_data?.weighted_coverage || null,
+                        control_coverage: data.control_coverage || data.result?.control_coverage || data.result?.json_data?.control_coverage || null,
+                        compliance_percent: data.weighted_compliance?.percentage ?? data.compliance_percent ?? null,
                         standard: data.standard || data.system_info?.assessment_standard,
                         org_name: data.system_info?.organization?.name || '',
                         implemented_controls: data.system_info?.compliance?.implemented_controls || [],
@@ -763,7 +955,7 @@ export default function FormISOPage() {
                     setActiveTab('result')
                     fetchHistory()
                     try {
-                        localStorage.removeItem(FORM_DRAFT_KEY)
+                        clearDraft()
                         sessionStorage.removeItem('active_assessment_id')
                     } catch (_) { }
                 } else if (data.status === 'processing' || data.status === 'pending') {
@@ -809,7 +1001,10 @@ export default function FormISOPage() {
     const set = (key, val) => setForm(p => ({ ...p, [key]: val }))
 
     const clearDraft = () => {
-        try { localStorage.removeItem(FORM_DRAFT_KEY) } catch (_) { }
+        const aid = currentAssessmentIdRef.current || assessmentId
+        if (aid) {
+            try { localStorage.removeItem(getDraftKey(aid)) } catch (_) { }
+        }
     }
 
     const handleStandardChange = (newStandardId) => {
@@ -880,20 +1075,40 @@ export default function FormISOPage() {
             const scopeNote = form.assessment_scope !== 'full'
                 ? `\n\nPHẠM VI ĐÁNH GIÁ: ${form.assessment_scope === 'by_department' ? 'Theo phòng ban' : 'Theo hệ thống cụ thể'}${form.scope_description ? ` — ${form.scope_description}` : ''}`
                 : ''
+            const realEvidenceMap = Object.fromEntries(
+                Object.entries(evidenceMap)
+                    .filter(([_, files]) => files && files.length > 0)
+                    .map(([ctrlId, files]) => [ctrlId, files.map(f => typeof f === 'string' ? f : f.filename)])
+            )
+            const hasRealFiles = Object.keys(realEvidenceMap).length > 0 || (uploadedFilesList && uploadedFilesList.length > 0)
+            const aid = currentAssessmentIdRef.current || assessmentId || `aid_${Date.now()}`
+            const finalManifestId = evidenceManifestId || (hasRealFiles ? `manifest_${aid.slice(0, 12)}` : null)
+
             const submissionForm = {
                 ...form,
+                assessment_id: aid,
+                template_id: form.template_id || null,
+                template_name: form.template_name || null,
+                is_template_input: Boolean(form.is_template_input),
+                evidence_manifest_id: finalManifestId,
+                evidence_files: uploadedFilesList.map(f => ({
+                    filename: f.filename || f.clean_name,
+                    size_bytes: f.size_bytes || 0,
+                    sha256: f.sha256 || '',
+                    ocr_applied: Boolean(f.ocr_applied),
+                    mapped_controls: f.mapped_controls || []
+                })),
                 model_mode: 'local',
                 selected_model: selectedAiModel || 'gemma4:latest',
                 notes: [form.notes || '', scopeNote, evidenceSummary].join('').trim(),
-                evidence_map: Object.fromEntries(
-                    Object.entries(evidenceMap)
-                        .filter(([_, files]) => files && files.length > 0)
-                        .map(([ctrlId, files]) => [ctrlId, files.map(f => f.filename)])
-                )
+                evidence_map: realEvidenceMap
             }
             const res = await fetch('/api/iso27001/assess', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Assessment-ID': aid
+                },
                 body: JSON.stringify(submissionForm)
             })
             const data = await res.json()
@@ -910,6 +1125,7 @@ export default function FormISOPage() {
                     compliance_percent: null,
                     standard: form.assessment_standard,
                     org_name: form.org_name,
+                    implemented_controls: form.implemented_controls || [],
                 })
                 setActiveTab('result')
                 fetchHistory()
@@ -918,7 +1134,7 @@ export default function FormISOPage() {
                 const errMsg = data.error || data.error_summary || data.message || (Array.isArray(data.detail) ? data.detail.map(d => `${d.loc ? d.loc.join('.') : ''}: ${d.msg}`).join(', ') : null) || 'Lỗi gửi yêu cầu đánh giá'
                 setResult({
                     error: errMsg,
-                    error_code: data.error_code || 'INVALID_ASSESSMENT_PAYLOAD',
+                    error_code: data.error_code || (res.status === 409 ? 'MANIFEST_CONFLICT' : 'INVALID_ASSESSMENT_PAYLOAD'),
                     error_summary: errMsg,
                     report: errMsg
                 })
@@ -951,7 +1167,10 @@ export default function FormISOPage() {
                     report: data.result?.report || data.error || '',
                     model_used: data.result?.model_used,
                     json_data: data.result?.json_data || null,
-                    compliance_percent: data.compliance_percent ?? null,
+                    weighted_compliance: data.weighted_compliance || data.result?.weighted_compliance || data.result?.json_data?.weighted_compliance || null,
+                    weighted_coverage: data.weighted_coverage || data.result?.weighted_coverage || data.result?.json_data?.weighted_coverage || null,
+                    control_coverage: data.control_coverage || data.result?.control_coverage || data.result?.json_data?.control_coverage || null,
+                    compliance_percent: data.weighted_compliance?.percentage ?? data.compliance_percent ?? null,
                     standard: data.standard || data.system_info?.assessment_standard,
                     org_name: data.system_info?.organization?.name || '',
                     implemented_controls: data.system_info?.compliance?.implemented_controls || [],
@@ -968,8 +1187,11 @@ export default function FormISOPage() {
                     report: '',
                     progress: data.progress || { message: 'Đang xử lý...', percent: 0 },
                     compliance_percent: data.compliance_percent ?? null,
+                    weighted_coverage: data.weighted_coverage || null,
+                    control_coverage: data.control_coverage || null,
                     standard: data.standard || data.system_info?.assessment_standard,
                     org_name: data.system_info?.organization?.name || '',
+                    implemented_controls: data.system_info?.compliance?.implemented_controls || [],
                 })
                 setActiveTab('result')
                 startPolling(id)
@@ -1060,6 +1282,7 @@ export default function FormISOPage() {
                         fetchEvidenceForControl={fetchEvidenceForControl}
                         evidenceMap={evidenceMap}
                         onOpenFeedbackDrawer={() => setShowFeedbackDrawer(true)}
+                        assessmentId={assessmentId}
                     />
                 )
             case 4:
@@ -1087,6 +1310,15 @@ export default function FormISOPage() {
                     <p className={styles.subtitle}>{t('assessment.pageSubtitle')}</p>
                 </div>
                 <div className={styles.headerActions}>
+                    <button
+                        type="button"
+                        className={styles.tabBtn}
+                        onClick={handleStartNewAssessment}
+                        title={locale === 'vi' ? 'Khởi tạo đánh giá mới hoàn toàn trống' : 'Start completely clean assessment'}
+                        style={{ border: '1px solid rgba(14, 165, 233, 0.5)', color: '#38bdf8' }}
+                    >
+                        ➕ {locale === 'vi' ? 'Đánh giá mới' : 'New Assessment'}
+                    </button>
                     <button
                         className={`${styles.tabBtn} ${activeTab === 'templates' ? styles.activeTab : ''}`}
                         onClick={() => setActiveTab('templates')}
@@ -1323,6 +1555,7 @@ export default function FormISOPage() {
                         loading={loading}
                         submit={submit}
                         setSelectedAiModel={setSelectedAiModel}
+                        onStartNewAssessment={handleStartNewAssessment}
                     />
                 </div>
             )}
@@ -1336,6 +1569,7 @@ export default function FormISOPage() {
                     deletingId={deletingId}
                     setActiveTab={setActiveTab}
                     setStep={setStep}
+                    onStartNewAssessment={handleStartNewAssessment}
                 />
             )}
 

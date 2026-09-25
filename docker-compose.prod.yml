@@ -20,8 +20,10 @@ services:
     networks:
       - cyberai-network
     depends_on:
-      - frontend
-      - backend
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
     restart: unless-stopped
 
   backend:
@@ -66,10 +68,11 @@ services:
       - WORKERS=${WORKERS:-2}
       - MODELS_PATH=/app/models
       - SEARXNG_URL=${SEARXNG_URL:-http://searxng:8080}
+      - CODE_VERSION=${CODE_VERSION:-v1.2.0-verdict}
+      - GIT_COMMIT_SHA=${GIT_COMMIT_SHA:-c79037e}
     networks:
       - cyberai-network
     volumes:
-      - ./backend:/app
       - ./models/llm:/app/models
       - ./data/iso_documents:/data/iso_documents
       - ./data/vector_store:/data/vector_store
@@ -106,7 +109,6 @@ services:
         - NODE_ENV=production
     image: cyberai-frontend:latest
     container_name: cyberai-frontend
-    user: root
     ports:
       - "3081:3000"
     environment:
@@ -120,7 +122,13 @@ services:
       - cyberai-network
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
     deploy:
       resources:

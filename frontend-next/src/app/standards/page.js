@@ -83,7 +83,7 @@ function FormatGuidePanel({ onClose }) {
 }`}</pre>
                             <div className={styles.formatGuideWeights}>
                                 <strong>Weight scores:</strong>
-                                {[['critical', '#f87171', '4pts'], ['high', '#fbbf24', '3pts'], ['medium', '#4f8ef7', '2pts'], ['low', '#7d8fa3', '1pt']].map(([w, c, p]) => (
+                                {[['critical', '#f87171', '10pts'], ['high', '#fbbf24', '5pts'], ['medium', '#4f8ef7', '3pts'], ['low', '#7d8fa3', '1pt']].map(([w, c, p]) => (
                                     <span key={w} style={{ borderColor: c, color: c, border: `1px solid ${c}`, borderRadius: '4px', padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700 }}>{w} = {p}</span>
                                 ))}
                             </div>
@@ -702,9 +702,9 @@ export default function StandardsPage() {
                     <div className={styles.schemaNote}>
                         <p><strong>Weight scores:</strong></p>
                         <div className={styles.weightBreakdown}>
-                            <span className={styles.weightTag} style={{ borderColor: '#f87171', color: '#f87171' }}>critical = 4pts</span>
-                            <span className={styles.weightTag} style={{ borderColor: '#fbbf24', color: '#fbbf24' }}>high = 3pts</span>
-                            <span className={styles.weightTag} style={{ borderColor: '#4f8ef7', color: '#4f8ef7' }}>medium = 2pts</span>
+                            <span className={styles.weightTag} style={{ borderColor: '#f87171', color: '#f87171' }}>critical = 10pts</span>
+                            <span className={styles.weightTag} style={{ borderColor: '#fbbf24', color: '#fbbf24' }}>high = 5pts</span>
+                            <span className={styles.weightTag} style={{ borderColor: '#4f8ef7', color: '#4f8ef7' }}>medium = 3pts</span>
                             <span className={styles.weightTag} style={{ borderColor: '#7d8fa3', color: '#7d8fa3' }}>low = 1pt</span>
                         </div>
                         <p className={styles.schemaHintText}>

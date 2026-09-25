@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import styles from './OfficeEditorModal.module.css'
 import { TCVN_11930_CONTROLS_VI, ISO_27001_CONTROLS_VI } from '../data/standards'
 import EvidenceExtractionProofModal from './EvidenceExtractionProofModal'
+import { useTranslation } from './LanguageProvider'
 
 
 export default function OfficeEditorModal({
@@ -16,6 +17,7 @@ export default function OfficeEditorModal({
     orgName = 'Doanh nghiệp',
     standardName = 'ISO/IEC 27001:2022',
 }) {
+    const { t, locale } = useTranslation()
     const [viewMode, setViewMode] = useState('preview') // 'preview' | 'fields'
     const [saving, setSaving] = useState(false)
     const [saveStatus, setSaveStatus] = useState('Đã đồng bộ')
@@ -34,7 +36,7 @@ export default function OfficeEditorModal({
         assessmentDate: new Date().toISOString().slice(0, 10),
         auditorName: 'Chuyên gia Đánh giá Trưởng (Lead Auditor)',
         approverName: 'Đại diện Lãnh đạo Đơn vị Chủ quản',
-        compliancePercent: jsonData?.compliance?.percentage || 0,
+        compliancePercent: jsonData?.weighted_compliance?.percentage ?? jsonData?.compliance?.percentage ?? (jsonData?.compliance_percent ?? 0),
         executiveSummary: 'Báo cáo đánh giá mức độ tuân thủ và các khoảng trống an toàn thông tin của hệ thống dựa trên tiêu chuẩn quy định. Mặc dù tổ chức đã nỗ lực triển khai các biện pháp bảo vệ, hệ thống vẫn tồn tại các điểm rủi ro cần khắc phục theo lộ trình.',
         scope: jsonData?.system_info?.scope || 'Toàn bộ hạ tầng mạng LAN/DMZ, 09 máy chủ cơ sở dữ liệu, ứng dụng điều hành và văn phòng điện tử thuộc dải mạng 10.140.0.0/24.',
         keyStrengths: 'Đã triển khai hệ thống xác thực tập trung, tường lửa phân vùng mạng cơ bản và ban hành sơ bộ quy chế an toàn thông tin.',
@@ -134,7 +136,7 @@ export default function OfficeEditorModal({
             parsedSummary = `Báo cáo này cung cấp cái nhìn toàn diện về mức độ tuân thủ và rủi ro an toàn thông tin của ${orgName || 'đơn vị'} so với tiêu chuẩn quốc tế ${standardName || 'ISO 27001:2022'}. Qua kết quả thẩm định thực tế, tổ chức đã xây dựng được nền tảng cơ bản về quản lý an toàn thông tin, tuy nhiên cần tiếp tục khắc phục các khoảng trống an ninh trọng yếu để đạt mức tuân thủ cao.`
         }
 
-        const pct = jsonData?.compliance?.percentage ?? (jsonData?.compliance_percent ?? 0)
+        const pct = jsonData?.weighted_compliance?.percentage ?? jsonData?.compliance?.percentage ?? (jsonData?.compliance_percent ?? 0)
 
         setFields(prev => ({
             ...prev,
@@ -148,16 +150,19 @@ export default function OfficeEditorModal({
         const rawRisks = jsonData?.risk_register || jsonData?.top_gaps || []
         if (rawRisks.length > 0) {
             setRiskRows(rawRisks.map((item, idx) => {
-                const l = item.likelihood || (item.severity === 'critical' ? 5 : item.severity === 'high' ? 4 : 3)
-                const i = item.impact || (item.severity === 'critical' ? 5 : item.severity === 'high' ? 4 : 3)
+                const rawL = Number(item.likelihood)
+                const rawI = Number(item.impact)
+                const l = (rawL >= 1 && rawL <= 4) ? rawL : (item.severity === 'critical' ? 4 : item.severity === 'high' ? 3 : 2)
+                const i = (rawI >= 1 && rawI <= 4) ? rawI : (item.severity === 'critical' ? 4 : item.severity === 'high' ? 3 : 2)
+                const score = l * i
                 return {
                     id: idx + 1,
                     control_id: item.control_id || item.id || `CTRL-${idx + 1}`,
                     gap: item.gap || item.label || 'Chưa hoàn thiện biện pháp kiểm soát theo quy định.',
-                    severity: item.severity || (l * i >= 15 ? 'critical' : l * i >= 10 ? 'high' : 'medium'),
+                    severity: item.severity || (score >= 12 ? 'critical' : score >= 8 ? 'high' : score >= 4 ? 'medium' : 'low'),
                     likelihood: l,
                     impact: i,
-                    risk_score: item.risk_score || (l * i),
+                    risk_score: (item.risk_score && item.risk_score <= 16) ? item.risk_score : score,
                     recommendation: item.recommendation || 'Bổ sung chính sách và kích hoạt biện pháp kỹ thuật tương ứng.',
                 }
             }))
@@ -168,9 +173,9 @@ export default function OfficeEditorModal({
                     control_id: 'A.5.17',
                     gap: 'Chưa bắt buộc xác thực đa yếu tố (MFA) cho toàn bộ tài khoản quản trị hệ thống.',
                     severity: 'critical',
-                    likelihood: 5,
-                    impact: 5,
-                    risk_score: 25,
+                    likelihood: 4,
+                    impact: 4,
+                    risk_score: 16,
                     recommendation: 'Kích hoạt xác thực 2 bước (TOTP/FIDO2) bắt buộc cho 100% tài khoản quản trị mạng và máy chủ.',
                 },
                 {
@@ -179,8 +184,8 @@ export default function OfficeEditorModal({
                     gap: 'Tường lửa chưa phân tách vùng mạng DMZ riêng biệt cho máy chủ Web công khai.',
                     severity: 'high',
                     likelihood: 4,
-                    impact: 4,
-                    risk_score: 16,
+                    impact: 3,
+                    risk_score: 12,
                     recommendation: 'Thiết lập phân vùng mạng DMZ cô lập máy chủ Web với vùng cơ sở dữ liệu nội bộ.',
                 },
                 {
@@ -188,9 +193,9 @@ export default function OfficeEditorModal({
                     control_id: 'A.8.8',
                     gap: 'Hệ điều hành máy chủ ứng dụng chưa được cập nhật các bản vá bảo mật định kỳ trong 6 tháng.',
                     severity: 'high',
-                    likelihood: 4,
+                    likelihood: 3,
                     impact: 3,
-                    risk_score: 12,
+                    risk_score: 9,
                     recommendation: 'Triển khai quy trình quét lỗ hổng định kỳ và cài đặt các bản vá lỗi bảo mật quan trọng.',
                 }
             ])
@@ -208,11 +213,13 @@ export default function OfficeEditorModal({
             const next = [...prev]
             const target = { ...next[index], [key]: val }
             if (key === 'likelihood' || key === 'impact') {
-                const l = Number(key === 'likelihood' ? val : target.likelihood) || 1
-                const i = Number(key === 'impact' ? val : target.impact) || 1
+                const l = Math.min(4, Math.max(1, Number(key === 'likelihood' ? val : target.likelihood) || 1))
+                const i = Math.min(4, Math.max(1, Number(key === 'impact' ? val : target.impact) || 1))
                 const score = l * i
+                target.likelihood = l
+                target.impact = i
                 target.risk_score = score
-                target.severity = score >= 15 ? 'critical' : score >= 10 ? 'high' : score >= 5 ? 'medium' : 'low'
+                target.severity = score >= 12 ? 'critical' : score >= 8 ? 'high' : score >= 4 ? 'medium' : 'low'
             }
             next[index] = target
             return next
@@ -378,7 +385,7 @@ export default function OfficeEditorModal({
                                                         value={r.likelihood}
                                                         onChange={(e) => handleRiskCellChange(idx, 'likelihood', e.target.value)}
                                                     >
-                                                        {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
+                                                        {[1, 2, 3, 4].map(v => <option key={v} value={v}>{v}</option>)}
                                                     </select>
                                                 </td>
                                                 <td>
@@ -387,7 +394,7 @@ export default function OfficeEditorModal({
                                                         value={r.impact}
                                                         onChange={(e) => handleRiskCellChange(idx, 'impact', e.target.value)}
                                                     >
-                                                        {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
+                                                        {[1, 2, 3, 4].map(v => <option key={v} value={v}>{v}</option>)}
                                                     </select>
                                                 </td>
                                                 <td style={{ textAlign: 'center', fontWeight: 700, fontSize: '1rem' }}>
@@ -538,7 +545,7 @@ export default function OfficeEditorModal({
                                                 />
                                             </div>
                                             <div className={styles.fieldGroup}>
-                                                <label>Tỷ lệ tuân thủ sơ bộ (%)</label>
+                                                <label>{locale === 'vi' ? 'Tuân thủ có trọng số (%)' : 'Weighted Compliance (%)'}</label>
                                                 <input
                                                     type="number"
                                                     value={fields.compliancePercent}
@@ -730,7 +737,7 @@ export default function OfficeEditorModal({
                                                                     value={r.likelihood}
                                                                     onChange={(e) => handleRiskCellChange(idx, 'likelihood', e.target.value)}
                                                                 >
-                                                                    {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
+                                                                    {[1, 2, 3, 4].map(v => <option key={v} value={v}>{v}</option>)}
                                                                 </select>
                                                             </td>
                                                             <td>
@@ -739,7 +746,7 @@ export default function OfficeEditorModal({
                                                                     value={r.impact}
                                                                     onChange={(e) => handleRiskCellChange(idx, 'impact', e.target.value)}
                                                                 >
-                                                                    {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
+                                                                    {[1, 2, 3, 4].map(v => <option key={v} value={v}>{v}</option>)}
                                                                 </select>
                                                             </td>
                                                             <td style={{ textAlign: 'center', fontWeight: 700, fontSize: '1rem' }}>
@@ -888,7 +895,7 @@ export default function OfficeEditorModal({
                                         <div className={styles.statCardsRow}>
                                             <div className={styles.statCardA4}>
                                                 <div className={styles.statCardNum}>{fields.compliancePercent}%</div>
-                                                <div className={styles.statCardLabel}>Mức độ tuân thủ chung</div>
+                                                <div className={styles.statCardLabel}>{locale === 'vi' ? 'Tuân thủ có trọng số' : 'Weighted Compliance'}</div>
                                             </div>
                                             <div className={styles.statCardA4}>
                                                 <div className={styles.statCardNum} style={{ color: '#dc2626' }}>

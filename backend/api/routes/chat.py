@@ -43,7 +43,7 @@ class ChatRequest(BaseModel):
     prefer_cloud: bool = Field(default=False)
     organisation: Optional[str] = Field(default="")
     user_id: Optional[str] = Field(default=None)
-    use_search: Optional[bool] = Field(default=None)
+    use_search: Optional[bool] = Field(default=False)
 
 
 class ChatResponse(BaseModel):
@@ -79,7 +79,7 @@ async def chat(http_request: Request, request: ChatRequest, background_tasks: Ba
             prefer_cloud=request.prefer_cloud,
             background_tasks=background_tasks,
             organisation=request.organisation,
-            use_search=request.use_search,
+            use_search=bool(request.use_search),
         )
     except HTTPException:
         raise
@@ -115,7 +115,7 @@ async def chat_stream(request: ChatRequest, http_request: Request):
                     prefer_cloud=request.prefer_cloud,
                     organisation=request.organisation,
                     user_id=user_id,
-                    use_search=request.use_search,
+                    use_search=bool(request.use_search),
                 ):
                     event_queue.put(event)
             except Exception as exc:
