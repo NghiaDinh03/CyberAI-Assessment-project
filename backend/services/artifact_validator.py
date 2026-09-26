@@ -439,13 +439,13 @@ def validate_assessment_invariants(
 
     for mf in manifest_files:
         if isinstance(mf, dict):
-            mf_name = os.path.basename(mf.get("masked_filename") or mf.get("file_name") or "")
+            mf_name = os.path.basename(mf.get("masked_filename") or mf.get("file_name") or mf.get("filename") or "")
             mf_fid = mf.get("file_id") or mf.get("evidence_id")
-            mf_sha = mf.get("sha256")
+            mf_sha = mf.get("sha256") or mf.get("content_hash")
         else:
-            mf_name = os.path.basename(getattr(mf, "masked_filename", getattr(mf, "file_name", "")))
+            mf_name = os.path.basename(getattr(mf, "masked_filename", getattr(mf, "file_name", getattr(mf, "filename", ""))))
             mf_fid = getattr(mf, "file_id", getattr(mf, "evidence_id", None))
-            mf_sha = getattr(mf, "sha256", None)
+            mf_sha = getattr(mf, "sha256", getattr(mf, "content_hash", None))
 
         entry = {"file_id": mf_fid, "sha256": mf_sha, "masked_filename": mf_name}
         if mf_name:

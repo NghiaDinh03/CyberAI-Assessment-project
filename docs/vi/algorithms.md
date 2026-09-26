@@ -38,6 +38,8 @@ Pipeline RAG (Truy xuất tăng cường sinh - Retrieval Augmented Generation) 
 2. **Retrieval (Truy xuất)** — Tìm kiếm bằng Cosine Similarity (Độ tương đồng cosine) trên ChromaDB với chỉ mục HNSW, hỗ trợ Multi-Query Expansion (mở rộng đa truy vấn).
 3. **Confidence Filtering (Lọc theo độ tin cậy)** — Các đoạn có độ tương đồng thấp bị loại bỏ trước khi ghép ngữ cảnh.
 
+> 🔒 **Ranh giới lập chỉ mục RAG (RAG Indexing Boundary):** ChromaDB chỉ lập chỉ mục các tài liệu quy chuẩn, tiêu chuẩn kỹ thuật (`data/knowledge_base/`, `data/iso_documents/`). Hệ thống **tuyệt đối không lập chỉ mục** các tệp minh chứng kỹ thuật của doanh nghiệp (PDF, DOCX, log, conf...) vào cơ sở dữ liệu vector ChromaDB. Minh chứng được parser/OCR trích xuất tại bộ nhớ tạm và nạp trực tiếp vào prompt context khi đánh giá để đảm bảo cách ly bảo mật dữ liệu tuyệt đối giữa các đơn vị.
+
 ```mermaid
 flowchart LR
     Q[User Query] --> MQ[Multi-Query Expansion]
@@ -393,6 +395,50 @@ Từ [`ISO_27001_CATEGORIES`](backend/services/controls_catalog.py):
 | A.7 Vật lý | 14 | 0 | 5 | 7 | 2 |
 | A.8 Công nghệ | 34 | 14 | 12 | 7 | 1 |
 | **Tổng** | **93** | **25** | **36** | **26** | **6** |
+
+### 3.7 Quy tắc an toàn hậu xử lý LLM (Rule A & Rule C)
+
+Để đảm bảo tính toàn vẹn kiểm toán và loại bỏ phán quyết sai lệch từ mô hình ngôn ngữ lớn (LLM), engine đánh giá áp dụng các quy tắc tất định sau:
+
+#### Rule A: Xử lý tín hiệu mâu thuẫn & phủ định (Contradiction & Defect Detection)
+- **Kiểm tra lỗi sao lưu (`DAT.01`, `A.8.13`)**: Quét toàn bộ nội dung phân tích và đoạn trích dẫn để tìm các chuỗi dấu hiệu thất bại nghiêm trọng:
+  - `"archive is corrupted"`, `"0x80070070"`, `"there is not enough space on the disk"`, `"job aborted"`, `"fatal error in backup"`.
+  - Nếu phát hiện và người dùng tự khai báo `implemented`:
+    - Gán `conflict_detected = True`.
+    - Ghi nhận `conflict_reason`: "Bằng chứng nhật ký sao lưu ghi nhận lỗi nghiêm trọng: Không đủ dung lượng ổ đĩa, tệp sao lưu bị hỏng hoặc tiến trình sao lưu thất bại."
+    - Hạ phán quyết về **`needs_expert_review`** (`verdict_source = "safe_fallback_conflict"`).
+    - Đặt hệ số điểm $v_f = 0.0$ (đóng góp điểm bằng $0.0$).
+- **Kiểm tra lỗ hổng nghiêm trọng chưa vá / phần mềm EOL (`A.8.8`, `SV.07`, `MNG.05`)**:
+  - Quét các từ khóa: `"cve-"`, `"unpatched"`, `"critical vulnerability"`, `"chưa vá lỗ hổng"`, `"eol"`, `"end-of-life"`.
+  - Nếu người dùng tự khai báo `implemented` nhưng AI kết luận `satisfied`:
+    - Gán `conflict_detected = True`.
+    - Ghi nhận `conflict_reason`: "Tự khai báo đã triển khai nhưng tài liệu/log kiểm tra ghi nhận tồn tại lỗ hổng bảo mật nghiêm trọng (CVE) chưa khắc phục."
+    - Hạ phán quyết về **`needs_expert_review`**, điểm đóng góp $0.0$.
+
+#### Rule C: Kiểm tra đối soát trích dẫn với Evidence Manifest (Citation Integrity)
+- Mọi phán quyết `satisfied` hoặc `partial` do AI đề xuất bắt buộc phải có trích dẫn (`evidence_citations`) trỏ đến tệp hợp lệ trong `EvidenceManifest`.
+- Nếu AI kết luận `satisfied` hoặc `partial` nhưng không có trích dẫn hợp lệ từ manifest:
+  - **Người dùng tự khai báo đã triển khai và có nạp tệp**: Chuyển thành **`needs_expert_review`** ($v_f = 0.0$) kèm giải trình: *"Minh chứng đính kèm chưa đủ để đối soát xác thực kết quả đạt; hệ thống chuyển sang Cần chuyên gia rà soát."*
+  - **Người dùng tự khai báo đã triển khai nhưng không nạp tệp nào**: Chuyển thành **`not_evidenced`** ($v_f = 0.0$) kèm giải trình: *"Người dùng tự khai báo đạt nhưng không có tệp minh chứng trong hồ sơ; xếp loại Chưa có minh chứng (not_evidenced)."*
+  - **Người dùng không tự khai báo triển khai**: Chuyển thành **`missing`** ($v_f = 0.0$).
+
+### 3.8 Cổng kiểm định bất biến trước khi xuất báo cáo (HTTP 422 Invariant Gate)
+
+Trước khi thực hiện sinh các tệp báo cáo đầu ra tại các endpoint:
+- `GET /api/iso27001/export/excel` (Bảng Tuyên bố Áp dụng SoA)
+- `GET /api/iso27001/export/risk-register` (Sổ theo dõi Rủi ro)
+- `POST /api/iso27001/export-word` (Báo cáo thẩm định DOCX)
+- `POST /api/iso27001/export-report` (Báo cáo PDF)
+
+Backend bắt buộc gọi hàm kiểm soát bất biến kỹ thuật `validate_assessment_invariants()` trong [`artifact_validator.py`](backend/services/artifact_validator.py).
+
+Các điều kiện kiểm tra bất biến gồm:
+1. **Đối soát Citation với Manifest:** Toàn bộ `file_name` hoặc `file_id` trong danh sách citations phải tồn tại trong Evidence Manifest của assessment; mã băm SHA-256 phải trùng khớp tuyệt đối; cấm hoàn toàn các tên file giả lập (mock files); phiên đánh giá không có file minh chứng thì không được chứa citation; phán quyết `satisfied` trong phiên có file bắt buộc phải có ít nhất một citation hợp lệ.
+2. **5 Phán quyết Chuẩn:** Toàn bộ controls phải thuộc tập 5 phán quyết hợp lệ (`satisfied`, `partial`, `not_evidenced`, `missing`, `needs_expert_review`).
+3. **Bất biến số lượng Controls:** Đúng 93 controls cho ISO 27001 và đúng 34 controls cho TCVN 11930.
+4. **Khả năng tái lập toán học:** Điểm số và tỷ lệ tuân thủ phải khớp chính xác với tổng điểm trọng số $\sum w_i \times v_{f,i}$.
+
+**Xử lý vi phạm:** Nếu phát hiện bất kỳ vi phạm bất biến nào, endpoint xuất báo cáo lập tức từ chối xử lý và trả về mã lỗi **HTTP 422 Unprocessable Entity** kèm thông điệp chi tiết: `INVARIANT_VALIDATION_FAILED (Invariant Violation): ...`.
 
 ---
 

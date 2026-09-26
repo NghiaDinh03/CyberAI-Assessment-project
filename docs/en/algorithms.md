@@ -36,6 +36,8 @@ The RAG pipeline operates in three stages:
 2. **Retrieval** — ChromaDB cosine similarity search over HNSW-indexed embeddings, with optional multi-query expansion.
 3. **Confidence Filtering** — Low-similarity chunks are discarded before context assembly.
 
+> 🔒 **RAG Indexing Boundary:** ChromaDB strictly indexes regulatory standards and catalogue reference materials (`data/knowledge_base/`, `data/iso_documents/`). The platform **never indexes or embeds enterprise evidence files** (PDFs, DOCX, logs, configs) into the vector database. Evidence is extracted locally via parser/OCR and injected directly into the LLM prompt context to guarantee absolute cross-tenant data privacy.
+
 ```mermaid
 flowchart LR
     Q[User Query] --> MQ[Multi-Query Expansion]
@@ -388,6 +390,48 @@ From [`ISO_27001_CATEGORIES`](backend/services/controls_catalog.py):
 | A.8 Technological | 34 | 14 | 12 | 7 | 1 |
 | **Total** | **93** | **25** | **36** | **26** | **6** |
 
+### 3.7 Deterministic Post-LLM Safety Rules (Rule A & Rule C)
+
+To ensure audit integrity and eliminate hallucinated compliance scores, the assessment engine applies strict deterministic validation rules:
+
+#### Rule A: Contradiction & Negative Signal Detection
+- **Backup Failure Check (`DAT.01`, `A.8.13`)**: Scans LLM analysis, rationale, and cited excerpts for critical backup failure signatures:
+  - `"archive is corrupted"`, `"0x80070070"`, `"there is not enough space on the disk"`, `"job aborted"`, `"fatal error in backup"`.
+  - If detected on a control the user declared implemented:
+    - Sets `conflict_detected = True`.
+    - Records `conflict_reason: "Bằng chứng nhật ký sao lưu ghi nhận lỗi nghiêm trọng: Không đủ dung lượng ổ đĩa, tệp sao lưu bị hỏng hoặc tiến trình sao lưu thất bại."`.
+    - Automatically forces verdict to **`needs_expert_review`** (`verdict_source = "safe_fallback_conflict"`).
+    - Sets verdict factor $v_f = 0.0$ (score contribution = $0.0$).
+- **Critical Unpatched Vulnerabilities & EOL Software (`A.8.8`, `SV.07`, `MNG.05`)**:
+  - Scans for negative vulnerability signals: `"cve-"`, `"unpatched"`, `"critical vulnerability"`, `"chưa vá lỗ hổng"`, `"eol"`, `"end-of-life"`.
+  - If a user declared the control implemented and the AI proposed `satisfied`:
+    - Sets `conflict_detected = True`.
+    - Records `conflict_reason: "Tự khai báo đã triển khai nhưng tài liệu/log kiểm tra ghi nhận tồn tại lỗ hổng bảo mật nghiêm trọng (CVE) chưa khắc phục."`.
+    - Overrides verdict to **`needs_expert_review`**, score contribution = $0.0$.
+
+#### Rule C: Evidence Manifest Citation Integrity
+- Every `satisfied` or `partial` verdict produced by an AI model MUST cite valid files present in the `EvidenceManifest`.
+- If an AI proposes `satisfied` or `partial` without verified manifest citations:
+  - **Declared Implemented with Uploaded Files**: Overridden to **`needs_expert_review`** ($v_f = 0.0$) with rationale: *"Minh chứng đính kèm chưa đủ để đối soát xác thực kết quả đạt; hệ thống chuyển sang Cần chuyên gia rà soát."*
+  - **Declared Implemented with Zero Files**: Overridden to **`not_evidenced`** ($v_f = 0.0$) with rationale: *"Người dùng tự khai báo đạt nhưng không có tệp minh chứng trong hồ sơ; xếp loại Chưa có minh chứng (not_evidenced)."*
+  - **Not Declared Implemented**: Overridden to **`missing`** ($v_f = 0.0$).
+
+### 3.8 Pre-Export Invariant Validation Gate (HTTP 422)
+
+Before generating any output deliverable across endpoints:
+- `GET /api/iso27001/export/excel` (Statement of Applicability SoA)
+- `GET /api/iso27001/export/risk-register` (Risk Register)
+- `POST /api/iso27001/export-word` (Executive Summary DOCX)
+- `POST /api/iso27001/export-report` (Audit Report PDF)
+
+The backend invokes `validate_assessment_invariants()` in [`artifact_validator.py`](backend/services/artifact_validator.py):
+1. **Citation & Manifest Reconciliation**: All cited files must exist in the assessment's manifest; SHA-256 hashes must match; mock filenames are forbidden; zero-evidence runs must contain zero citations; `satisfied` verdicts require citations.
+2. **5 Authoritative Verdicts**: All controls must have verdicts from `{"satisfied", "partial", "not_evidenced", "missing", "needs_expert_review"}`.
+3. **Strict Control Counts**: Exactly 93 controls for ISO 27001 and 34 controls for TCVN 11930.
+4. **Mathematical Recomputability**: Compliance percentages must equal $\frac{\sum w_i \times v_{f,i}}{\sum w_{\text{catalogue}}} \times 100\%$.
+
+**Violation Handling**: If any invariant check fails, the export endpoint immediately halts and returns an **HTTP 422 Unprocessable Entity** response (`INVARIANT_VALIDATION_FAILED`).
+
 ---
 
 ## 4. Risk Register Scoring
@@ -396,30 +440,30 @@ Sources: [`assessment_helpers.py`](backend/services/assessment_helpers.py), [`ch
 
 ### 4.1 Mechanism & Transparent Risk Matrix
 
-Each unimplemented or unevidenced control is assigned a **Likelihood × Impact** risk score derived from control severity and factual verification. Blindly assigning identical $L=4, I=5, \text{Risk}=20$ across the board is prohibited.
+Each unimplemented or unevidenced control is assigned a **Likelihood × Impact** risk score on a standardized $4 \times 4$ Risk Matrix derived from control severity and factual verification:
 
 Mandatory fields in the Risk Register:
 - `control_id`: Standard control ID (e.g., `A.8.8`)
 - `control_weight`: Severity weight (`Critical`, `High`, `Medium`, `Low`)
 - `assessment_verdict`: Assessment conclusion (`satisfied`, `not_evidenced`, `missing`, `needs_expert_review`)
 - `risk_severity`: Risk tier (`Critical`, `High`, `Medium`, `Low`)
-- `likelihood`: Exploitability probability (1–5)
-- `impact`: Business consequence severity (1–5)
-- `risk_score`: Product of $\text{Likelihood} \times \text{Impact}$ (1–25)
+- `likelihood`: Exploitability probability (1–4)
+- `impact`: Business consequence severity (1–4)
+- `risk_score`: Product of $\text{Likelihood} \times \text{Impact}$ (1–16)
 - `risk_assessment_basis`: Classification rationale:
   - `evidence_based`: Confirmed vulnerabilities or gap logs
   - `rule_based`: Deterministic mapping from standard catalog
   - `ai_provisional`: Provisional AI inference pending review
   - `expert_validated`: Formally signed off by lead auditor
 
-### 4.2 Standard Deterministic Likelihood & Impact Matrix
+### 4.2 Standard Deterministic Likelihood & Impact Matrix ($4 \times 4$)
 
-| Control Weight | Default Likelihood | Default Impact | Risk Score ($L \times I$) | Risk Severity |
-|----------------|--------------------|----------------|---------------------------|---------------|
-| **Critical**   | 4                  | 5              | 20                        | **Critical**  |
-| **High**       | 3                  | 4              | 12                        | **High**      |
-| **Medium**     | 2                  | 3              | 6                         | **Medium**    |
-| **Low**        | 1                  | 2              | 2                         | **Low**       |
+| Control Weight | Default Likelihood | Default Impact | Risk Score ($L \times I$) | Risk Severity | Priority Band |
+|----------------|--------------------|----------------|---------------------------|---------------|:---:|
+| **Critical**   | 4                  | 4              | 16                        | **Critical**  | **P0** |
+| **High**       | 3                  | 3              | 9                         | **High**      | **P1** |
+| **Medium**     | 2                  | 2              | 4                         | **Medium**    | **P2** |
+| **Low**        | 1                  | 1              | 1                         | **Low**       | **P3** |
 
 > 💡 **Objective AI Wording:** When evidence is missing, reports explicitly state: *"chưa ghi nhận đủ minh chứng trong phạm vi dữ liệu đánh giá; cần chuyên gia xác minh"*, avoiding unfounded claims that the organization has no measures implemented.
 
@@ -433,8 +477,8 @@ The SecurityLM model outputs JSON per control category:
     "id": "A.5.1",
     "severity": "critical",
     "likelihood": 4,
-    "impact": 5,
-    "risk": 20,
+    "impact": 4,
+    "risk": 16,
     "gap": "Chính sách ATTT chưa được ban hành",
     "recommendation": "Ban hành chính sách ATTT ngay trong 30 ngày"
   }
@@ -442,9 +486,9 @@ The SecurityLM model outputs JSON per control category:
 ```
 
 Validation in [`validate_chunk_output()`](backend/services/assessment_helpers.py:67):
-- Likelihood clamped to `[1, 5]`
-- Impact clamped to `[1, 5]`
-- Risk clamped to `[1, 25]`
+- Likelihood clamped to `[1, 4]`
+- Impact clamped to `[1, 4]`
+- Risk clamped to `[1, 16]`
 - Gap text truncated to **200** chars
 - Recommendation truncated to **200** chars
 - **Anti-hallucination**: control IDs not in the valid set are rejected

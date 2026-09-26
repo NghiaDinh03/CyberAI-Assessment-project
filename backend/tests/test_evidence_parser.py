@@ -130,3 +130,38 @@ def test_cross_verify_controls():
     assert "MÂU THUẪN NGHIÊM TRỌNG" in formatted
     assert "CHƯA ĐƯỢC XÁC THỰC" in formatted
     assert "Tự khai báo - Không có log đối chứng" in formatted
+
+
+def test_real_ocr_target_images_and_manifest_status():
+    """Regression test: OCR branch extracts text and sets ocr_tesseract in manifest item."""
+    from PIL import Image, ImageDraw
+    from services.evidence_parser import parse_image_file, parse_pdf_file
+    from schemas.assessment_schema import EvidenceManifestItem
+
+    # 1. Image OCR extraction test (multiline for clean character separation)
+    img = Image.new("RGB", (600, 200), color=(255, 255, 255))
+    draw = ImageDraw.Draw(img)
+    draw.text((20, 30), "CCTV MONITORING", fill=(0, 0, 0))
+    draw.text((20, 80), "RETENTION 90 DAYS", fill=(0, 0, 0))
+    draw.text((20, 130), "SERVER ROOM AP-DC01", fill=(0, 0, 0))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    png_bytes = buf.getvalue()
+
+    text, ocr_applied, err = parse_image_file(png_bytes, "A.7.4_cctv.png")
+    assert ocr_applied is True
+    assert err is None
+    assert "MONITORING" in text
+    assert "90 DAYS" in text
+
+    # 2. Scanned PDF fixture test (pure image page invokes OCR)
+    pdf_buf = io.BytesIO()
+    img.save(pdf_buf, format="PDF")
+    pdf_bytes = pdf_buf.getvalue()
+
+    pdf_text, pages, pdf_ocr, pdf_err = parse_pdf_file(pdf_bytes, "scanned_doc.pdf")
+    assert pages == 1
+    assert pdf_ocr is True
+    assert pdf_err is None
+    assert "[Trang 1 (OCR)]" in pdf_text
+    assert "MONITORING" in pdf_text

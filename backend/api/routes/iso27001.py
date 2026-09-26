@@ -388,13 +388,14 @@ def process_assessment_bg(assessment_id: str, system_data: dict, model_mode: str
                     if not is_excluded and ctrl_id not in item.control_mapping:
                         item.control_mapping.append(ctrl_id)
                 else:
+                    is_img_file = ext in {".png", ".jpg", ".jpeg", ".webp"}
                     unique_files_map[file_key] = EvidenceManifestItem(
                         file_id=f"file_{hashlib.md5(safe_name.encode()).hexdigest()[:8]}",
                         masked_filename=masked_name,
                         extension=ext,
                         size_bytes=size_bytes,
                         sha256=f_hash,
-                        parser_or_ocr="native_parser",
+                        parser_or_ocr="ocr_tesseract" if is_img_file else "native_parser",
                         timestamp=datetime.now(timezone.utc).isoformat(),
                         fact_card_id=f"fact_{ctrl_id}",
                         control_mapping=[] if is_excluded else [ctrl_id],
@@ -441,7 +442,7 @@ def process_assessment_bg(assessment_id: str, system_data: dict, model_mode: str
                         extension=ext,
                         size_bytes=0,
                         sha256=f_hash,
-                        parser_or_ocr="native_parser",
+                        parser_or_ocr="ocr_tesseract" if ext in {".png", ".jpg", ".jpeg", ".webp"} else "native_parser",
                         timestamp=datetime.now(timezone.utc).isoformat(),
                         fact_card_id=None,
                         control_mapping=[],

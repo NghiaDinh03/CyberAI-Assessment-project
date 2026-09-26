@@ -2,6 +2,9 @@ import urllib.request
 import urllib.error
 import json
 
+__test__ = False
+
+
 def test_endpoint(name, url, method="POST"):
     req = urllib.request.Request(url, method=method)
     try:

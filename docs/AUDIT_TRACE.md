@@ -10,10 +10,11 @@ The **Audit Trace System** provides a structured runtime telemetry and verificat
 
 ### Key Guarantees:
 - **Empirical Ground Truth**: Captures the *actual model used* from runtime inference responses (e.g., `qwen2.5-coder:7b` / `gemma4:latest` via Ollama local hardware or cloud fallback), not just static UI labels.
-- **RAG Provenance & Embedding Telemetry**: Fully records collection name, knowledge base version, query hash (SHA-256), `embedding_provider`, `embedding_model` (`bge-m3:latest`), `embedding_dimensions` (1024), `distance_metric` (`cosine`), and ranked retrieval scores.
+- **RAG Provenance & Indexing Boundary**: Fully records collection name, knowledge base version, query hash (SHA-256), `embedding_provider`, `embedding_model` (`bge-m3:latest`), `embedding_dimensions` (1024), `distance_metric` (`cosine`), and ranked retrieval scores. RAG strictly queries regulatory standard catalogues (`iso27001`, `tcvn11930`); enterprise evidence files are **never** indexed into ChromaDB.
 - **Append-Only Technical Log**: Records are persisted in SQLite (`audit_events`) and automatically exported as standalone `data/audit_traces/{assessment_id}.json` upon assessment completion for bundle packaging.
 - **Privacy & Secret Redaction**: Zero plaintext storage of raw prompts, responses, passwords, bearer tokens, internal hostnames, or private IP addresses (`192.168.***.***`). All sensitive payloads are hashed with SHA-256 (`[REDACTED_HASH:<sha256:12>]`).
 - **Distributed Traceability**: Unified `assessment_id`, `run_id`, and `code_version` link every artifact (JSON, SoA XLSX, Risk Register XLSX, DOCX, PDF, and Manifest) chronologically.
+- **Pre-Export Invariant Gating**: Before `report_exported` deliverables (SoA, Risk Register, DOCX, PDF) are produced, `validate_assessment_invariants` verifies all citations against `EvidenceManifest`. Reconciliation errors abort with HTTP 422 (`INVARIANT_VALIDATION_FAILED`).
 
 ---
 

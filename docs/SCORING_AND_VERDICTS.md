@@ -19,6 +19,40 @@ The CyberAI Assessment Platform strictly adheres to **5 standardized verdicts**.
 > - The denominator remains fixed at the full catalogue weight ($495.0$ for ISO 27001; $271.0$ for TCVN 11930).
 > - **Historical Data Handling**: If an imported legacy record contains a `not_applicable` verdict, the normalization layer automatically maps it to `needs_expert_review` ($v_f = 0.0$). The control remains in the scoring scope and denominator.
 
+### 1.2. Deterministic Decision Rules & Contradiction Handling (Rule A & Rule C)
+
+To ensure audit integrity and eliminate false positive certifications, the assessment engine applies strict post-LLM deterministic validation rules before finalizing verdicts:
+
+#### Rule A: Negative Signal & Defect Detection (Contradiction Handling)
+- **Backup Failure Check (`DAT.01`, `A.8.13`)**:
+  - Scans raw analysis, rationale, and cited excerpts for critical backup failure signatures:
+    - `"archive is corrupted"`
+    - `"0x80070070"`
+    - `"there is not enough space on the disk"`
+    - `"job aborted"`
+    - `"fatal error in backup"`
+  - If any failure signature is detected and the user declared the control as implemented:
+    - Sets `conflict_detected = True`.
+    - Sets `conflict_reason = "Bằng chứng nhật ký sao lưu ghi nhận lỗi nghiêm trọng: Không đủ dung lượng ổ đĩa, tệp sao lưu bị hỏng hoặc tiến trình sao lưu thất bại."`.
+    - Automatically overrides the verdict to **`needs_expert_review`** (`verdict_source = "safe_fallback_conflict"`).
+    - Sets `verdict_factor = 0.0` (`weighted_score_contribution = 0.0`).
+- **Critical Unpatched Vulnerability & EOL Software (`A.8.8`, `SV.07`, `MNG.05`)**:
+  - Scans for negative vulnerability and obsolescence indicators:
+    - `"cve-"`, `"unpatched"`, `"critical vulnerability"`, `"chưa vá lỗ hổng"`, `"eol"`, `"end-of-life"`.
+  - If a user declared the control implemented and the AI proposed `satisfied`:
+    - Sets `conflict_detected = True`.
+    - Sets `conflict_reason = "Tự khai báo đã triển khai nhưng tài liệu/log kiểm tra ghi nhận tồn tại lỗ hổng bảo mật nghiêm trọng (CVE) chưa khắc phục."`.
+    - Automatically overrides the verdict to **`needs_expert_review`** (`verdict_source = "safe_fallback_conflict"`).
+    - Sets `verdict_factor = 0.0` (`weighted_score_contribution = 0.0`).
+
+#### Rule C: Evidence Manifest Citation Integrity
+- **Manifest Cross-Check**: Every `satisfied` or `partial` verdict produced by the AI model MUST cite valid files present in the `EvidenceManifest`.
+- **Enforcement Logic**:
+  - If an AI verdict proposes `satisfied` or `partial` but has **no verified citations** matching manifest files:
+    - **Declared Implemented with Uploaded Files**: Overridden to **`needs_expert_review`** ($v_f = 0.0$). Rationale: Evidence files are attached but insufficient to substantiate satisfaction; manual auditor review is mandatory.
+    - **Declared Implemented with Zero Files**: Overridden to **`not_evidenced`** ($v_f = 0.0$). Rationale: Declared implemented but no files exist in the evidence dossier.
+    - **Not Declared Implemented**: Overridden to **`missing`** ($v_f = 0.0$).
+
 ---
 
 ## 2. Weighted Compliance Specification (10-5-3-1 Scheme)
@@ -127,3 +161,33 @@ For identified gaps (controls with verdicts `missing`, `not_evidenced`, or `need
 ### 4.3. Schema Invariants
 - Pydantic models in `assessment_schema.py` strictly validate that $1 \le L \le 4$, $1 \le I \le 4$, and $R = L \times I \le 16$.
 - Any legacy $5 \times 5$ payloads ($R > 16$) are flagged with `is_legacy = True` and surfaced with a legacy warning banner in the UI.
+
+---
+
+## 5. Pre-Export Invariant Validation Gate (HTTP 422)
+
+Before any audit deliverable is exported via API endpoints (`GET /api/iso27001/export/excel` for SoA, `GET /api/iso27001/export/risk-register` for Risk Register, `POST /api/iso27001/export-word` for DOCX, or `POST /api/iso27001/export-report` for PDF), the assessment data must pass strict programmatic verification through `validate_assessment_invariants()` in `artifact_validator.py`.
+
+### 5.1. Validation Invariants
+1. **Citation & Manifest Reconciliation**:
+   - Every cited `file_name` and `file_id` in `evidence_citations` must exist in the assessment's `EvidenceManifest`.
+   - The SHA-256 hash in each citation must match the cryptographic hash stored in the manifest.
+   - Forbidden mock or hallucinated filenames (e.g., `sample_policy.pdf`, `mock_evidence.docx`) are strictly prohibited.
+   - Assessments with zero manifest evidence files must contain zero citations.
+   - Any control with a `satisfied` verdict in an evidence assessment must cite at least one verified file.
+2. **Authoritative Verdict Integrity**:
+   - All control verdicts must strictly belong to the 5 permitted values: `satisfied`, `partial`, `not_evidenced`, `missing`, `needs_expert_review`.
+3. **Catalogue Control Count Invariant**:
+   - Must contain exactly **93 controls** for ISO/IEC 27001:2022.
+   - Must contain exactly **34 controls** for TCVN 11930:2017.
+4. **Mathematical Recomputability**:
+   - `weighted_score`, `weighted_max_score`, and `percentage` must exactly match the sum of individual control weighted contributions ($\sum w_i \times v_{f,i}$).
+
+### 5.2. Error Handling & HTTP Status
+- If any invariant check fails, the export endpoint immediately aborts and returns an **HTTP 422 Unprocessable Entity** response:
+  ```json
+  {
+    "detail": "INVARIANT_VALIDATION_FAILED (Invariant Violation): Control A.8.13: Citation 'backup_corrupt.log' not found in evidence manifest; ..."
+  }
+  ```
+- This gate guarantees that corrupt, inconsistent, or untrusted assessments cannot produce official Word, PDF, SoA, or Risk Register deliverables.

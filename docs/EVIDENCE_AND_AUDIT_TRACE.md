@@ -76,7 +76,7 @@ A single technical artifact often satisfies multiple security controls simultane
 
 ## 3. Evidence Citations in Verdicts
 
-For any control assigned a `satisfied` or `partial` verdict, the schema requires evidence citations:
+For any control assigned a `satisfied` or `partial` verdict, the schema requires verified evidence citations:
 
 ```json
 {
@@ -97,22 +97,26 @@ For any control assigned a `satisfied` or `partial` verdict, the schema requires
 }
 ```
 
-If no evidence can be cited for an implemented declaration, the control **cannot** be marked `satisfied`. It is automatically categorized as `not_evidenced` ($v_f = 0.0$).
+### 3.1. Rule C: Manifest Citation Reconciliation
+- Every cited `file_name` and `evidence_id` in `evidence_citations` MUST resolve to an entry in the active `EvidenceManifest`.
+- If an AI proposed `satisfied` or `partial` but has **no verified citations** matching manifest files:
+  - **Declared Implemented with Uploaded Files**: Overridden to **`needs_expert_review`** ($v_f = 0.0$). Rationale: Files were uploaded, but could not be verified to substantiate the control requirements.
+  - **Declared Implemented with Zero Files**: Overridden to **`not_evidenced`** ($v_f = 0.0$). Rationale: Control self-declared implemented, but zero evidence files exist in the manifest.
+  - **Not Declared Implemented**: Overridden to **`missing`** ($v_f = 0.0$).
 
 ---
 
 ## 4. Conflict Handling & `needs_expert_review`
 
-A control is assigned `needs_expert_review` when:
-1. **Contradiction Detected**: The user declared the control "implemented", but technical evidence proves it is disabled (e.g., user declares MFA enforced, but `sshd_config` contains `PasswordAuthentication yes` and no MFA modules).
-   - `conflict_detected`: `True`
-   - `verdict_source`: `safe_fallback_conflict`
-   - `verdict_factor`: `0.0`
-   - `conflict_reason`: Explicit description of the contradiction.
-2. **Unreadable / Corrupt Evidence**: Attached files could not be parsed by either native text extraction or Tesseract OCR.
-   - `verdict_source`: `safe_fallback_no_evidence`
-   - `verdict_factor`: `0.0`
-   - `fallback_reason`: "Không thể trích xuất nội dung từ tệp bằng chứng kỹ thuật."
+A control is assigned `needs_expert_review` ($v_f = 0.0$) through the following deterministic safety mechanisms:
+
+1. **Rule A (Negative Signals & Defect Detection)**:
+   - **Backup Failure Check (`DAT.01`, `A.8.13`)**: Scans analysis text and citations for failure signatures: `"archive is corrupted"`, `"0x80070070"`, `"there is not enough space on the disk"`, `"job aborted"`, or `"fatal error in backup"`.
+   - **Unpatched CVE / EOL Software (`A.8.8`, `SV.07`, `MNG.05`)**: Scans for negative vulnerability signals (`"cve-"`, `"unpatched"`, `"critical vulnerability"`, `"chưa vá lỗ hổng"`, `"eol"`, `"end-of-life"`).
+   - If detected on a control the user declared implemented, `conflict_detected` is set to `True`, the verdict is overridden to `needs_expert_review` (`verdict_source: safe_fallback_conflict`), and points are zeroed ($v_f = 0.0$).
+2. **General Contradiction Detected**: User declared implemented, but technical evidence explicitly indicates `not_satisfied` or missing implementation.
+3. **Rule C Fallback**: AI claims compliance but manifest lacks verified citations.
+4. **Unreadable / Corrupt Evidence**: Attached files could not be parsed by either native text extraction or Tesseract OCR (`verdict_source: safe_fallback_no_evidence`, $v_f = 0.0$).
 
 ---
 
@@ -138,3 +142,17 @@ flowchart TD
 | **`Risk_Register.xlsx`** | `controls[]` with $R \ge 4$, `risk_summary`, `top_gaps` | Risk scores equal $L \times I \le 16$; prioritized into P0/P1/P2 |
 | **`IT_Audit_Report.docx`** | `weighted_compliance`, `controls[]`, `risk_summary` | Percentage and breakdown numbers agree to 1 decimal place |
 | **`Audit_Report.pdf`** | Rendered view of `UnifiedAssessmentResult` | Identical scores and badges as the interactive web UI |
+
+### 5.1. Pre-Export Invariant Validation Gate (HTTP 422)
+Before generating any deliverable (`SoA_ISO27001.xlsx`, `Risk_Register.xlsx`, `IT_Audit_Report.docx`, `Audit_Report.pdf`), the backend executes `validate_assessment_invariants()`:
+- Verifies that all citations exist in the `EvidenceManifest` with matching SHA-256 hashes.
+- Forbids mock/hallucinated filenames.
+- Enforces strict 5 authoritative verdicts and exact catalogue control counts (93 for ISO, 34 for TCVN).
+- Verifies that `satisfied` verdicts in evidence runs have at least one verified citation.
+- **On failure**: The export endpoint rejects the request with **HTTP 422 Unprocessable Entity** (`INVARIANT_VALIDATION_FAILED`), preventing unverified or corrupt deliverables from being produced.
+
+### 5.2. Audit Trace Correlation
+Every event in the technical audit trace and every generated deliverable is cryptographically and logically correlated using:
+- **`assessment_id`**: Identifier of the assessment entity.
+- **`run_id`**: Identifier of the specific pipeline execution run.
+- **`code_version`**: Commit hash of the running software release.

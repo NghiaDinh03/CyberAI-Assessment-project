@@ -73,8 +73,10 @@ The `evidence_mapper` module inspects file naming patterns and content keywords 
 
 ### Stage 6: Regulatory Standards RAG Retrieval
 - ChromaDB is queried using cosine similarity via the `bge-m3` embedding model.
-- **What is retrieved**: Official requirements, implementation guidance, and audit objectives from the standard catalogue for the target control group.
-- **What is NOT in ChromaDB**: Enterprise evidence is **never** vectorized or stored in ChromaDB.
+- **RAG Indexing Boundary**:
+  - **What is indexed in ChromaDB**: Official regulatory standard clauses, audit objectives, and implementation guidance (`data/knowledge_base/`, `data/iso_documents/`).
+  - **What is NEVER indexed in ChromaDB**: Enterprise evidence documents, configurations, logs, and customer-uploaded artifacts are **strictly excluded** from ChromaDB vector storage.
+  - Evidence text is parsed locally in-memory/disk and passed directly into the inference prompt context (`build_evidence_context_for_ai`) for Agent 3 Fact Cards. This strictly enforces multi-tenant privacy and prevents data leakage across assessments.
 
 ### Stage 7: Chunked Compliance Assessment
 Because assessing 93 controls simultaneously would exceed the model's context window, controls are divided into chunks of **5 to 8 controls** per prompt (`build_chunk_prompt`):
@@ -90,18 +92,24 @@ Because assessing 93 controls simultaneously would exceed the model's context wi
   - `evidence_citations`
 
 ### Stage 8: Normalization & Pydantic Validation
-The raw LLM output is passed to `normalize_verdict` and the Pydantic model `UnifiedAssessmentResult`:
+The raw LLM output is passed to `normalize_verdict`, rule-based safety filters, and the Pydantic model `UnifiedAssessmentResult`:
 1. **Verdict Normalization**: Aliases (`compliant`, `pass`, `fail`) are strictly converted into one of the **5 Authoritative Verdicts**:
-   - `satisfied`
-   - `partial`
-   - `not_evidenced`
-   - `missing`
-   - `needs_expert_review`
-2. **Conflict Enforcement**: If a user declared a control implemented but the evidence directly contradicts it, the control is automatically forced to:
-   - `assessment_verdict`: `needs_expert_review`
-   - `verdict_source`: `safe_fallback_conflict`
-   - `verdict_factor`: `0.0`
-3. **Safety Fallback**: If an LLM fails or produces unparseable JSON, deterministic rule-based fallbacks assign `needs_expert_review` or `missing`, guaranteeing 100% pipeline completion.
+   - `satisfied` ($v_f = 1.0$)
+   - `partial` ($v_f = 0.5$)
+   - `not_evidenced` ($v_f = 0.0$)
+   - `missing` ($v_f = 0.0$)
+   - `needs_expert_review` ($v_f = 0.0$)
+2. **Rule A (Negative Signal & Defect Detection)**:
+   - Evaluates backup logs (`DAT.01`, `A.8.13`) for failure signatures (`archive is corrupted`, `0x80070070`, `there is not enough space on the disk`, `job aborted`, `fatal error in backup`).
+   - Evaluates vulnerability scans (`A.8.8`, `SV.07`, `MNG.05`) for unpatched CVEs or EOL indicators.
+   - If detected on a declared-implemented control, automatically sets `conflict_detected = True`, forces verdict to `needs_expert_review` (`verdict_source: safe_fallback_conflict`), and assigns $0.0$ points.
+3. **Rule C (Evidence Manifest Citation Reconciliation)**:
+   - Reconciles AI citations against the `EvidenceManifest`.
+   - If an AI proposed `satisfied` or `partial` without verified manifest citations, overrides to:
+     - `needs_expert_review` ($v_f = 0.0$) if evidence files exist in the assessment.
+     - `not_evidenced` ($v_f = 0.0$) if no evidence files exist in the assessment.
+     - `missing` ($v_f = 0.0$) if not declared implemented.
+4. **Safety Fallback**: If an LLM fails or produces unparseable JSON, deterministic rule-based fallbacks assign `needs_expert_review` or `missing`, guaranteeing 100% pipeline completion.
 
 ### Stage 9: Dual Metric Computation
 The validated result computes two completely separated indices:
@@ -113,8 +121,10 @@ The validated result computes two completely separated indices:
    *(Driven strictly by final technical verdicts; 495.0 max for ISO, 271.0 max for TCVN).*
 
 ### Stage 10: Audit Trace & Artefact Generation
-A single validated `UnifiedAssessmentResult` generates:
-- **`audit_trace.json`**: Machine-readable log containing step-by-step evidence mapping, prompts, raw model responses, fallbacks, and citation chains.
+Prior to generating any export deliverable, the assessment data is verified via `validate_assessment_invariants` (`artifact_validator.py`). If reconciliation fails (e.g. unverified citations, mock filenames, SHA-256 mismatch, control count violation), the export endpoint rejects the request with **HTTP 422 Unprocessable Entity** (`INVARIANT_VALIDATION_FAILED`).
+
+Upon passing validation, a single `UnifiedAssessmentResult` generates:
+- **`audit_trace.json`**: Machine-readable log containing step-by-step evidence mapping, prompts, raw model responses, fallbacks, and citation chains. Every trace is uniquely coupled via `assessment_id` and `run_id` along with `code_version`.
 - **Statement of Applicability (SoA)**: Excel workbook (`.xlsx`) documenting applicability, justification, and verified status for all controls.
 - **Risk Register**: Excel workbook (`.xlsx`) detailing identified gaps mapped to a $4 \times 4$ Risk Matrix ($L \times I \in [1, 16]$) and prioritized into P0, P1, P2 remediation plans.
 - **Executive Summary DOCX**: A4 formatted Word document ready for stakeholder presentation.
