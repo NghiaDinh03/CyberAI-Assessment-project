@@ -24,7 +24,9 @@ services:
       - MODEL_1_EXTRACTOR=${MODEL_1_EXTRACTOR:-qwen2.5-coder:7b}
       - MODEL_2_AUDITOR=${MODEL_2_AUDITOR:-gemma4:latest}
       - MODEL_3_EMBEDDING=${MODEL_3_EMBEDDING:-bge-m3}
+      - REQUIRED_MODEL_IDS=${REQUIRED_MODEL_IDS:-gemma4:latest,qwen2.5-coder:7b,bge-m3:latest}
       - MAX_TOKENS=-1
+      - LOCAL_ONLY_MODE=${LOCAL_ONLY_MODE:-false}
       - PREFER_LOCAL=${PREFER_LOCAL:-true}
       - CLOUD_LLM_API_URL=${CLOUD_LLM_API_URL:-https://open-claude.com/v1}
       - CLOUD_MODEL_NAME=${CLOUD_MODEL_NAME:-gemini-2.0-flash}
@@ -35,19 +37,24 @@ services:
       - ISO_DOCS_PATH=/data/iso_documents
       - VECTOR_STORE_PATH=/data/vector_store
       - DATA_PATH=/data
+      - MODELS_PATH=/app/models
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - DEBUG=${DEBUG:-true}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost,http://localhost:80,http://localhost:3000,http://localhost:3081,http://127.0.0.1,http://127.0.0.1:80,http://127.0.0.1:3000,http://127.0.0.1:3081}
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - JWT_EXPIRE_MINUTES=${JWT_EXPIRE_MINUTES:-60}
       - RATE_LIMIT_CHAT=${RATE_LIMIT_CHAT:-15/minute}
       - RATE_LIMIT_ASSESS=${RATE_LIMIT_ASSESS:-3/minute}
       - RATE_LIMIT_BENCHMARK=${RATE_LIMIT_BENCHMARK:-5/minute}
       - INFERENCE_TIMEOUT=${INFERENCE_TIMEOUT:-1800}
       - CLOUD_TIMEOUT=${CLOUD_TIMEOUT:-600}
-      - MODELS_PATH=/app/models
+      - MAX_CONCURRENT_REQUESTS=${MAX_CONCURRENT_REQUESTS:-3}
+      - ASSESSMENT_MODE=${ASSESSMENT_MODE:-hybrid}
+      - EVIDENCE_SUMMARY_TOKENS=${EVIDENCE_SUMMARY_TOKENS:-256}
+      - LOCAL_RAM_GUARD_GB=${LOCAL_RAM_GUARD_GB:-20.0}
       - SEARXNG_URL=${SEARXNG_URL:-http://searxng:8080}
       - CODE_VERSION=${CODE_VERSION:-v1.2.0-verdict}
-      - GIT_COMMIT_SHA=${GIT_COMMIT_SHA:-c79037e}
+      - GIT_COMMIT_SHA=${GIT_COMMIT_SHA:-98f88f7}
     networks:
       - cyberai-network
     volumes:
@@ -57,11 +64,20 @@ services:
       - ./data/vector_store:/data/vector_store
       - ./data/assessments:/data/assessments
       - ./data/evidence:/data/evidence
+      - ./data/evidence_manifests:/data/evidence_manifests
+      - ./data/audit_traces:/data/audit_traces
       - ./data/exports:/data/exports
       - ./data/sessions:/data/sessions
       - ./data/standards:/data/standards
       - ./data/knowledge_base:/data/knowledge_base
       - ./data/uploads:/data/uploads
+      - ./data/auth:/data/auth
+      - ./data/templates:/data/templates
+      - ./data/risks:/data/risks
+      - ./data/reports:/data/reports
+      - ./data/evaluation_datasets:/data/evaluation_datasets
+      - ./data/template_evidence:/data/template_evidence
+      - ./data/translations:/data/translations
     depends_on:
       searxng:
         condition: service_started
@@ -91,7 +107,7 @@ services:
       - "3081:3000"
     command: ["sh", "-c", "npm install --legacy-peer-deps && npm run dev"]
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       - API_URL=http://backend:8000
       - NODE_ENV=development
       - NEXT_TELEMETRY_DISABLED=1
@@ -134,6 +150,49 @@ services:
         reservations:
           memory: 128M
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: cyberai-ollama
+    profiles:
+      - ollama-container
+    ports:
+      - "${OLLAMA_PORT:-11435}:11434"
+    entrypoint: ["/bin/sh", "-c", "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done && (ollama list | grep -q 'gemma4' || ollama pull gemma4:latest) && (ollama list | grep -q 'qwen2.5-coder' || ollama pull qwen2.5-coder:7b) && (ollama list | grep -q 'bge-m3' || ollama pull bge-m3:latest); wait"]
+    devices:
+      - /dev/dxg:/dev/dxg
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_NUM_THREADS=10
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_LOAD_TIMEOUT=20m
+      - OLLAMA_MAX_QUEUE=5
+      - OLLAMA_FLASH_ATTENTION=true
+      - OLLAMA_CONTEXT_LENGTH=4096
+      - OLLAMA_DEBUG=INFO
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - cyberai-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "10"
+          memory: 12G
+        reservations:
+          memory: 4G
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
 networks:
   cyberai-network:
     driver: bridge
+
+volumes:
+  ollama_data:

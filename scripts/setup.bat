@@ -40,11 +40,11 @@ if !errorlevel! == 0 (
 
 REM ---------- 3. Create runtime folders ----------
 echo [3/6] Creating runtime data folders
-for %%d in (sessions uploads exports evidence assessments standards knowledge_base iso_documents vector_store translations models\huggingface) do (
+for %%d in (sessions uploads exports evidence evidence_manifests audit_traces reports assessments standards knowledge_base iso_documents vector_store auth templates risks evaluation_datasets template_evidence translations models\huggingface) do (
     if not exist "data\%%d" mkdir "data\%%d"
 )
 if not exist "models\llm" mkdir "models\llm"
-for %%d in (sessions uploads exports evidence assessments standards) do (
+for %%d in (sessions uploads exports evidence evidence_manifests audit_traces reports assessments standards auth templates risks) do (
     if not exist "data\%%d\.gitkeep" type nul > "data\%%d\.gitkeep"
 )
 echo       OK Folders ready

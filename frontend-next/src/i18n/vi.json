@@ -81,7 +81,7 @@
     "lastAssessment": "Đánh giá gần nhất",
     "systemResources": "⚡ Tài nguyên hệ thống",
     "modules": "🧩 Các module",
-    "footer": "CyberAI Assessment Platform · FastAPI · Next.js · Open Claude · © 2026",
+    "footer": "CyberAI Assessment Platform · © 2026",
     "featureChat": "AI Chat",
     "featureChatDesc": "Trợ lý AI tra cứu ISO 27001 và TCVN 11930 với phản hồi trực tuyến",
     "featureChatTag": "Streaming",

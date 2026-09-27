@@ -1,14 +1,18 @@
-﻿FROM python:3.11-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# System dependencies: curl, Tesseract OCR + Vietnamese/English lang data, poppler for pdf2image
+# System dependencies: curl, Tesseract OCR + Vietnamese/English lang data, poppler for pdf2image, pango/cairo for WeasyPrint
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     tesseract-ocr \
     tesseract-ocr-vie \
     tesseract-ocr-eng \
     poppler-utils \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf-2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PIP_DEFAULT_TIMEOUT=300

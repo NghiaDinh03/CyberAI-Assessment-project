@@ -62,16 +62,24 @@ mkdir -p \
   data/uploads \
   data/exports \
   data/evidence \
+  data/evidence_manifests \
+  data/audit_traces \
+  data/reports \
   data/assessments \
   data/standards \
   data/knowledge_base \
   data/iso_documents \
   data/vector_store \
+  data/auth \
+  data/templates \
+  data/risks \
+  data/evaluation_datasets \
+  data/template_evidence \
   data/translations \
   data/models/huggingface \
   models/llm
 # .gitkeep so empty folders survive git
-for d in sessions uploads exports evidence assessments standards; do
+for d in sessions uploads exports evidence evidence_manifests audit_traces reports assessments standards auth templates risks; do
   [ -f "data/$d/.gitkeep" ] || touch "data/$d/.gitkeep"
 done
 echo "      ✓ Folders ready"
